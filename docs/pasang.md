@@ -9,7 +9,7 @@ Kernel Cogan hanya mengganti partisi **`boot`**. Data, `init_boot` dan `vendor_b
 ## Sebelum mulai
 
 - Bootloader sudah **unlock**.
-- HyperOS **`OS3.0.301.0.WNNIDXM`** (Android 16), versi yang dipakai uji. Kernel dibangun dari ACK resmi Google android14-6.1: r8 dan r6 dari 6.1.176 (`2026-09_r4`), r5 dari 6.1.138 (sama dengan kernel bawaan HyperOS versi ini).
+- HyperOS **`OS3.0.301.0.WNNIDXM`** (Android 16), versi yang dipakai uji. Kernel dibangun dari ACK resmi Google android14-6.1: arsip r8 dan r6 dari 6.1.176 (`2026-09_r4`), arsip r5 dari 6.1.138 (sama dengan kernel bawaan HyperOS versi ini).
 - ZIP kernel `1-KERNEL_Cogan-Rothko-ACK-…zip`. ZIP berisi cek perangkat, jadi di HP selain `rothko` flash berhenti sebelum `boot` disentuh.
 
 ## 1. Cadangkan `boot` dulu

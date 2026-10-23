@@ -16,7 +16,7 @@ This repository continues **[cogan17/Kernel-14t-pro](https://github.com/cogan17/
 2. **With the GitHub CLI:**
    ```
    gh attestation verify <zip> --repo cogan17/Xiomi_14T_Pro     # builds of this repository
-   gh attestation verify <zip> --repo cogan17/Kernel-14t-pro    # archived releases r5, r6, r8
+   gh attestation verify <zip> --repo cogan17/Kernel-14t-pro    # archived releases r5, r6, r8 (arsip-… tags)
    ```
    Only a genuine ZIP passes.
 3. **The run page in [Actions](https://github.com/cogan17/Xiomi_14T_Pro/actions):** every build shows the KMI gate result, the version of every component, the feature list and the sha256 of its ZIP.
@@ -42,15 +42,15 @@ This repository continues **[cogan17/Kernel-14t-pro](https://github.com/cogan17/
 
 ## 📦 Release archive
 
-Copied from [cogan17/Kernel-14t-pro/releases](https://github.com/cogan17/Kernel-14t-pro/releases) on 23 Oct 2026, with the same tags and files. In this repository's [Releases](https://github.com/cogan17/Xiomi_14T_Pro/releases) their titles start with **📦 Arsip**.
+Copied from [cogan17/Kernel-14t-pro/releases](https://github.com/cogan17/Kernel-14t-pro/releases) on 23 Oct 2026, with the same files. In this repository's [Releases](https://github.com/cogan17/Xiomi_14T_Pro/releases) their titles start with **📦 Arsip** and the kernel tags start with `arsip-` (24 Oct 2026), so r5, r6 and r8 never clash with this repository's own release numbers. The original repository keeps its tags without the prefix.
 
 ### Kernels (signed by the original repository)
 
 | Release | Kernel | Root | Tested | Signature |
 |---|---|---|---|---|
-| [v26.10.23-r8](https://github.com/cogan17/Xiomi_14T_Pro/releases/tag/v26.10.23-r8) | ACK 6.1.176 (`android14-6.1-2026-09_r4`) | BakaSU `5b76b884` (35222) + SUSFS v2.3.0 | by the owner on the phone | ✅ run [39899556040](https://github.com/cogan17/Kernel-14t-pro/actions/runs/39899556040) |
-| [v26.10.22-r6](https://github.com/cogan17/Xiomi_14T_Pro/releases/tag/v26.10.22-r6) | ACK 6.1.176 (`android14-6.1-2026-09_r4`) | KernelSU Next (pershoot's fork `d21e0a6`, 33405) + SUSFS | by the owner on the phone | ✅ run [39807276281](https://github.com/cogan17/Kernel-14t-pro/actions/runs/39807276281) |
-| [v26.10.22-r5](https://github.com/cogan17/Xiomi_14T_Pro/releases/tag/v26.10.22-r5) | ACK 6.1.138 (same as the phone's stock kernel) | KernelSU Next (33405) + SUSFS | by the owner on the phone | ✅ run [39760534547](https://github.com/cogan17/Kernel-14t-pro/actions/runs/39760534547) |
+| [arsip-v26.10.23-r8](https://github.com/cogan17/Xiomi_14T_Pro/releases/tag/arsip-v26.10.23-r8) | ACK 6.1.176 (`android14-6.1-2026-09_r4`) | BakaSU `5b76b884` (35222) + SUSFS v2.3.0 | by the owner on the phone | ✅ run [39899556040](https://github.com/cogan17/Kernel-14t-pro/actions/runs/39899556040) |
+| [arsip-v26.10.22-r6](https://github.com/cogan17/Xiomi_14T_Pro/releases/tag/arsip-v26.10.22-r6) | ACK 6.1.176 (`android14-6.1-2026-09_r4`) | KernelSU Next (pershoot's fork `d21e0a6`, 33405) + SUSFS | by the owner on the phone | ✅ run [39807276281](https://github.com/cogan17/Kernel-14t-pro/actions/runs/39807276281) |
+| [arsip-v26.10.22-r5](https://github.com/cogan17/Xiomi_14T_Pro/releases/tag/arsip-v26.10.22-r5) | ACK 6.1.138 (same as the phone's stock kernel) | KernelSU Next (33405) + SUSFS | by the owner on the phone | ✅ run [39760534547](https://github.com/cogan17/Kernel-14t-pro/actions/runs/39760534547) |
 
 All of them also carry BBRv3, Baseband Guard, NoMount, Cogan Bridge and Full LTO. Check with `gh attestation verify <zip> --repo cogan17/Kernel-14t-pro`.
 
@@ -58,17 +58,17 @@ All of them also carry BBRv3, Baseband Guard, NoMount, Cogan Bridge and Full LTO
 
 | File | Origin |
 |---|---|
-| `2-MANAGER_BakaSU_ci-5b76b884c75f.apk` (r8) | The owner's BakaSU manager `v4.2.0-rc3-5b76b884` (35222), the same version as the driver in the kernel |
-| `2-MANAGER_KernelSU-Next_v3.4.2-50-gb427a3f9_33405.apk` (r5, r6) | Official CI build of [KernelSU Next](https://github.com/KernelSU-Next/KernelSU-Next) commit `b427a3f9` (33405) |
-| `3-MANAGER-SPOOFED_KernelSU-Next_v3.4.2-50-gb427a3f9_33405.apk` (r5, r6) | Official CI build of KernelSU Next, spoofed variant (hidden package name) |
-| `4-NOMOUNT-MODULE_v2.1.1.zip` (r5, r6, r8) | Official [NoMount](https://github.com/maxsteeel/nomount/releases) v2.1.1 release (`NoMount-v2.1.1-release-7046c7a-555.zip`), renamed only |
+| `2-MANAGER_BakaSU_ci-5b76b884c75f.apk` (archive r8) | The owner's BakaSU manager `v4.2.0-rc3-5b76b884` (35222), the same version as the driver in the kernel |
+| `2-MANAGER_KernelSU-Next_v3.4.2-50-gb427a3f9_33405.apk` (archive r5, r6) | Official CI build of [KernelSU Next](https://github.com/KernelSU-Next/KernelSU-Next) commit `b427a3f9` (33405) |
+| `3-MANAGER-SPOOFED_KernelSU-Next_v3.4.2-50-gb427a3f9_33405.apk` (archive r5, r6) | Official CI build of KernelSU Next, spoofed variant (hidden package name) |
+| `4-NOMOUNT-MODULE_v2.1.1.zip` (archive r5, r6, r8) | Official [NoMount](https://github.com/maxsteeel/nomount/releases) v2.1.1 release (`NoMount-v2.1.1-release-7046c7a-555.zip`), renamed only |
 | `checksums.txt` | SHA256 of every file in that release |
 
 ### Cogan Smart Kernel module (made by Cogan17)
 
 | Release | versionCode | Tested |
 |---|---|---|
-| [cogan-smart-v2.8.2](https://github.com/cogan17/Xiomi_14T_Pro/releases/tag/cogan-smart-v2.8.2) | 16 | by the owner on the phone (kernel r6), HyperCharge charging too |
+| [cogan-smart-v2.8.2](https://github.com/cogan17/Xiomi_14T_Pro/releases/tag/cogan-smart-v2.8.2) | 16 | by the owner on the phone (kernel archive r6), HyperCharge charging too |
 | [cogan-smart-v2.8.1](https://github.com/cogan17/Xiomi_14T_Pro/releases/tag/cogan-smart-v2.8.1) | 15 | by the owner on the phone |
 
 Cogan17 made the ZIPs and they are published **as they are** (byte for byte). Copies are in [`modules/cogan-smart/rilis/`](../modules/cogan-smart/rilis) and the open source is [`modules/cogan-smart`](../modules/cogan-smart). Not signed (attestation) yet.

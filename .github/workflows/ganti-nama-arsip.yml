@@ -1,0 +1,88 @@
+name: Ganti nama arsip (sekali pakai)
+
+# Owner 24 Okt 2026: rilis arsip r5, r6 dan r8 (dari cogan17/Kernel-14t-pro) pindah ke tag berawalan
+# arsip- dan berjudul "📦 Arsip Kernel-14t-pro rN", supaya tidak bentrok dengan nomor rilis repo ini.
+# File dan SHA256 tidak berubah (dicek per file); tag lama dihapus setelah rilisnya pindah. Rilis yang
+# sudah pindah dilewati, jadi aman dijalankan ulang. File ini dihapus setelah dipakai.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ganti-nama-arsip
+  cancel-in-progress: false
+
+jobs:
+  ganti:
+    name: Pindahkan arsip ke tag arsip-
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Ganti nama / rename
+        run: |
+          python3 - <<'PY'
+          import json, os, subprocess
+
+          repo, sha = os.environ["GITHUB_REPOSITORY"], os.environ["GITHUB_SHA"]
+
+          def gh(path, method="GET", payload=None, missing_ok=False):
+              result = subprocess.run(["gh", "api", "-X", method, path, *(["--input", "-"] if payload else [])],
+                                      input=json.dumps(payload) if payload else None, capture_output=True, text=True)
+              if result.returncode:
+                  if missing_ok and "HTTP 404" in result.stderr:
+                      return None
+                  raise SystemExit(f"gh api -X {method} {path}: {result.stderr.strip() or result.stdout.strip()}")
+              return json.loads(result.stdout) if result.stdout.strip() else {}
+
+          def files(release):
+              return sorted((asset["name"], asset["digest"]) for asset in release["assets"])
+
+          rows = []
+          for old, number in (("v26.10.22-r5", "r5"), ("v26.10.22-r6", "r6"), ("v26.10.23-r8", "r8")):
+              new = "arsip-" + old
+              release = gh(f"repos/{repo}/releases/tags/{new}", missing_ok=True)
+              if release:
+                  moved = "sudah pindah / already moved"
+              else:
+                  release = gh(f"repos/{repo}/releases/tags/{old}")
+                  before = files(release)
+                  lines = release["body"].split("\n")
+                  if not (lines[0] == "> [!NOTE]" and lines[1].startswith("> 📦 **Arsip**")
+                          and lines[2].startswith("> 📦 **Archive**")):
+                      raise SystemExit(f"{old}: catatan arsip tidak dikenali / archive note not recognised")
+                  lines[3:3] = [
+                      f"> 🏷️ Di repo ini bernama **arsip {number}** dengan tag `{new}` (24 Okt 2026), supaya tidak "
+                      f"bentrok dengan {number} repo ini sendiri; tag asli `{old}`.",
+                      f"> 🏷️ Named **archive {number}** here with the tag `{new}` (24 Oct 2026), so it never clashes "
+                      f"with this repository's own {number}; original tag `{old}`."]
+                  # The new tag on this run's commit: GITHUB_TOKEN cannot tag an older commit whose workflows differ.
+                  if gh(f"repos/{repo}/git/ref/tags/{new}", missing_ok=True) is None:
+                      gh(f"repos/{repo}/git/refs", "POST", {"ref": f"refs/tags/{new}", "sha": sha})
+                  release = gh(f"repos/{repo}/releases/{release['id']}", "PATCH", {
+                      "tag_name": new, "name": f"📦 Arsip Kernel-14t-pro {number}", "body": "\n".join(lines)})
+                  if release["tag_name"] != new or files(release) != before:
+                      raise SystemExit(f"{old}: tag atau file berubah tidak sesuai / tag or files changed unexpectedly")
+                  moved = "dipindah / moved"
+              # The old tag goes only once no release uses it.
+              if gh(f"repos/{repo}/releases/tags/{old}", missing_ok=True) is not None:
+                  raise SystemExit(f"{old}: masih dipakai rilis / still used by a release")
+              if gh(f"repos/{repo}/git/ref/tags/{old}", missing_ok=True) is not None:
+                  gh(f"repos/{repo}/git/refs/tags/{old}", "DELETE")
+                  deleted = "dihapus / deleted"
+              else:
+                  deleted = "sudah tidak ada / already gone"
+              rows.append(f"| `{old}` | `{new}` | {moved} | {len(release['assets'])} file, SHA256 sama / same | {deleted} |")
+
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as summary:
+              summary.write("## Ganti nama arsip\n\n"
+                            "🇮🇩 Rilis arsip r5, r6 dan r8 kini bertag `arsip-…` dan berjudul \"📦 Arsip Kernel-14t-pro rN\". "
+                            "File tidak diubah; repo asal tidak disentuh.\n\n"
+                            "🇬🇧 Archived releases r5, r6 and r8 now use `arsip-…` tags and the title \"📦 Arsip Kernel-14t-pro rN\". "
+                            "Files are unchanged; the original repository is untouched.\n\n"
+                            "| Tag lama / old | Tag baru / new | Rilis / release | File | Tag lama / old tag |\n"
+                            "|---|---|---|---|---|\n" + "\n".join(rows) + "\n")
+          PY

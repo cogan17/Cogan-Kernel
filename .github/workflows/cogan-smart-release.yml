@@ -34,9 +34,9 @@ on:
           - "Pre-release"
           - "Release"
       kernel_uji:
-        description: "Untuk Tandai diuji: kernel di HP saat uji, mis. r6 (6.1.176)"
+        description: "Untuk Tandai diuji: kernel di HP saat uji, mis. arsip r6 (6.1.176)"
         type: string
-        default: "r6 (6.1.176)"
+        default: "arsip r6 (6.1.176)"
 
 permissions:
   contents: write
@@ -154,7 +154,7 @@ jobs:
         run: |
           set -euo pipefail
           [[ "$VERSI" =~ ^v[0-9]+(\.[0-9]+){1,3}$ ]] || { echo "::error::Versi: v lalu angka, mis. v2.8.2"; exit 1; }
-          [[ "$KERNEL_UJI" =~ ^[A-Za-z0-9.\ ()+-]{1,40}$ ]] || { echo "::error::kernel_uji: huruf, angka, spasi dan . ( ) + - saja, mis. r6 (6.1.176)"; exit 1; }
+          [[ "$KERNEL_UJI" =~ ^[A-Za-z0-9.\ ()+-]{1,40}$ ]] || { echo "::error::kernel_uji: huruf, angka, spasi dan . ( ) + - saja, mis. arsip r6 (6.1.176)"; exit 1; }
           tag="cogan-smart-$VERSI"
           gh release view "$tag" --repo "$REPO" --json body --jq .body > body.md \
             || { echo "::error::Rilis $tag tidak ada"; exit 1; }
