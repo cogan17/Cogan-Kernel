@@ -68,7 +68,7 @@ Semuanya juga membawa BBRv3, Baseband Guard, NoMount, Cogan Bridge dan Full LTO.
 
 | Rilis | versionCode | Diuji |
 |---|---|---|
-| [cogan-smart-v2.8.2](https://github.com/cogan17/Xiomi_14T_Pro/releases/tag/cogan-smart-v2.8.2) | 16 | owner di HP (kernel arsip r6), termasuk pengisian HyperCharge |
+| [cogan-smart-v2.8.2](https://github.com/cogan17/Xiomi_14T_Pro/releases/tag/cogan-smart-v2.8.2) | 16 | owner di HP dengan r1 (24 Okt) dan arsip r6, termasuk pengisian HyperCharge |
 | [cogan-smart-v2.8.1](https://github.com/cogan17/Xiomi_14T_Pro/releases/tag/cogan-smart-v2.8.1) | 15 | owner di HP |
 
 ZIP-nya dibuat Cogan17 dan diterbitkan **apa adanya** (byte per byte). Salinannya ada di [`modules/cogan-smart/rilis/`](../modules/cogan-smart/rilis) dan sumber terbukanya di [`modules/cogan-smart`](../modules/cogan-smart). Belum ditandatangani (attestation).
