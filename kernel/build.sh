@@ -55,6 +55,8 @@ echo "::group::Toolchain (Neutron clang $(snap neutron.tag))"
 mkdir -p "$WORK/clang"
 curl -fsSL --retry 3 "$(snap neutron.url)" | tar -I zstd -x -C "$WORK/clang"
 export PATH="$WORK/clang/bin:$HOME/.local/bin:$PATH"
+# The workflow caches ~/.ccache; newer ccache defaults to ~/.cache/ccache.
+export CCACHE_DIR="${CCACHE_DIR:-$HOME/.ccache}"
 clang --version | head -n 1
 # pahole from its own repository (BTF of the GKI defconfig), as the device-tested builds used.
 if [ ! -x "$HOME/.local/bin/pahole" ]; then
