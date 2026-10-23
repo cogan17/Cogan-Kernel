@@ -67,13 +67,29 @@ jobs:
       - name: Unduh file / download the files
         run: |
           set -euo pipefail
-          gh run download "$SOURCE_RUN" --repo "$GITHUB_REPOSITORY" --dir dl
           mkdir files info
-          find dl -type f -name '[1-4]-*' -exec mv {} files/ \;
-          find dl -type f -name build.env -exec cp {} info/ \;
-          [ "$(find dl -type f -name build.env | wc -l)" -eq 1 ] \
+          # The numbered files are unarchived artifacts: fetch each one by ID, as it is, and check its digest
+          # (gh run download would unpack the kernel ZIP itself).
+          gh api --paginate "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN/artifacts?per_page=100" \
+            --jq '.artifacts[] | select(.expired == false) | [.id, .name, (.digest // "")] | @tsv' > artifacts.tsv
+          while IFS=$'\t' read -r id name digest; do
+            case "$name" in
+              [1-4]-*) gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$id/zip" > "files/$name"
+                       # An unarchived artifact may still arrive wrapped in a ZIP that holds only itself.
+                       if [ "sha256:$(sha256sum "files/$name" | cut -d' ' -f1)" != "$digest" ] \
+                          && [ "$(unzip -Z1 "files/$name" 2>/dev/null)" = "$name" ]; then
+                         unzip -p "files/$name" "$name" > unwrapped && mv unwrapped "files/$name"
+                       fi
+                       [ "sha256:$(sha256sum "files/$name" | cut -d' ' -f1)" = "$digest" ] \
+                         || { echo "::error::$name: SHA256 berbeda dari artifact / differs from the artifact"; exit 1; } ;;
+              build-info-*) gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$id/zip" > info.zip
+                            unzip -q -o info.zip build.env -d info ;;
+            esac
+          done < artifacts.tsv
+          [ "$(grep -c $'\tbuild-info-' artifacts.tsv)" -eq 1 ] \
             || { echo "::error::Run harus berisi tepat satu build / the run must hold exactly one build (artifacts last 7 days)"; exit 1; }
-          [ "$(ls files/1-KERNEL_*.zip | wc -l)" -eq 1 ] || { echo "::error::Tidak ada tepat satu ZIP kernel / not exactly one kernel ZIP"; exit 1; }
+          [ "$(find files -name '1-KERNEL_*.zip' | wc -l)" -eq 1 ] || { echo "::error::Tidak ada tepat satu ZIP kernel / not exactly one kernel ZIP"; exit 1; }
+          unzip -tq files/1-KERNEL_*.zip
           grep -q '^KMI_COMPAT=KMI Xiaomi 14T Pro (rothko): OK;' info/build.env \
             || { echo "::error::Gate KMI build ini tidak lolos / the KMI gate of this build did not pass"; exit 1; }
           ls -la files

@@ -246,7 +246,10 @@ def resolve(root, sublevel, work):
     snap["nomount"] = {"repo": NOMOUNT, "tag": tag, "commit": sha, "module": module["name"],
                        "url": module["browser_download_url"], "digest": module.get("digest", "")}
     snap["bbg"] = {"repo": BBG, "commit": ls_remote(BBG, "refs/heads/main")["refs/heads/main"]}
-    snap["anykernel"] = {"repo": ANYKERNEL, "commit": ls_remote(ANYKERNEL, "HEAD")["HEAD"]}
+    # rothko (Dimensity 9300+) runs no 32-bit code: the flasher tools come from osm0sis's own
+    # arm64-tools branch, the scripts from master.
+    ak3 = ls_remote(ANYKERNEL, "HEAD", "refs/heads/arm64-tools")
+    snap["anykernel"] = {"repo": ANYKERNEL, "commit": ak3["HEAD"], "arm64_tools": ak3["refs/heads/arm64-tools"]}
     neutron = api(f"repos/{NEUTRON}/releases/latest")
     snap["neutron"] = {"tag": neutron["tag_name"],
                        "url": f"https://github.com/{NEUTRON}/releases/download/{neutron['tag_name']}/"
