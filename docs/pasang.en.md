@@ -9,7 +9,7 @@ The Cogan kernel replaces only the **`boot`** partition. Data, `init_boot` and `
 ## Before you start
 
 - The bootloader is **unlocked**.
-- HyperOS **`OS3.0.301.0.WNNIDXM`** (Android 16), the version used for testing. The kernel is built from the official Google android14-6.1 ACK: r8 and r6 from 6.1.176 (`2026-09_r4`), r5 from 6.1.138 (the same as this HyperOS version's stock kernel).
+- HyperOS **`OS3.0.301.0.WNNIDXM`** (Android 16), the version used for testing. The kernel is built from the official Google android14-6.1 ACK: archive r8 and r6 from 6.1.176 (`2026-09_r4`), archive r5 from 6.1.138 (the same as this HyperOS version's stock kernel).
 - The kernel ZIP `1-KERNEL_Cogan-Rothko-ACK-…zip`. It carries a device check, so on a phone other than `rothko` the flash stops before `boot` is touched.
 
 ## 1. Back up `boot` first

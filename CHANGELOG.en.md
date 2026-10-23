@@ -4,11 +4,11 @@
 
 Topmost = newest build. Builds that pass the phone test are published as a **Pre-release** in [Releases](https://github.com/cogan17/Xiomi_14T_Pro/releases); there is no official release yet.
 
-> 📦 r2–r8 and the early experiments were made in the predecessor repository [cogan17/Kernel-14t-pro](https://github.com/cogan17/Kernel-14t-pro). Releases r5, r6 and r8 are copied to this repository's Releases as an archive, with the same tags and files.
+> 📦 r2–r8 and the early experiments were made in the predecessor repository [cogan17/Kernel-14t-pro](https://github.com/cogan17/Kernel-14t-pro). Releases r5, r6 and r8 are copied to this repository's Releases as an archive with the same files. Here they are named **archive r5, archive r6, archive r8** and their tags start with `arsip-` (e.g. `arsip-v26.10.22-r5`), so they never clash with this repository's own release numbers.
 
-## r8 — 23 Oct 2026 · `6.1.176-Cogan-Rothko-ACK-r8` · [Pre-release](https://github.com/cogan17/Xiomi_14T_Pro/releases/tag/v26.10.23-r8)
+## archive r8 — 23 Oct 2026 · `6.1.176-Cogan-Rothko-ACK-r8` · [Pre-release](https://github.com/cogan17/Xiomi_14T_Pro/releases/tag/arsip-v26.10.23-r8)
 
-The **BakaSU + SUSFS** variant on the official Google ACK 6.1.176. The KernelSU Next variant stays r6.
+The **BakaSU + SUSFS** variant on the official Google ACK 6.1.176. The KernelSU Next variant stays archive r6.
 
 ### ✨ New
 - **BakaSU** root `v4.2.0-rc3-5b76b884` (35222) + **SUSFS v2.3.0** (`2474336`). The kernel driver and the manager have the same version, 35222.
@@ -19,7 +19,7 @@ The **BakaSU + SUSFS** variant on the official Google ACK 6.1.176. The KernelSU 
 
 Status: ✅ passed the owner's phone test (BakaSU working, SUSFS v2.3.0, SELinux Enforcing; 23 Oct). KMI gate: 0 differing symbols.
 
-## r6 — 22 Oct 2026 · `6.1.176-Cogan-Rothko-ACK-r6` · [Pre-release](https://github.com/cogan17/Xiomi_14T_Pro/releases/tag/v26.10.22-r6)
+## archive r6 — 22 Oct 2026 · `6.1.176-Cogan-Rothko-ACK-r6` · [Pre-release](https://github.com/cogan17/Xiomi_14T_Pro/releases/tag/arsip-v26.10.22-r6)
 
 Built from the **official Google ACK `android14-6.1-2026-09_r4` (6.1.176)**, the newest ACK release, instead of the phone's stock 6.1.138.
 
@@ -27,11 +27,11 @@ Built from the **official Google ACK `android14-6.1-2026-09_r4` (6.1.176)**, the
 - Kernel **6.1.176**. The builder can now pick every official android14-6.1 ACK release since the phone's stock kernel: 138, 141, 145, 157, 162, 172 and 176.
 
 ### 🔧 Fixed
-- Kernel symbols now **match exactly** what the phone's vendor modules use: the KMI gate records 0 differing symbols (r5: 2, r3: 538). BBRv3 stays enabled.
+- Kernel symbols now **match exactly** what the phone's vendor modules use: the KMI gate records 0 differing symbols (archive r5: 2, r3: 538). BBRv3 stays enabled.
 
 Status: ✅ boots, and the owner's phone checks are fine (22 Oct).
 
-## r5 — 22 Oct 2026 · `6.1.138-Cogan-Rothko-ACK-r5` · [Pre-release](https://github.com/cogan17/Xiomi_14T_Pro/releases/tag/v26.10.22-r5)
+## archive r5 — 22 Oct 2026 · `6.1.138-Cogan-Rothko-ACK-r5` · [Pre-release](https://github.com/cogan17/Xiomi_14T_Pro/releases/tag/arsip-v26.10.22-r5)
 
 ### 🔧 Fixed
 - The kernel's KernelSU Next version is now **33405**, the same as the official CI manager `v3.4.2-50-gb427a3f9`, so the manager no longer asks for an update (r4: 33418).

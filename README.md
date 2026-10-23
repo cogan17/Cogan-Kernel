@@ -70,9 +70,9 @@
 
 | Build | Hasil |
 |---|---|
-| `r8` (ACK 6.1.176 · BakaSU) | ✅ Diuji di HP 23 Okt: BakaSU berfungsi, SUSFS v2.3.0, SELinux Enforcing |
-| `r6` (ACK 6.1.176 · KernelSU Next) | ✅ Diuji di HP 22 Okt |
-| `r5` (ACK 6.1.138 · KernelSU Next) | ✅ Diuji di HP; cadangan yang terbukti |
+| `arsip r8` (ACK 6.1.176 · BakaSU) | ✅ Diuji di HP 23 Okt: BakaSU berfungsi, SUSFS v2.3.0, SELinux Enforcing |
+| `arsip r6` (ACK 6.1.176 · KernelSU Next) | ✅ Diuji di HP 22 Okt |
+| `arsip r5` (ACK 6.1.138 · KernelSU Next) | ✅ Diuji di HP; cadangan yang terbukti |
 
 Ketiganya rilis arsip dari repo pendahulu. Riwayat lengkap: [Catatan Rilis](CHANGELOG.md).
 

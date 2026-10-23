@@ -11,7 +11,7 @@
 
 - ZIP di Pre-release ([`cogan-smart-v2.8.2`](https://github.com/cogan17/Xiomi_14T_Pro/releases/tag/cogan-smart-v2.8.2), [`cogan-smart-v2.8.1`](https://github.com/cogan17/Xiomi_14T_Pro/releases/tag/cogan-smart-v2.8.1)) dan di folder `rilis/` adalah file yang sama, byte per byte.
 - Pasang lewat root manager sebagai pembaruan modul, lalu reboot. Setelan dan riwayat tetap dipakai (ID `cogan_smart` sama).
-- Diuji owner di Xiaomi 14T Pro dengan kernel r6 (6.1.176): v2.8.1 dan v2.8.2 (23 Okt 2026); v2.8.2 juga saat pengisian HyperCharge.
+- Diuji owner di Xiaomi 14T Pro dengan kernel arsip r6 (6.1.176): v2.8.1 dan v2.8.2 (23 Okt 2026); v2.8.2 juga saat pengisian HyperCharge.
 - Versi baru: taruh ZIP dan catatannya di `rilis/<versi>/`, lalu jalankan tombol **Cogan Smart Release** di tab Actions.
 
 Satu modul KernelSU / KernelSU Next / BakaSU / Magisk yang menggabungkan **Cogan Power Mode v1.2** dan **Cogan Thermal Monitor v1.3** (issue #21, fondasi Smart Kernel). Kode kedua bagian tetap sama; yang berubah hanya cara keduanya dipasang dan saling menemukan.

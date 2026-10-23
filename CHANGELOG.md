@@ -4,11 +4,11 @@
 
 Versi teratas = build terbaru. Build yang lolos uji HP terbit sebagai **Pre-release** di [Releases](https://github.com/cogan17/Xiomi_14T_Pro/releases); belum ada rilis resmi.
 
-> 📦 r2–r8 dan percobaan awal dibuat di repo pendahulu [cogan17/Kernel-14t-pro](https://github.com/cogan17/Kernel-14t-pro). Rilis r5, r6 dan r8 disalin ke Releases repo ini sebagai arsip, dengan tag dan file yang sama.
+> 📦 r2–r8 dan percobaan awal dibuat di repo pendahulu [cogan17/Kernel-14t-pro](https://github.com/cogan17/Kernel-14t-pro). Rilis r5, r6 dan r8 disalin ke Releases repo ini sebagai arsip dengan file yang sama. Di repo ini namanya **arsip r5, arsip r6, arsip r8** dan tagnya berawalan `arsip-` (mis. `arsip-v26.10.22-r5`), supaya tidak bentrok dengan nomor rilis repo ini sendiri.
 
-## r8 — 23 Okt 2026 · `6.1.176-Cogan-Rothko-ACK-r8` · [Pre-release](https://github.com/cogan17/Xiomi_14T_Pro/releases/tag/v26.10.23-r8)
+## arsip r8 — 23 Okt 2026 · `6.1.176-Cogan-Rothko-ACK-r8` · [Pre-release](https://github.com/cogan17/Xiomi_14T_Pro/releases/tag/arsip-v26.10.23-r8)
 
-Varian **BakaSU + SUSFS** di ACK resmi Google 6.1.176. Varian KernelSU Next tetap r6.
+Varian **BakaSU + SUSFS** di ACK resmi Google 6.1.176. Varian KernelSU Next tetap arsip r6.
 
 ### ✨ Baru
 - Root **BakaSU** `v4.2.0-rc3-5b76b884` (35222) + **SUSFS v2.3.0** (`2474336`). Versi driver kernel dan manager sama, 35222.
@@ -19,7 +19,7 @@ Varian **BakaSU + SUSFS** di ACK resmi Google 6.1.176. Varian KernelSU Next teta
 
 Status: ✅ lolos uji HP owner (BakaSU berfungsi, SUSFS v2.3.0, SELinux Enforcing; 23 Okt). Gate KMI: 0 simbol berbeda.
 
-## r6 — 22 Okt 2026 · `6.1.176-Cogan-Rothko-ACK-r6` · [Pre-release](https://github.com/cogan17/Xiomi_14T_Pro/releases/tag/v26.10.22-r6)
+## arsip r6 — 22 Okt 2026 · `6.1.176-Cogan-Rothko-ACK-r6` · [Pre-release](https://github.com/cogan17/Xiomi_14T_Pro/releases/tag/arsip-v26.10.22-r6)
 
 Dibangun dari **ACK resmi Google `android14-6.1-2026-09_r4` (6.1.176)**, rilis ACK terbaru, bukan lagi 6.1.138 bawaan HP.
 
@@ -27,11 +27,11 @@ Dibangun dari **ACK resmi Google `android14-6.1-2026-09_r4` (6.1.176)**, rilis A
 - Kernel **6.1.176**. Builder kini bisa memilih semua rilis ACK resmi android14-6.1 sejak kernel bawaan HP: 138, 141, 145, 157, 162, 172 dan 176.
 
 ### 🔧 Diperbaiki
-- Simbol kernel kini **sama persis** dengan yang dipakai modul vendor HP: gate KMI mencatat 0 simbol berbeda (r5: 2, r3: 538). BBRv3 tetap aktif.
+- Simbol kernel kini **sama persis** dengan yang dipakai modul vendor HP: gate KMI mencatat 0 simbol berbeda (arsip r5: 2, r3: 538). BBRv3 tetap aktif.
 
 Status: ✅ boot dan cek HP owner aman (22 Okt).
 
-## r5 — 22 Okt 2026 · `6.1.138-Cogan-Rothko-ACK-r5` · [Pre-release](https://github.com/cogan17/Xiomi_14T_Pro/releases/tag/v26.10.22-r5)
+## arsip r5 — 22 Okt 2026 · `6.1.138-Cogan-Rothko-ACK-r5` · [Pre-release](https://github.com/cogan17/Xiomi_14T_Pro/releases/tag/arsip-v26.10.22-r5)
 
 ### 🔧 Diperbaiki
 - Versi KernelSU Next di kernel kini **33405**, sama dengan manager CI resmi `v3.4.2-50-gb427a3f9`, jadi manager tidak lagi meminta update (r4: 33418).

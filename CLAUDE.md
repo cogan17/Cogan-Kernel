@@ -22,7 +22,7 @@ Repo ini lanjutan dari [cogan17/Kernel-14t-pro](https://github.com/cogan17/Kerne
 - **Gate KMI tetap** dan tidak termasuk "kunci": ia melindungi HP dari modul vendor yang tidak cocok.
 - **Summary workflow selalu dua bahasa** (Indonesia, lalu English).
 - **Workflow ditulis sederhana**, tampilannya terinspirasi WildKernel. Cara kerja GKI WildKernel tidak disalin, dan workflow repo lama tidak disalin begitu saja.
-- **Rilis lama** (r5, r6, r8, Cogan Smart v2.8.1/v2.8.2) disalin dari repo pendahulu sebagai arsip, dengan tag, file dan SHA256 yang sama.
+- **Rilis lama** (r5, r6, r8, Cogan Smart v2.8.1/v2.8.2) disalin dari repo pendahulu sebagai arsip, dengan file dan SHA256 yang sama. Kernel arsip bernama **arsip r5, arsip r6, arsip r8** dengan tag berawalan `arsip-` (mis. `arsip-v26.10.22-r5`; owner 24 Okt 2026), supaya nomor rN repo ini tidak bentrok. Jangan memakai nama atau tag tanpa awalan itu untuk arsip.
 
 ## Pelajaran yang tetap berlaku
 
