@@ -1,0 +1,153 @@
+006-bbrv3-kabi.patch for the rothko ACK release android14-6.1-2025-09_r36 (6.1.145, commit 68be20d0f5e61e28bc3ae56f96aa0108a630d00d).
+Net diff in that context from the tested copy, written by scripts/ack_release_add.py;
+it adds and removes exactly the lines of ../stock-6.1.138/006-bbrv3-kabi.patch (checked per file).
+
+diff --git a/include/linux/tcp.h b/include/linux/tcp.h
+index 3b5fe2285..6033d64ec 100644
+--- a/include/linux/tcp.h
++++ b/include/linux/tcp.h
+@@ -254,11 +254,17 @@ struct tcp_sock {
+ 	} rack;
+ 	u16	advmss;		/* Advertised MSS			*/
+ 	u8	compressed_ack;
++#ifdef __GENKSYMS__
++	u8	dup_ack_counter:2,
++		tlp_retrans:1,	/* TLP is a retransmission */
++		unused:5;
++#else	/* Cogan: BBRv3 bits in spare bits of the same byte (same layout as stock) */
+ 	u8	dup_ack_counter:2,
+ 		tlp_retrans:1,	/* TLP is a retransmission */
+ 		fast_ack_mode:2, /* which fast ack mode ? */
+ 		tlp_orig_data_app_limited:1, /* app-limited before TLP rtx? */
+ 		unused:2;
++#endif
+ 	u32	chrono_start;	/* Start time in jiffies of a TCP chrono */
+ 	u32	chrono_stat[3];	/* Time in jiffies for chrono_stat stats */
+ 	u8	chrono_type:2,	/* current chronograph type */
+diff --git a/include/net/netns/ipv4.h b/include/net/netns/ipv4.h
+index c46891074..cd771b362 100644
+--- a/include/net/netns/ipv4.h
++++ b/include/net/netns/ipv4.h
+@@ -184,11 +184,6 @@ struct netns_ipv4 {
+ 	unsigned long tfo_active_disable_stamp;
+ 	u32 tcp_challenge_timestamp;
+ 	u32 tcp_challenge_count;
+-	u8 sysctl_tcp_plb_enabled;
+-	u8 sysctl_tcp_plb_idle_rehash_rounds;
+-	u8 sysctl_tcp_plb_rehash_rounds;
+-	u8 sysctl_tcp_plb_suspend_rto_sec;
+-	int sysctl_tcp_plb_cong_thresh;
+ 
+ 	int sysctl_udp_wmem_min;
+ 	int sysctl_udp_rmem_min;
+@@ -236,6 +231,13 @@ struct netns_ipv4 {
+ 	atomic_t	rt_genid;
+ 	siphash_key_t	ip_id_key;
+ 
+-	ANDROID_KABI_RESERVE(1);
++	/* Cogan: PLB (BBRv3) in the reserved slot, so struct net keeps the stock layout. */
++	ANDROID_KABI_USE(1, struct {
++		u8 sysctl_tcp_plb_enabled;
++		u8 sysctl_tcp_plb_idle_rehash_rounds;
++		u8 sysctl_tcp_plb_rehash_rounds;
++		u8 sysctl_tcp_plb_suspend_rto_sec;
++		int sysctl_tcp_plb_cong_thresh;
++	});
+ };
+ #endif
+diff --git a/include/net/tcp.h b/include/net/tcp.h
+index 620dd05a3..688d8e3a9 100644
+--- a/include/net/tcp.h
++++ b/include/net/tcp.h
+@@ -1050,7 +1050,9 @@ enum tcp_ca_event {
+ 	CA_EVENT_LOSS,		/* loss timeout */
+ 	CA_EVENT_ECN_NO_CE,	/* ECT set, but not CE marked */
+ 	CA_EVENT_ECN_IS_CE,	/* received CE marked IP packet */
++#ifndef __GENKSYMS__	/* Cogan: appended value, stock values unchanged */
+ 	CA_EVENT_TLP_RECOVERY,	/* a lost segment was repaired by TLP probe */
++#endif
+ };
+ 
+ /* Information about inbound ACK, passed to cong_ops->in_ack_event() */
+@@ -1097,11 +1099,8 @@ struct ack_sample {
+  */
+ struct rate_sample {
+ 	u64  prior_mstamp; /* starting timestamp for interval */
+-	u32  prior_lost;	/* tp->lost at "prior_mstamp" */
+ 	u32  prior_delivered;	/* tp->delivered at "prior_mstamp" */
+ 	u32  prior_delivered_ce;/* tp->delivered_ce at "prior_mstamp" */
+-	u32 tx_in_flight;	/* packets in flight at starting timestamp */
+-	s32  lost;		/* number of packets lost over interval */
+ 	s32  delivered;		/* number of packets delivered over interval */
+ 	s32  delivered_ce;	/* packets delivered w/ CE mark over interval */
+ 	long interval_us;	/* time for tp->delivered to incr "delivered" */
+@@ -1114,9 +1113,17 @@ struct rate_sample {
+ 	u32  last_end_seq;	/* end_seq of most recently ACKed packet */
+ 	bool is_app_limited;	/* is sample from packet with bubble in pipe? */
+ 	bool is_retrans;	/* is sample from retransmission? */
+-	bool is_acking_tlp_retrans_seq;  /* ACKed a TLP retransmit sequence? */
+ 	bool is_ack_delayed;	/* is this (likely) a delayed ACK? */
++#ifndef __GENKSYMS__
++	/* Cogan: BBRv3 fields after the stock ones (stock offsets unchanged; no vendor
++	 * module implements a congestion control, so none sees the larger struct)
++	 */
++	u32  prior_lost;	/* tp->lost at "prior_mstamp" */
++	u32 tx_in_flight;	/* packets in flight at starting timestamp */
++	s32  lost;		/* number of packets lost over interval */
++	bool is_acking_tlp_retrans_seq;  /* ACKed a TLP retransmit sequence? */
+ 	bool is_ece;		/* did this ACK have ECN marked? */
++#endif
+ };
+ 
+ struct tcp_congestion_ops {
+@@ -1143,12 +1150,6 @@ struct tcp_congestion_ops {
+ 	/* override sysctl_tcp_min_tso_segs */
+ 	u32 (*min_tso_segs)(struct sock *sk);
+ 
+-	/* pick target number of segments per TSO/GSO skb (optional): */
+-	u32 (*tso_segs)(struct sock *sk, unsigned int mss_now);
+-
+-	/* react to a specific lost skb (optional) */
+-	void (*skb_marked_lost)(struct sock *sk, const struct sk_buff *skb);
+-
+ 	/* call when packets are delivered to update cwnd and pacing rate,
+ 	 * after all the ca_state processing. (optional)
+ 	 */
+@@ -1175,6 +1176,17 @@ struct tcp_congestion_ops {
+ 	void (*init)(struct sock *sk);
+ 	/* cleanup private data  (optional) */
+ 	void (*release)(struct sock *sk);
++
++#ifndef __GENKSYMS__
++	/* Cogan: BBRv3 callbacks after the stock ones, inside the stock 192-byte
++	 * cache-line-aligned size (stock offsets unchanged)
++	 */
++	/* pick target number of segments per TSO/GSO skb (optional): */
++	u32 (*tso_segs)(struct sock *sk, unsigned int mss_now);
++
++	/* react to a specific lost skb (optional) */
++	void (*skb_marked_lost)(struct sock *sk, const struct sk_buff *skb);
++#endif
+ } ____cacheline_aligned_in_smp;
+ 
+ int tcp_register_congestion_control(struct tcp_congestion_ops *type);
+diff --git a/include/uapi/linux/inet_diag.h b/include/uapi/linux/inet_diag.h
+index 82f8bd8f0..be3a70f97 100644
+--- a/include/uapi/linux/inet_diag.h
++++ b/include/uapi/linux/inet_diag.h
+@@ -229,6 +229,7 @@ struct tcp_bbr_info {
+ 	__u32	bbr_min_rtt;		/* min-filtered RTT in uSec */
+ 	__u32	bbr_pacing_gain;	/* pacing gain shifted left 8 bits */
+ 	__u32	bbr_cwnd_gain;		/* cwnd gain shifted left 8 bits */
++#ifndef __GENKSYMS__	/* Cogan: BBRv3 fields after the stock ones, hidden from genksyms */
+ 	__u32	bbr_bw_hi_lsb;		/* lower 32 bits of bw_hi */
+ 	__u32	bbr_bw_hi_msb;		/* upper 32 bits of bw_hi */
+ 	__u32	bbr_bw_lo_lsb;		/* lower 32 bits of bw_lo */
+@@ -240,6 +241,7 @@ struct tcp_bbr_info {
+ 	__u32	bbr_inflight_lo;	/* lower short-term data volume bound */
+ 	__u32	bbr_inflight_hi;	/* higher long-term data volume bound */
+ 	__u32	bbr_extra_acked;	/* max excess packets ACKed in epoch */
++#endif
+ };
+ 
+ /* TCP BBR congestion control bbr_phase as reported in netlink/ss stats. */

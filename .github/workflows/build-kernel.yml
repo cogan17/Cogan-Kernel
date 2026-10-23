@@ -1,0 +1,377 @@
+name: Cogan Kernel Builder
+
+# Cogan Kernel for the Xiaomi 14T Pro (rothko), from the official ACK android14-6.1 source only.
+# Form inspired by WildKernel (owner 2026-10-23). No lock, pin or frozen tree: every run takes the
+# newest ACK release, KernelSU Next (pershoot dev-susfs) or BakaSU release, SUSFS, NoMount, Baseband
+# Guard, AnyKernel3 and Neutron clang (kernel/resolve.py). A newest version that does not fit yet is
+# not built; the summary says whom to wait for. The KMI gate against the phone's stock kernel always
+# runs and fails closed. Summaries are in Indonesian and English.
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_type:
+        description: "Release Type: CI = file di run saja / files in the run only; Pre-Release / Release = terbit setelah build dan gate hijau (satu build) / published after a green build (one build)"
+        type: choice
+        default: "CI"
+        options:
+          - "CI"
+          - "Pre-Release"
+          - "Release"
+      kernel_sublevel:
+        description: "Sublevel ACK: lts (terbaru / newest), angka (176), beberapa (162,172) atau semua (bukti compile / compile proof)"
+        type: string
+        default: "lts"
+      brand_name:
+        description: "Kernel Branding (huruf/angka/_/-, maks. 12)"
+        type: string
+        default: "Cogan"
+      root_flavor:
+        description: "Root Flavor"
+        type: choice
+        default: "KernelSU Next & BakaSU"
+        options:
+          - "KernelSU Next & BakaSU"
+          - "KernelSU Next"
+          - "BakaSU"
+      lto:
+        description: "LTO"
+        type: choice
+        default: "Full LTO"
+        options:
+          - "Full LTO"
+          - "Thin LTO"
+          - "Tanpa LTO"
+      build_revision:
+        description: "Build Revision: r + angka, mis. r10 (kosong = nomor run)"
+        type: string
+        default: ""
+      build_time:
+        description: "Build Time: N = sekarang / now, atau mis. Thu Jan 1 00:00:00 UTC 2026"
+        type: string
+        default: "N"
+      use_susfs:
+        description: "SUSFS"
+        type: boolean
+        default: true
+      use_nomount:
+        description: "NoMount (tertanam di kernel / built in)"
+        type: boolean
+        default: true
+      use_bbg:
+        description: "Baseband Guard"
+        type: boolean
+        default: true
+      use_net:
+        description: "Networking (BBRv3 bbr/bbr3)"
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cogan-kernel-builder-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  resolve:
+    name: Versi terbaru / newest versions
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+      ROOT_FLAVOR: ${{ inputs.root_flavor }}
+      SUBLEVEL: ${{ inputs.kernel_sublevel }}
+      RELEASE_TYPE: ${{ inputs.release_type }}
+      BRAND: ${{ inputs.brand_name }}
+      REVISION: ${{ inputs.build_revision }}
+      BUILD_TIME: ${{ inputs.build_time }}
+      USE_SUSFS: ${{ inputs.use_susfs }}
+      DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Periksa isian / check the form
+        run: |
+          set -euo pipefail
+          [ "$USE_SUSFS" = "true" ] || { echo "::error::SUSFS wajib untuk rothko saat ini / SUSFS is required on rothko for now"; exit 1; }
+          [[ "$BRAND" =~ ^[A-Za-z0-9_-]{1,12}$ ]] || { echo "::error::Kernel Branding: huruf, angka, _ atau -, maks. 12 / up to 12 letters, digits, _ or -"; exit 1; }
+          [[ -z "$REVISION" || "$REVISION" =~ ^r[0-9]+$ ]] || { echo "::error::Build Revision: r + angka, mis. r10 / r followed by digits"; exit 1; }
+          if [ "$BUILD_TIME" != "N" ]; then
+            [ "$(LC_ALL=C date -u -d "$BUILD_TIME" +%a 2>/dev/null)" = "${BUILD_TIME%% *}" ] \
+              || { echo "::error::Build Time: N atau mis. Thu Jan 1 00:00:00 UTC 2026"; exit 1; }
+          fi
+          if [ "$RELEASE_TYPE" != "CI" ]; then
+            [[ "$ROOT_FLAVOR" != *"&"* && "${SUBLEVEL,,}" != "semua" && "$SUBLEVEL" != *,* ]] \
+              || { echo "::error::$RELEASE_TYPE: satu root dan satu sublevel / one root and one sublevel"; exit 1; }
+            [ "$GITHUB_REF_NAME" = "$DEFAULT_BRANCH" ] \
+              || { echo "::error::$RELEASE_TYPE hanya dari / only from $DEFAULT_BRANCH"; exit 1; }
+          fi
+
+      - name: Cari versi terbaru / find the newest versions
+        id: plan
+        run: |
+          set -euo pipefail
+          mkdir -p snapshots
+          roots=()
+          [[ "$ROOT_FLAVOR" == *"KernelSU Next"* ]] && roots+=(KSUN)
+          [[ "$ROOT_FLAVOR" == *"BakaSU"* ]] && roots+=(BSU)
+          for root in "${roots[@]}"; do
+            status=0
+            python3 kernel/resolve.py --root "$root" --sublevel "$SUBLEVEL" --out "snapshots/$root.json" || status=$?
+            [ "$status" -le 2 ] || exit "$status"
+            [ "$status" -ne 1 ] || exit 1
+          done
+          python3 - >> "$GITHUB_OUTPUT" <<'PY'
+          import json, os
+          from pathlib import Path
+          include, rows_id, waits = [], [], []
+          for path in sorted(Path("snapshots").glob("*.json")):
+              snap = json.loads(path.read_text())
+              root = snap["root"]
+              name = "KernelSU Next" if root == "KSUN" else "BakaSU"
+              if "wait" in snap:
+                  waits.append((name, snap["wait"]))
+                  continue
+              for ack in snap["ack"]:
+                  include.append({"root": root, "name": f"{name} 6.1.{ack['sublevel']}", "tag": ack["tag"],
+                                  "commit": ack["commit"], "sublevel": str(ack["sublevel"])})
+              src = snap["root_source"]
+              ref = src.get("tag") or src.get("branch")
+              version = f" ({src['ksu_version']})" if src.get("ksu_version") else ""
+              rows = [("ACK", ", ".join(f"`{a['tag']}` (6.1.{a['sublevel']})" for a in snap["ack"])),
+                      (name, f"{ref} `{src['commit'][:12]}`{version}"),
+                      ("SUSFS", f"`{snap['susfs']['commit'][:12]}`"), ("NoMount", snap["nomount"]["tag"]),
+                      ("Baseband Guard", f"`{snap['bbg']['commit'][:12]}`"),
+                      ("AnyKernel3", f"`{snap['anykernel']['commit'][:12]}`"), ("Neutron clang", snap["neutron"]["tag"])]
+              rows_id += [f"| {name} | {k} | {v} |" for k, v in rows]
+          summary = ["## Cogan Kernel Builder — versi terbaru / newest versions", "",
+                     "<details open><summary>🇮🇩 Bahasa Indonesia</summary>", "",
+                     "Tanpa kunci: setiap komponen diambil versi terbarunya saat run dimulai.", ""]
+          table = ["| Varian | Komponen / component | Versi / version |", "|---|---|---|", *rows_id]
+          summary += table if rows_id else []
+          for name, wait in waits:
+              summary += ["", f"> [!WARNING]\n> ⏳ **{name} tidak dibangun.** {wait['id']}"]
+          summary += ["", "</details>", "", "<details><summary>🇬🇧 English</summary>", "",
+                      "No lock: every component is taken at its newest version when the run starts.", ""]
+          summary += table if rows_id else []
+          for name, wait in waits:
+              summary += ["", f"> [!WARNING]\n> ⏳ **{name} is not built.** {wait['en']}"]
+          summary += ["", "</details>"]
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as out:
+              out.write("\n".join(summary) + "\n")
+          if not include:
+              raise SystemExit("Tidak ada yang bisa dibangun sekarang / nothing can be built now (see the summary)")
+          if os.environ["RELEASE_TYPE"] != "CI" and len(include) != 1:
+              raise SystemExit("Pre-Release/Release needs exactly one build")
+          print("matrix=" + json.dumps({"include": include}))
+          PY
+
+      - uses: actions/upload-artifact@v7.0.1
+        with:
+          name: snapshots-${{ github.run_number }}
+          path: snapshots
+          retention-days: 7
+
+  build:
+    name: build (${{ matrix.name }})
+    needs: resolve
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.resolve.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/download-artifact@v8.0.2
+        with:
+          name: snapshots-${{ github.run_number }}
+          path: snapshots
+
+      - name: Siapkan runner / prepare the runner
+        run: |
+          set -euo pipefail
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache /usr/local/share/boost
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq bc bison flex libssl-dev libelf-dev libdw-dev zlib1g-dev cmake ccache cpio zstd zip unzip
+          # Full LTO links the whole kernel at once: room to breathe.
+          sudo swapoff -a || true
+          sudo fallocate -l 24G /swapfile && sudo chmod 600 /swapfile && sudo mkswap -q /swapfile && sudo swapon /swapfile
+          df -h / | tail -1; free -h | head -2
+
+      - name: Compiler cache (ccache)
+        uses: actions/cache@v6.1.0
+        with:
+          path: ~/.ccache
+          key: ccache-${{ matrix.root }}-${{ matrix.sublevel }}-${{ github.run_id }}
+          restore-keys: |
+            ccache-${{ matrix.root }}-${{ matrix.sublevel }}-
+            ccache-${{ matrix.root }}-
+
+      - name: Build
+        id: build
+        env:
+          SNAPSHOT: snapshots/${{ matrix.root }}.json
+          ACK_TAG: ${{ matrix.tag }}
+          ACK_COMMIT: ${{ matrix.commit }}
+          SUBLEVEL: ${{ matrix.sublevel }}
+          BRAND: ${{ inputs.brand_name }}
+          REVISION: ${{ inputs.build_revision }}
+          RUN_NUMBER: ${{ github.run_number }}
+          LTO: ${{ inputs.lto == 'Thin LTO' && 'thin' || inputs.lto == 'Tanpa LTO' && 'none' || 'full' }}
+          BUILD_TIME: ${{ inputs.build_time }}
+          NOMOUNT: ${{ inputs.use_nomount }}
+          BBG: ${{ inputs.use_bbg }}
+          NETWORKING: ${{ inputs.use_net }}
+          OUT: ${{ github.workspace }}/out
+          WORK: ${{ runner.temp }}/work
+          GH_TOKEN: ${{ github.token }}
+        run: bash kernel/build.sh
+
+      - name: Summary
+        if: always()
+        env:
+          NAME: ${{ matrix.name }}
+          OUTCOME: ${{ steps.build.outcome }}
+        run: |
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          out = Path("out")
+          name, ok = os.environ["NAME"], os.environ["OUTCOME"] == "success"
+          lines = [f"## {name}", ""]
+          env = dict(l.split("=", 1) for l in (out / "build.env").read_text().splitlines() if "=" in l) if (out / "build.env").exists() else {}
+          wait = json.loads((out / "wait.json").read_text()) if (out / "wait.json").exists() else None
+          files = sorted(p.name for p in out.glob("[1-4]-*"))
+          for lang, flag, done, failed in (("id", "🇮🇩 Bahasa Indonesia", "✅ Berhasil", "❌ Gagal"),
+                                           ("en", "🇬🇧 English", "✅ Built", "❌ Failed")):
+              lines += [f"<details{' open' if lang == 'id' else ''}><summary>{flag}</summary>", ""]
+              if ok:
+                  lines += [f"**{done}:** `{env.get('RELEASE_NAME', '')}` · `{env.get('LINUX_VERSION', '')}` · {env.get('VARIANT', '')}",
+                            "", f"- {env.get('KMI_COMPAT', '').split('; BSP:')[0]}", f"- Fitur / features: {env.get('FEATURES', '')}", "",
+                            *[f"- `{f}`" for f in files]]
+              elif wait:
+                  lines += [f"> [!WARNING]\n> ⏳ {wait[lang]}"]
+              else:
+                  lines += [f"**{failed}.** " + ("Lihat langkah merah pertama di log. Kalau gate KMI yang berhenti, kernel ini tidak aman untuk HP."
+                                                 if lang == "id" else "See the first red step in the log. If the KMI gate stopped, this kernel is not safe for the phone.")]
+              lines += ["", "</details>", ""]
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as handle:
+              handle.write("\n".join(lines) + "\n")
+          PY
+
+      - name: Upload 1 - kernel
+        if: success()
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          path: out/1-KERNEL_*.zip
+          archive: false
+          retention-days: 7
+      - name: Upload 2 - manager
+        if: success() && hashFiles('out/2-MANAGER_*') != ''
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          path: out/2-MANAGER_*.apk
+          archive: false
+          retention-days: 7
+      - name: Upload 3 - spoofed manager
+        if: success() && hashFiles('out/3-MANAGER-SPOOFED_*') != ''
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          path: out/3-MANAGER-SPOOFED_*.apk
+          archive: false
+          retention-days: 7
+      - name: Upload 4 - NoMount module
+        if: success() && hashFiles('out/4-NOMOUNT-MODULE_*') != ''
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          path: out/4-NOMOUNT-MODULE_*.zip
+          archive: false
+          retention-days: 7
+      - name: Upload build info
+        if: always()
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: build-info-${{ matrix.root }}-${{ matrix.sublevel }}
+          path: |
+            out/build.env
+            out/kmi-compat.json
+            out/wait.json
+          if-no-files-found: ignore
+          retention-days: 7
+
+  attest:
+    name: Tanda tangan / sign kernel
+    needs: build
+    if: ${{ !cancelled() && needs.build.result == 'success' }}
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      attestations: write
+      artifact-metadata: write
+    steps:
+      - uses: actions/download-artifact@v8.0.2
+        with:
+          pattern: 1-KERNEL_*
+          path: kernel
+          merge-multiple: true
+          skip-decompress: true
+      - uses: actions/attest@v4.2.2
+        with:
+          subject-path: kernel/*.zip
+      - name: Cara cek / how to check
+        run: |
+          {
+            echo "### 🔏 Keaslian / Authenticity"
+            for f in kernel/*.zip; do echo "- \`${f#kernel/}\` sha256 \`$(sha256sum "$f" | cut -d' ' -f1)\`"; done
+            echo
+            echo "\`gh attestation verify <zip> --repo $GITHUB_REPOSITORY\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  release:
+    name: Terbit / publish (${{ inputs.release_type }})
+    needs: attest
+    if: ${{ !cancelled() && needs.attest.result == 'success' && inputs.release_type != 'CI' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RELEASE_TYPE: ${{ inputs.release_type }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v8.0.2
+        with:
+          pattern: "[1-4]-*"
+          path: files
+          merge-multiple: true
+          skip-decompress: true
+      - uses: actions/download-artifact@v8.0.2
+        with:
+          pattern: build-info-*
+          path: info
+          merge-multiple: true
+      - name: Terbitkan rilis / publish the release
+        run: |
+          set -euo pipefail
+          tag="$(sed -n 's/^RELEASE=//p' info/build.env)"
+          title="$(sed -n 's/^RELEASE_NAME=//p' info/build.env)"
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "::error::Rilis $tag sudah ada; rilis tidak pernah ditimpa. Pakai Build Revision baru / release $tag exists and is never replaced; use a new Build Revision."
+            exit 1
+          fi
+          (cd files && sha256sum -- * > checksums.txt)
+          python3 kernel/release_notes.py info/build.env files --repo "$GITHUB_REPOSITORY" \
+            --run-url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" > notes.md
+          mode=(--prerelease); [ "$RELEASE_TYPE" = "Release" ] && mode=(--latest)
+          gh release create "$tag" files/* --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" "${mode[@]}" \
+            --title "$title" --notes-file notes.md
+          { echo "## Rilis / release: [$tag]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/tag/$tag) ($RELEASE_TYPE)"; echo; cat notes.md; } >> "$GITHUB_STEP_SUMMARY"
