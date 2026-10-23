@@ -6,6 +6,19 @@ Topmost = newest build. Builds that pass the phone test are published as a **Pre
 
 > 📦 r2–r8 and the early experiments were made in the predecessor repository [cogan17/Kernel-14t-pro](https://github.com/cogan17/Kernel-14t-pro). Releases r5, r6 and r8 are copied to this repository's Releases as an archive with the same files. Here they are named **archive r5, archive r6, archive r8** and their tags start with `arsip-` (e.g. `arsip-v26.10.22-r5`), so they never clash with this repository's own release numbers.
 
+## r1 — 24 Oct 2026 · `6.1.176-Cogan-Rothko-ACK-r1` · [Pre-release](https://github.com/cogan17/Xiomi_14T_Pro/releases/tag/v26.10.23-r1)
+
+This repository's first release: **KernelSU Next + SUSFS** on the official Google ACK 6.1.176 (`android14-6.1-2026-09_r4`), with the newest components at build time.
+
+### ✨ New
+- **KernelSU Next** root (`d21e0a6`, 33405) + **SUSFS v2.3.0** (`c27ebe9`). Regular and *spoofed* managers, version 33405.
+- **NoMount v2.2.0**: the kernel driver and the module in the release are the same version.
+
+### 🔧 Fixed
+- The AnyKernel3 flasher tools are now **arm64**. The r1 ZIP from the first build was not released: its tools were 32-bit (`magiskboot: syntax error`), and flashing stopped before `boot` was written.
+
+Status: ✅ passed the owner's phone test (KernelSU Next works, SUSFS v2.3.0, NoMount v2.2.0, SELinux Enforcing; 24 Oct). KMI gate: 0 differing symbols.
+
 ## archive r8 — 23 Oct 2026 · `6.1.176-Cogan-Rothko-ACK-r8` · [Pre-release](https://github.com/cogan17/Xiomi_14T_Pro/releases/tag/arsip-v26.10.23-r8)
 
 The **BakaSU + SUSFS** variant on the official Google ACK 6.1.176. The KernelSU Next variant stays archive r6.

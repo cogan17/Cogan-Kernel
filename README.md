@@ -70,11 +70,12 @@
 
 | Build | Hasil |
 |---|---|
+| `r1` (ACK 6.1.176 · KernelSU Next) | ✅ Diuji di HP 24 Okt: KernelSU Next berfungsi, SUSFS v2.3.0, NoMount v2.2.0, SELinux Enforcing |
 | `arsip r8` (ACK 6.1.176 · BakaSU) | ✅ Diuji di HP 23 Okt: BakaSU berfungsi, SUSFS v2.3.0, SELinux Enforcing |
 | `arsip r6` (ACK 6.1.176 · KernelSU Next) | ✅ Diuji di HP 22 Okt |
 | `arsip r5` (ACK 6.1.138 · KernelSU Next) | ✅ Diuji di HP; cadangan yang terbukti |
 
-Ketiganya rilis arsip dari repo pendahulu. Riwayat lengkap: [Catatan Rilis](CHANGELOG.md).
+`r1` rilis pertama repo ini; tiga lainnya rilis arsip dari repo pendahulu. Riwayat lengkap: [Catatan Rilis](CHANGELOG.md).
 
 </details>
 
