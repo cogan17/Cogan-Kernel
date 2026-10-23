@@ -70,11 +70,12 @@
 
 | Build | Result |
 |---|---|
+| `r1` (ACK 6.1.176 · KernelSU Next) | ✅ Tested on the phone 24 Oct: KernelSU Next works, SUSFS v2.3.0, NoMount v2.2.0, SELinux Enforcing |
 | `archive r8` (ACK 6.1.176 · BakaSU) | ✅ Tested on the phone 23 Oct: BakaSU works, SUSFS v2.3.0, SELinux Enforcing |
 | `archive r6` (ACK 6.1.176 · KernelSU Next) | ✅ Tested on the phone 22 Oct |
 | `archive r5` (ACK 6.1.138 · KernelSU Next) | ✅ Tested on the phone; the proven fallback |
 
-All three are archived releases from the predecessor repository. Full history: [Release Notes](CHANGELOG.en.md).
+`r1` is this repository's first release; the other three are archived releases from the predecessor repository. Full history: [Release Notes](CHANGELOG.en.md).
 
 </details>
 

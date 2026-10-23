@@ -6,6 +6,19 @@ Versi teratas = build terbaru. Build yang lolos uji HP terbit sebagai **Pre-rele
 
 > 📦 r2–r8 dan percobaan awal dibuat di repo pendahulu [cogan17/Kernel-14t-pro](https://github.com/cogan17/Kernel-14t-pro). Rilis r5, r6 dan r8 disalin ke Releases repo ini sebagai arsip dengan file yang sama. Di repo ini namanya **arsip r5, arsip r6, arsip r8** dan tagnya berawalan `arsip-` (mis. `arsip-v26.10.22-r5`), supaya tidak bentrok dengan nomor rilis repo ini sendiri.
 
+## r1 — 24 Okt 2026 · `6.1.176-Cogan-Rothko-ACK-r1` · [Pre-release](https://github.com/cogan17/Xiomi_14T_Pro/releases/tag/v26.10.23-r1)
+
+Rilis pertama repo ini: **KernelSU Next + SUSFS** di ACK resmi Google 6.1.176 (`android14-6.1-2026-09_r4`), dengan komponen versi terbaru saat build.
+
+### ✨ Baru
+- Root **KernelSU Next** (`d21e0a6`, 33405) + **SUSFS v2.3.0** (`c27ebe9`). Manager biasa dan *spoofed* versi 33405.
+- **NoMount v2.2.0**: driver di kernel dan modul di rilis versi yang sama.
+
+### 🔧 Diperbaiki
+- Alat flasher AnyKernel3 kini versi **arm64**. ZIP r1 dari build pertama tidak dirilis: alatnya 32-bit (`magiskboot: syntax error`), flash berhenti sebelum `boot` ditulis.
+
+Status: ✅ lolos uji HP owner (KernelSU Next berfungsi, SUSFS v2.3.0, NoMount v2.2.0, SELinux Enforcing; 24 Okt). Gate KMI: 0 simbol berbeda.
+
 ## arsip r8 — 23 Okt 2026 · `6.1.176-Cogan-Rothko-ACK-r8` · [Pre-release](https://github.com/cogan17/Xiomi_14T_Pro/releases/tag/arsip-v26.10.23-r8)
 
 Varian **BakaSU + SUSFS** di ACK resmi Google 6.1.176. Varian KernelSU Next tetap arsip r6.
