@@ -68,7 +68,7 @@ All of them also carry BBRv3, Baseband Guard, NoMount, Cogan Bridge and Full LTO
 
 | Release | versionCode | Tested |
 |---|---|---|
-| [cogan-smart-v2.8.2](https://github.com/cogan17/Xiomi_14T_Pro/releases/tag/cogan-smart-v2.8.2) | 16 | by the owner on the phone (kernel archive r6), HyperCharge charging too |
+| [cogan-smart-v2.8.2](https://github.com/cogan17/Xiomi_14T_Pro/releases/tag/cogan-smart-v2.8.2) | 16 | by the owner on the phone with r1 (24 Oct) and archive r6, HyperCharge charging too |
 | [cogan-smart-v2.8.1](https://github.com/cogan17/Xiomi_14T_Pro/releases/tag/cogan-smart-v2.8.1) | 15 | by the owner on the phone |
 
 Cogan17 made the ZIPs and they are published **as they are** (byte for byte). Copies are in [`modules/cogan-smart/rilis/`](../modules/cogan-smart/rilis) and the open source is [`modules/cogan-smart`](../modules/cogan-smart). Not signed (attestation) yet.
