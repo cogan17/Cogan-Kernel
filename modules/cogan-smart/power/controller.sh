@@ -1,0 +1,205 @@
+#!/system/bin/sh
+# Cogan Smart · Power: the control loop. Every INTERVAL seconds it reads the processor temperature,
+# the battery and the latest report of Cogan Smart · Thermal (what heats the phone), then:
+#
+#   CPU     Hemat caps the big cores at SAVER_CAP %; Kernel Default (seimbang, TARGET_TEMP) and Hemat (3 °C lower)
+#           lower the CPU top speed 10 % per step while too hot and give it back when cool again;
+#           Performa (game) runs free and only steps in at GAME_LIMIT.
+#   Charge  stops at CHARGE_STOP % and resumes at CHARGE_RESUME %. Charging heat is managed
+#           by the phone by default. Module temperature pauses require CHARGE_THERMAL=1.
+#
+# Usage: controller.sh [--once]
+
+MODDIR=${0%/*}; [ "$MODDIR" = "$0" ] && MODDIR=.   # started as "sh controller.sh"
+. "$MODDIR/common.sh"
+
+state() { cat "$CP_RUN/$1" 2>/dev/null || echo "$2"; }
+
+step() {
+  lock_take "$CP_RUN/step.lock" || return 1
+  : > "$CP_RUN/apply.tsv.tmp"
+  step_request=$(cat "$CP_RUN/apply.request" 2>/dev/null)
+  bridge_heartbeat power "$(module_code)"
+  now=$(date +%s)
+  main=$(read_main_temp)
+  case "$main" in ''|*[!0-9-]*) main=-9999 ;; esac
+  set -- $(read_battery)
+  level_pct=$1; status=$2; btemp=$3; current=$4
+
+  # What heats the phone: Cogan Smart · Thermal's report, or a simple guess without it.
+  if read_monitor; then
+    source=monitor; cause=$M_CAUSE; app=$M_APP
+  else
+    source=sensor; app=""; cause=""
+    [ "$status" = charging ] && [ "$current" -ge 1500 ] && cause="Cas cepat"
+  fi
+
+  # A new mode starts from full speed.
+  if [ "$(state mode "")" != "$MODE" ]; then
+    [ -n "$(state mode "")" ] && event "Mode: $(mode_label "$MODE")"
+    echo "$MODE" > "$CP_RUN/mode"
+    log_mode "$MODE"
+    rm -f "$CP_RUN/level" "$CP_RUN/cool"
+  fi
+
+  # Charging first: when the monitor says charging is the heat source, pausing it may be enough.
+  charge_step
+
+  # CPU: one step (10 %) down per check while too hot and not already cooling, one step up after
+  # two checks at least 2 °C under the limit. While charging is paused for heat, the CPU only
+  # steps in if the temperature still rises.
+  case "$MODE" in
+    hemat) limit=$((TARGET_TEMP - 3)) ;;
+    game) limit=$GAME_LIMIT ;;
+    *) limit=$TARGET_TEMP ;;
+  esac
+  step_level=$(state level 0); cool=$(state cool 0); prev=$(state prev "$main")
+  old_level=$step_level
+  rising=$((prev - 5))
+  native_cooling=0
+  if native_cpu_cooling; then native_cooling=1; rising=$prev; fi
+  case " $(state charge_off "") " in *" panas "*) rising=$prev ;; esac
+  [ "$paused_for_heat" = 1 ] && rising=9999   # charging was just paused: give that a check first
+  if [ "$main" -ge $((limit * 10)) ]; then
+    cool=0
+    [ "$main" -gt "$rising" ] && [ "$step_level" -lt 6 ] && step_level=$((step_level + 1))
+  elif [ "$main" -le $(((limit - 2) * 10)) ] && [ "$step_level" -gt 0 ]; then
+    cool=$((cool + 1))
+    [ "$cool" -ge 2 ] && { step_level=$((step_level - 1)); cool=0; }
+  else
+    cool=0
+  fi
+  echo "$step_level" > "$CP_RUN/level"; echo "$cool" > "$CP_RUN/cool"; echo "$main" > "$CP_RUN/prev"
+  if [ "$MODE" = hemat ]; then big=$((SAVER_CAP - step_level * 10)); else big=$((100 - step_level * 10)); fi
+  [ "$big" -lt 20 ] && big=20
+  little=$((big + 20)); [ "$little" -gt 100 ] && little=100
+  set_cpu_cap "$big" "$little"
+  if [ "$step_level" -gt "$old_level" ]; then
+    event "Suhu $(deg "$main") °C ≥ $limit °C${cause:+ ($cause)}: CPU dibatasi $big%"
+  elif [ "$step_level" -lt "$old_level" ]; then
+    event "Suhu turun ke $(deg "$main") °C: CPU $big%"
+  fi
+  if [ "$MODE" = game ] && [ "$GAME_BOOST" = 1 ]; then set_boost 1; else set_boost 0; fi
+  write_state
+  mv "$CP_RUN/apply.tsv.tmp" "$CP_RUN/apply.tsv"
+  printf '%s\n' "$step_request" > "$CP_RUN/applied.request"
+  lock_drop "$CP_RUN/step.lock"
+}
+
+charge_step() {
+  paused_for_heat=0
+  [ -f "$CP_RUN/detecting" ] && return 0   # the WebUI is testing switches right now
+  was=$(state charge_off "")
+  reasons=""
+  if [ "$CHARGE_CTRL" = 1 ] && [ "$level_pct" -ge 0 ]; then
+    case " $was " in
+      *" batas "*) [ "$level_pct" -gt "$CHARGE_RESUME" ] && reasons="batas" ;;
+      *) [ "$CHARGE_STOP" -lt 100 ] && [ "$level_pct" -ge "$CHARGE_STOP" ] && { [ "$status" = charging ] || [ "$status" = full ]; } && reasons="batas" ;;
+    esac
+    # Do not interrupt HyperCharge based on module thresholds unless the user opts in.
+    # An absent key in an older config defaults to 0; saved 95/90 and other settings survive.
+    # No thermal driver, OEM charging limit, or charger negotiation setting is changed.
+    if [ "$CHARGE_THERMAL" = 1 ]; then
+      case " $was " in
+        *" baterai "*) [ "$btemp" -gt $(((BATT_TEMP_STOP - 3) * 10)) ] && reasons="$reasons baterai" ;;
+        *) [ "$btemp" -ge $((BATT_TEMP_STOP * 10)) ] && [ "$status" = charging ] && reasons="$reasons baterai" ;;
+      esac
+      if [ "$MODE" = seimbang ] && [ "$HEAT_PAUSE_CHARGE" = 1 ]; then
+        case " $was " in
+          *" panas "*) [ "$main" -gt $(((TARGET_TEMP - 3) * 10)) ] && reasons="$reasons panas" ;;
+          *) [ "$status" = charging ] && [ "$main" -ge $((TARGET_TEMP * 10)) ] && case "$cause" in "Cas cepat"|Mengecas*) reasons="$reasons panas" ;; esac ;;
+        esac
+      fi
+    fi
+    [ "$level_pct" -le 15 ] && reasons=""   # a nearly empty battery always charges
+  fi
+  reasons=${reasons# }
+
+  if [ "$reasons" = "$was" ]; then
+    # Some chargers turn charging back on after a replug: switch it off again.
+    [ -n "$reasons" ] && [ "$status" = charging ] && charge_set off
+    return 0
+  fi
+  if [ -z "$reasons" ]; then
+    restore_charge || { record_control charging on unknown write_failed; return 0; }
+    rm -f "$CP_RUN/charge_off"
+    event "Cas dilanjutkan (baterai $level_pct%, $(deg "$btemp") °C)"
+    return 0
+  fi
+  if ! read_switch; then
+    # Finding the switch needs the phone to be charging right now; try once per start.
+    [ -f "$CP_RUN/no_switch" ] || [ "$status" != charging ] && return 0
+    event "Mencari saklar cas…"
+    if detect_switch > "$CP_RUN/detect.log"; then
+      event "Saklar cas ditemukan: $(cut -d '|' -f 1 "$CP_DATA/switch")"
+    else
+      : > "$CP_RUN/no_switch"
+      event "Saklar cas tidak ditemukan di HP ini: auto cut charging tidak bisa dipakai"
+      return 0
+    fi
+  fi
+  if ! charge_set off; then
+    record_control charging off unknown write_failed
+    event 'Saklar cas belum menerima perintah; status jeda tidak diklaim aktif'
+    return 0
+  fi
+  echo "$reasons" > "$CP_RUN/charge_off"
+  case " $was " in *" panas "*) ;; *) case " $reasons " in *" panas "*) paused_for_heat=1 ;; esac ;; esac
+  case " $reasons " in
+    *" panas "*) event "Panas $(deg "$main") °C karena cas: cas dijeda sampai $((TARGET_TEMP - 3)) °C" ;;
+    *" baterai "*) event "Baterai $(deg "$btemp") °C: cas dijeda sampai $((BATT_TEMP_STOP - 3)) °C" ;;
+    *) event "Baterai $level_pct%: cas dihentikan, lanjut di $CHARGE_RESUME%" ;;
+  esac
+}
+
+mode_label() { case "$1" in hemat) echo Hemat ;; game) echo Performa ;; *) echo 'Kernel Default' ;; esac; }
+
+jstr() { printf '%s' "$1" | sed 's/[\\"]//g'; }
+
+write_state() {
+  printf '{"ts":%d,"mode":"%s","main":%d,"limit":%d,"level":%d,"big":%d,"little":%d,"battery":{"level":%d,"status":"%s","temp":%d,"current":%d},"charge_off":"%s","source":"%s","cause":"%s","app":"%s","boost":%d,"force":%d,"native_cooling":%d}\n' \
+    "$now" "$MODE" "$main" "$limit" "$step_level" "$big" "$little" "$level_pct" "$status" "$btemp" "$current" \
+    "$(state charge_off "")" "$source" "$(jstr "$cause")" "$(jstr "$app")" "$([ -f "$CP_RUN/uclamp.written" ] && echo 1 || echo 0)" "$FORCE" "$native_cooling" \
+    > "$CP_RUN/state.json.tmp" && mv "$CP_RUN/state.json.tmp" "$CP_RUN/state.json"
+}
+
+load_config
+boot_session
+if [ "$1" = "--once" ]; then
+  trap 'lock_drop "$CP_RUN/step.lock"' EXIT
+  step
+  exit $?
+fi
+
+lock_take "$CP_RUN/daemon.lock" || exit 1
+echo $$ > "$CP_RUN/pid"
+rm -f "$CP_RUN/mode" "$CP_RUN/no_switch"
+event "Cogan Smart · Power mulai: mode $(mode_label "$MODE")"
+stop=0; sleeper=""
+cleanup() {
+  if restore; then event 'Cogan Smart · Power berhenti: kontrol milik modul dipulihkan'
+  else event 'Cogan Smart · Power berhenti: ada pemulihan tertunda, periksa status'; fi
+  log_mode none
+  rm -f "$CP_RUN/pid" "$CP_RUN/mode"
+  lock_drop "$CP_RUN/step.lock"
+  lock_drop "$CP_RUN/daemon.lock"
+}
+trap cleanup EXIT
+trap 'stop=1; [ -n "$sleeper" ] && kill "$sleeper" 2>/dev/null' TERM INT
+trap '[ -n "$sleeper" ] && kill "$sleeper" 2>/dev/null' HUP   # new settings: check right away
+count=0
+while [ "$stop" = 0 ]; do
+  [ -f "$MODROOT/disable" ] || [ -f "$MODROOT/remove" ] && break
+  load_config
+  step
+  count=$((count + 1))
+  [ "$stop" = 1 ] && break
+  [ "$(cat "$CP_RUN/apply.request" 2>/dev/null)" != "$(cat "$CP_RUN/applied.request" 2>/dev/null)" ] && continue
+  if [ $((count % 360)) = 0 ] && [ "$(wc -l < "$EVENTS")" -gt 300 ]; then
+    tail -n 200 "$EVENTS" > "$EVENTS.tmp" && mv "$EVENTS.tmp" "$EVENTS"
+  fi
+  sleep "$INTERVAL" &
+  sleeper=$!
+  wait "$sleeper"
+  sleeper=""
+done

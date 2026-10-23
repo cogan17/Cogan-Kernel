@@ -1,0 +1,434 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cogan Smart</title>
+<link rel="stylesheet" href="theme.css?v=2.8.2">
+<script src="i18n.js?v=2.8.2"></script>
+<script>try { document.documentElement.dataset.theme = localStorage.getItem('cogan.theme') || ''; } catch (_) { /* storage off: follow the phone */ }</script>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    padding: calc(env(safe-area-inset-top, 0px) + 14px) 14px calc(env(safe-area-inset-bottom, 0px) + 24px);
+  }
+  main { max-width: 640px; margin: 0 auto; }
+  header { display: flex; align-items: center; gap: 10px; margin: 4px 2px 14px; }
+  header h1 { font-size: 20px; margin: 0; flex: 1; }
+  .pill { font-size: 12px; padding: 3px 10px; border-radius: 99px; background: var(--chip); color: var(--muted); white-space: nowrap; }
+  .pill.on { color: var(--ok); } .pill.off { color: var(--hot); }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px; margin-bottom: 12px; }
+  .card h2 { font-size: 15px; margin: 0 0 10px; display: flex; align-items: center; gap: 8px; }
+  .card h2 span { flex: 1; }
+  .muted { color: var(--muted); font-size: 13px; }
+  .big { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .big b { font-size: 44px; line-height: 1; font-variant-numeric: tabular-nums; }
+  .ok { color: var(--ok); } .warm { color: var(--warm); } .hot { color: var(--hot); }
+  .chips { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; margin-top: 12px; }
+  .chip { background: var(--chip); border-radius: 10px; padding: 7px 9px; }
+  .chip small { display: block; color: var(--muted); font-size: 12px; }
+  .chip b { font-size: 17px; font-variant-numeric: tabular-nums; }
+  details { margin-top: 10px; } summary { cursor: pointer; color: var(--accent); font-size: 14px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 6px; }
+  td { padding: 4px 2px; border-bottom: 1px solid var(--line); } td:last-child { text-align: right; font-variant-numeric: tabular-nums; }
+  .seg { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+  button, select, input {
+    font: inherit; color: var(--text); background: var(--chip); border: 1px solid var(--line);
+    border-radius: 10px; padding: 7px 12px;
+  }
+  button { cursor: pointer; } button:disabled { opacity: .5; }
+  .seg button.sel { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+  button.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 600; }
+  button.danger { color: var(--hot); }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 10px; }
+  .row > * { min-width: 0; }
+  svg { width: 100%; height: 130px; display: block; }
+  .axis { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); }
+  .stat { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 10px 0; }
+  .stat div { background: var(--chip); border-radius: 10px; padding: 8px 10px; }
+  .stat small { display: block; color: var(--muted); font-size: 12px; }
+  .bars { margin-top: 6px; }
+  .barrow { margin: 7px 0; font-size: 13px; }
+  .barrow .t { display: flex; justify-content: space-between; gap: 8px; }
+  .barrow .b { height: 6px; background: var(--chip); border-radius: 4px; margin-top: 3px; overflow: hidden; }
+  .barrow .b i { display: block; height: 100%; background: var(--hot); border-radius: 4px; }
+  h3 { font-size: 13px; margin: 14px 0 2px; color: var(--muted); font-weight: 600; }
+  label.f { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--line); }
+  label.f:last-of-type { border-bottom: 0; }
+  label.f input[type=number] { width: 90px; text-align: right; }
+  .note { margin-top: 10px; font-size: 13px; padding: 8px 10px; border-radius: 10px; background: var(--chip); word-break: break-all; }
+  .hidden { display: none !important; }
+  footer { text-align: center; color: var(--muted); font-size: 12px; margin-top: 18px; }
+
+  button, summary, select, input { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+  button, select, input[type=number] { min-height: 44px; }
+  input[type=checkbox] { width: 22px; height: 22px; flex: 0 0 auto; }
+  button { transition: background-color .12s, border-color .12s; }
+  button:active:not(:disabled) { filter: brightness(.92); }
+  button:focus-visible, summary:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  summary { min-height: 44px; padding: 11px 0; cursor: pointer; font-size: 13px; color: var(--accent); }
+  details { margin-top: 4px; }
+  .kernel-card h2 { font-size: 16px; margin-bottom: 4px; }
+  .kernel-card > .muted { margin-top: 4px; }
+  .kernel-value { font-size: 12px; overflow-wrap: anywhere; white-space: pre-wrap; }
+  #coolingInfo { line-height: 1.7; overflow-wrap: anywhere; max-height: 220px; overflow-y: auto; overscroll-behavior-y: contain; }
+  .mode.pending { border-style: dashed; }
+  .feedback { position: fixed; z-index: 20; bottom: calc(env(safe-area-inset-bottom, 0px) + 12px); left: 14px; right: 14px; max-width: 612px; margin: auto; padding: 10px 14px; border-radius: 12px; background: var(--text); color: var(--card); font-size: 13px; pointer-events: none; box-shadow: 0 3px 16px #0002; }
+  .feedback.working::before { content: ''; display: inline-block; width: 12px; height: 12px; margin-right: 8px; vertical-align: -2px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: cogan-spin .75s linear infinite; }
+  @keyframes cogan-spin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { button { transition: none; } .feedback.working::before { animation: none; } }
+  details.fold { padding: 0 14px; margin-top: 0; }
+  details.fold[open] { padding-bottom: 14px; }
+  details.fold > summary { display: flex; align-items: center; gap: 8px; list-style: none; min-height: 48px; padding: 12px 0; font-size: 15px; font-weight: 600; color: var(--text); }
+  details.fold > summary::-webkit-details-marker { display: none; }
+  details.fold > summary > span:first-child { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+  details.fold > summary small { font-weight: 400; text-align: right; }
+  details.fold > summary::after { content: '▸'; color: var(--muted); transition: transform .15s; }
+  details.fold[open] > summary::after { transform: rotate(90deg); }
+  @media (prefers-reduced-motion: reduce) { details.fold > summary::after { transition: none; } }
+  body.stale .big b, body.stale .chip b { opacity: .55; }   /* last known values until the first fresh read */
+  body.stale #state::after { content: ' ↻'; }
+  .tabs { display: flex; gap: 8px; margin: 0 2px 12px; }
+  .tabs a { flex: 1; min-height: 44px; box-sizing: border-box; padding: 11px 6px; border-radius: 12px; text-align: center; background: var(--chip); color: var(--text); text-decoration: none; font-size: 14px; }
+  .tabs a[aria-current] { background: var(--accent); color: var(--on-accent); font-weight: 600; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>🧠 Cogan Smart</h1>
+    <span id="state" class="pill">…</span>
+  </header>
+  <nav class="tabs" aria-label="Bagian"><a href="index.html">⚡ Daya</a><a href="thermal.html" aria-current="page">🌡️ Suhu</a><a href="modules.html">🧩 Modul</a></nav>
+
+  <div id="noksu" class="card hidden">
+    Buka halaman ini dari WebUI modul di KernelSU, KernelSU Next atau BakaSU.
+  </div>
+  <section id="readError" class="card hidden" role="alert">
+    <b class="hot">Data belum berhasil dibaca</b>
+    <p id="readErrorText" class="muted" style="overflow-wrap:anywhere"></p>
+    <button id="retry">↻ Coba lagi</button>
+  </section>
+
+  <details class="card kernel-card fold" id="kernelCard">
+    <summary><span id="kernelTitle">Kernel</span><small class="muted" id="kernelBadge"></small></summary>
+    <div id="bridgeStatus" class="muted">Memeriksa dukungan…</div>
+    <div id="identityLabel" class="muted"></div>
+    <div id="deviceStatus" class="muted"></div>
+    <div id="peerStatus" class="muted"></div>
+    <details id="kernelDetails"><summary>Detail kernel</summary>
+      <p id="originalKernel" class="kernel-value">—</p>
+      <p id="shownKernel" class="kernel-value"></p>
+      <p id="kernelFeatures" class="muted"></p>
+      <p id="clients" class="muted"></p>
+      <details><summary>Info build lengkap</summary><p id="kernelBanner" class="kernel-value"></p></details>
+    </details>
+    <details id="coolingDetails"><summary id="coolingTitle">Cooling kernel</summary><div id="coolingInfo" class="muted">Buka untuk membaca.</div></details>
+  </details>
+  <details class="card fold" id="nowCard" open>
+    <summary><span>🌡️ Sekarang</span><small class="muted" id="kernel"></small></summary>
+    <div class="big"><b id="mainT">--</b><span class="muted" id="mainInfo">membaca sensor…</span></div>
+    <div class="muted" id="nowLine" style="margin-top:6px"></div>
+    <div class="chips" id="groups"></div>
+    <details id="zonesDetails">
+      <summary id="zonesTitle">Semua sensor</summary>
+      <table id="zones"></table>
+    </details>
+  </details>
+
+  <details class="card fold" id="summaryCard">
+    <summary><span>📊 Ringkasan</span></summary>
+    <div class="seg" id="ranges"></div>
+    <div id="sumBody" class="muted">Memuat…</div>
+    <div class="row"><button id="copy" title="Salin untuk dibagikan">📋 Salin ringkasan</button></div>
+  </details>
+
+  <details class="card fold" id="saveCard">
+    <summary><span>💾 Simpan log</span></summary>
+    <div class="muted">Ringkasan (.txt) dan semua sampel (.csv) disimpan ke <b>Download/CoganThermal</b>.</div>
+    <div class="row">
+      <select id="saveRange"></select>
+      <input id="saveMin" type="number" min="1" max="44640" value="90" class="hidden" aria-label="Menit">
+      <span id="saveMinLabel" class="muted hidden">menit</span>
+      <button id="save" class="primary">💾 Simpan log</button>
+    </div>
+    <div id="saveNote" class="note hidden"></div>
+  </details>
+
+  <details class="card fold" id="settingsCard">
+    <summary><span>⚙️ Setelan</span></summary>
+    <label class="f">Cek suhu tiap (detik) <input id="sINTERVAL" type="number" min="10" max="300"></label>
+    <label class="f">Dianggap panas mulai (°C) <input id="sHOT_TEMP" type="number" min="30" max="90"></label>
+    <label class="f">Simpan riwayat (hari) <input id="sRETENTION_DAYS" type="number" min="1" max="30"></label>
+    <label class="f">Notifikasi saat panas <input id="sNOTIFY" type="checkbox"></label>
+    <label class="f">Batas notifikasi (°C) <input id="sNOTIFY_TEMP" type="number" min="30" max="90"></label>
+    <div class="row">
+      <button id="saveSettings" class="primary">💾 Simpan</button>
+      <button id="applySettings" class="primary">Terapkan sekarang</button>
+      <button id="reset" class="danger">↺ Reset default</button>
+      <button id="toggle">⏹ Hentikan</button>
+      <button id="clear" class="danger">🗑 Hapus riwayat</button>
+    </div>
+    <p class="muted">Ambang panas/notifikasi hanya untuk pencatatan. Kendali CPU dan cas ada di tab Mode &amp; daya. Reset mempertahankan riwayat dan berhenti sampai Mulai.</p>
+    <div class="muted" id="dataInfo" style="margin-top:8px"></div>
+  </details>
+
+  <footer id="foot">Cogan Smart · Suhu &amp; log hanya membaca sensor</footer>
+<p class="credit">Maintainer <b>Cogan17</b> &nbsp;·&nbsp; kernel <b>Cogan Rothko</b> &nbsp;·&nbsp; <b>KernelSU Next</b><br><a href="about.html">ℹ️ Tentang &amp; kredit</a></p>
+</main>
+
+<div id="actionStatus" class="feedback hidden" role="status" aria-live="polite"></div>
+<script src="client.js?v=2.8.2"></script>
+<script>
+const confirm = value => window.confirm(CoganI18n.t(value));
+const REPORT = '/data/adb/modules/cogan_smart/thermal/report.sh';
+const RANGES = [[900, '15 mnt'], [3600, '1 jam'], [21600, '6 jam'], [86400, '24 jam'], [604800, '7 hari']];
+const SAVES = [[900, '15 menit'], [1800, '30 menit'], [3600, '1 jam'], [10800, '3 jam'], [21600, '6 jam'],
+               [43200, '12 jam'], [86400, '24 jam'], [259200, '3 hari'], [604800, '7 hari'], [0, 'Atur sendiri…']];
+const $ = id => document.getElementById(id);
+const UI = CoganUI, api = UI.create(REPORT);
+const report = (args, options) => api.report(args, options);
+let feedbackTimer;
+let poller, identityAt = 0, coolingAt = 0;
+let hot = 42, range = 3600, summaryText = '', status = null, editing = false, currentNow = null;
+
+function esc(s) { return String(s).replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'})[c]); }
+function deg(t) { return (t / 10).toFixed(1); }
+function level(t) { return t >= hot * 10 ? 'hot' : t >= (hot - 4) * 10 ? 'warm' : 'ok'; }
+function toast(msg) { UI.text('actionStatus', msg); $('actionStatus').classList.remove('hidden'); clearTimeout(feedbackTimer); feedbackTimer = setTimeout(() => { if (!$('actionStatus').classList.contains('working')) $('actionStatus').classList.add('hidden'); }, 4000); }
+window.addEventListener('unhandledrejection', e => { toast('Gagal: ' + (e.reason && e.reason.message || e.reason)); e.preventDefault(); });
+
+function showStatus(s) {
+  if (s.ok === 0) { toast(s.error); return; }
+  UI.kernel(s, s.power, 'Power');
+  status = s; hot = s.hot;
+  $('state').textContent = UI.recorder(s.monitor);
+  $('state').className = 'pill ' + (s.monitor?.stalled ? 'warm' : s.running ? 'on' : 'off');
+  $('toggle').textContent = s.running ? '⏹ Hentikan' : '▶ Mulai';
+  if (!editing) {
+    for (const key of ['INTERVAL', 'HOT_TEMP', 'RETENTION_DAYS', 'NOTIFY_TEMP'])
+      $('s' + key).value = {INTERVAL: s.interval, HOT_TEMP: s.hot, RETENTION_DAYS: s.retention, NOTIFY_TEMP: s.notify_temp}[key];
+    $('sNOTIFY').checked = !!s.notify;
+  }
+  $('dataInfo').textContent = s.days ? `Riwayat: ${s.days} hari (sejak ${s.first}), ${s.size_kb} KB` : 'Riwayat masih kosong.';
+  $('foot').textContent = `Cogan Smart ${s.version} · Suhu & log hanya membaca sensor`;
+  CoganI18n.apply();
+}
+
+async function loadNow() {
+  const mark = api.revision, n = await report('now', {background: true});
+  if (mark !== api.revision) return;
+  renderNow(n); document.body.classList.remove('stale');
+}
+function renderNow(n) {
+  currentNow = n;
+  if (n.sample_ts > 0) n.age = Math.floor(Date.now() / 1000) - n.sample_ts;
+  if (n.monitor) {
+    // Recorder health is cheap live data, not identity cached for one minute.
+    const m = UI.health(n.monitor);
+    status = {...status, running: m.running, monitor: m};
+    UI.text('state', UI.recorder(m));
+    $('state').className = 'pill ' + (m.stalled ? 'warm' : m.running ? 'on' : 'off');
+    UI.text('toggle', m.running ? '⏹ Hentikan' : '▶ Mulai');
+  }
+  const sensorAge = n.sensor_ts ? Math.max(0, Math.floor(Date.now() / 1000) - n.sensor_ts) : -1;
+  UI.text('kernel', n.main > -9999 ? `sensor ${sensorAge} dtk lalu` : 'sensor tidak tersedia');
+  $('mainT').textContent = n.main > -9999 ? deg(n.main) + '°' : '--';
+  $('mainT').className = n.main > -9999 ? level(n.main) : '';
+  $('mainInfo').textContent = 'Prosesor/GPU terpanas · sensor langsung';
+  const parts = [];
+  if (n.age >= 0) {
+    const m = UI.health(n.monitor);
+    if (!m.fresh) parts.push(`Catatan terakhir (${Math.max(0, Math.round(n.age / 60))} menit lalu)`);
+    parts.push(n.app);
+    if (n.cpu >= 0) parts.push(`CPU ${Math.round(n.cpu / 10)}%`);
+    if (n.gpu >= 0) parts.push(`GPU ${n.gpu}%`);
+    parts.push(n.charging ? `mengecas ${n.current} mA` : 'tidak dicas');
+    if (n.mode) parts.push(`mode ${n.mode}`);
+  } else parts.push('belum ada sampel; pencatat mengisi tiap beberapa detik');
+  $('nowLine').textContent = parts.join(' · ');
+  UI.html('groups', n.groups.map(g => `<div class="chip"><small>${esc(g.name)}</small><b class="${level(g.t)}">${deg(g.t)}°</b></div>`).join(''));
+  UI.text('zonesTitle', 'Semua sensor (' + n.zones.length + ')');
+  renderZones();
+  CoganI18n.apply();
+}
+function renderZones() {
+  if (!currentNow || !$('zonesDetails').open) return;
+  const zones = currentNow.zones.slice().sort((a, b) => b.t - a.t);
+  UI.html('zones', zones.map(zone => `<tr><td>${esc(zone.name)} <span class="muted">· ${esc(zone.group)}</span></td><td class="${level(zone.t)}">${deg(zone.t)} °C</td></tr>`).join(''));
+}
+
+function chart(series) {
+  if (series.length < 2) return '';
+  const t0 = series[0][0], t1 = series[series.length - 1][0];
+  let lo = Math.min(...series.map(p => p[1]), hot * 10), hi = Math.max(...series.map(p => p[1]), hot * 10);
+  lo -= 10; hi += 10;
+  const x = t => ((t - t0) / Math.max(1, t1 - t0) * 600).toFixed(1), y = v => (150 - (v - lo) / (hi - lo) * 140).toFixed(1);
+  const d = series.map((p, i) => `${i ? 'L' : 'M'}${x(p[0])},${y(p[1])}`).join(' ');
+  const clock = t => new Date(t * 1000).toLocaleTimeString(CoganI18n.locale(), { hour: '2-digit', minute: '2-digit' });
+  return `<svg viewBox="0 0 600 160" preserveAspectRatio="none" aria-label="Grafik suhu">
+      <line x1="0" x2="600" y1="${y(hot * 10)}" y2="${y(hot * 10)}" stroke="var(--hot)" stroke-dasharray="6 5" vector-effect="non-scaling-stroke" opacity=".7"/>
+      <path d="${d}" fill="none" stroke="var(--accent)" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round"/>
+    </svg>
+    <div class="axis"><span>${clock(t0)}</span><span class="hot">- - ${hot} °C</span><span>${clock(t1)}</span></div>`;
+}
+
+function bars(list, fmt) {
+  return '<div class="bars">' + list.map(c => `<div class="barrow"><div class="t"><span>${esc(c.name)}</span><span>${fmt(c)}</span></div><div class="b"><i style="width:${c.pct}%"></i></div></div>`).join('') + '</div>';
+}
+
+async function loadSummary(background = true) {
+  const chosen = range, mark = api.revision, s = await report(`summary ${chosen}`, {background});
+  if (chosen !== range || mark !== api.revision) return;
+  summaryAt = Date.now();
+  summaryText = s.text;
+  if (!s.samples) { UI.html('sumBody', '<span class="muted">Belum ada data pada rentang ini.</span>'); return; }
+  const p = s.peak;
+  let h = chart(s.series);
+  h += `<div class="stat">
+      <div><small>Tertinggi (${esc(p.group)})</small><b class="${level(p.t)}">${deg(p.t)} °C</b> <span class="muted">${esc(p.clock)}</span><br><span class="muted">${esc(p.app)}${p.charging ? ' · mengecas' : ''}</span></div>
+      <div><small>Waktu panas (≥ ${hot} °C)</small><b class="${s.hot_pct ? 'hot' : 'ok'}">${s.hot_pct}%</b><br><span class="muted">${s.samples} sampel · ${esc(s.from)}–${esc(s.to)}</span></div>
+    </div>`;
+  h += '<h3>🔥 Penyebab panas</h3>' + (s.causes.length ? bars(s.causes, c => c.pct + '%') : '<div class="muted">Tidak ada momen panas. 👍</div>');
+  h += '<h3>📱 Per aplikasi</h3><table>' + s.apps.map(a => `<tr><td>${esc(a.name)} <span class="muted">${a.pct}%</span></td><td class="${level(a.peak)}">${deg(a.avg)} / ${deg(a.peak)} °C</td></tr>`).join('') + '</table>';
+  h += '<div class="muted" style="margin-top:4px">rata-rata / tertinggi</div>';
+  h += '<h3>🐧 Per kernel</h3><table>' + s.kernels.map(k => `<tr><td>${esc(UI.shortKernel(k.name))} <span class="muted">${k.pct}%</span></td><td>${deg(k.avg)} / ${deg(k.peak)} °C</td></tr>`).join('') + '</table>';
+  if (s.modes.length) h += '<h3>⚡ Per mode</h3><table>' + s.modes.map(m => `<tr><td>${esc(m.name)} <span class="muted">${m.pct}% · panas ${m.hot_pct}%</span></td><td class="${level(m.peak)}">${deg(m.avg)} / ${deg(m.peak)} °C</td></tr>`).join('') + '</table>';
+  h += '<h3>Bagian HP</h3><table>' + s.groups.map(g => `<tr><td>${esc(g.name)}</td><td class="${level(g.peak)}">${deg(g.avg)} / ${deg(g.peak)} °C</td></tr>`).join('') + '</table>';
+  if (s.cpu_avg >= 0) h += `<div class="muted" style="margin-top:8px">CPU rata-rata ${Math.round(s.cpu_avg / 10)}% · proses kernel ${(s.kernel_avg / 10).toFixed(1)}%</div>`;
+  UI.html('sumBody', h);
+}
+
+async function copyText(text) {
+  try { await navigator.clipboard.writeText(text); return true; } catch (e) { /* WebView without clipboard permission */ }
+  const area = document.createElement('textarea');
+  area.value = text; document.body.appendChild(area); area.select();
+  const ok = document.execCommand('copy'); area.remove(); return ok;
+}
+
+let refreshing = null, actionRunning = false, summaryAt = 0, summaryVisible = true;
+async function loadCooling() {
+  if (!$('coolingDetails').open || Date.now() - coolingAt < 15000) return;
+  UI.cooling(await report('cooling', {background: true})); coolingAt = Date.now();
+}
+async function run(button, message, task) {
+  if (actionRunning) return;
+  actionRunning = true;
+  try { await UI.action(button, message, task); }
+  catch (err) { toast('Gagal: ' + err.message); }
+  finally { actionRunning = false; poller?.poke(); }
+}
+function settings() {
+  return ['INTERVAL', 'HOT_TEMP', 'RETENTION_DAYS', 'NOTIFY_TEMP'].map(key => `${key} ${Math.round(+$('s' + key).value) || 0}`)
+    .concat('NOTIFY ' + ($('sNOTIFY').checked ? 1 : 0)).join(' ');
+}
+function setup() {
+  UI.folds();
+  $('summaryCard').addEventListener('toggle', () => { if ($('summaryCard').open) poller?.poke(); });
+  for (const id of ['saveSettings', 'applySettings', 'reset', 'toggle', 'clear', 'save']) $(id).setAttribute('data-action', '');
+  for (const key of ['INTERVAL', 'HOT_TEMP', 'RETENTION_DAYS', 'NOTIFY_TEMP', 'NOTIFY']) $('s' + key).addEventListener('input', () => editing = true);
+  $('retry').onclick = () => run($('retry'), 'Membaca ulang…', () => refreshAll(true));
+  $('coolingDetails').addEventListener('toggle', () => { if ($('coolingDetails').open) loadCooling().catch(err => toast(err.message)); });
+  $('zonesDetails').addEventListener('toggle', renderZones);
+  UI.html('ranges', RANGES.map(([secs, name]) => `<button data-secs="${secs}" class="${secs === range ? 'sel' : ''}">${name}</button>`).join(''));
+  $('ranges').onclick = e => {
+    const secs = +e.target.dataset.secs; if (!secs || secs === range) return;
+    range = secs; summaryAt = 0;
+    for (const button of $('ranges').children) button.classList.toggle('sel', +button.dataset.secs === secs);
+    UI.text('sumBody', 'Memuat ringkasan…');
+    loadSummary(false).catch(err => UI.text('sumBody', 'Gagal: ' + err.message));
+  };
+  $('copy').onclick = async () => toast(summaryText && await copyText(summaryText) ? 'Ringkasan disalin' : 'Gagal menyalin');
+  UI.html('saveRange', SAVES.map(([secs, name]) => `<option value="${secs}" ${secs === 3600 ? 'selected' : ''}>${name}</option>`).join(''));
+  $('saveRange').onchange = () => {
+    const custom = $('saveRange').value === '0';
+    $('saveMin').classList.toggle('hidden', !custom); $('saveMinLabel').classList.toggle('hidden', !custom);
+  };
+  $('save').onclick = () => {
+    const secs = +$('saveRange').value || Math.round(+$('saveMin').value) * 60;
+    if (!(secs >= 60 && secs <= 2678400)) return toast('Isi 1 sampai 44640 menit');
+    run($('save'), 'Menyiapkan log…', async () => {
+      const result = await report('save ' + secs);
+      const short = file => file.replace(/^\/(sdcard|storage\/emulated\/0)\//, '');
+      UI.html('saveNote', `✅ Tersimpan (${result.samples} sampel):<br>${esc(short(result.txt))}<br>${esc(short(result.csv))}`);
+      $('saveNote').classList.remove('hidden'); toast('Log tersimpan di ' + short(result.dir));
+    });
+  };
+  $('saveSettings').onclick = () => run($('saveSettings'), 'Menyimpan setelan…', async () => {
+    await report('set ' + settings()); editing = false; identityAt = 0; summaryAt = 0;
+    await refreshAll(true); toast('Setelan disimpan');
+  });
+  $('applySettings').onclick = () => run($('applySettings'), 'Menerapkan setelan pencatatan…', async () => {
+    const result = await report('apply ' + settings()); editing = false; showStatus(result);
+    identityAt = 0; summaryAt = 0; await loadNow(); toast('Setelan pencatatan diterapkan');
+  });
+  $('reset').onclick = () => {
+    if (!confirm('Reset setelan pencatatan dan berhenti? Riwayat serta log tersimpan tetap ada.')) return;
+    run($('reset'), 'Memulihkan setelan bawaan…', async () => {
+      const result = await report('reset'); editing = false; showStatus(result); identityAt = 0; summaryAt = 0;
+      toast('Setelan bawaan dipulihkan; riwayat tetap ada. Tekan Mulai untuk mencatat.');
+    });
+  };
+  $('toggle').onclick = () => run($('toggle'), status?.running ? 'Menghentikan pencatat…' : 'Memulai pencatat…', async () => {
+    showStatus(await report(status?.running ? 'stop' : 'start')); identityAt = 0;
+    toast(status.running ? 'Pencatat berjalan' : 'Pencatat dihentikan');
+  });
+  $('clear').onclick = () => {
+    if (!confirm('Hapus semua riwayat suhu? Log yang sudah disimpan di Download tidak ikut terhapus.')) return;
+    run($('clear'), 'Menghapus riwayat…', async () => {
+      await report('clear'); identityAt = 0; summaryAt = 0;
+      await refreshAll(true); toast('Riwayat dihapus');
+    });
+  };
+  if (typeof IntersectionObserver !== 'undefined') {
+    const observer = new IntersectionObserver(entries => {
+      summaryVisible = entries[0].isIntersecting;
+      if (summaryVisible) poller?.poke();
+    });
+    observer.observe($('summaryCard'));
+  }
+}
+function showReadError(err) {
+  document.body.classList.add('stale');
+  UI.text('readErrorText', err.message); $('readError').classList.remove('hidden');
+  if (!status) {
+    UI.text('state', 'gagal membaca'); $('state').className = 'pill off';
+    UI.text('bridgeStatus', 'Data kernel belum dapat dibaca.');
+  }
+}
+function refreshAll(force = false) {
+  if (refreshing) return force ? refreshing.then(() => refreshAll()) : refreshing;
+  refreshing = (async () => {
+    const mark = api.revision;
+    await loadNow();   // the numbers on screen first; status and identity follow
+    if (mark !== api.revision) return;
+    if (!status?.version || Date.now() - identityAt >= 60000) {
+      const sample = await report('status brief', {background: true});
+      if (mark !== api.revision) return;
+      showStatus(sample); identityAt = Date.now();
+    }
+    $('readError').classList.add('hidden');
+    if (summaryVisible && $('summaryCard').open && Date.now() - summaryAt >= 60000) await loadSummary();
+    await loadCooling();
+  })().catch(err => { showReadError(err); throw err; }).finally(() => refreshing = null);
+  return refreshing;
+}
+
+setup();
+if (typeof ksu === 'undefined') {
+  $('noksu').classList.remove('hidden'); UI.text('state', 'tanpa root');
+} else {
+  // Last known values at once (dimmed, ↻ on the pill) while the first fresh read runs.
+  const id = UI.identity(), last = api.cached('status brief'), now = api.cached('now');
+  try {
+    if (id) UI.kernel(id);
+    if (last) showStatus(last.data);
+    if (now) { document.body.classList.add('stale'); renderNow(now.data); }
+  } catch (_) { status = null; }   // a cache from an older version: wait for fresh data
+  poller = UI.poll(() => actionRunning ? Promise.resolve() : refreshAll());
+}
+</script>
+</body>
+</html>

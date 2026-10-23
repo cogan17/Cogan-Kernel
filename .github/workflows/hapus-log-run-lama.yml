@@ -1,0 +1,96 @@
+name: Hapus log run lama
+
+# Bersih-bersih tab Actions (owner 23 Okt 2026). Cek saja secara bawaan; ketik HAPUS untuk menghapus.
+# Dihapus: run yang selesai dan lebih tua dari simpan_hari, serta run workflow yang filenya sudah tidak
+# ada. Tidak pernah dihapus: run yang sedang berjalan atau menunggu, dan run ini sendiri.
+
+on:
+  workflow_dispatch:
+    inputs:
+      simpan_hari:
+        description: "Simpan run dari sekian hari terakhir (1–90) / keep runs of the last N days"
+        type: string
+        default: "7"
+      konfirmasi:
+        description: "Ketik HAPUS untuk menghapus; kosong = cek saja / type HAPUS to delete, empty = check only"
+        type: string
+        default: ""
+
+permissions:
+  actions: write
+  contents: read
+
+concurrency:
+  group: hapus-log-run-lama
+  cancel-in-progress: false
+
+jobs:
+  hapus:
+    name: Hapus log run lama (${{ inputs.konfirmasi == 'HAPUS' && 'hapus' || 'cek' }})
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+      KEEP_DAYS: ${{ inputs.simpan_hari }}
+      CONFIRM: ${{ inputs.konfirmasi }}
+    steps:
+      - name: Pilih dan hapus run lama / pick and delete old runs
+        run: |
+          set -euo pipefail
+          [[ "$KEEP_DAYS" =~ ^[0-9]+$ ]] && (( KEEP_DAYS >= 1 && KEEP_DAYS <= 90 )) \
+            || { echo "::error::simpan_hari: angka 1–90 / a number 1–90"; exit 1; }
+          gh api --paginate "repos/$REPO/actions/workflows?per_page=100" --jq '.workflows[] | select(.state == "active") | .path' > active.txt
+          gh api --paginate "repos/$REPO/actions/runs?per_page=100" \
+            --jq '.workflow_runs[] | [.id, .status, .created_at, .path, .name, .run_number] | @tsv' > runs.tsv
+          python3 - <<'PY'
+          import datetime, os
+          from pathlib import Path
+          keep = datetime.timedelta(days=int(os.environ["KEEP_DAYS"]))
+          now = datetime.datetime.now(datetime.timezone.utc)
+          active = set(Path("active.txt").read_text().split())
+          picked = []
+          for line in Path("runs.tsv").read_text().splitlines():
+              run_id, status, created, path, name, number = line.split("\t")
+              if status != "completed" or run_id == os.environ["GITHUB_RUN_ID"]:
+                  continue
+              age = now - datetime.datetime.fromisoformat(created.replace("Z", "+00:00"))
+              gone = path.split("@")[0] not in active
+              if gone or age > keep:
+                  picked.append((run_id, name, number, created[:10], "workflow sudah tidak ada / workflow gone" if gone else f"{age.days} hari / days"))
+          Path("picked.tsv").write_text("".join("\t".join(row) + "\n" for row in picked))
+          print(f"{len(picked)} run dipilih / runs picked")
+          PY
+          deleted=0
+          if [ "$CONFIRM" = "HAPUS" ]; then
+            while IFS=$'\t' read -r run_id _; do
+              gh api -X DELETE "repos/$REPO/actions/runs/$run_id" && deleted=$((deleted + 1))
+            done < picked.tsv
+          fi
+          count=$(wc -l < picked.tsv)
+          {
+            echo "## Hapus log run lama"
+            echo
+            echo "<details open><summary>🇮🇩 Bahasa Indonesia</summary>"
+            echo
+            if [ "$CONFIRM" = "HAPUS" ]; then
+              echo "**$deleted** dari $count run lama dihapus (disimpan: $KEEP_DAYS hari terakhir, run yang berjalan, run ini)."
+            else
+              echo "Cek saja: **$count** run akan dihapus. Jalankan lagi dengan konfirmasi \`HAPUS\` untuk menghapusnya."
+            fi
+            echo
+            echo "</details>"
+            echo
+            echo "<details><summary>🇬🇧 English</summary>"
+            echo
+            if [ "$CONFIRM" = "HAPUS" ]; then
+              echo "**$deleted** of $count old runs deleted (kept: the last $KEEP_DAYS days, running runs, this run)."
+            else
+              echo "Check only: **$count** runs would be deleted. Run again with confirmation \`HAPUS\` to delete them."
+            fi
+            echo
+            echo "</details>"
+            echo
+            echo "| Run | Workflow | # | Tanggal / date | Alasan / reason |"
+            echo "|---|---|---|---|---|"
+            head -n 200 picked.tsv | awk -F'\t' '{printf "| %s | %s | %s | %s | %s |\n", $1, $2, $3, $4, $5}'
+          } >> "$GITHUB_STEP_SUMMARY"

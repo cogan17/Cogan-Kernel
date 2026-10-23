@@ -1,0 +1,148 @@
+Cogan Smart Kernel v2.8.2
+What's New & Fixes / Penambahan, Pembaruan, dan Perbaikan
+
+Tanggal / Date: 22 Oktober 2026 / 22 October 2026
+Maintainer: Cogan (cogan17)
+Paket / Package: Cogan-Smart-Kernel-v2.8.2.zip
+ID modul / Module ID: cogan_smart
+versionCode: 16
+Cakupan / Scope: v2.8.1 -> v2.8.2
+
+
+BAHASA INDONESIA
+
+1. PENAMBAHAN
+
+- Menambahkan pengaturan "Jeda cas karena suhu oleh modul", nonaktif
+  secara bawaan. Saat nonaktif, pengelolaan suhu dan daya pengisian
+  diserahkan kepada sistem HP agar pemicu suhu tambahan dari modul tidak
+  menginterupsi HyperCharge.
+- Menambahkan keterangan kebijakan cas yang sedang digunakan dalam
+  bahasa Indonesia dan English.
+- Kolom ambang suhu baterai dan opsi jeda karena panas prosesor dibuat
+  tidak aktif ketika pengaturan jeda suhu modul dimatikan.
+- Menambahkan penjelasan bahwa pencarian saklar cas secara manual
+  mematikan dan menyalakan cas sebentar. Jika saklar sudah ditemukan,
+  pencarian tidak perlu diulang saat HyperCharge sedang berjalan.
+
+2. PERBAIKAN
+
+- Memperbaiki batas baterai 42 °C yang sebelumnya tetap bisa menjeda cas
+  meskipun opsi jeda karena panas prosesor sudah dimatikan.
+- Pemicu suhu baterai dan jeda panas prosesor kini mengikuti pengaturan
+  utama jeda suhu modul. Keduanya tidak menjeda cas saat pengaturan ini
+  nonaktif.
+- Konfigurasi lama tanpa CHARGE_THERMAL otomatis memakai kebijakan baru
+  dengan nilai 0 (nonaktif). Tidak perlu mereset pengaturan.
+- Melepas jeda karena panas yang sebelumnya dibuat modul pada siklus
+  kontrol berikutnya ketika kebijakan tersebut dimatikan. Penahanan cas
+  karena batas persentase tetap dipertahankan jika masih berlaku.
+- Panas saja tidak lagi memicu pencarian/pengujian saklar cas otomatis
+  pada kebijakan bawaan. Pencarian masih dapat dilakukan saat diperlukan
+  untuk menjalankan batas persentase.
+- Memperbarui versi aset dan cache WebUI untuk v2.8.2.
+
+3. FITUR DAN PENGATURAN YANG DIPERTAHANKAN
+
+- Auto cut charging berdasarkan persentase tetap bekerja: bawaan berhenti
+  di 95% dan melanjutkan di 90%. Batas yang disimpan pengguna tetap dipakai.
+- Ambang suhu lama tetap tersimpan. Jika jeda suhu modul diaktifkan secara
+  sengaja, batas baterai dan jeda panas prosesor opsional pada mode Kernel
+  Default dapat digunakan kembali.
+- Pengendalian CPU, pemantauan suhu, sinkronisasi tab Daya/Suhu, pilihan
+  bahasa, serta perbaikan error AWK pada tab Suhu tetap disertakan.
+- Modul tetap menghormati jeda pengisian dari sistem/pengendali lain
+  apabila saklar tidak sedang dikendalikan oleh modul.
+- Pembaruan tidak menonaktifkan driver termal atau mengubah negosiasi
+  charger, arus, maupun tegangan pengisian. Daya 120 W tetap bergantung
+  pada HP, charger, kabel, dan kondisi pengisian.
+
+4. PENGUJIAN DAN BATAS VALIDASI
+
+- Lulus pengujian pengendali dengan sensor dan saklar sysfs tiruan:
+  konfigurasi lama, panas tanpa interupsi cas pada kebijakan bawaan,
+  siklus batas 95%/90%, batas persentase khusus, jeda suhu opsional,
+  pelepasan jeda panas, dan penghormatan terhadap jeda dari pengendali lain.
+- Lulus pemeriksaan pembacaan suhu dan regresi backend dengan One True Awk.
+- Alur pengaturan dan bahasa WebUI diuji menggunakan model DOM untuk
+  API exec dan spawn. Sintaks skrip dan integritas arsip ZIP juga diperiksa.
+- Belum diuji langsung pada perangkat fisik Xiaomi 14T Pro dengan
+  HyperCharge 120 W; pengujian UI tersebut bukan rendering browser Android.
+
+5. CARA MEMPERBARUI
+
+1) Pasang Cogan-Smart-Kernel-v2.8.2.zip sebagai pembaruan modul melalui
+   root manager, lalu reboot perangkat.
+2) Tutup dan buka ulang WebUI Cogan Smart.
+3) Untuk pengelolaan suhu pengisian oleh sistem HP, biarkan pengaturan
+   "Jeda cas karena suhu oleh modul" nonaktif.
+4) Atur batas persentase sesuai kebutuhan. Pengaturan sebelumnya tetap
+   dipertahankan; reset tidak diperlukan.
+
+
+ENGLISH
+
+1. ADDED
+
+- Adds "Module temperature-based charging pauses", disabled by default.
+  When disabled, the phone manages charging temperature and power without
+  additional module temperature triggers interrupting HyperCharge.
+- Adds charging policy descriptions in Indonesian and English.
+- Disables the battery temperature threshold field and CPU heat pause
+  option while module temperature-based charging pauses are turned off.
+- Explains that manual charging-switch detection briefly turns charging
+  off and on. Once a switch is found, detection does not need to be repeated
+  while HyperCharge is running.
+
+2. FIXED
+
+- Fixes the 42 °C battery threshold still being able to pause charging
+  even when the CPU heat pause option was disabled.
+- Makes both battery temperature and CPU heat charging pauses follow the
+  new main setting. Neither pauses charging while that setting is off.
+- Existing configurations without CHARGE_THERMAL automatically use the
+  new policy with a value of 0 (disabled). No settings reset is required.
+- Releases an earlier module-owned heat pause on the next control cycle
+  when that policy is disabled. A percentage-based hold remains in place
+  if its conditions still apply.
+- Heat alone no longer triggers automatic charging-switch detection or
+  testing under the default policy. Detection can still run when needed
+  to enforce the configured percentage limit.
+- Updates WebUI asset and cache versions for v2.8.2.
+
+3. RETAINED FEATURES AND SETTINGS
+
+- Percentage-based automatic charge cutoff remains available: defaults
+  stop at 95% and resume at 90%. Previously saved limits remain in use.
+- Earlier temperature thresholds remain saved. Users who explicitly enable
+  module temperature-based pauses can use the battery threshold and the
+  optional CPU heat pause in Kernel Default mode again.
+- Retains CPU control, temperature monitoring, Power/Temperature tab
+  synchronization, language selection, and the Temperature tab AWK fix.
+- Continues to respect charging suspensions from the system or another
+  controller when the module does not own the charging switch.
+- Does not disable thermal drivers or change charger negotiation, charging
+  current, or charging voltage. Achieving 120 W still depends on the phone,
+  charger, cable, and charging conditions.
+
+4. TESTING AND VALIDATION LIMITS
+
+- Controller tests passed with simulated sysfs sensors and switches:
+  existing configurations, heat without charging interruption under the
+  default policy, 95%/90% cutoff cycles, custom percentage limits, optional
+  temperature pauses, heat-pause release, and external charging suspensions.
+- Temperature reading and backend regression checks passed with One True Awk.
+- WebUI settings and language flows passed DOM-model tests for exec and
+  spawn APIs. Script syntax and ZIP archive integrity were also checked.
+- Not yet tested on a physical Xiaomi 14T Pro with 120 W HyperCharge.
+  The UI checks above do not constitute Android browser rendering tests.
+
+5. HOW TO UPDATE
+
+1) Install Cogan-Smart-Kernel-v2.8.2.zip as a module update through your
+   root manager, then reboot the device.
+2) Close and reopen the Cogan Smart WebUI.
+3) Leave "Module temperature-based charging pauses" disabled to let the
+   phone manage charging temperature.
+4) Adjust percentage limits as needed. Existing settings are retained;
+   no reset is required.

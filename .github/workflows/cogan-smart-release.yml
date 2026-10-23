@@ -1,0 +1,188 @@
+name: Cogan Smart Release
+
+# Owner button (2026-10-23, "Periksa ini dulu setelah itu masukkan ke pre release"): publishes one
+# Cogan Smart Kernel module version as a release from the files kept on main in
+# modules/cogan-smart/rilis/<versi>/: the owner's ZIP byte for byte and its What's New & Fixes notes.
+# The ZIP is checked first (integrity, safe paths, id cogan_smart, version). Publishing is the
+# owner's decision. Every version keeps its own release and nothing is deleted or replaced: an
+# existing tag stops the run. A module release never takes "Latest" from the kernel releases.
+# Marking (owner 2026-10-23, "Pre-Release saja"; tested on the phone, HyperCharge too): adds a
+# bilingual "tested by the owner" label above the notes of an existing release. Files, tag,
+# title and Pre-release status stay as they are; running it again replaces only that label.
+
+on:
+  workflow_dispatch:
+    inputs:
+      versi:
+        description: "Versi modul, mis. v2.8.2 (folder modules/cogan-smart/rilis/<versi> di main)"
+        required: true
+        type: string
+      aksi:
+        description: "Terbitkan = rilis baru dari main; Tandai diuji = label diuji owner di HP pada rilis yang sudah ada (file dan status tidak berubah)"
+        type: choice
+        default: "Terbitkan"
+        options:
+          - "Terbitkan"
+          - "Tandai diuji di HP"
+          - "Tandai diuji di HP + HyperCharge"
+      release_type:
+        description: "Untuk Terbitkan. Draft = belum tampil; Pre-release = tampil berlabel Pre-release; Release = rilis biasa (tidak menjadi Latest)"
+        type: choice
+        default: "Pre-release"
+        options:
+          - "Draft"
+          - "Pre-release"
+          - "Release"
+      kernel_uji:
+        description: "Untuk Tandai diuji: kernel di HP saat uji, mis. r6 (6.1.176)"
+        type: string
+        default: "r6 (6.1.176)"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: cogan-smart-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Cogan Smart Release (${{ inputs.versi }}, ${{ inputs.aksi == 'Terbitkan' && inputs.release_type || inputs.aksi }})
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+      VERSI: ${{ inputs.versi }}
+    steps:
+      - name: Checkout the module release files (main)
+        if: inputs.aksi == 'Terbitkan'
+        uses: actions/checkout@v7.0.1
+        with:
+          ref: main
+          fetch-depth: 1
+          sparse-checkout: modules/cogan-smart/rilis
+          sparse-checkout-cone-mode: true
+          persist-credentials: false
+
+      - name: Check the package
+        if: inputs.aksi == 'Terbitkan'
+        run: |
+          set -euo pipefail
+          [[ "$VERSI" =~ ^v[0-9]+(\.[0-9]+){1,3}$ ]] || { echo "::error::Versi: v lalu angka, mis. v2.8.2"; exit 1; }
+          dir="modules/cogan-smart/rilis/$VERSI"
+          [ -d "$dir" ] || { echo "::error::Folder $dir tidak ada di main"; exit 1; }
+          zip="$dir/Cogan-Smart-Kernel-$VERSI.zip"
+          notes="$(find "$dir" -maxdepth 1 -name '*Whats-New-and-Fixes.txt' | head -n 1)"
+          [ -f "$zip" ] || { echo "::error::$zip tidak ada di main"; exit 1; }
+          [ -n "$notes" ] || { echo "::error::Catatan *Whats-New-and-Fixes.txt tidak ada di $dir"; exit 1; }
+          python3 - "$zip" "$VERSI" <<'PY'
+          import sys
+          import zipfile
+          archive = zipfile.ZipFile(sys.argv[1])
+          broken = archive.testzip()
+          if broken:
+              raise SystemExit(f"ZIP rusak / corrupt ZIP: {broken}")
+          names = archive.namelist()
+          unsafe = [n for n in names if n.startswith("/") or ".." in n.split("/")]
+          if unsafe:
+              raise SystemExit(f"Jalur berbahaya / unsafe paths: {unsafe}")
+          for need in ("module.prop", "customize.sh", "META-INF/com/google/android/update-binary"):
+              if need not in names:
+                  raise SystemExit(f"{need} tidak ada di ZIP / missing from the ZIP")
+          prop = dict(line.split("=", 1) for line in archive.read("module.prop").decode().splitlines() if "=" in line)
+          if prop.get("id") != "cogan_smart":
+              raise SystemExit(f"id modul {prop.get('id')!r}, harus cogan_smart")
+          if prop.get("version") != sys.argv[2]:
+              raise SystemExit(f"module.prop version {prop.get('version')!r}, input {sys.argv[2]!r}")
+          print("OK", prop["version"], "versionCode", prop.get("versionCode"), len(names), "berkas / files")
+          PY
+          {
+            echo "ZIP=$zip"
+            echo "NOTES=$notes"
+            echo "VERSION_CODE=$(unzip -p "$zip" module.prop | sed -n 's/^versionCode=//p' | tr -d '\r')"
+            echo "SOURCE_SHA=$(git rev-parse HEAD)"
+          } >> "$GITHUB_ENV"
+
+      - name: Create the release
+        if: inputs.aksi == 'Terbitkan'
+        env:
+          RELEASE_TYPE: ${{ inputs.release_type }}
+          SERVER: ${{ github.server_url }}
+        run: |
+          set -euo pipefail
+          tag="cogan-smart-$VERSI"
+          if gh release view "$tag" --repo "$REPO" > /dev/null 2>&1; then
+            echo "::error::Rilis $tag sudah ada. Rilis tidak pernah dihapus atau ditimpa / releases are never replaced."
+            exit 1
+          fi
+          case "$RELEASE_TYPE" in
+            Draft) mode=(--draft --prerelease) ;;
+            Pre-release) mode=(--prerelease) ;;
+            Release) mode=(--latest=false) ;;
+            *) echo "::error::Unknown release type $RELEASE_TYPE"; exit 1 ;;
+          esac
+          sha="$(sha256sum "$ZIP" | cut -d' ' -f1)"
+          source="$SERVER/$REPO/tree/main/modules/cogan-smart"
+          {
+            echo "## Cogan Smart Kernel $VERSI — modul Xiaomi 14T Pro (rothko)"
+            echo
+            echo "- ID modul / module ID: \`cogan_smart\` · versionCode $VERSION_CODE"
+            echo "- Pasang lewat root manager sebagai pembaruan modul, lalu reboot / install through your root manager as a module update, then reboot."
+            echo "- SHA256 \`$(basename "$ZIP")\`: \`$sha\`"
+            echo "- Sumber / source: [\`modules/cogan-smart\`]($source) · \`main\` @ \`${SOURCE_SHA:0:12}\`"
+            echo
+            echo "> [!NOTE]"
+            echo "> 🇮🇩 Modul ini tidak mengubah kernel. Apa yang sudah dan belum diuji ada di bagian pengujian catatan di bawah."
+            echo "> 🇬🇧 This module does not change the kernel. What was and was not tested is in the testing section of the notes below."
+            echo
+            echo '```text'
+            cat "$NOTES"
+            echo '```'
+          } > release-notes.md
+          # GitHub refuses a GITHUB_TOKEN tag on a commit whose .github/workflows differs from this
+          # branch's, so the tag goes on the commit this release runs from; the notes name the source.
+          gh release create "$tag" "$ZIP" "$NOTES" --repo "$REPO" --target "$GITHUB_SHA" \
+            --title "Cogan Smart Kernel $VERSI" --notes-file release-notes.md "${mode[@]}"
+          echo "- Rilis / release: [$tag]($SERVER/$REPO/releases/tag/$tag) ($RELEASE_TYPE)" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Mark the release as tested on the phone
+        if: inputs.aksi != 'Terbitkan'
+        env:
+          AKSI: ${{ inputs.aksi }}
+          KERNEL_UJI: ${{ inputs.kernel_uji }}
+          SERVER: ${{ github.server_url }}
+        run: |
+          set -euo pipefail
+          [[ "$VERSI" =~ ^v[0-9]+(\.[0-9]+){1,3}$ ]] || { echo "::error::Versi: v lalu angka, mis. v2.8.2"; exit 1; }
+          [[ "$KERNEL_UJI" =~ ^[A-Za-z0-9.\ ()+-]{1,40}$ ]] || { echo "::error::kernel_uji: huruf, angka, spasi dan . ( ) + - saja, mis. r6 (6.1.176)"; exit 1; }
+          tag="cogan-smart-$VERSI"
+          gh release view "$tag" --repo "$REPO" --json body --jq .body > body.md \
+            || { echo "::error::Rilis $tag tidak ada"; exit 1; }
+          python3 - body.md <<'PY'
+          import os, re, sys, time
+          path = sys.argv[1]
+          body = open(path, encoding="utf-8").read()
+          kernel = os.environ["KERNEL_UJI"]
+          day = time.strftime("%Y-%m-%d", time.gmtime(time.time() + 7 * 3600))   # WIB
+          charge_id = ", termasuk pengisian HyperCharge" if "HyperCharge" in os.environ["AKSI"] else ""
+          charge_en = ", including HyperCharge charging" if charge_id else ""
+          label = ("<!-- diuji-hp -->\n\n"
+                   "> [!TIP]\n"
+                   f"> 🇮🇩 **Diuji owner di Xiaomi 14T Pro** dengan kernel Cogan {kernel}{charge_id} ({day}). "
+                   "Bagian pengujian di catatan bawah ditulis sebelum uji HP ini.\n"
+                   f"> 🇬🇧 **Tested by the owner on the Xiaomi 14T Pro** with the Cogan {kernel} kernel{charge_en} ({day}). "
+                   "The testing section in the notes below was written before this phone test.\n\n"
+                   "<!-- /diuji-hp -->\n\n")
+          old = re.compile(r"<!-- diuji-hp -->.*?<!-- /diuji-hp -->\n\n", re.S)
+          if old.search(body):
+              body = old.sub(lambda _: label, body, count=1)
+          elif "> [!NOTE]" in body:
+              body = body.replace("> [!NOTE]", label + "> [!NOTE]", 1)
+          else:
+              raise SystemExit("Catatan rilis tidak berformat Cogan Smart Release; label tidak dipasang")
+          open(path, "w", encoding="utf-8").write(body)
+          PY
+          gh release edit "$tag" --repo "$REPO" --notes-file body.md
+          gh release view "$tag" --repo "$REPO" --json isPrerelease,isDraft,assets \
+            --jq '"Pre-release: \(.isPrerelease) · Draft: \(.isDraft) · aset: \(.assets | length)"'
+          echo "- Ditandai diuji di HP / marked as tested: [$tag]($SERVER/$REPO/releases/tag/$tag) ($AKSI, kernel $KERNEL_UJI)" >> "$GITHUB_STEP_SUMMARY"

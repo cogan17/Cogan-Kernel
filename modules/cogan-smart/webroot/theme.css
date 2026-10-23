@@ -1,0 +1,26 @@
+/* Cogan Smart: two themes in a Material You style, shared by every page.
+   Terang hangat (warm light) and Gelap OLED (true black). "Otomatis" follows the phone;
+   the About page stores a fixed choice in localStorage as <html data-theme="light|dark">. */
+:root {
+  color-scheme: light;
+  --bg: #f8efe7; --card: #fffbf8; --text: #201a15; --muted: #5f5045; --line: #eaddd2;
+  --accent: #8e4e14; --on-accent: #ffffff; --chip: #f3e3d6;
+  --ok: #2f6b3a; --warm: #9a5b00; --hot: #ba1a1a; --bar: #8e4e14;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #000000; --card: #0e0c0b; --text: #ede0d7; --muted: #a8968a; --line: #2a2420;
+    --accent: #ffb77c; --on-accent: #4d2700; --chip: #1a1613;
+    --ok: #7ddb91; --warm: #ffb95a; --hot: #ff7b6e; --bar: #ffb77c;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #000000; --card: #0e0c0b; --text: #ede0d7; --muted: #a8968a; --line: #2a2420;
+  --accent: #ffb77c; --on-accent: #4d2700; --chip: #1a1613;
+  --ok: #7ddb91; --warm: #ffb95a; --hot: #ff7b6e; --bar: #ffb77c;
+}
+.credit { text-align: center; color: var(--muted); font-size: 12px; margin-top: 6px; line-height: 1.7; }
+.credit b { color: var(--text); font-weight: 600; }
+.credit a { color: var(--accent); }

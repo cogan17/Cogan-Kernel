@@ -1,0 +1,168 @@
+Cogan Smart Kernel v2.8.1
+What's New & Fixes / Penambahan, Pembaruan, dan Perbaikan
+
+Tanggal / Date: 22 Oktober 2026 / 22 October 2026
+Maintainer: Cogan (cogan17)
+Paket / Package: Cogan-Smart-Kernel-v2.8.1.zip
+Cakupan / Scope: v2.7 -> v2.8 -> v2.8.1
+
+
+BAHASA INDONESIA
+
+1. PERBAIKAN TERBARU — v2.8.1
+
+- Memperbaiki tab Suhu yang gagal membaca data dengan pesan:
+  "Perintah now gagal (kode 2): awk: syntax error ... json_now".
+- Memperbaiki ekspresi kondisi pada pembentukan JSON agar diterima oleh
+  One True Awk. Kondisi kini diperiksa sebelum pemanggilan printf.
+- Menambahkan tanda kurung pada ekspresi pemisah JSON untuk konsistensi
+  sintaks di laporan kontrol dan cooling.
+- Memperbarui penanda versi aset dan cache WebUI agar halaman memuat kode
+  pembaruan, bukan memakai jawaban yang tersimpan dari versi sebelumnya.
+
+2. PENAMBAHAN — v2.8
+
+- Satu decoder sensor untuk tab Daya, tab Suhu, dan pengendali latar.
+  Pemilihan sensor CPU/GPU dan konversi satuan memakai fungsi bersama.
+- Snapshot singkat dengan jendela 2 detik untuk pembacaan WebUI, sehingga
+  perpindahan tab dapat memakai pengukuran yang sama. Pengendali latar
+  tetap membaca sensor langsung.
+- Status kesehatan pencatat bersama yang memeriksa proses, waktu sampel,
+  dan interval pencatatan.
+- Penanda untuk membedakan pencatat berhenti, sedang menyiapkan sampel
+  pertama, sedang mencatat, dan masih hidup tetapi sampelnya terlambat.
+- Keterangan terpisah untuk umur pembacaan sensor dan umur catatan
+  aktivitas, sehingga catatan lama tidak terlihat sebagai aktivitas terkini.
+- Penerapan bahasa Indonesia/English di seluruh tab, tombol, pesan,
+  konfirmasi, ringkasan, serta ekspor log TXT/CSV.
+- Cache jawaban yang dipisahkan menurut bahasa dan versi WebUI.
+
+3. PEMBARUAN DAN PERBAIKAN — v2.8
+
+- Menyamakan cara tab Daya dan Suhu menentukan status pencatat.
+  Sampel terlambat tidak langsung disebut sebagai pencatat berhenti.
+- Menyesuaikan toleransi umur sampel dengan interval pencatatan,
+  termasuk ketika interval diatur sampai 300 detik.
+- Memperbarui status pencatat melalui pembacaan rutin, tanpa menunggu
+  pembaruan informasi identitas kernel yang lebih jarang.
+- Menghidupkan kembali pembaruan data ketika WebUI kembali dari cache
+  navigasi. Sebelumnya, pembaruan dapat berhenti setelah halaman ditinggal.
+- Memperbaiki pilihan English yang sebelumnya hanya diterapkan di halaman
+  Tentang. Pilihan bahasa kini digunakan kembali saat berpindah tab dan
+  membuka ulang WebUI.
+- Mencegah sensor yang tidak tersedia digantikan oleh suhu dari riwayat
+  lama. Tampilan menunjukkan bahwa sensor tidak tersedia.
+- Menandai tampilan sebagai data lama ketika pembacaan gagal.
+- Membatasi waktu pembacaan aktivitas Android melalui dumpsys ketika
+  perintah timeout tersedia, untuk mengurangi risiko pencatat tersangkut.
+- Mempertahankan nama modul, deskripsi dari pembuat modul lain, jalur file,
+  dan cuplikan kode sebagai data asli saat antarmuka diterjemahkan.
+
+4. KOMPATIBILITAS PEMBARUAN
+
+- ID modul: cogan_smart.
+- Versi paket: v2.8.1; versionCode: 15.
+- Pembaruan memakai ID modul yang sama agar pengaturan dan riwayat yang
+  sudah ada tetap dipertahankan.
+- Bawaan auto cut charging tetap berhenti di 95% dan melanjutkan di 90%.
+  Pengaturan yang sebelumnya disimpan pengguna tetap digunakan.
+
+5. VALIDASI
+
+- Error v2.8 berhasil direproduksi dengan One True Awk 20251225.
+- Perbaikannya lulus pengujian pada One True Awk tersebut dan mawk.
+- Pengujian mencakup pembacaan suhu, status pencatat, start/stop,
+  interval panjang, sampel terlambat, sensor tidak tersedia, ringkasan,
+  serta ekspor TXT/CSV dalam bahasa Indonesia dan English.
+- Alur WebUI diuji menggunakan model DOM untuk API exec dan spawn,
+  termasuk perpindahan bahasa dan pemulihan pembaruan setelah navigasi.
+- Pengujian ini belum dilakukan langsung pada Xiaomi 14T Pro atau melalui
+  rendering WebUI di browser Android.
+
+6. CARA MEMPERBARUI
+
+1) Pasang Cogan-Smart-Kernel-v2.8.1.zip sebagai pembaruan modul melalui
+   root manager.
+2) Reboot perangkat.
+3) Tutup dan buka ulang WebUI Cogan Smart.
+4) Pilih Indonesia atau English di halaman Tentang sesuai kebutuhan.
+
+
+ENGLISH
+
+1. LATEST FIX — v2.8.1
+
+- Fixes the Temperature tab failing to read data with the error:
+  "Command now failed (code 2): awk: syntax error ... json_now".
+- Fixes a conditional expression in JSON generation that One True Awk
+  rejected. The condition is now evaluated before the printf call.
+- Parenthesises JSON separator expressions for consistent syntax in
+  control and cooling reports.
+- Updates WebUI asset and cache version markers so pages load the updated
+  code instead of reusing responses cached by an earlier version.
+
+2. ADDED — v2.8
+
+- One shared sensor decoder for Power, Temperature, and background
+  controllers. CPU/GPU selection and unit conversion use shared functions.
+- A short WebUI sensor snapshot with a two-second window, allowing tab
+  switches to reuse the same measurement. Background controllers continue
+  to read hardware directly.
+- Shared recorder health checks covering process identity, sample time,
+  and the configured recording interval.
+- Indicators distinguishing a stopped recorder, a recorder collecting its
+  first sample, active recording, and a live process with delayed samples.
+- Separate labels for sensor reading age and recorded activity age, so
+  older activity is not presented as current activity.
+- Indonesia/English support across tabs, buttons, feedback, confirmation
+  messages, summaries, and TXT/CSV log exports.
+- Response caches separated by language and WebUI version.
+
+3. UPDATED AND FIXED — v2.8
+
+- Aligns how Power and Temperature determine recorder status. A delayed
+  sample is no longer automatically described as a stopped recorder.
+- Makes sample freshness tolerance follow the recording interval,
+  including intervals configured up to 300 seconds.
+- Refreshes recorder health through regular reads without waiting for the
+  less frequent kernel identity refresh.
+- Resumes data polling when WebUI returns from the navigation cache.
+  Previously, polling could remain stopped after leaving a page.
+- Fixes the English selection previously affecting only the About page.
+  The selected language is now reused across tabs and after reopening WebUI.
+- Prevents unavailable live sensors from falling back to historical
+  temperatures. The interface reports that sensors are unavailable.
+- Marks displayed values as stale when a read fails.
+- Limits Android activity reads through dumpsys when timeout is available,
+  reducing the chance of a recorder becoming stuck on those reads.
+- Preserves module names, third-party module descriptions, file paths,
+  and code evidence as original data when translating the interface.
+
+4. UPDATE COMPATIBILITY
+
+- Module ID: cogan_smart.
+- Package version: v2.8.1; versionCode: 15.
+- The update retains the same module ID to preserve existing settings
+  and recorded history.
+- Default automatic charge cutoff remains 95% stop and 90% resume.
+  Settings previously saved by the user continue to be used.
+
+5. VALIDATION
+
+- The v2.8 failure was reproduced with One True Awk 20251225.
+- The fix passed tests with that One True Awk version and mawk.
+- Tests cover live temperature reads, recorder status, start/stop, long
+  intervals, delayed samples, unavailable sensors, summaries, and bilingual
+  TXT/CSV exports.
+- Functional WebUI tests use a DOM model with both exec and spawn APIs,
+  including language changes and polling recovery after navigation.
+- These tests have not been run on a physical Xiaomi 14T Pro or through
+  WebUI rendering in an Android browser.
+
+6. HOW TO UPDATE
+
+1) Install Cogan-Smart-Kernel-v2.8.1.zip as a module update through your
+   root manager.
+2) Reboot the device.
+3) Close and reopen the Cogan Smart WebUI.
+4) Select Indonesia or English on the About page as needed.
