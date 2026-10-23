@@ -211,6 +211,11 @@ echo "::group::AnyKernel3 package"
 cd "$WORK"
 git clone -q "$(snap anykernel.repo)" anykernel
 git -C anykernel checkout -q --detach "$(snap anykernel.commit)"
+git -C anykernel fetch -q origin "$(snap anykernel.arm64_tools)"
+for tool in $(git -C anykernel ls-tree --name-only FETCH_HEAD); do
+  git -C anykernel show "FETCH_HEAD:$tool" > "anykernel/tools/$tool"
+  chmod 755 "anykernel/tools/$tool"
+done
 rm -rf anykernel/.git anykernel/.github anykernel/README.md anykernel/LICENSE anykernel/modules anykernel/patch anykernel/ramdisk
 sed -e "s|KERNEL_STRING|$NAME $RELEASE $LINUX_VERSION $VARIANT by Cogan (cogan17)|" -e "s|FEATURES_LINE|$FEATURES|" \
   "$HERE/anykernel/anykernel.sh" > anykernel/anykernel.sh
@@ -221,8 +226,13 @@ python3 - "$OUT/$ZIP" <<'PY'
 import sys, zipfile
 with zipfile.ZipFile(sys.argv[1]) as archive:
     names = set(archive.namelist())
-    if archive.testzip() or not {"anykernel.sh", "Image", "tools/ak3-core.sh"} <= names:
+    if archive.testzip() or not {"anykernel.sh", "Image", "tools/ak3-core.sh", "tools/magiskboot"} <= names:
         raise SystemExit("invalid AnyKernel3 ZIP")
+    # rothko cannot run 32-bit code: every tool must be a 64-bit ARM ELF (e_machine 183).
+    for name in sorted(n for n in names if n.startswith("tools/") and not n.endswith((".sh", "/"))):
+        head = archive.read(name)[:20]
+        if head[:5] != b"\x7fELF\x02" or int.from_bytes(head[18:20], "little") != 183:
+            raise SystemExit(f"{name} is not an arm64 binary: rothko runs no 32-bit code")
 PY
 echo "::endgroup::"
 
