@@ -33,6 +33,13 @@ Repo ini lanjutan dari [cogan17/Kernel-14t-pro](https://github.com/cogan17/Kerne
 - **Setiap versi punya rilis sendiri dan tidak dihapus.** Artifact Actions hanya bertahan 7 hari. Changelog ID dan EN memakai versi yang sama.
 - **Instruksi yang bisa dibaca dua arah: tanya dulu.**
 
+## Hemat run workflow (owner, 23 Okt 2026)
+
+- **Jangan boros Actions.** Jalankan workflow hanya bila sudah yakin hasilnya akan benar: kode sudah dicek lokal (tes, lint, uji dengan repo hulu sungguhan bila bisa).
+- **Gagal = investigasi dulu, bukan coba-coba.** Baca log, temukan penyebabnya, perbaiki sekali dengan benar, baru jalankan ulang. Jangan berputar-putar dengan run berulang.
+- **Investigasi secukupnya.** Jangan terlalu lama; cari bukti yang menentukan, lalu putuskan.
+- **Cepat bukan berarti teledor.** Kerjakan dengan bijaksana.
+
 ## Uji sublevel: bukti compile, bukan satu per satu di HP
 
 - Owner **tidak** menguji sublevel satu per satu di HP. Jangan pernah meminta owner mem-flash sublevel hanya untuk mengecek kompatibilitasnya.
