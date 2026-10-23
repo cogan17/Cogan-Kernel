@@ -32,6 +32,7 @@ def notes(env, files, run_url, repo, tested=False, note=""):
              f"- Root: {root} + SUSFS {env['SUSFS_VERSION']} `{env['SUSFS_COMMIT'][:12]}`",
              f"- NoMount: {env['NOMOUNT']} · Neutron clang {env['NEUTRON']}",
              f"- Fitur / features: {env['FEATURES']}",
+             *([f"- Unicode fix: WildKernel `{env['UNICODE_FIX'][:12]}`"] if env.get("UNICODE_FIX", "-") != "-" else []),
              f"- {env['KMI_COMPAT'].split('; BSP:')[0]}", ""]
     if note.strip():
         lines += ["> [!NOTE]", *[f"> {line}" for line in note.replace("\\n", "\n").strip().splitlines()], ""]

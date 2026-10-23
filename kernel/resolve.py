@@ -10,7 +10,10 @@ When the newest version cannot work on rothko yet, the variant is not built and 
 whom to wait for, in Indonesian and English. The KMI gate of the build is not part of this: it
 always runs and fails closed.
 
-Usage: resolve.py --root KSUN|BSU [--sublevel lts|N|N,M|semua] --out FILE.json
+--unicode (the Unicode fix box, off by default) also takes the newest commit of WildKernel's
+kernel_patches for its unicode bypass fix; without it nothing of WildKernel is read.
+
+Usage: resolve.py --root KSUN|BSU [--sublevel lts|N|N,M|semua] [--unicode] --out FILE.json
 """
 import argparse
 import base64
@@ -37,6 +40,9 @@ NOMOUNT = "https://github.com/maxsteeel/nomount"
 BBG = "https://github.com/vc-teahouse/Baseband-guard"
 ANYKERNEL = "https://github.com/osm0sis/AnyKernel3"
 NEUTRON = "Neutron-Toolchains/clang-build-catalogue"
+# fs/unicode/utf8-norm.c is the same from 6.1 to 6.1.190 (ACK included): one patch for every 6.1 release.
+UNICODE_FIX = "https://github.com/WildKernels/kernel_patches"
+UNICODE_FIX_PATCH = "common/unicode_bypass_fix_6.1+.patch"
 RELEASE = re.compile(r"v(\d+)\.(\d+)\.(\d+)(?:-rc(\d+))?")
 STABLE = re.compile(r"v(\d+)\.(\d+)\.(\d+)")
 # Root-driver hooks a SUSFS kernel patch may call; BakaSU must define them as global functions.
@@ -199,9 +205,15 @@ def bakasu_ready(repo, bakasu_ref, susfs_ref):
     return ", ".join(problems) or None
 
 
+def unicode_fix(ls_remote=ls_remote):
+    """The newest WildKernel unicode bypass fix (Unicode fix box)."""
+    return {"repo": UNICODE_FIX, "commit": ls_remote(UNICODE_FIX, "refs/heads/main")["refs/heads/main"],
+            "path": UNICODE_FIX_PATCH}
+
+
 # ---- the whole snapshot ---------------------------------------------------------------------
 
-def resolve(root, sublevel, work):
+def resolve(root, sublevel, work, unicode=False):
     snap = {"root": root}
     snap["ack"] = [{"tag": tag, "commit": sha, "sublevel": sub}
                    for tag, sha, sub in pick_ack(ack_releases(ls_remote(ACK, "refs/tags/android14-6.1-*")), sublevel)]
@@ -254,6 +266,8 @@ def resolve(root, sublevel, work):
     snap["neutron"] = {"tag": neutron["tag_name"],
                        "url": f"https://github.com/{NEUTRON}/releases/download/{neutron['tag_name']}/"
                               f"neutron-clang-{neutron['tag_name']}.tar.zst"}
+    if unicode:
+        snap["unicode"] = unicode_fix()
     return snap
 
 
@@ -262,10 +276,11 @@ def main(argv=None):
     parser.add_argument("--root", choices=["KSUN", "BSU"], required=True)
     parser.add_argument("--sublevel", default="lts")
     parser.add_argument("--out", type=Path, required=True)
+    parser.add_argument("--unicode", action="store_true", help="the Unicode fix box is ticked")
     args = parser.parse_args(argv)
     with tempfile.TemporaryDirectory(prefix="resolve-") as work:
         try:
-            snap = resolve(args.root, args.sublevel, work)
+            snap = resolve(args.root, args.sublevel, work, args.unicode)
         except Wait as wait:
             args.out.write_text(json.dumps({"root": args.root, "wait": {"id": wait.id_text, "en": wait.en_text}},
                                            indent=1))

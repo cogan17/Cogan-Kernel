@@ -86,5 +86,21 @@ class KsunManagerTest(unittest.TestCase):
             self.assertIn("bbbbbbbbbbbb", caught.exception.id_text)
 
 
+class UnicodeFixTest(unittest.TestCase):
+    def test_newest_wildkernel_patch(self):
+        asked = []
+
+        def ls_remote(url, *patterns):
+            asked.append((url, patterns))
+            return {"refs/heads/main": "9" * 40}
+        self.assertEqual(r.unicode_fix(ls_remote), {"repo": "https://github.com/WildKernels/kernel_patches",
+                                                    "commit": "9" * 40, "path": "common/unicode_bypass_fix_6.1+.patch"})
+        self.assertEqual(asked, [("https://github.com/WildKernels/kernel_patches", ("refs/heads/main",))])
+
+    def test_the_box_is_off_unless_asked(self):
+        import inspect
+        self.assertFalse(inspect.signature(r.resolve).parameters["unicode"].default)
+
+
 if __name__ == "__main__":
     unittest.main()

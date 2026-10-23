@@ -10,7 +10,7 @@
 #   SNAPSHOT     resolve.py JSON of the root (KSUN or BSU)
 #   ACK_TAG ACK_COMMIT SUBLEVEL   the ACK release of this job
 #   BRAND REVISION RUN_NUMBER LTO(full|thin|none) BUILD_TIME(N or a date)
-#   NOMOUNT BBG NETWORKING (true|false)   OUT (results)   GH_TOKEN
+#   NOMOUNT BBG NETWORKING UNICODE (true|false)   OUT (results)   GH_TOKEN
 set -euo pipefail
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
@@ -100,6 +100,18 @@ if [ "${NETWORKING:-true}" = "true" ]; then
   apply "$BBR_DIR/bbrv3.patch" || fail "BBRv3 does not fit ACK 6.1.$SUBLEVEL yet: the patch must be adapted in this repository (or untick Networking)"
   apply "$HERE/patches/bbrv3/bbr3-alias.patch" || fail "bbr3 name patch does not fit on top of BBRv3"
   apply "$BBR_DIR/bbrv3-kabi.patch" || fail "BBRv3 stock-KMI patch does not fit ACK 6.1.$SUBLEVEL yet"
+  echo "::endgroup::"
+fi
+
+if [ "${UNICODE:-false}" = "true" ]; then
+  echo "::group::Unicode fix (WildKernel) $(snap unicode.commit | cut -c1-12)"
+  # Names with ignorable code points (zero-width characters) no longer fold to the same name on
+  # casefolded storage. The newest patch of WildKernel's kernel_patches, applied strictly.
+  RAW="$(snap unicode.repo | sed 's#^https://github.com/#https://raw.githubusercontent.com/#')"
+  curl -fsSL --retry 3 "$RAW/$(snap unicode.commit)/$(snap unicode.path | sed 's/+/%2B/g')" -o "$WORK/unicode-fix.patch"
+  apply "$WORK/unicode-fix.patch" \
+    || wait_for "Tunggu WildKernel: patch Unicode fix terbaru tidak cocok dengan ACK 6.1.$SUBLEVEL (atau lepas centang Unicode fix)." \
+                "Wait for WildKernel: the newest Unicode fix patch does not fit ACK 6.1.$SUBLEVEL (or untick Unicode fix)."
   echo "::endgroup::"
 fi
 
@@ -276,6 +288,7 @@ echo "::endgroup::"
   echo "SUSFS_COMMIT=$(snap susfs.commit)"
   echo "NOMOUNT=$([ "${NOMOUNT:-true}" = "true" ] && snap nomount.tag || echo -)"
   echo "BBG_COMMIT=$([ "${BBG:-true}" = "true" ] && snap bbg.commit || echo -)"
+  echo "UNICODE_FIX=$([ "${UNICODE:-false}" = "true" ] && snap unicode.commit || echo -)"
   echo "NEUTRON=$(snap neutron.tag)"
   echo "FEATURES=$FEATURES"
   echo "KMI_COMPAT=$KMI_COMPAT"

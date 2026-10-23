@@ -9,6 +9,8 @@ so the line cannot claim a feature the build lacks:
                    default congestion control, "also bbr3" when the bbr3 name
                    patch registers it a second time
   BBG, NoMount     CONFIG_BBG=y, CONFIG_NOMOUNT=y
+  Unicode fix      CONFIG_UNICODE=y and fs/unicode/utf8-norm.c checks an empty
+                   decomposition before it moves on (WildKernel's unicode bypass fix)
   Cogan Bridge     CONFIG_COGAN_BRIDGE=y
   LTO              Full / Thin / No LTO
 
@@ -23,6 +25,7 @@ from pathlib import Path
 
 BBR_V3 = re.compile(r"^#define\s+BBR_VERSION\s+3\b", re.MULTILINE)
 BBR3_NAME = re.compile(r'tcp_bbr3_cong_ops\.name,\s*"bbr3"')
+UNICODE_FIX = re.compile(r"ccc == DECOMPOSE\)\s*\{(?:\s*//[^\n]*)?\s*if \(\*LEAF_STR\(leaf\) == '\\0'\)")
 
 
 def read_config(text):
@@ -36,7 +39,7 @@ def read_config(text):
     return values
 
 
-def features(config_text, bbr_source=""):
+def features(config_text, bbr_source="", unicode_source=""):
     config = read_config(config_text)
     on = lambda key: config.get(key) == "y"  # noqa: E731
     found = []
@@ -51,6 +54,8 @@ def features(config_text, bbr_source=""):
         found.append("BBG")
     if on("CONFIG_NOMOUNT"):
         found.append("NoMount")
+    if on("CONFIG_UNICODE") and UNICODE_FIX.search(unicode_source):
+        found.append("Unicode fix")
     if on("CONFIG_COGAN_BRIDGE"):
         found.append("Cogan Bridge")
     if on("CONFIG_LTO_CLANG_FULL"):
@@ -72,10 +77,12 @@ def main(argv=None):
         config_text = args.config.read_text(encoding="utf-8")
         bbr = args.source / "net/ipv4/tcp_bbr.c"
         bbr_source = bbr.read_text(encoding="utf-8", errors="replace") if bbr.is_file() else ""
+        utf8 = args.source / "fs/unicode/utf8-norm.c"
+        unicode_source = utf8.read_text(encoding="utf-8", errors="replace") if utf8.is_file() else ""
     except OSError as exc:
         print("kernel features unreadable: " + str(exc), file=sys.stderr)
         return 1
-    line = ", ".join(features(config_text, bbr_source))
+    line = ", ".join(features(config_text, bbr_source, unicode_source))
     print(line)
     if args.github_env:
         with open(args.github_env, "a", encoding="utf-8") as handle:
