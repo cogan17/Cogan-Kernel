@@ -1,0 +1,54 @@
+name: Validate
+
+# Cek ringan sebelum merge (owner 24 Okt 2026, meniru Validate WildKernel): tes, YAML workflow dan
+# sintaks skrip shell. Tidak membangun kernel dan tidak menyentuh rilis; sekitar satu menit.
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: validate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Tes, YAML, shell / tests, YAML, shell
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Tes / tests
+        run: python3 -m unittest discover -s tests
+
+      - name: YAML workflow
+        run: |
+          python3 -c 'import yaml' 2>/dev/null || pip install -q pyyaml
+          python3 -c 'import sys, yaml
+          for path in sys.argv[1:]:
+              yaml.safe_load(open(path, encoding="utf-8"))
+              print("ok", path)' .github/workflows/*.yml
+
+      - name: Sintaks shell / shell syntax
+        run: |
+          set -euo pipefail
+          bash -n kernel/build.sh
+          # Module and flasher scripts run in Android's POSIX sh, not bash.
+          for script in $(git ls-files 'modules/*.sh' 'kernel/anykernel/*.sh'); do sh -n "$script"; echo "ok $script"; done
+
+      - name: Ringkasan / summary
+        if: always()
+        env:
+          RESULT: ${{ job.status }}
+        run: |
+          if [ "$RESULT" = "success" ]; then
+            echo "✅ Validate: tes, YAML workflow dan sintaks shell lolos / tests, workflow YAML and shell syntax passed." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "❌ Validate gagal: lihat langkah merah pertama / failed: see the first red step." >> "$GITHUB_STEP_SUMMARY"
+          fi
