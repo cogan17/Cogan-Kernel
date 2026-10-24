@@ -74,12 +74,12 @@ The builder uses the official ACK `android14-6.1` releases since the phone's sto
 <!-- sublevel:start -->
 | Sublevel | ACK release | Status |
 |---|---|---|
-| **176** (`lts`) | `2026-09_r4` | ✅ KernelSU Next: [build + KMI gate](https://github.com/cogan17/Xiomi_14T_Pro/actions/runs/40046361218) · r1 tested on the phone |
-| 172 | `2026-06_r14` | 🧪 passed build + KMI gate in the predecessor repository |
-| 162 | `2026-03_r24` | 🧪 passed build + KMI gate in the predecessor repository |
-| 157 | `2025-12_r32` | 🧪 passed build + KMI gate in the predecessor repository |
-| 145 | `2025-09_r36` | 🧪 passed build + KMI gate in the predecessor repository |
-| 138 | `2025-06_r11` | 🧪 passed build + KMI gate in the predecessor repository · the phone's stock kernel; archive r5 tested on the phone |
+| **176** (`lts`) | `2026-09_r4` | ✅ KernelSU Next: [build + KMI gate](https://github.com/cogan17/Xiomi_14T_Pro/actions/runs/40048269498) · r1 tested on the phone |
+| 172 | `2026-06_r14` | ✅ KernelSU Next: [build + KMI gate](https://github.com/cogan17/Xiomi_14T_Pro/actions/runs/40048269498) |
+| 162 | `2026-03_r24` | ✅ KernelSU Next: [build + KMI gate](https://github.com/cogan17/Xiomi_14T_Pro/actions/runs/40048269498) |
+| 157 | `2025-12_r32` | ✅ KernelSU Next: [build + KMI gate](https://github.com/cogan17/Xiomi_14T_Pro/actions/runs/40048269498) |
+| 145 | `2025-09_r36` | ⏳ KernelSU Next: [Wait for simonpunk to update SUSFS: its newest kernel patch does not fit ACK 6.1.145](https://github.com/cogan17/Xiomi_14T_Pro/actions/runs/40048269498) |
+| 138 | `2025-06_r17` | ⏳ KernelSU Next: [Wait for simonpunk to update SUSFS: its newest kernel patch does not fit ACK 6.1.138](https://github.com/cogan17/Xiomi_14T_Pro/actions/runs/40048269498) · the phone's stock kernel; archive r5 tested on the phone |
 <!-- sublevel:end -->
 
 Unicode fix (optional) is proven on 176 (CI) and 138 (locally); other sublevels are expected to fit. If WildKernel's patch does not fit yet, the build stops: untick Unicode fix to build anyway.

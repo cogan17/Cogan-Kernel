@@ -74,12 +74,12 @@ Builder memakai rilis ACK resmi `android14-6.1` sejak kernel bawaan HP; `lts` = 
 <!-- sublevel:start -->
 | Sublevel | Rilis ACK | Status |
 |---|---|---|
-| **176** (`lts`) | `2026-09_r4` | ✅ KernelSU Next: [build + gate KMI](https://github.com/cogan17/Xiomi_14T_Pro/actions/runs/40046361218) · r1 diuji di HP |
-| 172 | `2026-06_r14` | 🧪 lolos build + gate KMI di repo pendahulu |
-| 162 | `2026-03_r24` | 🧪 lolos build + gate KMI di repo pendahulu |
-| 157 | `2025-12_r32` | 🧪 lolos build + gate KMI di repo pendahulu |
-| 145 | `2025-09_r36` | 🧪 lolos build + gate KMI di repo pendahulu |
-| 138 | `2025-06_r11` | 🧪 lolos build + gate KMI di repo pendahulu · kernel bawaan HP; arsip r5 diuji di HP |
+| **176** (`lts`) | `2026-09_r4` | ✅ KernelSU Next: [build + gate KMI](https://github.com/cogan17/Xiomi_14T_Pro/actions/runs/40048269498) · r1 diuji di HP |
+| 172 | `2026-06_r14` | ✅ KernelSU Next: [build + gate KMI](https://github.com/cogan17/Xiomi_14T_Pro/actions/runs/40048269498) |
+| 162 | `2026-03_r24` | ✅ KernelSU Next: [build + gate KMI](https://github.com/cogan17/Xiomi_14T_Pro/actions/runs/40048269498) |
+| 157 | `2025-12_r32` | ✅ KernelSU Next: [build + gate KMI](https://github.com/cogan17/Xiomi_14T_Pro/actions/runs/40048269498) |
+| 145 | `2025-09_r36` | ⏳ KernelSU Next: [Tunggu simonpunk memperbarui SUSFS: patch kernel terbaru tidak cocok dengan ACK 6.1.145](https://github.com/cogan17/Xiomi_14T_Pro/actions/runs/40048269498) |
+| 138 | `2025-06_r17` | ⏳ KernelSU Next: [Tunggu simonpunk memperbarui SUSFS: patch kernel terbaru tidak cocok dengan ACK 6.1.138](https://github.com/cogan17/Xiomi_14T_Pro/actions/runs/40048269498) · kernel bawaan HP; arsip r5 diuji di HP |
 <!-- sublevel:end -->
 
 Unicode fix (opsional) terbukti di 176 (CI) dan 138 (lokal); sublevel lain diharapkan cocok. Bila patch WildKernel belum cocok, build berhenti: lepas centang Unicode fix untuk tetap build.
