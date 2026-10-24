@@ -67,7 +67,7 @@ class CompanionTests(unittest.TestCase):
         status = self.p.report('reset')
         self.assertEqual(int(node.read_text()), 2000000)
         self.assertEqual((status['config']['CHARGE_STOP'], status['config']['CHARGE_RESUME']), (95, 90))
-        self.assertEqual((status['config']['TARGET_TEMP'], status['config']['AUTOSTART'], status['running']), (42, 0, 0))
+        self.assertEqual((status['config']['TARGET_TEMP'], status['config']['AUTOSTART'], status['running']), (41, 0, 0))
 
     def test_force_retries_changed_cpu_limit_and_reports_actual_values(self):
         self.p.report('set', 'MODE', 'hemat')
@@ -107,7 +107,7 @@ class CompanionTests(unittest.TestCase):
         before = rows[0].read_bytes()
         self.t.report('set', 'HOT_TEMP', '50', 'INTERVAL', '60')
         s = json.loads(self.t.report('reset'))
-        self.assertEqual((s['hot'], s['interval'], s['autostart'], s['running']), (42, 20, 0, 0))
+        self.assertEqual((s['hot'], s['interval'], s['autostart'], s['running']), (41, 20, 0, 0))
         self.assertEqual(rows[0].read_bytes(), before)
 
     def test_invalid_multi_setting_request_is_atomic_and_cannot_inject_config_lines(self):
@@ -183,14 +183,14 @@ class CompanionTests(unittest.TestCase):
         self.assertEqual(self.p.report('set','TARGET_TEMP','40'), {'ok':1})
         self.assertFalse(lock.exists())
 
-    def test_native_cpu_cooling_prevents_extra_step_when_temperature_is_flat(self):
+    def test_native_cpu_cooling_is_reported_and_the_body_gets_time_to_cool(self):
         root=self.p.sys/'class/thermal/cooling_device0'
         for k,v in {'type':'cpu-cooling','cur_state':'2','max_state':'8'}.items():write(root/k,v+'\n')
-        self.p.set_temp(45)
-        self.assertEqual(self.p.step()['level'],0)
-        self.p.set_temp(45.5)
-        self.assertEqual(self.p.step()['level'],1)
-        self.assertEqual(self.p.step()['level'],1)
+        self.p.set_body(45)
+        self.p.set_temp(65)
+        state=self.p.step()
+        self.assertEqual((state['level'],state['native_cooling']),(1,1))
+        self.assertEqual([self.p.step()['level'] for _ in range(3)],[1,1,2])
 
     def test_external_stronger_game_boost_is_not_reduced(self):
         node=self.p.cpuctl/'top-app/cpu.uclamp.min'

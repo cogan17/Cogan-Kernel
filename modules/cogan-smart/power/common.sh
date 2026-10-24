@@ -17,33 +17,41 @@ EVENTS=$CP_DATA/events.tsv
 BATTERY=$CP_SYS/class/power_supply/battery
 
 # Settings (the WebUI writes $CONFIG; only these keys and values within range are accepted).
-KEYS="MODE TARGET_TEMP GAME_LIMIT SAVER_CAP GAME_BOOST CHARGE_CTRL CHARGE_STOP CHARGE_RESUME CHARGE_THERMAL BATT_TEMP_STOP HEAT_PAUSE_CHARGE INTERVAL FORCE AUTOSTART"
+KEYS="MODE TARGET_TEMP GAME_LIMIT SAVER_CAP GAME_BOOST CHARGE_CTRL CHARGE_STOP CHARGE_RESUME CHARGE_THERMAL BATT_TEMP_STOP HEAT_PAUSE_CHARGE INTERVAL FORCE AUTOSTART CTRL_VER"
 MODE=seimbang          # hemat (Hemat) | seimbang (Kernel Default) | game (Performa)
-TARGET_TEMP=42         # Kernel Default keeps the processor at or below this (°C); Hemat 3 °C lower
-GAME_LIMIT=48          # Performa only steps in at this temperature (°C)
+# The modes read the phone body (Badan HP), what a hand feels (owner 2026-10-24); the processor
+# sits around 50 °C at rest, so a 42 °C processor target capped the CPU almost all the time.
+TARGET_TEMP=41         # Kernel Default keeps the phone body at or below this (°C); Hemat 2 °C lower
+GAME_LIMIT=44          # Performa only steps in at this phone body temperature (°C)
+                       # Owner 24 Oct 2026: 41 °C already feels "warm, getting hot" (HyperOS board 40.6 °C)
 SAVER_CAP=60           # Hemat: top speed of the big cores (% of their maximum)
 GAME_BOOST=1           # Performa: give the app on screen a minimum CPU share (uclamp)
 CHARGE_CTRL=1          # auto cut charging on/off
 CHARGE_STOP=95         # owner default, retained settings are not silently changed
 CHARGE_RESUME=90
-CHARGE_THERMAL=0      # 0 = leave charging heat management to the phone; retain percentage cutoff
+CHARGE_THERMAL=0       # 0 = HyperCharge and the phone manage charging heat (owner 2026-10-24); 1 = module pauses too
 BATT_TEMP_STOP=42      # optional module pause threshold, only when CHARGE_THERMAL=1
-HEAT_PAUSE_CHARGE=1    # optional CPU-heat pause in Kernel Default, gated by CHARGE_THERMAL
+HEAT_PAUSE_CHARGE=1    # Kernel Default: pause while charging heats the phone body, gated by CHARGE_THERMAL
 INTERVAL=10            # seconds between checks
 FORCE=0               # 1 = reapply supported controls on every check
 AUTOSTART=1
+CTRL_VER=3             # 3 = phone body thresholds of 24 Oct 2026; older configs keep their other settings
+CPU_BRAKE=95           # every mode: emergency brake when the processor reaches this (°C), not a setting
+CPU_WORK=60            # the CPU is lowered only while the processor works this hot (°C): an idle CPU, or heat
+                       # from charging or the room, is not what a lower CPU cap cools (owner 2026-10-24)
 . "$MODROOT/bridge.sh"
 
 defaults() {
-  MODE=seimbang; TARGET_TEMP=42; GAME_LIMIT=48; SAVER_CAP=60; GAME_BOOST=1
+  MODE=seimbang; TARGET_TEMP=41; GAME_LIMIT=44; SAVER_CAP=60; GAME_BOOST=1
   CHARGE_CTRL=1; CHARGE_STOP=95; CHARGE_RESUME=90; CHARGE_THERMAL=0; BATT_TEMP_STOP=42
-  HEAT_PAUSE_CHARGE=1; INTERVAL=10; FORCE=0; AUTOSTART=1
+  HEAT_PAUSE_CHARGE=1; INTERVAL=10; FORCE=0; AUTOSTART=1; CTRL_VER=3
 }
 
 limits() {   # limits KEY -> "min max" of a numeric setting
   case "$1" in
-    TARGET_TEMP) echo "35 55" ;;
-    GAME_LIMIT) echo "40 60" ;;
+    TARGET_TEMP) echo "38 46" ;;
+    GAME_LIMIT) echo "40 50" ;;
+    CTRL_VER) echo "3 3" ;;
     SAVER_CAP) echo "30 90" ;;
     GAME_BOOST|CHARGE_CTRL|CHARGE_THERMAL|HEAT_PAUSE_CHARGE|FORCE|AUTOSTART) echo "0 1" ;;
     CHARGE_STOP) echo "50 100" ;;
@@ -67,10 +75,14 @@ valid() {   # valid KEY VALUE
 load_config() {
   defaults
   [ -f "$CONFIG" ] || return 0
+  CTRL_VER=0
   while IFS='=' read -r key value; do
     valid "$key" "$value" && eval "$key=\$value"   # key is one of the settings above
   done < "$CONFIG"
   [ "$CHARGE_RESUME" -lt "$CHARGE_STOP" ] || CHARGE_RESUME=$((CHARGE_STOP - 5))
+  # Older temperatures do not carry over: v2.8 meant the processor, early v2.9.0 test builds used
+  # 42/45 °C. Everything else (mode, charging, interval) stays as the user saved it.
+  if [ "$CTRL_VER" != 3 ]; then TARGET_TEMP=41; GAME_LIMIT=44; CTRL_VER=3; fi
 }
 
 write_config() {
@@ -87,9 +99,13 @@ event() {   # one line in the WebUI's activity log
 
 deg() { echo "$(($1 / 10)).$(( ($1 < 0 ? -$1 : $1) % 10 ))"; }
 
-# Hottest CPU/GPU sensor in tenths of °C.
-read_main_temp() {
-  read_thermal_sensors | cut -f 1
+# One sensor read for the controller, in tenths of °C: MAIN_T, the hottest CPU/GPU sensor, and
+# BODY_T, the phone body (skin) sensor, or -9999 when the phone has none.
+read_temps() {
+  rt_sample=$(read_thermal_sensors)
+  MAIN_T=${rt_sample%%	*}; BODY_T=$(body_temp "${rt_sample#*	}")
+  case "$MAIN_T" in ''|*[!0-9-]*) MAIN_T=-9999 ;; esac
+  case "$BODY_T" in ''|*[!0-9-]*) BODY_T=-9999 ;; esac
 }
 
 # Battery: "level status temp_tenths current_mA"; status is charging, full, discharging or idle.
@@ -203,7 +219,7 @@ restore() {
   set_boost 0 || restore_failed=1
   restore_charge || restore_failed=1
   bridge_heartbeat power 0
-  rm -f "$CP_RUN/charge_off" "$CP_RUN/level" "$CP_RUN/cool" "$CP_RUN/prev" "$CP_RUN/state.json" "$CP_RUN/apply.tsv" "$CP_RUN/apply.tsv.tmp" "$CP_RUN/backend"
+  rm -f "$CP_RUN/charge_off" "$CP_RUN/level" "$CP_RUN/cool" "$CP_RUN/hold" "$CP_RUN/prev" "$CP_RUN/state.json" "$CP_RUN/apply.tsv" "$CP_RUN/apply.tsv.tmp" "$CP_RUN/backend"
   if [ "$restore_failed" = 1 ]; then
     : > "$CP_RUN/restore_pending"; event 'Ada kontrol yang belum pulih; periksa izin node lalu Henti lagi'; return 1
   fi
@@ -316,6 +332,31 @@ set_cpu_cap() {
     record_control "$cp_name" "$cp_freq" "${cp_actual:-unknown}" "$cp_result"
   done
   [ "$cp_count" -gt 0 ] || record_control cpu 0 unknown unsupported
+}
+
+# GPU frequency controls this phone offers, read only (owner 2026-10-24: a GPU limit for games comes
+# once these nodes are proven on the phone). Nothing here is written. JSON:
+#   {"devfreq":[{"name","cur","max","min","steps","writable"}],"ged":{"cur","upbound","levels"},"gpufreqv2":0|1}
+gpu_num() {   # first number on the first line of a node, or the fallback
+  gn_value=$(read_node "$1" | sed -n 's/^[^0-9-]*\(-\{0,1\}[0-9][0-9]*\).*/\1/p')
+  printf '%s' "${gn_value:-$2}"
+}
+gpu_json() {
+  printf '{"devfreq":['
+  gj_sep=""
+  for gj_dev in "$CP_SYS"/class/devfreq/*; do
+    [ -r "$gj_dev/max_freq" ] || continue
+    case "${gj_dev##*/}" in *mali*|*gpu*|*GPU*|*13000000*) ;; *) continue ;; esac
+    gj_steps=$(wc -w < "$gj_dev/available_frequencies" 2>/dev/null)
+    printf '%s{"name":"%s","cur":%d,"max":%d,"min":%d,"steps":%d,"writable":%d}' "$gj_sep" "${gj_dev##*/}" \
+      "$(gpu_num "$gj_dev/cur_freq" 0)" "$(gpu_num "$gj_dev/max_freq" 0)" "$(gpu_num "$gj_dev/min_freq" 0)" \
+      "${gj_steps:-0}" "$([ -w "$gj_dev/max_freq" ] && echo 1 || echo 0)"
+    gj_sep=","
+  done
+  gj_ged=$CP_SYS/kernel/ged/hal
+  printf '],"ged":{"cur":%d,"upbound":%d,"levels":%d},"gpufreqv2":%d}' "$(gpu_num "$gj_ged/current_freqency" -1)" \
+    "$(gpu_num "$gj_ged/custom_upbound_gpu_freq" -1)" "$(gpu_num "$gj_ged/total_gpu_freq_level_count" -1)" \
+    "$([ -d "$CP_PROC/gpufreqv2" ] && echo 1 || echo 0)"
 }
 
 native_cpu_cooling() {

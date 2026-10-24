@@ -1,17 +1,19 @@
 # Cogan Smart Kernel (modul)
 
-**Versi terbaru: v2.8.2** (`versionCode` 16). Sejak v2.8.2, jeda cas karena suhu oleh modul (`CHARGE_THERMAL`) **nonaktif secara bawaan**: suhu pengisian dikelola HP, auto cut 95/90 tetap jalan. Catatan perubahan lengkap ada di [`CHANGELOG.md`](CHANGELOG.md).
+**Versi terbaru: v2.9.0** (`versionCode` 17): mode mengikuti Badan HP, langkah halus, CPU hanya diturunkan saat prosesor bekerja, penyebab panas per bagian HP dengan saran, rem HyperOS. Catatan perubahan lengkap ada di [`CHANGELOG.md`](CHANGELOG.md).
 
 ## ⬇️ Unduh
 
 | Versi | versionCode | ZIP siap pasang | Catatan | Salinan di repo | SHA256 ZIP |
 |---|---|---|---|---|---|
-| **v2.8.2** (terbaru) | 16 | [Cogan-Smart-Kernel-v2.8.2.zip](https://github.com/cogan17/Cogan-Kernel/releases/download/cogan-smart-v2.8.2/Cogan-Smart-Kernel-v2.8.2.zip) | [What's New](https://github.com/cogan17/Cogan-Kernel/releases/download/cogan-smart-v2.8.2/Cogan-Smart-v2.8.2-Whats-New-and-Fixes.txt) | [`rilis/v2.8.2`](rilis/v2.8.2) | `73f6d9c9a167d1528057ff84c65d6db371a5cde63e1435ca6e5e4f14bfc367d5` |
+| **v2.9.0** (terbaru) | 17 | [Cogan-Smart-Kernel-v2.9.0.zip](https://github.com/cogan17/Cogan-Kernel/releases/download/cogan-smart-v2.9.0/Cogan-Smart-Kernel-v2.9.0.zip) | [What's New](https://github.com/cogan17/Cogan-Kernel/releases/download/cogan-smart-v2.9.0/Cogan-Smart-v2.9.0-Whats-New-and-Fixes.txt) | [`rilis/v2.9.0`](rilis/v2.9.0) | `7d15a729ce184aef8a3f870d5c0837010e22ccf69b910309c7f208b870057522` |
+| v2.8.2 | 16 | [Cogan-Smart-Kernel-v2.8.2.zip](https://github.com/cogan17/Cogan-Kernel/releases/download/cogan-smart-v2.8.2/Cogan-Smart-Kernel-v2.8.2.zip) | [What's New](https://github.com/cogan17/Cogan-Kernel/releases/download/cogan-smart-v2.8.2/Cogan-Smart-v2.8.2-Whats-New-and-Fixes.txt) | [`rilis/v2.8.2`](rilis/v2.8.2) | `73f6d9c9a167d1528057ff84c65d6db371a5cde63e1435ca6e5e4f14bfc367d5` |
 | v2.8.1 | 15 | [Cogan-Smart-Kernel-v2.8.1.zip](https://github.com/cogan17/Cogan-Kernel/releases/download/cogan-smart-v2.8.1/Cogan-Smart-Kernel-v2.8.1.zip) | [What's New](https://github.com/cogan17/Cogan-Kernel/releases/download/cogan-smart-v2.8.1/Cogan-Smart-v2.8.1-Whats-New-and-Fixes.txt) | [`rilis/v2.8.1`](rilis/v2.8.1) | `441e0780d77480f6642a84f5478ce61d659110a640ca6b025f51d2c718ce594f` |
 
-- ZIP di Pre-release ([`cogan-smart-v2.8.2`](https://github.com/cogan17/Cogan-Kernel/releases/tag/cogan-smart-v2.8.2), [`cogan-smart-v2.8.1`](https://github.com/cogan17/Cogan-Kernel/releases/tag/cogan-smart-v2.8.1)) dan di folder `rilis/` adalah file yang sama, byte per byte.
+- ZIP di Pre-release ([`cogan-smart-v2.9.0`](https://github.com/cogan17/Cogan-Kernel/releases/tag/cogan-smart-v2.9.0), [`cogan-smart-v2.8.2`](https://github.com/cogan17/Cogan-Kernel/releases/tag/cogan-smart-v2.8.2), [`cogan-smart-v2.8.1`](https://github.com/cogan17/Cogan-Kernel/releases/tag/cogan-smart-v2.8.1)) dan di folder `rilis/` adalah file yang sama, byte per byte.
 - Pasang lewat root manager sebagai pembaruan modul, lalu reboot. Setelan dan riwayat tetap dipakai (ID `cogan_smart` sama).
 - Kernel tujuan: **r1** repo ini (ACK 6.1.176). Diuji owner di Xiaomi 14T Pro:
+  - **v2.9.0**: menunggu uji HP. Versi uji sebelum ambang 41 °C (24 Okt 2026): Badan HP terbaca dari `quiet_therm`, tab Daya/Suhu/Modul bekerja, saklar cas `input_suspend` ditemukan;
   - **v2.8.2 dengan r1** (24 Okt 2026): identitas kernel terverifikasi lewat Cogan Bridge ("kernel dibuat untuk HP ini"), mode Kernel Default, pencatat suhu, mengecas cepat 3868 mA, penjaga modul "aman";
   - v2.8.1 dan v2.8.2 dengan kernel arsip r6 (6.1.176, 23 Okt 2026); v2.8.2 juga saat pengisian HyperCharge.
 - Versi baru: taruh ZIP dan catatannya di `rilis/<versi>/`, lalu jalankan tombol **Cogan Smart Release** di tab Actions.
@@ -21,7 +23,7 @@ Satu modul KernelSU / KernelSU Next / BakaSU / Magisk yang menggabungkan **Cogan
 | Bagian | Folder | Tugas |
 |---|---|---|
 | Daya | `power/` | Mode, batas CPU, boost aplikasi di layar, auto cut charging, readback kontrol |
-| Suhu | `thermal/` | Sensor tiap 20 detik, dugaan penyebab panas, riwayat 7 hari, simpan log |
+| Suhu | `thermal/` | Sensor tiap 20 detik (termasuk suhu papan HyperOS), dugaan penyebab panas per bagian HP dengan saran, riwayat 7 hari, simpan log |
 | Modul | `guard/` | Penjaga modul: perilaku modul lain, whitelist, hapus sampai ke akar |
 | Bersama | `bridge.sh`, `webroot/client.js` | Cogan Bridge ABI 1, transport WebUI |
 
@@ -32,9 +34,27 @@ Tiap tab adalah halaman sendiri, jadi `client.js` menyimpan jawaban baca terakhi
 
 | Di layar | Nilai internal | Perilaku |
 |---|---|---|
-| 🌿 Hemat | `hemat` | CPU besar dibatasi `SAVER_CAP` %, ambang suhu 3 °C di bawah Kernel Default |
-| 🧠 Kernel Default | `seimbang` | Bawaan. CPU diturunkan bertahap bila suhu di atas `TARGET_TEMP` (42 °C) |
-| 🎮 Performa | `game` | Performa penuh, rem darurat di `GAME_LIMIT` (48 °C), boost aplikasi di layar |
+| 🌿 Hemat | `hemat` | CPU besar dibatasi `SAVER_CAP` %, ambang Badan HP 2 °C di bawah Kernel Default (39 °C) |
+| 🧠 Kernel Default | `seimbang` | Bawaan. CPU diturunkan bertahap bila Badan HP ≥ `TARGET_TEMP` (41 °C) |
+| 🎮 Performa | `game` | Performa penuh, CPU diturunkan bila Badan HP ≥ `GAME_LIMIT` (44 °C), boost aplikasi di layar |
+
+Sejak v2.9.0 ambang mode dibaca dari suhu **Badan HP** (sensor kulit HP, yang terasa di tangan), bukan prosesor. Prosesor Dimensity HP ini saat santai pun sekitar 50 °C, sehingga ambang 42 °C pada prosesor (v2.8) membatasi CPU hampir sepanjang waktu. Badan HP memakai sensor kulit terpanas, termasuk suhu papan HyperOS (`board_sensor_temp`, dicatat sebagai `hyperos_board`); tanpa sensor Badan HP, suhu baterai yang dipakai. "Panas" di tab Suhu juga berarti Badan HP ≥ 41 °C. Ambang 41/44 °C dipilih owner setelah uji HP (41 °C sudah terasa hangat menuju panas).
+
+Langkah halus (Kernel Default dan Performa):
+
+| Langkah | CPU besar (X4) | CPU kecil (A720) |
+|---|---|---|
+| 0 | 100 % | 100 % |
+| 1–4 | 90 → 60 % | 100 % |
+| 5–6 | 60 % | 90 → 80 % |
+
+Mulai 1 °C sebelum ambang dengan langkah 1–2 saja; tiap langkah ditunggu tiga kali cek (Badan HP berubah pelan); naik lagi setelah tiga kali cek ≥ 1,5 °C di bawah ambang. CPU hanya diturunkan saat prosesor bekerja (≥ 60 °C): panas dari cas, ruangan atau HP yang santai tidak membuat CPU diturunkan, dan saat prosesor santai batasnya dilepas bertahap. Hemat turun 10 % dari `SAVER_CAP`. Di semua mode ada **rem darurat** bila prosesor ≥ 95 °C. Cogan Bridge ABI 1 memberi satu batas untuk semua inti X4 dan satu untuk A720.
+
+Jeda cas karena suhu (`CHARGE_THERMAL`) tetap **mati secara bawaan**: HyperCharge dan sistem HP yang mengatur suhu cas. GPU dibaca saja (Kontrol kernel); batas GPU menyusul setelah node-nya terbukti di HP.
+
+Kartu **🧯 Rem HyperOS** di tab Daya menampilkan batas yang dipasang HyperOS sendiri (`/sys/class/thermal/thermal_message`: suhu papan, `sconfig`, `temp_state`, batas CPU, modem, Wi-Fi, kecerahan maks, mode video). Baca saja; modul tidak menulis node itu.
+
+Tab Suhu menjelaskan tiap momen panas dari ±3 menit terakhir, per bagian HP, dengan saran: cas cepat, cas, grafis (GPU), modem (data seluler), prosesor, proses latar belakang, proses kernel, layar mati, atau layar & pemakaian biasa.
 
 **Henti** melepas semua kontrol milik modul sehingga pengaturan vendor (HyperOS/MediaTek) berjalan sendiri. Tombol Action di root manager berpindah ke mode berikutnya.
 

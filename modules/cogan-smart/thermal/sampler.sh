@@ -57,24 +57,28 @@ sample() {
   echo "$now" > "$CT_RUN/last"
 
   # Short report of this sample for other modules (Cogan Smart · Power reads it):
-  # ts  main_temp  battery_temp  charging  app_label  cause
+  # ts  main_temp  battery_temp  charging  app_label  cause (from the last few samples, see report.awk)
+  tail -n 9 "$CT_DATA/data/$day.tsv" > "$CT_RUN/recent.tsv"
   awk -v mode=latest -v since=0 -v now=$((now + 1)) -v HOT=$((HOT_TEMP * 10)) \
-      -f "$MODDIR/thermal.awk" -f "$MODDIR/report.awk" "$CT_RUN/sample.tsv" > "$CT_RUN/latest.tmp" 2>/dev/null
+      -f "$MODDIR/thermal.awk" -f "$MODDIR/report.awk" "$CT_RUN/recent.tsv" > "$CT_RUN/latest.tmp" 2>/dev/null
   [ -s "$CT_RUN/latest.tmp" ] && mv "$CT_RUN/latest.tmp" "$CT_RUN/latest"
   IFS='	' read -r _ main _ _ label _ < "$CT_RUN/latest" 2>/dev/null
-  alert "$now" "$label" "$cpu" "$gpu" "$main"
+  [ "$NOTIFY" = 1 ] || return 0
+  body=$(body_temp "$zones")
+  case "$body" in ''|*[!0-9-]*|-9999) body=$battery ;; esac   # no phone body sensor: the battery
+  alert "$now" "$label" "$cpu" "$gpu" "$body"
 }
 
-# Optional heat notification (NOTIFY=1), at most once every 10 minutes.
-alert() {   # alert TS APP_LABEL CPU GPU MAIN_TEMP
+# Optional heat notification (NOTIFY=1), on the phone body, at most once every 10 minutes.
+alert() {   # alert TS APP_LABEL CPU GPU BODY_TEMP
   [ "$NOTIFY" = 1 ] || return 0
-  main=$5
-  case "$main" in ''|*[!0-9-]*) return 0 ;; esac
-  [ "$main" -ge $((NOTIFY_TEMP * 10)) ] || return 0
+  body=$5
+  case "$body" in ''|*[!0-9-]*) return 0 ;; esac
+  [ "$body" -ge $((NOTIFY_TEMP * 10)) ] || return 0
   last=$(cat "$CT_RUN/notified" 2>/dev/null || echo 0)
   [ $(($1 - last)) -ge 600 ] || return 0
   echo "$1" > "$CT_RUN/notified"
-  text="Prosesor $((main / 10)) °C · $2"
+  text="Badan HP $((body / 10)) °C · $2"
   [ "$3" -ge 0 ] && text="$text · CPU $(($3 / 10))%"
   [ "$4" -ge 0 ] && text="$text · GPU $4%"
   cmd notification post -S bigtext -t "🔥 Cogan Thermal" cogan_thermal "$text" > /dev/null 2>&1 \

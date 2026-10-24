@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Cogan Smart · Tentang</title>
-<link rel="stylesheet" href="theme.css?v=2.8.2">
-<script src="i18n.js?v=2.8.2"></script>
+<link rel="stylesheet" href="theme.css?v=2.9.0">
+<script src="i18n.js?v=2.9.0"></script>
 <script>try { document.documentElement.dataset.theme = localStorage.getItem('cogan.theme') || ''; document.documentElement.lang = localStorage.getItem('cogan.lang') || 'id'; } catch (_) { /* storage off: defaults */ }</script>
 <style>
   * { box-sizing: border-box; }
@@ -80,7 +80,7 @@
     <p lang="id">Modul ini adalah "otak" kernel: kebijakan ada di sini, kernel menyediakan sensor dan tuas. Proyek saudara: <b>TWRP Xiaomi 14T Pro</b>.</p>
     <p lang="en">This module is the kernel's "brain": the policy lives here, the kernel provides the sensors and knobs. Sister project: <b>TWRP Xiaomi 14T Pro</b>.</p>
     <ul>
-      <li><code>github.com/cogan17/Kernel-14t-pro</code></li>
+      <li><code>github.com/cogan17/Cogan-Kernel</code></li>
       <li><code>github.com/cogan17/TWRP-14T-PRO</code></li>
     </ul>
   </section>
@@ -101,15 +101,8 @@
     <h2 lang="id">🙏 Kredit</h2>
     <h2 lang="en">🙏 Credits</h2>
     <table>
-      <tr><td>Cogan17</td><td lang="id">Maintainer: kernel Cogan Rothko, Cogan Bridge, modul ini, CI dan rilis</td><td lang="en">Maintainer: Cogan Rothko kernel, Cogan Bridge, this module, CI and releases</td></tr>
-      <tr><td>Google</td><td lang="id">Android Common Kernel (ACK) 6.1, BBRv3</td><td lang="en">Android Common Kernel (ACK) 6.1, BBRv3</td></tr>
-      <tr><td>Xiaomi &amp; MediaTek</td><td lang="id">Sumber kernel rothko, modul vendor dan firmware; hak milik masing-masing</td><td lang="en">rothko kernel source, vendor modules and firmware; owned by their respective holders</td></tr>
-      <tr><td>KernelSU · KernelSU Next</td><td lang="id">Root di dalam kernel dan WebUI modul (tiann, rifsxd; fork pershoot untuk build)</td><td lang="en">In-kernel root and module WebUI (tiann, rifsxd; pershoot's fork for the build)</td></tr>
-      <tr><td>SUSFS</td><td lang="id">Menyembunyikan jejak root (simonpunk)</td><td lang="en">Hides root traces (simonpunk)</td></tr>
-      <tr><td>NoMount</td><td lang="id">Metamodule tanpa mount (maxsteeel)</td><td lang="en">Mount-free metamodule (maxsteeel)</td></tr>
-      <tr><td>Baseband Guard</td><td lang="id">Perlindungan partisi (vc-teahouse)</td><td lang="en">Partition protection (vc-teahouse)</td></tr>
-      <tr><td>GKI-Duchamp · AK3-GKID</td><td lang="id">Dasar percobaan kernel awal (Ahmed Al-Nassif)</td><td lang="en">Base of the early kernel experiments (Ahmed Al-Nassif)</td></tr>
-      <tr><td>AnyKernel3</td><td lang="id">Installer ZIP kernel (osm0sis)</td><td lang="en">Kernel ZIP installer (osm0sis)</td></tr>
+      <tr><td>Cogan17</td><td lang="id">Maintainer: modul ini dan Cogan Bridge</td><td lang="en">Maintainer: this module and Cogan Bridge</td></tr>
+      <tr><td>KernelSU · KernelSU Next</td><td lang="id">API WebUI modul yang dipakai halaman ini (tiann, rifsxd)</td><td lang="en">The module WebUI API these pages use (tiann, rifsxd)</td></tr>
     </table>
     <p class="muted" lang="id">Modul ini berjalan di KernelSU Next, KernelSU, BakaSU dan Magisk.</p>
     <p class="muted" lang="en">This module runs on KernelSU Next, KernelSU, BakaSU and Magisk.</p>
@@ -118,14 +111,14 @@
   <section class="card">
     <h2 lang="id">🔏 Keaslian</h2>
     <h2 lang="en">🔏 Authenticity</h2>
-    <p lang="id">Kode modul terbuka di repo <code>cogan17/Kernel-14t-pro</code> (folder <code>modules/cogan-smart</code>). ZIP-nya dibuat dengan <code>scripts/package_module.py</code> yang selalu menghasilkan berkas sama persis dari kode yang sama, jadi siapa pun bisa membangun ulang dan mencocokkan SHA-256 ZIP yang diterimanya.</p>
-    <p lang="en">The module's code is open in <code>cogan17/Kernel-14t-pro</code> (folder <code>modules/cogan-smart</code>). Its ZIP is made by <code>scripts/package_module.py</code>, which always produces the identical file from the same code, so anyone can rebuild it and compare the SHA-256 of the ZIP they received.</p>
+    <p lang="id">Kode modul terbuka di repo <code>cogan17/Cogan-Kernel</code> (folder <code>modules/cogan-smart</code>). ZIP-nya dibuat dengan <code>scripts/package_module.py</code> yang selalu menghasilkan berkas sama persis dari kode yang sama, jadi siapa pun bisa membangun ulang dan mencocokkan SHA-256 ZIP yang diterimanya.</p>
+    <p lang="en">The module's code is open in <code>cogan17/Cogan-Kernel</code> (folder <code>modules/cogan-smart</code>). Its ZIP is made by <code>scripts/package_module.py</code>, which always produces the identical file from the same code, so anyone can rebuild it and compare the SHA-256 of the ZIP they received.</p>
   </section>
 
   <p class="credit">Maintainer <b>Cogan17</b> &nbsp;·&nbsp; kernel <b>Cogan Rothko</b> &nbsp;·&nbsp; <b>KernelSU Next</b></p>
 </main>
 
-<script src="client.js?v=2.8.2"></script>
+<script src="client.js?v=2.9.0"></script>
 <script>
 const POWER = '/data/adb/modules/cogan_smart/power/report.sh';
 const UI = CoganUI, power = UI.create(POWER), root = document.documentElement;

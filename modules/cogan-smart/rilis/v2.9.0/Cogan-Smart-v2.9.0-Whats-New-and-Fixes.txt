@@ -1,0 +1,173 @@
+Cogan Smart Kernel v2.9.0
+What's New & Fixes / Penambahan, Pembaruan, dan Perbaikan
+
+Tanggal / Date: 24 Oktober 2026 / 24 October 2026
+Maintainer: Cogan (cogan17)
+Paket / Package: Cogan-Smart-Kernel-v2.9.0.zip
+ID modul / Module ID: cogan_smart
+versionCode: 17
+Cakupan / Scope: v2.8.2 -> v2.9.0
+
+
+BAHASA INDONESIA
+
+1. PENAMBAHAN
+
+- Mode Hemat, Kernel Default dan Performa kini membaca suhu Badan HP
+  (sensor kulit HP, yang terasa di tangan), bukan prosesor terpanas.
+  Ambang: Hemat 39 °C, Kernel Default 41 °C, Performa 44 °C.
+- Langkah halus: mulai 1 °C sebelum ambang dengan dua langkah ringan.
+  Di ambang, CPU besar turun 10% per langkah sampai 60%, lalu CPU kecil
+  ke 90% dan 80%. Tiap langkah ditunggu tiga kali cek; CPU naik lagi
+  setelah tiga kali cek minimal 1,5 °C di bawah ambang.
+- CPU hanya diturunkan saat prosesor bekerja (60 °C atau lebih). Panas
+  dari cas, ruangan atau HP yang santai tidak membuat CPU diturunkan.
+- Rem darurat di semua mode: CPU turun setiap cek bila prosesor 95 °C
+  atau lebih.
+- Penyebab panas per bagian HP, masing-masing dengan saran: cas cepat,
+  cas, grafis (GPU), modem (data seluler), prosesor, proses latar
+  belakang, proses kernel, layar mati, serta layar & pemakaian biasa.
+  Tiap momen panas dijelaskan dari sekitar 3 menit terakhir.
+- Kartu Rem HyperOS di tab Daya (baca saja): suhu papan, profil termal,
+  batas CPU, modem dan Wi-Fi, kecerahan maks serta mode video yang
+  dipasang HyperOS sendiri.
+- Suhu papan HyperOS (board_sensor_temp) ikut dicatat tiap sampel sebagai
+  sensor hyperos_board di grup Badan HP.
+- Node GPU HP ini (devfreq Mali, GED, gpufreqv2) tampil di Kontrol
+  kernel. Baca saja; tidak ada yang ditulis.
+
+2. PEMBARUAN
+
+- Tab Suhu: "panas" berarti Badan HP 41 °C atau lebih. Grafik, penyebab
+  panas, rata-rata/tertinggi per aplikasi, kernel dan mode, serta
+  notifikasi panas memakai Badan HP. Prosesor tetap tampil.
+- Tab Daya menampilkan Badan HP sebagai suhu utama, prosesor di
+  sebelahnya, dan penanda rem darurat.
+- Tanpa sensor Badan HP, suhu baterai yang dipakai.
+- Teks WebUI Indonesia dan English, serta versi cache WebUI v2.9.0.
+- Halaman Tentang: kredit hanya untuk yang dipakai modul ini (Cogan17,
+  API WebUI KernelSU/KernelSU Next). Keaslian menyebut repo
+  cogan17/Cogan-Kernel.
+
+3. PERBAIKAN
+
+- Di v2.8.2, pengendali membandingkan prosesor terpanas (sekitar 50 °C
+  saat santai) dengan ambang 42 °C. Menurut log 3 hari owner, ambang itu
+  terlewati 97% waktu, sehingga CPU besar ditahan 40% hampir sepanjang
+  waktu. Sekarang ambang dibaca dari Badan HP.
+- Ambang suhu lama (v2.8 dan build uji v2.9.0 sebelumnya) diganti dengan
+  bawaan baru. Mode, setelan cas dan interval tetap seperti disimpan.
+
+4. FITUR DAN PENGATURAN YANG DIPERTAHANKAN
+
+- Jeda cas karena suhu oleh modul tetap nonaktif secara bawaan:
+  HyperCharge dan sistem HP yang mengatur suhu cas.
+- Auto cut charging berdasarkan persentase tetap bekerja: bawaan berhenti
+  di 95% dan melanjutkan di 90%. Batas yang disimpan pengguna tetap dipakai.
+- Modul tidak menonaktifkan driver termal, tidak menulis node HyperOS
+  atau GPU, dan tidak mengubah negosiasi charger, arus maupun tegangan.
+
+5. PENGUJIAN DAN BATAS VALIDASI
+
+- Lulus tes pengendali dan pencatat dengan sysfs tiruan, memakai mksh
+  dan One True Awk, serta dash dan mawk.
+- Simulasi pada log owner (layar menyala, ambang 41 °C): CPU penuh
+  sekitar 69% waktu pada data 3 jam dengan HyperCharge, 85% pada data
+  1 jam dan 92% pada log 3 hari. CPU besar tidak pernah di bawah 70%.
+  Angka ini dihitung dari log, belum diukur di HP.
+- Kartu Rem HyperOS dan saran penyebab diperiksa di browser Chromium
+  dengan HP tiruan, bahasa Indonesia dan English.
+- Uji HP owner pada versi sebelum ambang 41 °C: Badan HP terbaca dari
+  quiet_therm, tab Daya/Suhu/Modul bekerja, saklar cas input_suspend
+  ditemukan. Versi ini sendiri ditulis sebelum uji HP.
+
+6. CARA MEMPERBARUI
+
+1) Pasang Cogan-Smart-Kernel-v2.9.0.zip sebagai pembaruan modul melalui
+   root manager, lalu reboot perangkat.
+2) Tutup dan buka ulang WebUI Cogan Smart.
+3) Ambang suhu baru dipakai otomatis; reset tidak diperlukan.
+
+
+ENGLISH
+
+1. ADDED
+
+- Power saver, Kernel Default and Performance now read the phone body
+  temperature (the skin sensor, what a hand feels) instead of the hottest
+  processor sensor. Thresholds: Power saver 39 °C, Kernel Default 41 °C,
+  Performance 44 °C.
+- Smooth steps: from 1 °C before the threshold only two light steps. At
+  the threshold the big cores drop 10% per step down to 60%, then the
+  little cores to 90% and 80%. Each step waits three checks; the CPU
+  steps back up after three checks at least 1.5 °C below the threshold.
+- The CPU is only lowered while the processor works (60 °C or more).
+  Heat from charging, the room or an idle phone does not lower the CPU.
+- Emergency brake in every mode: the CPU steps down at every check when
+  the processor reaches 95 °C or more.
+- Heat causes per part of the phone, each with a tip: fast charging,
+  charging, graphics (GPU), the modem (cellular data), the processor,
+  a background process, kernel processes, screen off, and the screen &
+  ordinary use. Each hot moment is explained from the last ~3 minutes.
+- HyperOS brakes card in the Power tab (read only): board temperature,
+  thermal profile, CPU, modem and Wi-Fi limits, maximum brightness and
+  video mode as set by HyperOS itself.
+- The HyperOS board temperature (board_sensor_temp) is logged with every
+  sample as the sensor hyperos_board in the phone body group.
+- This phone's GPU nodes (Mali devfreq, GED, gpufreqv2) show under Kernel
+  controls. Read only; nothing is written.
+
+2. UPDATED
+
+- Temperature tab: "hot" means a phone body of 41 °C or more. The chart,
+  heat causes, per-app, per-kernel and per-mode average/peak, and the
+  heat notification use the phone body. The processor still shows.
+- The Power tab shows the phone body as the main temperature, the
+  processor beside it, and an emergency-brake marker.
+- Without a phone body sensor, the battery temperature is used.
+- WebUI texts in Indonesian and English, WebUI cache version v2.9.0.
+- About page: credits only for what this module uses (Cogan17, the
+  KernelSU/KernelSU Next WebUI API). Authenticity names the repo
+  cogan17/Cogan-Kernel.
+
+3. FIXED
+
+- v2.8.2 compared the hottest processor sensor (about 50 °C at rest)
+  with a 42 °C threshold. In the owner's 3-day log that threshold was
+  exceeded 97% of the time, so the big cores were held at 40% almost all
+  the time. The thresholds now read the phone body.
+- Earlier temperature thresholds (v2.8 and the earlier v2.9.0 test build)
+  are replaced by the new defaults. Mode, charging settings and interval
+  are kept as saved.
+
+4. RETAINED FEATURES AND SETTINGS
+
+- Module temperature-based charging pauses stay disabled by default:
+  HyperCharge and the phone manage charging temperature.
+- Percentage-based automatic charge cutoff remains available: defaults
+  stop at 95% and resume at 90%. Previously saved limits remain in use.
+- The module does not disable thermal drivers, does not write HyperOS or
+  GPU nodes, and does not change charger negotiation, current or voltage.
+
+5. TESTING AND VALIDATION LIMITS
+
+- Controller and recorder tests passed on a simulated sysfs with mksh and
+  One True Awk, and with dash and mawk.
+- Simulated on the owner's logs (screen on, 41 °C threshold): full CPU
+  about 69% of the time in the 3-hour data with HyperCharge, 85% in the
+  1-hour data and 92% in the 3-day log. The big cores never went below
+  70%. Computed from the logs, not measured on the phone.
+- The HyperOS brakes card and the cause tips were checked in a Chromium
+  browser with a simulated phone, in Indonesian and English.
+- Owner's phone test of the version before the 41 °C thresholds: the
+  phone body reads from quiet_therm, the Power/Temperature/Modules tabs
+  work, charging switch input_suspend found. These notes were written
+  before the phone test of this version.
+
+6. HOW TO UPDATE
+
+1) Install Cogan-Smart-Kernel-v2.9.0.zip as a module update through your
+   root manager, then reboot the device.
+2) Close and reopen the Cogan Smart WebUI.
+3) The new temperature thresholds apply automatically; no reset is
+   required.

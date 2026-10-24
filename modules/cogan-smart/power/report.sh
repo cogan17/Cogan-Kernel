@@ -117,11 +117,15 @@ status_json() {
   monitor=0; monitor_installed && monitor=1
   fresh=0; read_monitor && fresh=1
   sensor_snapshot
+  # The phone body as the controller reads it: the skin sensor, else the battery.
+  body=$(body_temp "$SS_ZONES"); body_from=skin
+  case "$body" in ''|*[!0-9-]*|-9999) body=-9999; body_from="" ;; esac
+  [ "$body" -gt -9999 ] || { [ "$3" -gt -999 ] && body=$3 && body_from=battery; }
   switch=$(cut -d '|' -f 1 "$CP_DATA/switch" 2>/dev/null)
   state=$(cat "$CP_RUN/state.json" 2>/dev/null)
   version=$(sed -n 's/^version=//p' "$MODROOT/module.prop" 2>/dev/null)
-  printf '{"running":%d,"version":"%s","main":%d,"battery":{"level":%d,"status":"%s","temp":%d,"current":%d},' \
-    "$([ "$pid" -gt 0 ] && echo 1 || echo 0)" "$version" "$SS_MAIN" "$1" "$2" "$3" "$4"
+  printf '{"running":%d,"version":"%s","main":%d,"body":%d,"body_from":"%s","brake":%d,"battery":{"level":%d,"status":"%s","temp":%d,"current":%d},' \
+    "$([ "$pid" -gt 0 ] && echo 1 || echo 0)" "$version" "$SS_MAIN" "$body" "$body_from" "$CPU_BRAKE" "$1" "$2" "$3" "$4"
   printf '"sensor_ts":%d,"monitor":' "$SS_TS"
   cs_health=$(thermal_health_json)
   printf '%s,"cause":' "${cs_health%\}}"; json_string "$M_CAUSE"
@@ -136,8 +140,10 @@ status_json() {
     printf ',"kernel":'; kernel_json
     printf ',"device":'; device_json
     [ "$cp_status_detail" = brief ] || { printf ',"cooling":'; cooling_json; }
+    printf ',"gpu":'; gpu_json
     printf ',"peer":'; peer_json "$CT_MOD" "$CT_DATA/run/sampler.pid" thermal/sampler.sh
   fi
+  printf ',"hyperos":'; hyperos_json
   printf ',"controls":'; controls_json
   printf ',"restore_pending":%d' "$([ -f "$CP_RUN/restore_pending" ] && echo 1 || echo 0)"
   printf ',"backend":'; json_string "$(cat "$CP_RUN/backend" 2>/dev/null)"

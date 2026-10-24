@@ -95,3 +95,15 @@ function main_temp(zones,   n, z, i, kv, g, best, any) {
     }
     return best > -9999 ? best : any
 }
+
+# Hottest phone-body (skin) zone of a zone list, or -9999 when the phone has none. Owner 2026-10-24:
+# "hot" and the power modes follow what a hand feels, not the processor (about 50 °C at rest).
+function body_temp(zones,   n, z, i, kv, best) {
+    best = -9999
+    n = split(zones, z, ",")
+    for (i = 1; i <= n; i++) {
+        if (split(z[i], kv, "=") != 2) continue
+        if (group(kv[1]) == "skin" && kv[2] + 0 > best) best = kv[2] + 0
+    }
+    return best
+}

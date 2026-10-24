@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Cogan Smart</title>
-<link rel="stylesheet" href="theme.css?v=2.8.2">
-<script src="i18n.js?v=2.8.2"></script>
+<link rel="stylesheet" href="theme.css?v=2.9.0">
+<script src="i18n.js?v=2.9.0"></script>
 <script>try { document.documentElement.dataset.theme = localStorage.getItem('cogan.theme') || ''; } catch (_) { /* storage off: follow the phone */ }</script>
 <style>
   * { box-sizing: border-box; }
@@ -129,6 +129,12 @@
     <table id="policies"></table>
   </details>
 
+  <details class="card fold hidden" id="hyperosCard">
+    <summary><span>🧯 Rem HyperOS</span><small class="muted" id="hyperosBrief"></small></summary>
+    <table id="hyperos"></table>
+    <p class="muted">Baca saja: batas yang dipasang HyperOS sendiri (thermal_message). Modul tidak mengubahnya. Suhu papan HyperOS juga dicatat di tab Suhu sebagai sensor hyperos_board (Badan HP).</p>
+  </details>
+
   <details class="card fold" id="chargeCard">
     <summary><span>🔌 Cas</span><small class="muted" id="chargeBrief"></small></summary>
     <div class="muted" id="switchLine"></div>
@@ -139,7 +145,7 @@
     <label class="f">Lanjut cas di (%) <input id="sCHARGE_RESUME" type="number" min="40" max="99"></label>
     <div id="chargePolicy" class="muted" style="margin:8px 0"></div>
     <label class="f">Jeda cas karena suhu oleh modul <input id="sCHARGE_THERMAL" type="checkbox"></label>
-    <p class="muted">Bawaan: pengaturan suhu cas diserahkan ke sistem HP. Modul hanya mengatur batas isi. Aktifkan opsi ini jika ingin jeda suhu tambahan dari modul. Kolom di bawah aktif setelah opsi ini dinyalakan.</p>
+    <p class="muted">Bawaan: mati. Suhu cas diatur sistem HP (HyperCharge). Nyalakan untuk jeda tambahan dari modul: cas dijeda bila baterai terlalu panas atau, di Kernel Default, bila cas membuat Badan HP panas; lanjut setelah turun 3 °C.</p>
     <label class="f">Jeda bila baterai ≥ (°C) <input id="sBATT_TEMP_STOP" type="number" min="35" max="50"></label>
     <label class="f">Kernel Default: jeda cas bila cas bikin panas <input id="sHEAT_PAUSE_CHARGE" type="checkbox"></label>
     <div class="row">
@@ -152,9 +158,10 @@
 
   <details class="card fold" id="settingsCard">
     <summary><span>⚙️ Setelan mode</span></summary>
-    <label class="f">Kernel Default: ambang kendali (°C) <input id="sTARGET_TEMP" type="number" min="35" max="55"></label>
-    <label class="f">Performa: rem darurat di (°C) <input id="sGAME_LIMIT" type="number" min="40" max="60"></label>
+    <label class="f">Kernel Default: ambang Badan HP (°C) <input id="sTARGET_TEMP" type="number" min="38" max="46"></label>
+    <label class="f">Performa: rem di Badan HP (°C) <input id="sGAME_LIMIT" type="number" min="40" max="50"></label>
     <label class="f">Hemat: CPU besar maks (%) <input id="sSAVER_CAP" type="number" min="30" max="90"></label>
+    <p class="muted">Ambang mode dibaca dari suhu Badan HP (yang terasa di tangan). Hemat 2 °C di bawah Kernel Default. Langkah halus: mulai 1 °C sebelum ambang, CPU besar turun 10% per langkah sampai 60%, CPU kecil (yang menjaga UI tetap lancar) paling akhir dan tidak di bawah 80%. CPU hanya diturunkan saat prosesor bekerja (≥ 60 °C); panas dari cas atau ruangan tidak membuat CPU diturunkan. Di semua mode ada rem darurat bila prosesor ≥ 95 °C.</p>
     <label class="f">Performa: boost aplikasi di layar <input id="sGAME_BOOST" type="checkbox"></label>
     <label class="f">Cek tiap (detik) <input id="sINTERVAL" type="number" min="5" max="60"></label>
     <label class="f">Terapkan ulang tiap interval <input id="sFORCE" type="checkbox"></label>
@@ -171,6 +178,7 @@
     <summary><span>🎛️ Kontrol kernel</span></summary>
     <p class="muted" id="backend">Belum diterapkan.</p>
     <table><thead><tr><th>Kontrol</th><th>Diminta → terbaca</th></tr></thead><tbody id="controls"></tbody></table>
+    <p class="muted" id="gpuInfo"></p>
     <p class="muted">Angka CPU adalah batas maksimum, bukan frekuensi tetap. Batas vendor/termal yang lebih rendah tetap berlaku. Ambang suhu mengatur kapan modul bertindak; tidak menjamin suhu fisik tetap pada angka itu.</p>
   </details>
   <details class="card fold" id="logCard">
@@ -183,13 +191,13 @@
 </main>
 
 <div id="actionStatus" class="feedback hidden" role="status" aria-live="polite"></div>
-<script src="client.js?v=2.8.2"></script>
+<script src="client.js?v=2.9.0"></script>
 <script>
 const confirm = value => window.confirm(CoganI18n.t(value));
 const REPORT = '/data/adb/modules/cogan_smart/power/report.sh';
-const MODES = { hemat: ['🌿 Hemat', c => `CPU besar maks ${c.SAVER_CAP}%, ambang ${c.TARGET_TEMP - 3} °C`],
-                seimbang: ['🧠 Kernel Default', c => `Ambang kendali ${c.TARGET_TEMP} °C`],
-                game: ['🎮 Performa', c => `Performa penuh, rem di ${c.GAME_LIMIT} °C`] };
+const MODES = { hemat: ['🌿 Hemat', c => `CPU besar maks ${c.SAVER_CAP}%, Badan HP ≤ ${c.TARGET_TEMP - 2} °C`],
+                seimbang: ['🧠 Kernel Default', c => `Badan HP dijaga ≤ ${c.TARGET_TEMP} °C`],
+                game: ['🎮 Performa', c => `Performa penuh, rem di Badan HP ${c.GAME_LIMIT} °C`] };
 const NUMBERS = ['TARGET_TEMP', 'GAME_LIMIT', 'SAVER_CAP', 'INTERVAL', 'CHARGE_STOP', 'CHARGE_RESUME', 'BATT_TEMP_STOP'];
 const FLAGS = ['GAME_BOOST', 'CHARGE_CTRL', 'CHARGE_THERMAL', 'HEAT_PAUSE_CHARGE', 'FORCE'];
 const REASONS = { batas: 'batas isi', baterai: 'baterai panas', panas: 'cas bikin HP panas' };
@@ -205,6 +213,28 @@ function deg(t) { return (t / 10).toFixed(1); }
 function ghz(khz) { return (khz / 1e6).toFixed(2) + ' GHz'; }
 function toast(msg) { UI.text('actionStatus', msg); $('actionStatus').classList.remove('hidden'); clearTimeout(feedbackTimer); feedbackTimer = setTimeout(() => { if (!$('actionStatus').classList.contains('working')) $('actionStatus').classList.add('hidden'); }, 4000); }
 window.addEventListener('unhandledrejection', e => { toast('Gagal: ' + (e.reason && e.reason.message || e.reason)); e.preventDefault(); });
+
+// GPU nodes of this phone, read only: a GPU limit comes once they are proven on the phone.
+function gpuText(g) {
+  const mhz = hz => Math.round(hz / 1e6) + ' MHz';
+  const parts = (g.devfreq || []).map(d => [`GPU ${d.name}: ${mhz(d.cur)} / maks ${mhz(d.max)}`, `${d.steps} langkah`, d.writable ? 'bisa diatur' : 'tidak bisa ditulis'].join(' · '));
+  if (g.ged && g.ged.cur >= 0) parts.push(`GED ${g.ged.cur} · upbound ${g.ged.upbound} · level ${g.ged.levels}`);
+  if (g.gpufreqv2) parts.push('gpufreqv2 ada');
+  return (parts.length ? parts.join(' · ') : 'Node GPU belum ditemukan.') + ' · Baca saja: batas GPU dipasang setelah node ini terbukti di HP.';
+}
+
+// HyperOS's own brakes (thermal_message), read only. Values are shown as the phone reports them.
+const HYPEROS = [['board', 'Suhu papan HyperOS'], ['sconfig', 'Profil termal (sconfig)'], ['temp_state', 'Status suhu (temp_state)'],
+                 ['cpu_limits', 'Batas CPU HyperOS'], ['modem_limit', 'Batas modem'], ['wifi_limit', 'Batas Wi-Fi'],
+                 ['max_brightness', 'Kecerahan maks'], ['video_mode', 'Mode video']];
+function renderHyperos(h) {
+  $('hyperosCard').classList.toggle('hidden', !h || !h.present);
+  if (!h || !h.present) return;
+  const value = (key, v) => key === 'board' ? (v > -9999 ? deg(v) + ' °C' : '') : String(v ?? '');
+  const rows = HYPEROS.filter(([key]) => value(key, h[key]) !== '');
+  $('hyperosBrief').textContent = h.board > -9999 ? deg(h.board) + '°' : '';
+  UI.html('hyperos', rows.map(([key, name]) => `<tr><td>${esc(name)}</td><td>${esc(value(key, h[key]))}</td></tr>`).join('') || '<tr><td>Node HyperOS kosong.</td></tr>');
+}
 
 function render(s) {
   if (s.ok === 0) { toast(s.error); return; }
@@ -231,17 +261,19 @@ function render(s) {
     if (label.textContent !== info) label.textContent = info;
   }
 
-  const limit = st ? st.limit : (c.mode === 'game' ? c.GAME_LIMIT : c.mode === 'hemat' ? c.TARGET_TEMP - 3 : c.TARGET_TEMP);
-  $('temp').textContent = s.main > -9999 ? deg(s.main) + '°' : '--';
-  $('temp').className = s.main >= limit * 10 ? 'hot' : s.main >= (limit - 3) * 10 ? 'warm' : 'ok';
-  $('limitLine').textContent = (s.main > -9999 ? deg(s.main) + '° · ' : '') + `batas ${limit} °C`;
+  // The modes follow the phone body (Badan HP); the processor is shown beside it.
+  const limit = st ? st.limit : (c.mode === 'game' ? c.GAME_LIMIT : c.mode === 'hemat' ? c.TARGET_TEMP - 2 : c.TARGET_TEMP);
+  const body = s.body ?? -9999, cpu = s.main > -9999 ? `Prosesor ${deg(s.main)}°` : '';
+  $('temp').textContent = body > -9999 ? deg(body) + '°' : '--';
+  $('temp').className = body >= limit * 10 ? 'hot' : body >= (limit - 2) * 10 ? 'warm' : 'ok';
+  $('limitLine').textContent = (body > -9999 ? deg(body) + '° · ' : '') + `batas Badan HP ${limit} °C`;
   const sensorAge = s.sensor_ts ? Math.max(0, Math.floor(Date.now() / 1000) - s.sensor_ts) : -1;
   $('limitLine').title = sensorAge >= 0 ? `Sensor langsung · ${sensorAge} dtk lalu` : 'Sensor tidak tersedia';
   if (st && s.running) {
-    $('cpuLine').textContent = `Target batas CPU besar ${st.big}% · lihat hasil kontrol kernel`;
+    $('cpuLine').textContent = [body > -9999 && (s.body_from === 'battery' ? 'Baterai (tanpa sensor Badan HP)' : 'Badan HP'), cpu, `target batas CPU besar ${st.big}%`, `kecil ${st.little}%`, st.brake ? `rem darurat prosesor ≥ ${s.brake} °C` : '', !st.brake && st.busy === 0 && body >= (limit - 1) * 10 ? 'prosesor santai: CPU tidak diturunkan' : ''].filter(Boolean).join(' · ');
     $('causeLine').textContent = [st.cause && `Penyebab: ${st.cause}`, st.app && `Aplikasi: ${st.app}`, st.boost ? 'Boost Performa aktif' : '', st.native_cooling ? 'Cooling CPU kernel aktif' : ''].filter(Boolean).join(' · ');
   } else {
-    $('cpuLine').textContent = 'pengendali berhenti';
+    $('cpuLine').textContent = [cpu, 'pengendali berhenti'].filter(Boolean).join(' · ');
     $('causeLine').textContent = '';
   }
   UI.html('policies', s.policies.map(p => `<tr><td>${esc(p.name)}</td><td class="${p.limit < p.max ? 'warm' : ''}">${ghz(p.limit)} / ${ghz(p.max)}</td></tr>`).join(''));
@@ -265,6 +297,8 @@ function render(s) {
   $('backend').textContent = s.running ? `Backend: ${s.backend || 'menunggu penerapan'}${c.FORCE ? ' · terapkan ulang aktif' : ''}${st ? ' · hasil ' + Math.max(0, Math.floor(Date.now()/1000-st.ts)) + ' dtk lalu' : ''}` : 'Pengendali berhenti.';
   const results = {applied:'diterima', limited:'dibatasi lebih rendah', conflict:'berubah/ditolak', write_failed:'gagal ditulis', unsupported:'tidak didukung'};
   if (s.restore_pending) $('backend').textContent += ' · Pemulihan belum selesai; tekan Henti setelah node dapat ditulis.';
+  if (s.gpu) $('gpuInfo').textContent = gpuText(s.gpu);
+  if (s.hyperos) renderHyperos(s.hyperos);
   UI.html('controls', (s.controls || []).map(v => `<tr><td>${esc(v.node)}<br><small>${esc(results[v.result] || v.result)}</small></td><td>${esc(v.requested)} → ${esc(v.actual)}</td></tr>`).join('') || '<tr><td colspan="2">Belum ada hasil penerapan.</td></tr>');
   CoganI18n.apply();
 }

@@ -21,8 +21,8 @@
   // Last answers, kept so a tab shows its last values at once while it reads fresh ones:
   // each tab is its own page, so without this every switch starts empty.
   const store = {
-    get(key) { try { return JSON.parse(localStorage.getItem('cogan.cache.v282.' + CoganI18n.language() + '.' + key)); } catch (_) { return null; } },
-    set(key, value) { try { localStorage.setItem('cogan.cache.v282.' + CoganI18n.language() + '.' + key, JSON.stringify(value)); } catch (_) { /* storage off or full */ } }
+    get(key) { try { return JSON.parse(localStorage.getItem('cogan.cache.v290.' + CoganI18n.language() + '.' + key)); } catch (_) { return null; } },
+    set(key, value) { try { localStorage.setItem('cogan.cache.v290.' + CoganI18n.language() + '.' + key, JSON.stringify(value)); } catch (_) { /* storage off or full */ } }
   };
 
   function create(script) {

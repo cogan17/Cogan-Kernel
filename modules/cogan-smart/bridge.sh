@@ -133,14 +133,42 @@ safe_pid() { # PID_FILE SCRIPT_PATH: check the full script path, not a generic n
 }
 
 # Both workers and both pages use exactly the same sensor decoder and CPU/GPU grouping.
+# HyperOS's own board (shell) temperature joins as the zone hyperos_board, in the phone body group:
+# it matched quiet_therm on the owner's phone (40.6 vs 40.8 °C, 24 Oct 2026). Read only.
 read_thermal_sensors() {
-  for cs_zone in "$CB_SYS"/class/thermal/thermal_zone*; do
-    [ -r "$cs_zone/temp" ] || continue
-    cs_type=""; cs_temp=""
-    IFS= read -r cs_type 2>/dev/null < "$cs_zone/type" || :
-    IFS= read -r cs_temp 2>/dev/null < "$cs_zone/temp" || :
-    printf '%s %s\n' "$cs_type" "$cs_temp"
-  done | awk -f "$MODROOT/thermal/thermal.awk" -f "$MODROOT/thermal/sensors.awk"
+  {
+    for cs_zone in "$CB_SYS"/class/thermal/thermal_zone*; do
+      [ -r "$cs_zone/temp" ] || continue
+      cs_type=""; cs_temp=""
+      IFS= read -r cs_type 2>/dev/null < "$cs_zone/type" || :
+      IFS= read -r cs_temp 2>/dev/null < "$cs_zone/temp" || :
+      printf '%s %s\n' "$cs_type" "$cs_temp"
+    done
+    cs_temp=""
+    IFS= read -r cs_temp 2>/dev/null < "$CB_SYS/class/thermal/thermal_message/board_sensor_temp" || :
+    [ -n "$cs_temp" ] && printf 'hyperos_board %s\n' "$cs_temp"
+  } | awk -f "$MODROOT/thermal/thermal.awk" -f "$MODROOT/thermal/sensors.awk"
+}
+
+# HyperOS's own thermal state (thermal_message), read only: what the phone itself limits right now.
+# JSON {"present":0|1,"board":tenths,"sconfig":"…","temp_state":"…","cpu_limits":"…","modem_limit":"…",
+#       "wifi_limit":"…","max_brightness":"…","video_mode":"…"}; each value is the node's first line.
+# Part of every live status, so it costs one awk: the nodes are read with shell builtins.
+hyperos_json() {
+  hj_dir=$CB_SYS/class/thermal/thermal_message
+  if [ ! -d "$hj_dir" ]; then printf '{"present":0}'; return; fi
+  for hj_node in board_sensor_temp sconfig temp_state cpu_limits modem_limit wifi_limit thermal_max_brightness video_mode; do
+    read_node "$hj_dir/$hj_node"; echo
+  done | awk 'BEGIN { split("board sconfig temp_state cpu_limits modem_limit wifi_limit max_brightness video_mode", K, " ") }
+    NR == 1 { board = ($0 ~ /^-?[0-9]+$/) ? int($0 / 100) : -9999; next }
+    { v = substr($0, 1, 120); gsub(/\\/, "\\\\", v); gsub(/"/, "\\\"", v); gsub(/\t/, "\\t", v); gsub(/\r/, "", v)
+      s = s sprintf(",\"%s\":\"%s\"", K[NR], v) }
+    END { printf "{\"present\":1,\"board\":%d%s}", board, s }'
+}
+
+# Phone body (skin) temperature of a zone list in tenths of °C, or -9999 without a skin sensor.
+body_temp() {
+  awk -v mode=body -v zones="$1" -f "$MODROOT/thermal/thermal.awk" -f "$MODROOT/thermal/report.awk"
 }
 
 # A very short, boot-scoped snapshot makes a tab switch reuse the same measurement.

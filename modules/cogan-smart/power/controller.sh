@@ -1,12 +1,16 @@
 #!/system/bin/sh
-# Cogan Smart · Power: the control loop. Every INTERVAL seconds it reads the processor temperature,
-# the battery and the latest report of Cogan Smart · Thermal (what heats the phone), then:
+# Cogan Smart · Power: the control loop. Every INTERVAL seconds it reads the phone body (Badan HP)
+# and processor temperatures, the battery and the latest report of Cogan Smart · Thermal (what heats
+# the phone), then:
 #
-#   CPU     Hemat caps the big cores at SAVER_CAP %; Kernel Default (seimbang, TARGET_TEMP) and Hemat (3 °C lower)
-#           lower the CPU top speed 10 % per step while too hot and give it back when cool again;
-#           Performa (game) runs free and only steps in at GAME_LIMIT.
-#   Charge  stops at CHARGE_STOP % and resumes at CHARGE_RESUME %. Charging heat is managed
-#           by the phone by default. Module temperature pauses require CHARGE_THERMAL=1.
+#   CPU     Hemat caps the big cores at SAVER_CAP %; Kernel Default (seimbang, TARGET_TEMP) and Hemat
+#           (2 °C lower) lower the CPU top speed in small steps while the phone body is too warm and give
+#           it back when it is cool again; Performa (game) runs free and only steps in at GAME_LIMIT.
+#           Kernel Default and Performa keep the big cores at 60 % or more and touch the little cores
+#           last (level_caps). The CPU only steps down while the processor works (CPU_WORK); with an
+#           idle processor the steps are given back. Every mode brakes when the processor reaches CPU_BRAKE.
+#   Charge  stops at CHARGE_STOP % and resumes at CHARGE_RESUME %. Charging heat is managed by the
+#           phone (HyperCharge) by default; CHARGE_THERMAL=1 adds the module's own heat pauses.
 #
 # Usage: controller.sh [--once]
 
@@ -15,16 +19,34 @@ MODDIR=${0%/*}; [ "$MODDIR" = "$0" ] && MODDIR=.   # started as "sh controller.s
 
 state() { cat "$CP_RUN/$1" 2>/dev/null || echo "$2"; }
 
+# Big and little core caps (%) of a step level, as LC_BIG and LC_LITTLE. Owner 2026-10-24, "as smooth
+# as possible": Kernel Default and Performa lower the big cores (X4 on rothko) 10 % per step down to
+# 60 %, then the little cores (A720, which keep the interface fluid) to 90 % and 80 %. Hemat goes on
+# down from its own cap, as before.
+level_caps() {
+  if [ "$MODE" = hemat ]; then
+    LC_BIG=$((SAVER_CAP - $1 * 10)); [ "$LC_BIG" -lt 20 ] && LC_BIG=20
+    LC_LITTLE=$((LC_BIG + 20)); [ "$LC_LITTLE" -gt 100 ] && LC_LITTLE=100
+    return
+  fi
+  case "$1" in
+    0) LC_BIG=100; LC_LITTLE=100 ;; 1) LC_BIG=90; LC_LITTLE=100 ;; 2) LC_BIG=80; LC_LITTLE=100 ;;
+    3) LC_BIG=70; LC_LITTLE=100 ;; 4) LC_BIG=60; LC_LITTLE=100 ;; 5) LC_BIG=60; LC_LITTLE=90 ;;
+    *) LC_BIG=60; LC_LITTLE=80 ;;
+  esac
+}
+
 step() {
   lock_take "$CP_RUN/step.lock" || return 1
   : > "$CP_RUN/apply.tsv.tmp"
   step_request=$(cat "$CP_RUN/apply.request" 2>/dev/null)
   bridge_heartbeat power "$(module_code)"
   now=$(date +%s)
-  main=$(read_main_temp)
-  case "$main" in ''|*[!0-9-]*) main=-9999 ;; esac
+  read_temps; main=$MAIN_T; body=$BODY_T
   set -- $(read_battery)
   level_pct=$1; status=$2; btemp=$3; current=$4
+  # Without a phone body sensor, the battery is the closest to what a hand feels.
+  [ "$body" -gt -9999 ] || { [ "$btemp" -gt -999 ] && body=$btemp; }
 
   # What heats the phone: Cogan Smart · Thermal's report, or a simple guess without it.
   if read_monitor; then
@@ -39,45 +61,55 @@ step() {
     [ -n "$(state mode "")" ] && event "Mode: $(mode_label "$MODE")"
     echo "$MODE" > "$CP_RUN/mode"
     log_mode "$MODE"
-    rm -f "$CP_RUN/level" "$CP_RUN/cool"
+    rm -f "$CP_RUN/level" "$CP_RUN/cool" "$CP_RUN/hold"
   fi
 
   # Charging first: when the monitor says charging is the heat source, pausing it may be enough.
   charge_step
 
-  # CPU: one step (10 %) down per check while too hot and not already cooling, one step up after
-  # two checks at least 2 °C under the limit. While charging is paused for heat, the CPU only
-  # steps in if the temperature still rises.
+  # CPU: the phone body warms and cools slowly, so one step down while it is warm and not cooling, then
+  # three checks to see what that step did. From 1 °C under the limit only the first two (gentle) steps
+  # are taken, at the limit all of them. Only while the processor works (CPU_WORK): heat from charging,
+  # the room or an idle phone is not cooled by a lower CPU cap, and a cap kept from then would only slow
+  # the next use. One step back up after three checks at least 1.5 °C under the limit or with an idle
+  # processor. The processor brake steps down at every check. While charging was just paused for heat,
+  # that pause gets its three checks first.
   case "$MODE" in
-    hemat) limit=$((TARGET_TEMP - 3)) ;;
+    hemat) limit=$((TARGET_TEMP - 2)) ;;
     game) limit=$GAME_LIMIT ;;
     *) limit=$TARGET_TEMP ;;
   esac
-  step_level=$(state level 0); cool=$(state cool 0); prev=$(state prev "$main")
+  step_level=$(state level 0); cool=$(state cool 0); hold=$(state hold 0); prev=$(state prev "$body")
   old_level=$step_level
-  rising=$((prev - 5))
-  native_cooling=0
-  if native_cpu_cooling; then native_cooling=1; rising=$prev; fi
-  case " $(state charge_off "") " in *" panas "*) rising=$prev ;; esac
-  [ "$paused_for_heat" = 1 ] && rising=9999   # charging was just paused: give that a check first
-  if [ "$main" -ge $((limit * 10)) ]; then
+  native_cooling=0; native_cpu_cooling && native_cooling=1
+  [ "$hold" -gt 0 ] && hold=$((hold - 1))
+  [ "$paused_for_heat" = 1 ] && hold=3
+  brake=0; [ "$main" -ge $((CPU_BRAKE * 10)) ] && brake=1
+  busy=0; [ "$main" -ge $((CPU_WORK * 10)) ] && busy=1
+  if [ "$brake" = 1 ]; then
     cool=0
-    [ "$main" -gt "$rising" ] && [ "$step_level" -lt 6 ] && step_level=$((step_level + 1))
-  elif [ "$main" -le $(((limit - 2) * 10)) ] && [ "$step_level" -gt 0 ]; then
+    [ "$step_level" -lt 6 ] && { step_level=$((step_level + 1)); hold=3; }
+  elif [ "$busy" = 1 ] && [ "$body" -gt -9999 ] && [ "$body" -ge $(((limit - 1) * 10)) ]; then
+    cool=0
+    room=6; [ "$body" -lt $((limit * 10)) ] && room=2
+    if [ "$hold" = 0 ] && [ "$body" -ge $((prev - 2)) ] && [ "$step_level" -lt "$room" ]; then
+      step_level=$((step_level + 1)); hold=3
+    fi
+  elif { [ "$busy" = 0 ] || [ "$body" -le $(((limit - 1) * 10 - 5)) ]; } && [ "$main" -lt $(((CPU_BRAKE - 5) * 10)) ] && [ "$step_level" -gt 0 ]; then
     cool=$((cool + 1))
-    [ "$cool" -ge 2 ] && { step_level=$((step_level - 1)); cool=0; }
+    [ "$cool" -ge 3 ] && { step_level=$((step_level - 1)); cool=0; }
   else
     cool=0
   fi
-  echo "$step_level" > "$CP_RUN/level"; echo "$cool" > "$CP_RUN/cool"; echo "$main" > "$CP_RUN/prev"
-  if [ "$MODE" = hemat ]; then big=$((SAVER_CAP - step_level * 10)); else big=$((100 - step_level * 10)); fi
-  [ "$big" -lt 20 ] && big=20
-  little=$((big + 20)); [ "$little" -gt 100 ] && little=100
+  echo "$step_level" > "$CP_RUN/level"; echo "$cool" > "$CP_RUN/cool"; echo "$hold" > "$CP_RUN/hold"; echo "$body" > "$CP_RUN/prev"
+  level_caps "$step_level"; big=$LC_BIG; little=$LC_LITTLE
   set_cpu_cap "$big" "$little"
-  if [ "$step_level" -gt "$old_level" ]; then
-    event "Suhu $(deg "$main") °C ≥ $limit °C${cause:+ ($cause)}: CPU dibatasi $big%"
+  if [ "$step_level" -gt "$old_level" ] && [ "$brake" = 1 ]; then
+    event "Rem darurat: prosesor $(deg "$main") °C ≥ $CPU_BRAKE °C: CPU besar $big%, kecil $little%"
+  elif [ "$step_level" -gt "$old_level" ]; then
+    event "Badan HP $(deg "$body") °C (batas $limit °C)${cause:+ ($cause)}: CPU besar $big%, kecil $little%"
   elif [ "$step_level" -lt "$old_level" ]; then
-    event "Suhu turun ke $(deg "$main") °C: CPU $big%"
+    event "Badan HP turun ke $(deg "$body") °C: CPU besar $big%, kecil $little%"
   fi
   if [ "$MODE" = game ] && [ "$GAME_BOOST" = 1 ]; then set_boost 1; else set_boost 0; fi
   write_state
@@ -96,9 +128,8 @@ charge_step() {
       *" batas "*) [ "$level_pct" -gt "$CHARGE_RESUME" ] && reasons="batas" ;;
       *) [ "$CHARGE_STOP" -lt 100 ] && [ "$level_pct" -ge "$CHARGE_STOP" ] && { [ "$status" = charging ] || [ "$status" = full ]; } && reasons="batas" ;;
     esac
-    # Do not interrupt HyperCharge based on module thresholds unless the user opts in.
-    # An absent key in an older config defaults to 0; saved 95/90 and other settings survive.
-    # No thermal driver, OEM charging limit, or charger negotiation setting is changed.
+    # Module heat pauses (CHARGE_THERMAL=1, off by default) only switch charging off and on; no thermal
+    # driver, OEM charging limit, or charger negotiation setting is changed.
     if [ "$CHARGE_THERMAL" = 1 ]; then
       case " $was " in
         *" baterai "*) [ "$btemp" -gt $(((BATT_TEMP_STOP - 3) * 10)) ] && reasons="$reasons baterai" ;;
@@ -106,8 +137,8 @@ charge_step() {
       esac
       if [ "$MODE" = seimbang ] && [ "$HEAT_PAUSE_CHARGE" = 1 ]; then
         case " $was " in
-          *" panas "*) [ "$main" -gt $(((TARGET_TEMP - 3) * 10)) ] && reasons="$reasons panas" ;;
-          *) [ "$status" = charging ] && [ "$main" -ge $((TARGET_TEMP * 10)) ] && case "$cause" in "Cas cepat"|Mengecas*) reasons="$reasons panas" ;; esac ;;
+          *" panas "*) [ "$body" -gt $(((TARGET_TEMP - 3) * 10)) ] && reasons="$reasons panas" ;;
+          *) [ "$status" = charging ] && [ "$body" -ge $((TARGET_TEMP * 10)) ] && case "$cause" in "Cas cepat"|Mengecas*) reasons="$reasons panas" ;; esac ;;
         esac
       fi
     fi
@@ -146,7 +177,7 @@ charge_step() {
   echo "$reasons" > "$CP_RUN/charge_off"
   case " $was " in *" panas "*) ;; *) case " $reasons " in *" panas "*) paused_for_heat=1 ;; esac ;; esac
   case " $reasons " in
-    *" panas "*) event "Panas $(deg "$main") °C karena cas: cas dijeda sampai $((TARGET_TEMP - 3)) °C" ;;
+    *" panas "*) event "Badan HP $(deg "$body") °C karena cas: cas dijeda sampai $((TARGET_TEMP - 3)) °C" ;;
     *" baterai "*) event "Baterai $(deg "$btemp") °C: cas dijeda sampai $((BATT_TEMP_STOP - 3)) °C" ;;
     *) event "Baterai $level_pct%: cas dihentikan, lanjut di $CHARGE_RESUME%" ;;
   esac
@@ -157,8 +188,8 @@ mode_label() { case "$1" in hemat) echo Hemat ;; game) echo Performa ;; *) echo 
 jstr() { printf '%s' "$1" | sed 's/[\\"]//g'; }
 
 write_state() {
-  printf '{"ts":%d,"mode":"%s","main":%d,"limit":%d,"level":%d,"big":%d,"little":%d,"battery":{"level":%d,"status":"%s","temp":%d,"current":%d},"charge_off":"%s","source":"%s","cause":"%s","app":"%s","boost":%d,"force":%d,"native_cooling":%d}\n' \
-    "$now" "$MODE" "$main" "$limit" "$step_level" "$big" "$little" "$level_pct" "$status" "$btemp" "$current" \
+  printf '{"ts":%d,"mode":"%s","main":%d,"body":%d,"limit":%d,"brake":%d,"busy":%d,"level":%d,"big":%d,"little":%d,"battery":{"level":%d,"status":"%s","temp":%d,"current":%d},"charge_off":"%s","source":"%s","cause":"%s","app":"%s","boost":%d,"force":%d,"native_cooling":%d}\n' \
+    "$now" "$MODE" "$main" "$body" "$limit" "$brake" "$busy" "$step_level" "$big" "$little" "$level_pct" "$status" "$btemp" "$current" \
     "$(state charge_off "")" "$source" "$(jstr "$cause")" "$(jstr "$app")" "$([ -f "$CP_RUN/uclamp.written" ] && echo 1 || echo 0)" "$FORCE" "$native_cooling" \
     > "$CP_RUN/state.json.tmp" && mv "$CP_RUN/state.json.tmp" "$CP_RUN/state.json"
 }

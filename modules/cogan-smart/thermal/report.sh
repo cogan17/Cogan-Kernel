@@ -107,7 +107,8 @@ validate_values() {
     case "$1" in
       INTERVAL) lo=10; hi=300 ;;
       RETENTION_DAYS) lo=1; hi=30 ;;
-      HOT_TEMP|NOTIFY_TEMP) lo=30; hi=90 ;;
+      HOT_TEMP) lo=35; hi=50 ;;
+      NOTIFY_TEMP) lo=38; hi=55 ;;
       NOTIFY|AUTOSTART) lo=0; hi=1 ;;
       *) return 1 ;;
     esac
@@ -144,7 +145,7 @@ save_log() {
       if bridge_available; then echo 'Identity: verified through Cogan Bridge (compile-time)'
       else echo 'Identity: /proc or uname candidate, unverified'; fi
       echo "Visible uname: $(uname -r)"
-      echo "Module: $(sed -n 's/^version=//p' "$MODROOT/module.prop" 2>/dev/null) · sample every $INTERVAL seconds · hot threshold $HOT_TEMP °C"
+      echo "Module: $(sed -n 's/^version=//p' "$MODROOT/module.prop" 2>/dev/null) · sample every $INTERVAL seconds · hot = phone body ≥ $HOT_TEMP °C"
       echo
       echo 'Sample details:'
     else
@@ -152,7 +153,7 @@ save_log() {
       if bridge_available; then echo 'Identitas: terverifikasi melalui Cogan Bridge (compile-time)'
       else echo 'Identitas: kandidat /proc atau uname, belum terverifikasi'; fi
       echo "uname yang terlihat: $(uname -r)"
-      echo "Modul: $(sed -n 's/^version=//p' "$MODROOT/module.prop" 2>/dev/null) · cek tiap $INTERVAL detik · batas panas $HOT_TEMP °C"
+      echo "Modul: $(sed -n 's/^version=//p' "$MODROOT/module.prop" 2>/dev/null) · cek tiap $INTERVAL detik · panas = Badan HP ≥ $HOT_TEMP °C"
       echo
       echo 'Detail per sampel:'
     fi
