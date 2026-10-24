@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Offline tests for kernel/sublevels.py: daily check, record of Builder runs, README table."""
+"""Offline tests for kernel/sublevels.py: check for a new release, record of Builder runs, README table."""
 import json
 import tempfile
 import unittest
