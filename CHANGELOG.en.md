@@ -15,7 +15,7 @@ Topmost = newest build. Builds that pass the phone test are published as a **Pre
 
 Other components are the same as r1: KernelSU Next `d21e0a6` (33405), SUSFS v2.3.0 (`c27ebe9`), NoMount v2.2.0.
 
-Status: ✅ runs on the owner's phone (24 Oct). A dedicated Unicode fix test has not been reported separately. KMI gate: 0 differing symbols.
+Status: ✅ passed the owner's phone test (24 Oct): kernel `6.1.176-Cogan-Rothko-ACK-r2-35f0a136c` runs with the Unicode fix installed. KMI gate: 0 differing symbols.
 
 ## r1 — 24 Oct 2026 · `6.1.176-Cogan-Rothko-ACK-r1` · [Pre-release](https://github.com/cogan17/Xiomi_14T_Pro/releases/tag/v26.10.23-r1)
 
