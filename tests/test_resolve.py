@@ -153,7 +153,18 @@ class BakasuMainTest(unittest.TestCase):
         commit, manager = r.bakasu_main(api)
         self.assertEqual(commit, "c" * 40)
         self.assertEqual(manager, {"repo": "Baka-SU/BakaSU", "run": 7, "url": "u", "manager": 3, "spoofed": 4})
-        self.assertIn("build-manager.yml/runs?branch=main&event=push&status=success", asked[0])
+        self.assertIn("build-manager.yml/runs?branch=main&event=push&per_page=5", asked[0])
+
+    def test_a_run_still_building_its_manager_is_skipped(self):
+        # The newest run has no manager yet; the one before it has (its Telegram job may still run).
+        runs = [{"id": 8, "html_url": "u8", "head_sha": "d" * 40, "status": "in_progress"},
+                {"id": 7, "html_url": "u7", "head_sha": "c" * 40, "status": "in_progress"}]
+
+        def api(path):
+            if "/runs?" in path:
+                return {"workflow_runs": runs}
+            return {"artifacts": [] if "/runs/8/" in path else [{"name": "Manager-release", "id": 3, "expired": False}]}
+        self.assertEqual(r.bakasu_main(api), ("c" * 40, {"repo": "Baka-SU/BakaSU", "run": 7, "url": "u7", "manager": 3}))
 
     def test_no_main_build_means_wait(self):
         for runs, artifacts in (([], []), ([{"id": 7, "html_url": "u", "head_sha": "c" * 40}],
