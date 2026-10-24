@@ -52,6 +52,9 @@ Indonesia:
   terpisah. Badan HP memakai sensor kulit terpanas.
 - Tab Daya menampilkan Badan HP sebagai suhu utama, prosesor di sebelahnya, dan
   penanda rem darurat. Jeda cas karena panas (opsional) juga memakai Badan HP.
+- Halaman Tentang: kredit hanya untuk yang dipakai modul ini (Cogan17, API WebUI
+  KernelSU/KernelSU Next); kredit kernel ada di dokumen kernel repo. Keaslian menyebut repo
+  `cogan17/Cogan-Kernel`.
 - Pengujian: tes pengendali dan pencatat dengan sysfs tiruan, memakai mksh dan
   One True Awk 20231127. Simulasi pada log 3 hari dan data 3 jam owner. Uji HP owner
   (24 Okt, versi sebelum aturan "prosesor bekerja"): Badan HP terbaca dari `quiet_therm`,
@@ -114,6 +117,9 @@ English:
 - The Power tab shows the phone body as the main temperature, the processor beside it,
   and an emergency-brake marker. The optional heat-based charging pause uses the phone
   body as well.
+- About page: credits only for what this module uses (Cogan17, the KernelSU/KernelSU Next
+  WebUI API); the kernel credits are in the repo's kernel document. Authenticity names the
+  repo `cogan17/Cogan-Kernel`.
 - Validation: controller and recorder tests on a fake sysfs with mksh and One True Awk
   20231127, plus simulations on the owner's 3-day log and 3-hour data. Owner's phone test
   (24 Oct, the version before the "processor works" rule): the phone body reads from

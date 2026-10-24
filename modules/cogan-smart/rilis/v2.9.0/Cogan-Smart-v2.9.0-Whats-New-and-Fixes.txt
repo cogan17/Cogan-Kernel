@@ -45,6 +45,9 @@ BAHASA INDONESIA
   sebelahnya, dan penanda rem darurat.
 - Tanpa sensor Badan HP, suhu baterai yang dipakai.
 - Teks WebUI Indonesia dan English, serta versi cache WebUI v2.9.0.
+- Halaman Tentang: kredit hanya untuk yang dipakai modul ini (Cogan17,
+  API WebUI KernelSU/KernelSU Next). Keaslian menyebut repo
+  cogan17/Cogan-Kernel.
 
 3. PERBAIKAN
 
@@ -123,6 +126,9 @@ ENGLISH
   processor beside it, and an emergency-brake marker.
 - Without a phone body sensor, the battery temperature is used.
 - WebUI texts in Indonesian and English, WebUI cache version v2.9.0.
+- About page: credits only for what this module uses (Cogan17, the
+  KernelSU/KernelSU Next WebUI API). Authenticity names the repo
+  cogan17/Cogan-Kernel.
 
 3. FIXED
 
