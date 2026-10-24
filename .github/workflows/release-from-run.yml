@@ -3,6 +3,7 @@ name: Rilis dari run
 # Publishes one green Cogan Kernel Builder run of main as a release (like WildKernel's Release From
 # Run). The only way to the "diuji di HP" label: tick it only for a build the owner tested on the
 # phone. Every version keeps its own release; an existing tag stops the run. Artifacts last 7 days.
+# A repository-scoped GitHub App mints the publication token per run; no personal access token.
 
 on:
   workflow_dispatch:
@@ -29,7 +30,7 @@ on:
 
 permissions:
   actions: read
-  contents: write
+  contents: read
 
 concurrency:
   group: release-from-run
@@ -64,6 +65,25 @@ jobs:
               raise SystemExit("Run tidak bisa dirilis / cannot be released: " + "; ".join(bad))
           PY
 
+      - name: Periksa pengaturan App / check App setup
+        env:
+          RELEASE_APP_CLIENT_ID: ${{ vars.RELEASE_APP_CLIENT_ID }}
+          HAS_RELEASE_APP_PRIVATE_KEY: ${{ secrets.RELEASE_APP_PRIVATE_KEY != '' }}
+        run: |
+          set -euo pipefail
+          if [ -z "$RELEASE_APP_CLIENT_ID" ] || [ "$HAS_RELEASE_APP_PRIVATE_KEY" != "true" ]; then
+            {
+              echo "## Pengaturan GitHub App / GitHub App setup"
+              echo "- 🇮🇩 Daftarkan dan pasang GitHub App khusus repo ini sekali, dengan Contents dan Workflows: Read and write."
+              echo "- 🇮🇩 Simpan Client ID sebagai variable RELEASE_APP_CLIENT_ID dan private key PEM sebagai secret RELEASE_APP_PRIVATE_KEY. Token rilis dibuat otomatis setiap run; tidak memakai PAT."
+              echo "- 🇬🇧 Register and install a GitHub App for this repository once, with Contents and Workflows: Read and write."
+              echo "- 🇬🇧 Save its Client ID as variable RELEASE_APP_CLIENT_ID and its PEM private key as secret RELEASE_APP_PRIVATE_KEY. Each run creates its release token automatically; no PAT is used."
+              echo "- [Panduan / guide]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/blob/main/docs/masalah-dan-log.md#pengaturan-github-app-sekali)"
+            } | tee -a "$GITHUB_STEP_SUMMARY"
+            echo "::error::Pengaturan GitHub App belum lengkap / GitHub App setup is incomplete."
+            exit 1
+          fi
+
       - name: Unduh file / download the files
         run: |
           set -euo pipefail
@@ -94,12 +114,23 @@ jobs:
             || { echo "::error::Gate KMI build ini tidak lolos / the KMI gate of this build did not pass"; exit 1; }
           ls -la files
 
+      - name: Token rilis otomatis / automatic release token
+        id: release-app
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ vars.RELEASE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: ${{ github.event.repository.name }}
+          permission-contents: write
+          permission-workflows: write
+
       - name: Terbitkan / publish
         env:
           # A past build may have different workflow files from main. GITHUB_TOKEN cannot
-          # create its tag in that case, even with contents: write. RELEASE_TOKEN needs
-          # Contents + Workflows: write, limited to this repository (see docs/masalah-dan-log.md).
-          GH_TOKEN: ${{ secrets.RELEASE_TOKEN || github.token }}
+          # create its tag in that case. Only this step receives the App token; the action
+          # revokes it at job completion. Run/artifact reads keep using GITHUB_TOKEN.
+          GH_TOKEN: ${{ steps.release-app.outputs.token }}
         run: |
           set -euo pipefail
           tag="$(sed -n 's/^RELEASE=//p' info/build.env)"
@@ -108,7 +139,8 @@ jobs:
             echo "::error::Rilis $tag sudah ada; rilis tidak pernah ditimpa / release $tag exists and is never replaced"
             exit 1
           fi
-          sha="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN" --jq .head_sha)"
+          # Use the run already checked with GITHUB_TOKEN: the App needs no Actions permission.
+          sha="$(python3 -c 'import json; print(json.load(open("run.json"))["head_sha"])')"
           (cd files && sha256sum -- * > checksums.txt)
           tested=(); [ "$TESTED" = "true" ] && tested=(--tested)
           python3 kernel/release_notes.py info/build.env files --repo "$GITHUB_REPOSITORY" "${tested[@]}" --note "$NOTE" \
@@ -120,14 +152,14 @@ jobs:
             if grep -Eq 'HTTP (403|404)|Resource not accessible by integration' release-error.txt; then
               {
                 echo "### Izin token rilis / release token permissions"
-                echo "- 🇮🇩 Run $SOURCE_RUN memakai commit \`$sha\`. Bila workflow-nya berbeda dari main, GITHUB_TOKEN tidak bisa membuat tag pada commit ini meskipun contents: write sudah aktif."
-                echo "- 🇮🇩 Owner: simpan fine-grained PAT khusus repo ini sebagai secret Actions RELEASE_TOKEN, dengan Contents: Read and write dan Workflows: Read and write. Jika sudah ada, periksa izin, akses repo, dan masa berlakunya."
-                echo "- 🇬🇧 Run $SOURCE_RUN uses commit \`$sha\`. If its workflows differ from main, GITHUB_TOKEN cannot create a tag at this commit even with contents: write."
-                echo "- 🇬🇧 Owner: save a fine-grained PAT limited to this repository as the Actions secret RELEASE_TOKEN, with Contents: Read and write and Workflows: Read and write. If already configured, check its permissions, repository access and expiry."
-                echo "- [Panduan / guide]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/blob/main/docs/masalah-dan-log.md#rilis-dari-run-gagal-http-403)"
+                echo "- 🇮🇩 Run $SOURCE_RUN memakai commit \`$sha\`. App harus terpasang di repo ini dengan Contents dan Workflows: Read and write; setujui perubahan izin pada instalasinya bila diminta."
+                echo "- 🇮🇩 Periksa Client ID di variable RELEASE_APP_CLIENT_ID dan private key aktif di secret RELEASE_APP_PRIVATE_KEY."
+                echo "- 🇬🇧 Run $SOURCE_RUN uses commit \`$sha\`. The App must be installed on this repository with Contents and Workflows: Read and write; accept its installation permission update if requested."
+                echo "- 🇬🇧 Check the Client ID in variable RELEASE_APP_CLIENT_ID and the active private key in secret RELEASE_APP_PRIVATE_KEY."
+                echo "- [Panduan / guide]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/blob/main/docs/masalah-dan-log.md#pengaturan-github-app-sekali)"
                 echo "- [GitHub Docs](https://docs.github.com/en/rest/releases/releases#create-a-release)"
               } | tee -a "$GITHUB_STEP_SUMMARY"
-              echo "::error::Publikasi ditolak GitHub; periksa secret RELEASE_TOKEN / GitHub refused publication; check the RELEASE_TOKEN secret."
+              echo "::error::Publikasi ditolak GitHub; periksa instalasi dan izin App / GitHub refused publication; check the App installation and permissions."
             fi
             exit 1
           fi
