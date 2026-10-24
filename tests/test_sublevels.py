@@ -72,11 +72,11 @@ class SublevelsTest(unittest.TestCase):
                   "138": {"tag": "android14-6.1-2025-06_r11", "pendahulu": True}}
         text = sl.table(record, "id")
         self.assertIn("| **176** (`lts`) | `2026-09_r4` | ✅ KernelSU Next: [build + gate KMI]"
-                      "(https://github.com/cogan17/Xiomi_14T_Pro/actions/runs/9) · r1 diuji di HP |", text)
+                      "(https://github.com/cogan17/Cogan-Kernel/actions/runs/9) · r1 diuji di HP |", text)
         self.assertIn("| 138 | `2025-06_r11` | 🧪 lolos build + gate KMI di repo pendahulu |", text)
         # The newest result here decides: waiting for upstream is listed, a failure here is not.
         self.assertIn("| 145 | `2025-09_r36` | ⏳ KernelSU Next: [Tunggu simonpunk]"
-                      "(https://github.com/cogan17/Xiomi_14T_Pro/actions/runs/9) |", text)
+                      "(https://github.com/cogan17/Cogan-Kernel/actions/runs/9) |", text)
         self.assertNotIn("162", text)
         self.assertNotIn("141", text)
         self.assertNotIn("180", text)

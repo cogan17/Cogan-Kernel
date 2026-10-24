@@ -110,7 +110,7 @@ def record_run(record, info, run_id, tags=None):
 
 # ---- README table -----------------------------------------------------------------------------
 
-def table(record, lang, repo="cogan17/Xiomi_14T_Pro"):
+def table(record, lang, repo="cogan17/Cogan-Kernel"):
     w = WORDS[lang]
     rows, lts = [], max((int(s) for s in record if shown(record[s])), default=None)
     for sublevel in sorted(record, key=int, reverse=True):

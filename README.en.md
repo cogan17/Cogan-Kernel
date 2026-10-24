@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/cogan17/Xiomi_14T_Pro/releases"><b>⬇️ Download Kernel</b></a>
+  <a href="https://github.com/cogan17/Cogan-Kernel/releases"><b>⬇️ Download Kernel</b></a>
   &nbsp;·&nbsp;
   <a href="docs/pasang.en.md"><b>📖 Guide</b></a>
   &nbsp;·&nbsp;
@@ -21,7 +21,7 @@
 </p>
 
 > [!WARNING]
-> **Still in testing.** Builds that pass the maintainer's phone test are published as **Pre-release** under [Releases](https://github.com/cogan17/Xiomi_14T_Pro/releases); there is no official release yet. Flash only if you have a `boot` backup and know how to [go back to stock](docs/kembali-ke-stok.en.md).
+> **Still in testing.** Builds that pass the maintainer's phone test are published as **Pre-release** under [Releases](https://github.com/cogan17/Cogan-Kernel/releases); there is no official release yet. Flash only if you have a `boot` backup and know how to [go back to stock](docs/kembali-ke-stok.en.md).
 
 ---
 
@@ -74,15 +74,15 @@ The builder uses the official ACK `android14-6.1` releases since the phone's sto
 <!-- sublevel:start -->
 | Sublevel | ACK release | Status |
 |---|---|---|
-| **176** (`lts`) | `2026-09_r4` | ✅ KernelSU Next: [build + KMI gate](https://github.com/cogan17/Xiomi_14T_Pro/actions/runs/40048269498) · r1 and r2 tested on the phone |
-| 172 | `2026-06_r14` | ✅ KernelSU Next: [build + KMI gate](https://github.com/cogan17/Xiomi_14T_Pro/actions/runs/40048269498) |
-| 162 | `2026-03_r24` | ✅ KernelSU Next: [build + KMI gate](https://github.com/cogan17/Xiomi_14T_Pro/actions/runs/40048269498) |
-| 157 | `2025-12_r32` | ✅ KernelSU Next: [build + KMI gate](https://github.com/cogan17/Xiomi_14T_Pro/actions/runs/40048269498) |
-| 145 | `2025-09_r36` | ✅ KernelSU Next: [build + KMI gate](https://github.com/cogan17/Xiomi_14T_Pro/actions/runs/40061712549) |
-| 138 | `2025-06_r17` | ✅ KernelSU Next: [build + KMI gate](https://github.com/cogan17/Xiomi_14T_Pro/actions/runs/40061712549) · the phone's stock kernel; archive r5 tested on the phone |
+| **176** (`lts`) | `2026-09_r4` | ✅ KernelSU Next: [build + KMI gate](https://github.com/cogan17/Cogan-Kernel/actions/runs/40048269498) · r1 and r2 tested on the phone |
+| 172 | `2026-06_r14` | ✅ KernelSU Next: [build + KMI gate](https://github.com/cogan17/Cogan-Kernel/actions/runs/40048269498) |
+| 162 | `2026-03_r24` | ✅ KernelSU Next: [build + KMI gate](https://github.com/cogan17/Cogan-Kernel/actions/runs/40048269498) |
+| 157 | `2025-12_r32` | ✅ KernelSU Next: [build + KMI gate](https://github.com/cogan17/Cogan-Kernel/actions/runs/40048269498) |
+| 145 | `2025-09_r36` | ✅ KernelSU Next: [build + KMI gate](https://github.com/cogan17/Cogan-Kernel/actions/runs/40061712549) |
+| 138 | `2025-06_r17` | ✅ KernelSU Next: [build + KMI gate](https://github.com/cogan17/Cogan-Kernel/actions/runs/40061712549) · the phone's stock kernel; archive r5 tested on the phone |
 <!-- sublevel:end -->
 
-Unicode fix (optional) passes the build + KMI gate on 157, 162, 172 and 176, and applies cleanly on 138 and 145 ([CI](https://github.com/cogan17/Xiomi_14T_Pro/actions/runs/40048269498)). If WildKernel's patch does not fit yet, the build stops: untick Unicode fix to build anyway.
+Unicode fix (optional) passes the build + KMI gate on 157, 162, 172 and 176, and applies cleanly on 138 and 145 ([CI](https://github.com/cogan17/Cogan-Kernel/actions/runs/40048269498)). If WildKernel's patch does not fit yet, the build stops: untick Unicode fix to build anyway.
 
 </details>
 

@@ -15,7 +15,7 @@ FILES = ["4-NOMOUNT-MODULE_v2.2.0.zip", "1-KERNEL_x.zip", "2-MANAGER_KernelSU-Ne
 
 class ReleaseNotesTest(unittest.TestCase):
     def test_untested_build_says_so_in_both_languages(self):
-        text = rn.notes(ENV, FILES, "https://run", "cogan17/Xiomi_14T_Pro")
+        text = rn.notes(ENV, FILES, "https://run", "cogan17/Cogan-Kernel")
         self.assertIn("**belum diuji di HP**", text)
         self.assertIn("**not tested on the phone yet**", text)
         self.assertNotIn("Diuji owner", text)
@@ -24,16 +24,16 @@ class ReleaseNotesTest(unittest.TestCase):
         self.assertLess(text.index("1-KERNEL_x.zip"), text.index("4-NOMOUNT"))
 
     def test_tested_label_and_note(self):
-        text = rn.notes(ENV, FILES, "https://run", "cogan17/Xiomi_14T_Pro", tested=True, note="baris 1\\nline 2")
+        text = rn.notes(ENV, FILES, "https://run", "cogan17/Cogan-Kernel", tested=True, note="baris 1\\nline 2")
         self.assertIn("**Diuji owner di Xiaomi 14T Pro.**", text)
         self.assertIn("> baris 1\n> line 2", text)
 
     def test_unicode_fix_line_only_when_built_with_it(self):
         line = "- Unicode fix: WildKernel `fa76c90e2cb2`"
-        self.assertNotIn("Unicode fix", rn.notes(ENV, FILES, "https://run", "cogan17/Xiomi_14T_Pro"))
-        self.assertNotIn("Unicode fix", rn.notes({**ENV, "UNICODE_FIX": "-"}, FILES, "https://run", "cogan17/Xiomi_14T_Pro"))
+        self.assertNotIn("Unicode fix", rn.notes(ENV, FILES, "https://run", "cogan17/Cogan-Kernel"))
+        self.assertNotIn("Unicode fix", rn.notes({**ENV, "UNICODE_FIX": "-"}, FILES, "https://run", "cogan17/Cogan-Kernel"))
         text = rn.notes({**ENV, "UNICODE_FIX": "fa76c90e2cb284e6ce22b0b008ad4dd19820dbb1"}, FILES, "https://run",
-                        "cogan17/Xiomi_14T_Pro")
+                        "cogan17/Cogan-Kernel")
         self.assertIn(line, text)
 
 
