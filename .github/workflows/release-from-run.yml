@@ -117,6 +117,11 @@ jobs:
             echo "- 🇬🇧 Published: [$tag]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/tag/$tag) ($RELEASE_TYPE)$([ "$TESTED" = "true" ] && echo ", tested on the phone")"
             echo
             cat notes.md
+            echo
+            # Ready to copy for Telegram (best effort: the release is already published).
+            python3 kernel/telegram.py info/build.env --repo "$GITHUB_REPOSITORY" --sha "$sha" \
+              --link "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/tag/$tag" "${tested[@]}" --note "$NOTE" \
+              --out telegram --summary || true
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Ringkasan bila gagal / summary on failure

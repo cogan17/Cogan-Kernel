@@ -5,11 +5,12 @@ Every planned build is listed, README style: ✅ built (release, KMI gate, sha25
 the KMI gate's reason, the error, or the stage where it stopped) and ⏳ not built (whom to wait for).
 
 Usage: run_summary.py --matrix JSON --info DIR --snapshots DIR --repo OWNER/REPO
-                      [--resolve RESULT] [--attest RESULT] [--release RESULT]
+                      [--resolve RESULT] [--attest RESULT] [--release RESULT] [--telegram DIR]
 DIR holds one build-info-<root>-<sublevel> directory per build, with what the build left behind:
 build.env (built), wait.json (a newest version does not fit yet), kmi-compat.json (the gate's
 report), error.txt (a fault of this repository) and stage.txt (the last stage it started).
-RESULT is a job result: success, failure, cancelled or skipped.
+RESULT is a job result: success, failure, cancelled or skipped. DIR holds id.txt and en.txt of
+kernel/telegram.py; with one build they are shown in a code block, ready to copy for Telegram.
 """
 import argparse
 import json
@@ -27,7 +28,8 @@ TEXT = {
            "features": "**Fitur:** {features}", "zip": "**ZIP** (cek: `gh attestation verify <zip> --repo {repo}`)",
            "resolve": "❌ **Gagal sebelum build.** Lihat pesan error di atas (isian form atau versi terbaru).",
            "attest": "❌ Tanda tangan ZIP gagal: jangan terbitkan run ini.",
-           "published": "Terbit: [{tag}]({url})", "unpublished": "❌ Gagal terbit: lihat job Terbit."},
+           "published": "Terbit: [{tag}]({url})", "unpublished": "❌ Gagal terbit: lihat job Terbit.",
+           "telegram": "**📣 Teks Telegram** (salin lewat tombol di pojok kanan atas kotak)"},
     "en": {"flag": "🇬🇧 English", "build": "Build", "result": "Result", "detail": "Details",
            "ok": "✅ Built", "fail": "❌ Failed", "wait": "⏳ Not built",
            "count": "**{ok} built · {fail} failed · {wait} not built**",
@@ -36,7 +38,8 @@ TEXT = {
            "features": "**Features:** {features}", "zip": "**ZIP** (check: `gh attestation verify <zip> --repo {repo}`)",
            "resolve": "❌ **Failed before any build.** See the error above (form input or newest versions).",
            "attest": "❌ Signing the ZIP failed: do not publish this run.",
-           "published": "Published: [{tag}]({url})", "unpublished": "❌ Publishing failed: see the publish job."},
+           "published": "Published: [{tag}]({url})", "unpublished": "❌ Publishing failed: see the publish job.",
+           "telegram": "**📣 Telegram post** (copy with the button at the top right of the box)"},
 }
 
 
@@ -86,7 +89,7 @@ def detail(lang, kind, values):
     return t["stage"].format(stage=values["stage"]) if values.get("stage") else t["nothing"]
 
 
-def summary(matrix, info, snapshots, repo, resolve="success", attest="success", release="skipped"):
+def summary(matrix, info, snapshots, repo, resolve="success", attest="success", release="skipped", telegram=None):
     found = rows(matrix, info, snapshots)
     built = [values["env"] for _, kind, values in found if kind == "ok"]
     # One features line when every build has the same features; otherwise per row.
@@ -118,6 +121,9 @@ def summary(matrix, info, snapshots, repo, resolve="success", attest="success", 
             lines += [t["published"].format(tag=tag, url=f"https://github.com/{repo}/releases/tag/{tag}"), ""]
         elif release == "failure":
             lines += [t["unpublished"], ""]
+        post = telegram / f"{lang}.txt" if telegram else None
+        if post and post.is_file() and len(built) == 1:
+            lines += [t["telegram"], "", "```text", post.read_text().rstrip("\n"), "```", ""]
         lines += ["</details>", ""]
     return "\n".join(lines)
 
@@ -131,9 +137,11 @@ def main(argv=None):
     parser.add_argument("--resolve", default="success")
     parser.add_argument("--attest", default="success")
     parser.add_argument("--release", default="skipped")
+    parser.add_argument("--telegram", type=Path)
     args = parser.parse_args(argv)
     matrix = json.loads(args.matrix)["include"] if args.matrix.strip() else []
-    sys.stdout.write(summary(matrix, args.info, args.snapshots, args.repo, args.resolve, args.attest, args.release))
+    sys.stdout.write(summary(matrix, args.info, args.snapshots, args.repo, args.resolve, args.attest, args.release,
+                             args.telegram))
     return 0
 
 
