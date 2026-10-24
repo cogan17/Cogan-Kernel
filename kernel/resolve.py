@@ -300,16 +300,14 @@ def resolve(root, sublevel, work, unicode=False):
                 main, manager = bakasu_main()
                 run("git", "-C", repo, "fetch", "-q", "--depth=1", BAKASU, f"{main}:refs/check/bakasu-main")
                 main_problem = bakasu_ready(repo, "refs/check/bakasu-main", "refs/check/susfs")
+                main_id = main_en = f"main `{main[:12]}`: {main_problem}"
             except Wait as wait:
-                main, main_problem = None, wait.en_text
+                main, main_problem, main_id, main_en = None, True, wait.id_text, wait.en_text
             if main_problem:
-                where = f"main `{main[:12]}`" if main else "main"
                 raise Wait(f"Tunggu pengembang BakaSU: rilis terbaru {tag} belum siap untuk SUSFS terbaru "
-                           f"`{susfs[:12]}` ({problem}); {where} juga belum ({main_problem}). "
-                           "Atau tunggu simonpunk menyesuaikan SUSFS.",
+                           f"`{susfs[:12]}` ({problem}); {main_id}. Atau tunggu simonpunk menyesuaikan SUSFS.",
                            f"Wait for the BakaSU developer: the newest release {tag} is not ready for the newest "
-                           f"SUSFS `{susfs[:12]}` ({problem}); {where} is not either ({main_problem}). "
-                           "Or wait for simonpunk to adapt SUSFS.")
+                           f"SUSFS `{susfs[:12]}` ({problem}); {main_en}. Or wait for simonpunk to adapt SUSFS.")
             snap["root_source"] = {"repo": BAKASU, "branch": "main", "commit": main}
             snap["manager"] = {"kind": "ci", **manager}
         else:
