@@ -27,7 +27,7 @@ Sesi berikutnya mulai dari sini. Aturannya ada di `CLAUDE.md`. Semua waktu dalam
 - **README dan CHANGELOG** mencatat r1 sebagai rilis repo ini yang diuji di HP (#9).
 - **Yang digabung dari WildKernel (owner 24 Okt: "yang bisa digabungkan, lanjutkan"; jangan merusak yang ada):**
   - #10 **Validate** di setiap PR: tes, YAML workflow, sintaks shell; tanpa build kernel (±30 detik). `.gitignore` untuk `__pycache__`; 18 file `.pyc` keluar dari git.
-  - #11 **centang Unicode Fix**, mati secara default: patch terbaru `WildKernels/kernel_patches` dipasang ketat; tidak cocok = "Tunggu WildKernel"; gate KMI tetap. `fs/unicode/utf8-norm.c` identik di Linux 6.1–6.1.190 dan ACK 6.1.138, jadi berlaku untuk semua rilis ACK 6.1. Bukti CI [run 40041706993](https://github.com/cogan17/Xiomi_14T_Pro/actions/runs/40041706993) (KSUN 6.1.176, CI): gate `CRC differs 0` (juga terhadap stok 6.1.138), fitur `SUSFS, BBRv3 (default, also bbr3), BBG, NoMount, Unicode fix, Cogan Bridge, Full LTO`, `UNICODE_FIX=fa76c90`.
+  - #11 **centang Unicode Fix**, mati secara default: patch terbaru `WildKernels/kernel_patches` dipasang ketat; tidak cocok = "Tunggu WildKernel"; gate KMI tetap. Patch hanya mengubah `fs/unicode/utf8-norm.c`, yang identik di Linux stable 6.1–6.1.190 (kernel.org, **bukan ACK**) dan di ACK 6.1.138. ACK terbaru saat ini 6.1.176 (`android14-6.1-2026-09_r4`). Terbukti: ACK 6.1.138 (lokal, patch terpasang ketat) dan 6.1.176 (CI). ACK 145, 157, 162 dan 172 belum dibuktikan langsung, diharapkan cocok; bila tidak, build berhenti "Tunggu WildKernel". Bukti CI [run 40041706993](https://github.com/cogan17/Xiomi_14T_Pro/actions/runs/40041706993) (KSUN 6.1.176, CI): gate `CRC differs 0` (juga terhadap stok 6.1.138), fitur `SUSFS, BBRv3 (default, also bbr3), BBG, NoMount, Unicode fix, Cogan Bridge, Full LTO`, `UNICODE_FIX=fa76c90`.
   - Tidak berlaku untuk rothko: Ptrace (kernel < 5.16), BTF (sudah aktif di kernel bawaan), FUSE-BPF (6.12). Tetap tidak dipakai: DroidSpaces, NTSync, Performance, `allow_version_mismatch`, page size, keep_kmi.
 - **Cogan Smart Kernel fokus ke r1** (#12): owner menguji v2.8.2 di r1 (tangkapan layar 06.47 WIB: Cogan r1 · 6.1.176 terverifikasi lewat Cogan Bridge, mengecas cepat 3868 mA, pencatat suhu, penjaga modul aman). Label rilis `cogan-smart-v2.8.2` = "r1 (6.1.176) + arsip r6, termasuk HyperCharge" (run 40041708914); default `kernel_uji` = `r1 (6.1.176)`.
 - **Bersih branch:** "Automatically delete head branches" diaktifkan owner. 9 branch PR #1–#9 dihapus lewat tombol sekali pakai (#13, run 40043075372; dari sesi Claude hapus branch ditolak 403), tombolnya dihapus (#14).
@@ -44,5 +44,6 @@ Sesi berikutnya mulai dari sini. Aturannya ada di `CLAUDE.md`. Semua waktu dalam
 
 ## Langkah pertama sesi berikutnya
 1. Jangan lanjut sebelum owner meminta.
-2. Bila owner mau, uji Unicode fix: satu build CI (KernelSU Next, `lts`, centang Unicode Fix) untuk di-flash owner, lalu cek nama file di penyimpanan internal tetap normal.
-3. Varian BakaSU tetap menunggu pengembang BakaSU; summary Builder memberi tahu bila sudah siap.
+2. Owner: run bukti `semua` dengan centang Unicode Fix (KernelSU Next, ACK 138–176) "nanti saja"; jalankan hanya bila owner meminta.
+3. Bila owner mau, uji Unicode fix: satu build CI (KernelSU Next, `lts`, centang Unicode Fix) untuk di-flash owner, lalu cek nama file di penyimpanan internal tetap normal.
+4. Varian BakaSU tetap menunggu pengembang BakaSU; summary Builder memberi tahu bila sudah siap.
