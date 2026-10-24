@@ -74,7 +74,7 @@ Builder memakai rilis ACK resmi `android14-6.1` sejak kernel bawaan HP; `lts` = 
 <!-- sublevel:start -->
 | Sublevel | Rilis ACK | Status |
 |---|---|---|
-| **176** (`lts`) | `2026-09_r4` | ✅ KernelSU Next: [build + gate KMI](https://github.com/cogan17/Xiomi_14T_Pro/actions/runs/40048269498) · r1 diuji di HP |
+| **176** (`lts`) | `2026-09_r4` | ✅ KernelSU Next: [build + gate KMI](https://github.com/cogan17/Xiomi_14T_Pro/actions/runs/40048269498) · r1 dan r2 diuji di HP |
 | 172 | `2026-06_r14` | ✅ KernelSU Next: [build + gate KMI](https://github.com/cogan17/Xiomi_14T_Pro/actions/runs/40048269498) |
 | 162 | `2026-03_r24` | ✅ KernelSU Next: [build + gate KMI](https://github.com/cogan17/Xiomi_14T_Pro/actions/runs/40048269498) |
 | 157 | `2025-12_r32` | ✅ KernelSU Next: [build + gate KMI](https://github.com/cogan17/Xiomi_14T_Pro/actions/runs/40048269498) |
@@ -91,12 +91,13 @@ Unicode fix (opsional) lolos build + gate KMI di 157, 162, 172 dan 176, dan terp
 
 | Build | Hasil |
 |---|---|
+| `r2` (ACK 6.1.176 · KernelSU Next · Unicode fix) | ✅ Berjalan di HP 24 Okt; uji khusus Unicode fix belum dilaporkan |
 | `r1` (ACK 6.1.176 · KernelSU Next) | ✅ Diuji di HP 24 Okt: KernelSU Next berfungsi, SUSFS v2.3.0, NoMount v2.2.0, SELinux Enforcing |
 | `arsip r8` (ACK 6.1.176 · BakaSU) | ✅ Diuji di HP 23 Okt: BakaSU berfungsi, SUSFS v2.3.0, SELinux Enforcing |
 | `arsip r6` (ACK 6.1.176 · KernelSU Next) | ✅ Diuji di HP 22 Okt |
 | `arsip r5` (ACK 6.1.138 · KernelSU Next) | ✅ Diuji di HP; cadangan yang terbukti |
 
-`r1` rilis pertama repo ini; tiga lainnya rilis arsip dari repo pendahulu. Riwayat lengkap: [Catatan Rilis](CHANGELOG.md).
+`r1` dan `r2` rilis repo ini; tiga lainnya rilis arsip dari repo pendahulu. Riwayat lengkap: [Catatan Rilis](CHANGELOG.md).
 
 </details>
 
