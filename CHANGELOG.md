@@ -6,6 +6,17 @@ Versi teratas = build terbaru. Build yang lolos uji HP terbit sebagai **Pre-rele
 
 > 📦 r2–r8 dan percobaan awal dibuat di repo pendahulu [cogan17/Kernel-14t-pro](https://github.com/cogan17/Kernel-14t-pro). Rilis r5, r6 dan r8 disalin ke Releases repo ini sebagai arsip dengan file yang sama. Di repo ini namanya **arsip r5, arsip r6, arsip r8** dan tagnya berawalan `arsip-` (mis. `arsip-v26.10.22-r5`), supaya tidak bentrok dengan nomor rilis repo ini sendiri.
 
+## r2 — 24 Okt 2026 · `6.1.176-Cogan-Rothko-ACK-r2` · [Pre-release](https://github.com/cogan17/Xiomi_14T_Pro/releases/tag/v26.10.24-r2)
+
+**KernelSU Next + SUSFS** di ACK resmi Google 6.1.176 (`android14-6.1-2026-09_r4`), sama seperti r1, ditambah Unicode fix.
+
+### ✨ Baru
+- **Unicode fix** (WildKernel `fa76c90`): nama file dengan karakter tak terlihat (mis. *zero-width*) di penyimpanan internal tidak lagi dianggap sama dengan nama tanpanya. Centang opsional di Builder, mati secara default; r2 dibangun dengan centang ini.
+
+Komponen lain sama dengan r1: KernelSU Next `d21e0a6` (33405), SUSFS v2.3.0 (`c27ebe9`), NoMount v2.2.0.
+
+Status: ✅ berjalan di HP owner (24 Okt). Uji khusus Unicode fix belum dilaporkan terpisah. Gate KMI: 0 simbol berbeda.
+
 ## r1 — 24 Okt 2026 · `6.1.176-Cogan-Rothko-ACK-r1` · [Pre-release](https://github.com/cogan17/Xiomi_14T_Pro/releases/tag/v26.10.23-r1)
 
 Rilis pertama repo ini: **KernelSU Next + SUSFS** di ACK resmi Google 6.1.176 (`android14-6.1-2026-09_r4`), dengan komponen versi terbaru saat build.

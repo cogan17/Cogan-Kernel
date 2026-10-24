@@ -6,6 +6,17 @@ Topmost = newest build. Builds that pass the phone test are published as a **Pre
 
 > 📦 r2–r8 and the early experiments were made in the predecessor repository [cogan17/Kernel-14t-pro](https://github.com/cogan17/Kernel-14t-pro). Releases r5, r6 and r8 are copied to this repository's Releases as an archive with the same files. Here they are named **archive r5, archive r6, archive r8** and their tags start with `arsip-` (e.g. `arsip-v26.10.22-r5`), so they never clash with this repository's own release numbers.
 
+## r2 — 24 Oct 2026 · `6.1.176-Cogan-Rothko-ACK-r2` · [Pre-release](https://github.com/cogan17/Xiomi_14T_Pro/releases/tag/v26.10.24-r2)
+
+**KernelSU Next + SUSFS** on the official Google ACK 6.1.176 (`android14-6.1-2026-09_r4`), as in r1, plus the Unicode fix.
+
+### ✨ New
+- **Unicode fix** (WildKernel `fa76c90`): file names with invisible characters (e.g. zero-width) on internal storage no longer count as the same name without them. An optional Builder box, off by default; r2 was built with it ticked.
+
+Other components are the same as r1: KernelSU Next `d21e0a6` (33405), SUSFS v2.3.0 (`c27ebe9`), NoMount v2.2.0.
+
+Status: ✅ runs on the owner's phone (24 Oct). A dedicated Unicode fix test has not been reported separately. KMI gate: 0 differing symbols.
+
 ## r1 — 24 Oct 2026 · `6.1.176-Cogan-Rothko-ACK-r1` · [Pre-release](https://github.com/cogan17/Xiomi_14T_Pro/releases/tag/v26.10.23-r1)
 
 This repository's first release: **KernelSU Next + SUSFS** on the official Google ACK 6.1.176 (`android14-6.1-2026-09_r4`), with the newest components at build time.
