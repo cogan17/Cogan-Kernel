@@ -183,14 +183,13 @@ class CompanionTests(unittest.TestCase):
         self.assertEqual(self.p.report('set','TARGET_TEMP','40'), {'ok':1})
         self.assertFalse(lock.exists())
 
-    def test_native_cpu_cooling_prevents_extra_step_when_temperature_is_flat(self):
+    def test_native_cpu_cooling_is_reported_and_the_body_gets_time_to_cool(self):
         root=self.p.sys/'class/thermal/cooling_device0'
         for k,v in {'type':'cpu-cooling','cur_state':'2','max_state':'8'}.items():write(root/k,v+'\n')
-        self.p.set_temp(45)
-        self.assertEqual(self.p.step()['level'],0)
-        self.p.set_temp(45.5)
-        self.assertEqual(self.p.step()['level'],1)
-        self.assertEqual(self.p.step()['level'],1)
+        self.p.set_body(45)
+        state=self.p.step()
+        self.assertEqual((state['level'],state['native_cooling']),(1,1))
+        self.assertEqual([self.p.step()['level'] for _ in range(3)],[1,1,2])
 
     def test_external_stronger_game_boost_is_not_reduced(self):
         node=self.p.cpuctl/'top-app/cpu.uclamp.min'

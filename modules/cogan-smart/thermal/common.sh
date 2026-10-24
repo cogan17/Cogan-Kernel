@@ -16,9 +16,9 @@ CONFIG=$CT_DATA/config
 # Settings (WebUI writes $CONFIG; only these keys and plain numbers are accepted).
 INTERVAL=20
 RETENTION_DAYS=7
-HOT_TEMP=42
+HOT_TEMP=42       # "hot" = phone body (Badan HP) at or above this (°C), owner 2026-10-24
 NOTIFY=0
-NOTIFY_TEMP=45
+NOTIFY_TEMP=45    # optional notification, also on the phone body
 AUTOSTART=1
 . "$MODROOT/bridge.sh"
 
@@ -32,9 +32,9 @@ load_config() {
     case "$key" in
       INTERVAL) [ "$value" -ge 10 ] && [ "$value" -le 300 ] && INTERVAL=$value ;;
       RETENTION_DAYS) [ "$value" -ge 1 ] && [ "$value" -le 30 ] && RETENTION_DAYS=$value ;;
-      HOT_TEMP) [ "$value" -ge 30 ] && [ "$value" -le 90 ] && HOT_TEMP=$value ;;
+      HOT_TEMP) [ "$value" -ge 35 ] && [ "$value" -le 50 ] && HOT_TEMP=$value ;;
       NOTIFY) [ "$value" -le 1 ] && NOTIFY=$value ;;
-      NOTIFY_TEMP) [ "$value" -ge 30 ] && [ "$value" -le 90 ] && NOTIFY_TEMP=$value ;;
+      NOTIFY_TEMP) [ "$value" -ge 38 ] && [ "$value" -le 55 ] && NOTIFY_TEMP=$value ;;
       AUTOSTART) [ "$value" -le 1 ] && AUTOSTART=$value ;;
     esac
   done < "$CONFIG"

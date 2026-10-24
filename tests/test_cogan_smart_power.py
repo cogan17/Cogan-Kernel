@@ -93,6 +93,11 @@ class FakePhone:
             write(self.sys / f"class/thermal/thermal_zone{index}/type", kind + "\n")
             write(self.sys / f"class/thermal/thermal_zone{index}/temp", f"{int(value * 1000)}\n")
 
+    def set_body(self, celsius):
+        """The phone body (skin) sensor that the modes follow since v2.9."""
+        write(self.sys / "class/thermal/thermal_zone3/type", "shell_back\n")
+        write(self.sys / "class/thermal/thermal_zone3/temp", f"{int(celsius * 1000)}\n")
+
     def unplug(self):
         if self.charger:
             self.charger.set()
@@ -163,40 +168,94 @@ class PowerModeTests(unittest.TestCase):
     def save_switch(self):
         write(self.phone.data / "switch", "class/power_supply/battery/input_suspend|0|1\n")
 
+    def test_a_hot_processor_alone_does_not_cap_the_cpu(self):
+        # v2.8 compared the processor (about 50 °C at rest on rothko) with 42 °C and capped the CPU
+        # almost all the time. Since v2.9 the modes follow the phone body (owner 2026-10-24).
+        self.phone.set_temp(60.0)
+        self.phone.set_body(38.0)
+        for _ in range(3):
+            state = self.phone.step()
+        self.assertEqual((state["level"], state["big"], state["main"], state["body"]), (0, 100, 600, 380))
+        self.assertEqual(self.phone.caps(), {"policy0": 2000000, "policy4": 3000000, "policy7": 3250000})
+
     def test_balanced_steps_the_cpu_down_and_back_up(self):
-        self.phone.set_temp(45.0)
+        self.phone.set_temp(60.0)
+        self.phone.set_body(42.5)
         state = self.phone.step()
         self.assertEqual((state["mode"], state["limit"], state["level"], state["big"]), ("seimbang", 42, 1, 90))
         self.assertEqual(self.phone.caps(), {"policy0": 2000000, "policy4": 2700000, "policy7": 2900000})
-        self.assertEqual(self.phone.step()["big"], 80)                    # still hot: one more step
+        # The body cools slowly: three checks to see what the step did, then the next step.
+        self.assertEqual([self.phone.step()["big"] for _ in range(3)], [90, 90, 80])
         self.assertEqual(self.phone.caps()["policy4"], 2400000)
-        self.phone.set_temp(44.0)                                         # cooling already: hold
+        for _ in range(2):
+            self.phone.step()
+        self.phone.set_body(42.1)                                         # cooling already: no step
         self.assertEqual(self.phone.step()["level"], 2)
-        self.phone.set_temp(41.0)                                         # under the limit, not 2 °C under
+        self.phone.set_body(41.5)                                         # under the limit, not 1 °C under
         self.assertEqual(self.phone.step()["level"], 2)
-        self.phone.set_temp(39.0)
-        self.assertEqual(self.phone.step()["level"], 2)                   # first cool check
-        self.assertEqual(self.phone.step()["level"], 1)                   # second: one step back up
+        self.phone.set_body(40.9)
+        self.assertEqual([self.phone.step()["level"] for _ in range(3)], [2, 2, 1])   # three cool checks
         self.assertEqual(self.phone.caps()["policy4"], 2700000)
         events = self.phone.events()
-        self.assertIn("Suhu turun ke 39.0 °C: CPU 90%", events[0])
-        self.assertTrue(any("Suhu 45.0 °C ≥ 42 °C: CPU dibatasi 90%" in event for event in events))
+        self.assertIn("Badan HP turun ke 40.9 °C: CPU 90%", events[0])
+        self.assertTrue(any("Badan HP 42.5 °C ≥ 42 °C: CPU dibatasi 90%" in event for event in events))
+
+    def test_processor_brake_in_every_mode(self):
+        self.phone.set_body(36.0)
+        for mode in ("game", "seimbang", "hemat"):
+            self.phone.report("mode", mode)
+            self.phone.set_temp(50.0)
+            start = self.phone.step()["big"]
+            self.phone.set_temp(95.5)
+            levels = [self.phone.step()["level"] for _ in range(2)]   # every check, no waiting
+            self.assertEqual(levels, [1, 2], mode)
+            state = self.phone.step()
+            self.assertEqual((state["brake"], state["big"]), (1, start - 30), mode)
+            self.assertIn("Rem darurat: prosesor 95.5 °C ≥ 95 °C: CPU dibatasi", self.phone.events()[0])
+            self.phone.set_temp(91.0)                                     # not yet 5 °C under the brake
+            self.assertEqual(self.phone.step()["level"], 3)
+        self.phone.set_temp(70.0)
+        self.assertEqual([self.phone.step()["level"] for _ in range(3)], [3, 3, 2])
+
+    def test_without_a_body_sensor_the_battery_is_used(self):
+        self.phone.set_temp(60.0)
+        self.phone.set_battery(50, "Discharging", 43.0)
+        state = self.phone.step()
+        self.assertEqual((state["body"], state["level"]), (430, 1))
+        status = self.phone.report("status")
+        self.assertEqual((status["body"], status["body_from"], status["brake"]), (430, "battery", 95))
+        self.phone.set_body(39.0)
+        (self.phone.monitor / "run/sensors.tsv").unlink()                # the 2-second sensor snapshot
+        status = self.phone.report("status")
+        self.assertEqual((status["body"], status["body_from"]), (390, "skin"))
+
+    def test_v28_temperatures_do_not_carry_over(self):
+        # A v2.8 config: its TARGET_TEMP and GAME_LIMIT were processor thresholds.
+        write(self.phone.data / "config", "MODE=game\nTARGET_TEMP=44\nGAME_LIMIT=48\nCHARGE_STOP=80\nCHARGE_RESUME=75\nINTERVAL=15\n")
+        config = self.phone.report("status")["config"]
+        self.assertEqual((config["mode"], config["TARGET_TEMP"], config["GAME_LIMIT"], config["CHARGE_STOP"], config["INTERVAL"]),
+                         ("game", 42, 45, 80, 15))
+        self.assertEqual(self.phone.report("set", "TARGET_TEMP", "44"), {"ok": 1})
+        self.assertIn("CTRL_VER=2", (self.phone.data / "config").read_text())
+        config = self.phone.report("status")["config"]
+        self.assertEqual((config["TARGET_TEMP"], config["GAME_LIMIT"], config["CHARGE_RESUME"]), (44, 45, 75))
 
     def test_saver_and_game(self):
         self.assertEqual(self.phone.report("mode", "hemat"), {"ok": 1})
-        self.phone.set_temp(35.0)
+        self.phone.set_temp(55.0)
+        self.phone.set_body(35.0)
         state = self.phone.step()
-        self.assertEqual((state["limit"], state["big"], state["little"]), (39, 60, 80))
+        self.assertEqual((state["limit"], state["big"], state["little"]), (40, 60, 80))
         self.assertEqual(self.phone.caps(), {"policy0": 1500000, "policy4": 1500000, "policy7": 1200000})
-        self.phone.set_temp(40.0)                                         # Hemat steps down from its own cap
+        self.phone.set_body(40.0)                                         # Hemat steps down from its own cap
         self.assertEqual(self.phone.step()["big"], 50)
         self.phone.report("mode", "game")
-        self.phone.set_temp(45.0)
+        self.phone.set_body(44.5)
         state = self.phone.step()
-        self.assertEqual((state["limit"], state["big"], state["boost"]), (48, 100, 1))
+        self.assertEqual((state["limit"], state["big"], state["boost"]), (45, 100, 1))
         self.assertEqual(self.phone.caps(), {"policy0": 2000000, "policy4": 3000000, "policy7": 3250000})
         self.assertEqual((self.phone.cpuctl / "top-app/cpu.uclamp.min").read_text().strip(), "20")
-        self.phone.set_temp(49.0)                                         # Game's emergency brake
+        self.phone.set_body(45.0)                                         # Performa's limit on the phone body
         self.assertEqual(self.phone.step()["big"], 90)
         self.phone.report("mode", "seimbang")
         self.assertEqual(self.phone.step()["boost"], 0)
@@ -223,6 +282,7 @@ class PowerModeTests(unittest.TestCase):
 
     def test_battery_heat_and_monitor_cause(self):
         self.save_switch()
+        self.phone.set_body(36.0)   # a hot battery pauses charging; the CPU follows the phone body
         self.phone.set_battery(50, "Charging", 42.5)
         # v2.8.2 default (CHARGE_THERMAL=0): the phone manages charging heat, HyperCharge is not paused.
         self.assertEqual(self.phone.step()["charge_off"], "")
@@ -237,19 +297,18 @@ class PowerModeTests(unittest.TestCase):
         self.assertEqual(self.phone.step()["charge_off"], "")
         # Cogan Thermal Monitor says charging heats the phone: Seimbang pauses charging.
         self.phone.set_battery(50, "Charging", 35.0)
-        self.phone.set_temp(43.0)
+        self.phone.set_body(43.0)
         self.phone.monitor_report("Cas cepat")
         state = self.phone.step()
         self.assertEqual((state["charge_off"], state["source"], state["cause"]), ("panas", "monitor", "Cas cepat"))
         self.assertEqual(state["level"], 0)                               # pausing the charger comes first
-        self.assertIn("karena cas: cas dijeda sampai 39 °C", self.phone.events()[0])
-        self.assertEqual(self.phone.step()["level"], 0)                   # not rising: CPU stays free
-        self.phone.set_temp(43.5)
-        self.assertEqual(self.phone.step()["level"], 1)                   # still rising: CPU steps in
-        self.phone.set_temp(38.5)
+        self.assertIn("Badan HP 43.0 °C karena cas: cas dijeda sampai 39 °C", self.phone.events()[0])
+        # The pause gets three checks; a body still hot after that brings the CPU in.
+        self.assertEqual([self.phone.step()["level"] for _ in range(3)], [0, 0, 1])
+        self.phone.set_body(38.5)
         self.assertEqual(self.phone.step()["charge_off"], "")
         # Another cause (a game) is handled by the CPU, not by stopping the charger.
-        self.phone.set_temp(43.0)
+        self.phone.set_body(43.0)
         self.phone.monitor_report("Grafis berat: Mobile Legends")
         state = self.phone.step()
         self.assertEqual((state["charge_off"], state["level"] > 0), ("", True))
@@ -257,7 +316,7 @@ class PowerModeTests(unittest.TestCase):
         self.phone.monitor_report("Cas cepat", age=600)
         self.assertEqual(self.phone.step()["source"], "sensor")
         # Opting out again releases the module's own heat pause at the next check.
-        self.phone.set_temp(38.0)
+        self.phone.set_body(38.0)
         self.phone.set_battery(50, "Charging", 43.0)
         self.assertEqual(self.phone.step()["charge_off"], "baterai")
         self.assertEqual(self.phone.report("set", "CHARGE_THERMAL", "0"), {"ok": 1})
@@ -279,7 +338,8 @@ class PowerModeTests(unittest.TestCase):
         self.assertEqual(self.phone.report("set", "CHARGE_STOP", "85", "CHARGE_RESUME", "80", "TARGET_TEMP", "40"), {"ok": 1})
         config = self.phone.report("status")["config"]
         self.assertEqual((config["CHARGE_STOP"], config["CHARGE_RESUME"], config["TARGET_TEMP"], config["mode"]), (85, 80, 40, "seimbang"))
-        for args in (("CHARGE_RESUME", "90"), ("MODE", "turbo"), ("TARGET_TEMP", "99"), ("INTERVAL", "1;reboot"), ("FOO", "1")):
+        for args in (("CHARGE_RESUME", "90"), ("MODE", "turbo"), ("TARGET_TEMP", "99"), ("GAME_LIMIT", "55"), ("CTRL_VER", "1"),
+                     ("INTERVAL", "1;reboot"), ("FOO", "1")):
             self.assertEqual(self.phone.report("set", *args)["ok"], 0, args)
         self.assertEqual(self.phone.report("status")["config"]["CHARGE_RESUME"], 80)
         text = (self.phone.data / "config").read_text()
@@ -291,6 +351,7 @@ class PowerModeTests(unittest.TestCase):
         self.phone.monitor_report("Aplikasi berat: Instagram", app="Instagram")
         status = self.phone.report("status")
         self.assertEqual((status["running"], status["main"], status["switch"], status["state"]), (0, 400, "", None))
+        self.assertEqual((status["body"], status["body_from"]), (300, "battery"))   # no phone body sensor here
         self.assertEqual(status["battery"], {"level": 50, "status": "charging", "temp": 300, "current": 1000})
         # v2.8: a report without a running recorder is not used.
         self.assertEqual({k: status["monitor"][k] for k in keys},
@@ -305,7 +366,8 @@ class PowerModeTests(unittest.TestCase):
     def test_start_and_stop_put_everything_back(self):
         self.save_switch()
         self.phone.report("set", "INTERVAL", "5")
-        self.phone.set_temp(46.0)
+        self.phone.set_temp(60.0)
+        self.phone.set_body(46.0)
         self.phone.set_battery(85, "Charging", 33.0)
         status = self.phone.report("start")
         try:

@@ -1,11 +1,12 @@
 # Cogan Smart · Thermal: reports from the sampler's lines (tab separated, see sampler.sh).
-# Needs thermal.awk first. Variables: mode (text|json|csv|detail|now|latest|main|date|label), since, now, secs,
+# Needs thermal.awk first. Variables: mode (text|json|csv|detail|now|latest|main|body|date|label), since, now, secs,
 # HOT (tenths of degC), TZOFF, KFILE (kernels.tsv), MFILE (modes.tsv from Cogan Smart · Power), zones (main),
 # fresh (now: zones read just now), release (now: uname -r), running (now: 1/0).
 
 BEGIN {
     FS = "\t"
     if (mode == "main") { print main_temp(zones); done = 1; exit }
+    if (mode == "body") { print body_temp(zones); done = 1; exit }
     if (mode == "date") { print local_date(since - 86400); done = 1; exit }   # oldest data file to read
     if (mode == "label") { print label(app); done = 1; exit }
     G = "cpu gpu bat skin modem chg pmic apu wifi other"
@@ -40,6 +41,8 @@ $1 + 0 < since || $1 + 0 > now || NF < 13 { next }
     if ("cpu" in gmax) main = gmax["cpu"]
     if (("gpu" in gmax) && gmax["gpu"] > main) main = gmax["gpu"]
     if (main == -9999) main = maxall()
+    # "Hot" is the phone body, what a hand feels (owner 2026-10-24): the skin sensor, else the battery.
+    heat = ("skin" in gmax) ? gmax["skin"] : ("bat" in gmax) ? gmax["bat"] : main
     n++
     if (n == 1) first = ts
     lastts = ts
@@ -52,21 +55,21 @@ $1 + 0 < since || $1 + 0 > now || NF < 13 { next }
         mgroup = (("gpu" in gmax) && gmax["gpu"] == main && !(("cpu" in gmax) && gmax["cpu"] == main)) ? "gpu" : "cpu"
     }
     msum += main
-    appn[app]++; appsum[app] += main
-    if (!(app in apppeak) || main > apppeak[app]) apppeak[app] = main
+    appn[app]++; appsum[app] += heat
+    if (!(app in apppeak) || heat > apppeak[app]) apppeak[app] = heat
     k = kernel_at(ts)
-    kern_n[k]++; kern_sum[k] += main
-    if (!(k in kern_peak) || main > kern_peak[k]) kern_peak[k] = main
+    kern_n[k]++; kern_sum[k] += heat
+    if (!(k in kern_peak) || heat > kern_peak[k]) kern_peak[k] = heat
     if (mn) {
         md = mode_at(ts)
-        mode_n[md]++; mode_sum[md] += main
-        if (!(md in mode_peak) || main > mode_peak[md]) mode_peak[md] = main
-        if (main >= HOT) mode_hot[md]++
+        mode_n[md]++; mode_sum[md] += heat
+        if (!(md in mode_peak) || heat > mode_peak[md]) mode_peak[md] = heat
+        if (heat >= HOT) mode_hot[md]++
     }
     if (cpu >= 0) { cpusum += cpu; cpun++ }
     if (kern >= 0) { kernsum += kern; kernn++ }
-    if (main >= HOT) { hot++; c = cause(); causes[c]++ }
-    ser_ts[n] = ts; ser_v[n] = main
+    if (heat >= HOT) { hot++; c = cause(); causes[c]++ }
+    ser_ts[n] = ts; ser_v[n] = heat
     if (mode == "csv") csv_row()
     if (mode == "detail") detail_row()
 }
@@ -138,7 +141,7 @@ function summary_text(   s, i, g, nc, order, na, apps, nk, kord, line, nm, mord)
           " · " (mchg ? tr("mengecas ", "charging ") mcur " mA" : tr("tidak dicas", "not charging")) "\n\n"
     s = s tr("Per bagian (tertinggi / rata-rata):\n", "By component (peak / average):\n")
     for (i = 1; i <= ng; i++) { g = GROUPS[i]; if (g in gpeak) s = s sprintf("  %-10s %s / %s °C\n", group_name(g), deg(gpeak[g]), deg(gsum[g] / gcnt[g])) }
-    s = s tr("\n🔥 Penyebab panas (≥ ", "\n🔥 Heat causes (≥ ") deg(HOT) " °C):"
+    s = s tr("\n🔥 Penyebab panas (Badan HP ≥ ", "\n🔥 Heat causes (phone body ≥ ") deg(HOT) " °C):"
     if (!hot) s = s tr(" tidak ada momen panas.\n", " no hot samples.\n")
     else {
         s = s sprintf(tr(" %d%% waktu\n", " %d%% of samples\n"), int(hot * 100 / n + 0.5))
@@ -148,15 +151,15 @@ function summary_text(   s, i, g, nc, order, na, apps, nk, kord, line, nm, mord)
     }
     for (a in appn) appavg[a] = appn[a]
     na = rank(appavg, apps)
-    s = s tr("\n📱 Per aplikasi (waktu · rata-rata · tertinggi):\n", "\n📱 By app (time · average · peak):\n")
+    s = s tr("\n📱 Per aplikasi (waktu · Badan HP rata-rata · tertinggi):\n", "\n📱 By app (time · phone body average · peak):\n")
     for (i = 1; i <= na && i <= 8; i++)
         s = s sprintf("  %-22s %3d%% · %s · %s °C\n", label(apps[i]), int(appn[apps[i]] * 100 / n + 0.5), deg(appsum[apps[i]] / appn[apps[i]]), deg(apppeak[apps[i]]))
     nk = rank(kern_n, kord)
-    s = s tr("\n🐧 Per kernel (rata-rata · tertinggi):\n", "\n🐧 By kernel (average · peak):\n")
+    s = s tr("\n🐧 Per kernel (Badan HP rata-rata · tertinggi):\n", "\n🐧 By kernel (phone body average · peak):\n")
     for (i = 1; i <= nk; i++) s = s sprintf(tr("  %s — %s · %s °C (%d%% waktu)\n", "  %s — %s · %s °C (%d%% of samples)\n"), kord[i], deg(kern_sum[kord[i]] / kern_n[kord[i]]), deg(kern_peak[kord[i]]), int(kern_n[kord[i]] * 100 / n + 0.5))
     if (mn) {
         nm = rank(mode_n, mord)
-        s = s tr("\n⚡ Per mode (rata-rata · tertinggi · waktu panas):\n", "\n⚡ By mode (average · peak · hot samples):\n")
+        s = s tr("\n⚡ Per mode (Badan HP rata-rata · tertinggi · waktu panas):\n", "\n⚡ By mode (phone body average · peak · hot samples):\n")
         for (i = 1; i <= nm; i++) s = s sprintf(tr("  %s — %s · %s °C · %d%% panas (%d%% waktu)\n", "  %s — %s · %s °C · %d%% hot (%d%% of samples)\n"), mode_name(mord[i]), deg(mode_sum[mord[i]] / mode_n[mord[i]]), \
             deg(mode_peak[mord[i]]), int(mode_hot[mord[i]] * 100 / mode_n[mord[i]] + 0.5), int(mode_n[mord[i]] * 100 / n + 0.5))
     }
@@ -182,7 +185,7 @@ function json_summary(   s, i, g, step, b, j, mx, sep) {
         s = s sprintf(",\"from\":\"%s\",\"to\":\"%s\",\"peak\":{\"t\":%d,\"group\":\"%s\",\"clock\":\"%s\",\"app\":\"%s\",\"cpu\":%d,\"gpu\":%d,\"charging\":%d,\"current\":%d}", \
             stamp(first), stamp(lastts), mpeak, group_name(mgroup), stamp(mpts), jesc(label(mapp)), mcpu, mgpu, mchg, mcur)
         s = s ",\"groups\":["; sep = ""
-        for (i = 1; i <= ng; i++) { g = GROUPS[i]; if (g in gpeak) { s = s sep sprintf("{\"name\":\"%s\",\"peak\":%d,\"avg\":%d}", group_name(g), gpeak[g], int(gsum[g] / gcnt[g])); sep = "," } }
+        for (i = 1; i <= ng; i++) { g = GROUPS[i]; if (g in gpeak) { s = s sep sprintf("{\"name\":\"%s\",\"id\":\"%s\",\"peak\":%d,\"avg\":%d}", group_name(g), g, gpeak[g], int(gsum[g] / gcnt[g])); sep = "," } }
         s = s "],\"causes\":" (hot ? json_list(causes, hot, 6, "cause") : "[]")
         s = s ",\"apps\":" json_list(appn, n, 8, "app") ",\"kernels\":" json_list(kern_n, n, 4, "kernel")
         s = s ",\"modes\":" (mn ? json_list(mode_n, n, 4, "mode") : "[]")
@@ -198,7 +201,7 @@ function json_summary(   s, i, g, step, b, j, mx, sep) {
 }
 function jesc_text(t) { t = jesc(t); gsub(/\n/, "\\n", t); gsub(/\t/, " ", t); return t }
 
-function json_now(   f, zl2, m2, z2, kv2, i, s, sep, gm, g, mainv, age) {
+function json_now(   f, zl2, m2, z2, kv2, i, s, sep, gm, g, mainv, bodyv, bodyf, age) {
     split(last, f, "\t")
     # A live read with no usable zones must never resurrect a historical temperature.
     zl2 = fresh
@@ -207,17 +210,20 @@ function json_now(   f, zl2, m2, z2, kv2, i, s, sep, gm, g, mainv, age) {
         if (split(z2[i], kv2, "=") != 2) continue
         g = group(kv2[1])
         if (!(g in gm) || kv2[2] + 0 > gm[g]) gm[g] = kv2[2] + 0
-        s = s sep sprintf("{\"name\":\"%s\",\"group\":\"%s\",\"t\":%d}", jesc(kv2[1]), group_name(g), kv2[2]); sep = ","
+        s = s sep sprintf("{\"name\":\"%s\",\"group\":\"%s\",\"id\":\"%s\",\"t\":%d}", jesc(kv2[1]), group_name(g), g, kv2[2]); sep = ","
     }
     mainv = main_temp(zl2)
+    bodyv = -9999; bodyf = ""
+    if ("skin" in gm) { bodyv = gm["skin"]; bodyf = "skin" } else if ("bat" in gm) { bodyv = gm["bat"]; bodyf = "battery" }
     age = (f[1] + 0 > 0) ? now - f[1] : -1
     # Android's One True Awk rejects bare comparisons in a printf argument list.
     if (health == "") health = "null"
     printf "{\"sensor_ts\":%d,\"sample_ts\":%d,\"monitor\":%s,", sensor_ts, f[1] + 0, health
+    printf "\"body\":%d,\"body_from\":\"%s\",", bodyv, bodyf
     printf "\"running\":%d,\"mode\":\"%s\",\"release\":\"%s\",\"age\":%d,\"main\":%d,\"app\":\"%s\",\"pkg\":\"%s\",\"charging\":%d,\"current\":%d,\"battery\":%d,\"cpu\":%d,\"kernel\":%d,\"gpu\":%d,\"top\":\"%s\",\"groups\":[", \
         running, (mn ? mode_name(mname[mn]) : ""), jesc(release), age, mainv, jesc(label(f[2])), jesc(f[2]), f[4] + 0, f[5] + 0, (f[6] == "" ? -999 : f[6] + 0), (f[7] == "" ? -1 : f[7] + 0), (f[8] == "" ? -1 : f[8] + 0), (f[9] == "" ? -1 : f[9] + 0), jesc(f[10])
     sep = ""
-    for (i = 1; i <= ng; i++) { g = GROUPS[i]; if (g in gm) { printf "%s{\"name\":\"%s\",\"t\":%d}", sep, group_name(g), gm[g]; sep = "," } }
+    for (i = 1; i <= ng; i++) { g = GROUPS[i]; if (g in gm) { printf "%s{\"name\":\"%s\",\"id\":\"%s\",\"t\":%d}", sep, group_name(g), g, gm[g]; sep = "," } }
     print "],\"zones\":[" s "]}"
 }
 

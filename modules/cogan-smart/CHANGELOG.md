@@ -1,4 +1,60 @@
-# Cogan Smart Kernel v2.8.2
+# Cogan Smart Kernel v2.9.0
+
+## Mode mengikuti Badan HP / Modes follow the phone body — v2.9.0
+
+Indonesia:
+
+- Ambang Hemat, Kernel Default dan Performa kini dibaca dari suhu **Badan HP** (sensor
+  kulit HP, yang terasa di tangan), bukan prosesor terpanas. Prosesor Dimensity HP ini
+  saat santai pun sekitar 50 °C: dari log 3 hari owner (8.340 sampel), ambang 42 °C pada
+  prosesor terlewati 97% waktu, sehingga Kernel Default menurut kodenya membatasi CPU
+  besar ke 40% hampir sepanjang waktu (dihitung dari log, belum diukur di HP).
+- Ambang baru: Hemat 40 °C, Kernel Default 42 °C, Performa 45 °C (Badan HP). Pada log
+  yang sama, Kernel Default diperkirakan berjalan penuh ±86% waktu.
+- Badan HP berubah pelan, jadi pengendali turun satu langkah (10%) lalu menunggu tiga kali
+  cek untuk melihat hasilnya, dan naik lagi setelah tiga kali cek ≥ 1 °C di bawah ambang.
+- Rem darurat di semua mode: bila prosesor ≥ 95 °C, CPU diturunkan setiap cek.
+- Tanpa sensor Badan HP, suhu baterai yang dipakai.
+- Ambang suhu dari konfigurasi v2.8 dan sebelumnya (masih bermakna prosesor) diganti
+  dengan bawaan baru. Mode, setelan cas dan interval tetap seperti yang disimpan.
+- Tab Suhu: "panas" berarti Badan HP ≥ 42 °C (dari log owner: ±9% waktu, sebelumnya
+  97%). Penyebab panas, grafik, serta rata-rata/tertinggi per aplikasi, kernel dan mode
+  memakai Badan HP. Notifikasi panas juga membaca Badan HP. Prosesor tetap tampil di
+  kotak Tertinggi dan tabel Bagian HP, dengan warna untuk komponen dalam (70/85 °C).
+- Tab Daya menampilkan Badan HP sebagai suhu utama, prosesor di sebelahnya, dan
+  penanda rem darurat. Jeda cas karena panas (opsional) juga memakai Badan HP.
+- Pengujian: tes pengendali dan pencatat dengan sysfs tiruan, memakai mksh dan
+  One True Awk 20231127. Simulasi pada log 3 hari owner. Belum diuji di HP.
+
+English:
+
+- Power saver, Kernel Default and Performance thresholds now read the **phone body**
+  temperature (the skin sensor, what a hand feels) instead of the hottest processor
+  sensor. This Dimensity processor sits around 50 °C even at rest: in the owner's 3-day
+  log (8,340 samples) a 42 °C processor threshold was exceeded 97% of the time, so by its
+  code Kernel Default capped the big cores at 40% almost all the time (computed from the
+  log, not measured on the phone).
+- New thresholds: Power saver 40 °C, Kernel Default 42 °C, Performance 45 °C (phone
+  body). On the same log, Kernel Default is expected to run at full speed about 86% of
+  the time.
+- The phone body changes slowly, so the controller steps down once (10%) and waits three
+  checks to see the effect, and steps back up after three checks at least 1 °C below the
+  threshold.
+- Emergency brake in every mode: at a processor temperature of 95 °C or more, the CPU
+  steps down at every check.
+- Without a phone body sensor, the battery temperature is used.
+- Temperature thresholds from v2.8 and older configurations (which meant the processor)
+  are replaced by the new defaults. Mode, charging settings and interval are kept.
+- Temperature tab: "hot" means phone body ≥ 42 °C (owner's log: about 9% of the time,
+  previously 97%). Heat causes, the chart and per-app, per-kernel and per-mode
+  average/peak use the phone body. The heat notification reads the phone body too. The
+  processor still shows in the Peak tile and the components table, coloured for internal
+  parts (70/85 °C).
+- The Power tab shows the phone body as the main temperature, the processor beside it,
+  and an emergency-brake marker. The optional heat-based charging pause uses the phone
+  body as well.
+- Validation: controller and recorder tests on a fake sysfs with mksh and One True Awk
+  20231127, plus a simulation on the owner's 3-day log. Not yet tested on the phone.
 
 ## Penyesuaian HyperCharge / HyperCharge adjustment — v2.8.2
 

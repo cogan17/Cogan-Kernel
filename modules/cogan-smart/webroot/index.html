@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Cogan Smart</title>
-<link rel="stylesheet" href="theme.css?v=2.8.2">
-<script src="i18n.js?v=2.8.2"></script>
+<link rel="stylesheet" href="theme.css?v=2.9.0">
+<script src="i18n.js?v=2.9.0"></script>
 <script>try { document.documentElement.dataset.theme = localStorage.getItem('cogan.theme') || ''; } catch (_) { /* storage off: follow the phone */ }</script>
 <style>
   * { box-sizing: border-box; }
@@ -152,9 +152,10 @@
 
   <details class="card fold" id="settingsCard">
     <summary><span>⚙️ Setelan mode</span></summary>
-    <label class="f">Kernel Default: ambang kendali (°C) <input id="sTARGET_TEMP" type="number" min="35" max="55"></label>
-    <label class="f">Performa: rem darurat di (°C) <input id="sGAME_LIMIT" type="number" min="40" max="60"></label>
+    <label class="f">Kernel Default: ambang Badan HP (°C) <input id="sTARGET_TEMP" type="number" min="38" max="46"></label>
+    <label class="f">Performa: rem di Badan HP (°C) <input id="sGAME_LIMIT" type="number" min="40" max="50"></label>
     <label class="f">Hemat: CPU besar maks (%) <input id="sSAVER_CAP" type="number" min="30" max="90"></label>
+    <p class="muted">Ambang mode dibaca dari suhu Badan HP (yang terasa di tangan). Hemat 2 °C di bawah Kernel Default. Di semua mode ada rem darurat bila prosesor ≥ 95 °C.</p>
     <label class="f">Performa: boost aplikasi di layar <input id="sGAME_BOOST" type="checkbox"></label>
     <label class="f">Cek tiap (detik) <input id="sINTERVAL" type="number" min="5" max="60"></label>
     <label class="f">Terapkan ulang tiap interval <input id="sFORCE" type="checkbox"></label>
@@ -183,13 +184,13 @@
 </main>
 
 <div id="actionStatus" class="feedback hidden" role="status" aria-live="polite"></div>
-<script src="client.js?v=2.8.2"></script>
+<script src="client.js?v=2.9.0"></script>
 <script>
 const confirm = value => window.confirm(CoganI18n.t(value));
 const REPORT = '/data/adb/modules/cogan_smart/power/report.sh';
-const MODES = { hemat: ['🌿 Hemat', c => `CPU besar maks ${c.SAVER_CAP}%, ambang ${c.TARGET_TEMP - 3} °C`],
-                seimbang: ['🧠 Kernel Default', c => `Ambang kendali ${c.TARGET_TEMP} °C`],
-                game: ['🎮 Performa', c => `Performa penuh, rem di ${c.GAME_LIMIT} °C`] };
+const MODES = { hemat: ['🌿 Hemat', c => `CPU besar maks ${c.SAVER_CAP}%, Badan HP ≤ ${c.TARGET_TEMP - 2} °C`],
+                seimbang: ['🧠 Kernel Default', c => `Badan HP dijaga ≤ ${c.TARGET_TEMP} °C`],
+                game: ['🎮 Performa', c => `Performa penuh, rem di Badan HP ${c.GAME_LIMIT} °C`] };
 const NUMBERS = ['TARGET_TEMP', 'GAME_LIMIT', 'SAVER_CAP', 'INTERVAL', 'CHARGE_STOP', 'CHARGE_RESUME', 'BATT_TEMP_STOP'];
 const FLAGS = ['GAME_BOOST', 'CHARGE_CTRL', 'CHARGE_THERMAL', 'HEAT_PAUSE_CHARGE', 'FORCE'];
 const REASONS = { batas: 'batas isi', baterai: 'baterai panas', panas: 'cas bikin HP panas' };
@@ -231,17 +232,19 @@ function render(s) {
     if (label.textContent !== info) label.textContent = info;
   }
 
-  const limit = st ? st.limit : (c.mode === 'game' ? c.GAME_LIMIT : c.mode === 'hemat' ? c.TARGET_TEMP - 3 : c.TARGET_TEMP);
-  $('temp').textContent = s.main > -9999 ? deg(s.main) + '°' : '--';
-  $('temp').className = s.main >= limit * 10 ? 'hot' : s.main >= (limit - 3) * 10 ? 'warm' : 'ok';
-  $('limitLine').textContent = (s.main > -9999 ? deg(s.main) + '° · ' : '') + `batas ${limit} °C`;
+  // The modes follow the phone body (Badan HP); the processor is shown beside it.
+  const limit = st ? st.limit : (c.mode === 'game' ? c.GAME_LIMIT : c.mode === 'hemat' ? c.TARGET_TEMP - 2 : c.TARGET_TEMP);
+  const body = s.body ?? -9999, cpu = s.main > -9999 ? `Prosesor ${deg(s.main)}°` : '';
+  $('temp').textContent = body > -9999 ? deg(body) + '°' : '--';
+  $('temp').className = body >= limit * 10 ? 'hot' : body >= (limit - 2) * 10 ? 'warm' : 'ok';
+  $('limitLine').textContent = (body > -9999 ? deg(body) + '° · ' : '') + `batas Badan HP ${limit} °C`;
   const sensorAge = s.sensor_ts ? Math.max(0, Math.floor(Date.now() / 1000) - s.sensor_ts) : -1;
   $('limitLine').title = sensorAge >= 0 ? `Sensor langsung · ${sensorAge} dtk lalu` : 'Sensor tidak tersedia';
   if (st && s.running) {
-    $('cpuLine').textContent = `Target batas CPU besar ${st.big}% · lihat hasil kontrol kernel`;
+    $('cpuLine').textContent = [body > -9999 && (s.body_from === 'battery' ? 'Baterai (tanpa sensor Badan HP)' : 'Badan HP'), cpu, `target batas CPU besar ${st.big}%`, st.brake ? `rem darurat prosesor ≥ ${s.brake} °C` : ''].filter(Boolean).join(' · ');
     $('causeLine').textContent = [st.cause && `Penyebab: ${st.cause}`, st.app && `Aplikasi: ${st.app}`, st.boost ? 'Boost Performa aktif' : '', st.native_cooling ? 'Cooling CPU kernel aktif' : ''].filter(Boolean).join(' · ');
   } else {
-    $('cpuLine').textContent = 'pengendali berhenti';
+    $('cpuLine').textContent = [cpu, 'pengendali berhenti'].filter(Boolean).join(' · ');
     $('causeLine').textContent = '';
   }
   UI.html('policies', s.policies.map(p => `<tr><td>${esc(p.name)}</td><td class="${p.limit < p.max ? 'warm' : ''}">${ghz(p.limit)} / ${ghz(p.max)}</td></tr>`).join(''));

@@ -32,9 +32,11 @@ Tiap tab adalah halaman sendiri, jadi `client.js` menyimpan jawaban baca terakhi
 
 | Di layar | Nilai internal | Perilaku |
 |---|---|---|
-| 🌿 Hemat | `hemat` | CPU besar dibatasi `SAVER_CAP` %, ambang suhu 3 °C di bawah Kernel Default |
-| 🧠 Kernel Default | `seimbang` | Bawaan. CPU diturunkan bertahap bila suhu di atas `TARGET_TEMP` (42 °C) |
-| 🎮 Performa | `game` | Performa penuh, rem darurat di `GAME_LIMIT` (48 °C), boost aplikasi di layar |
+| 🌿 Hemat | `hemat` | CPU besar dibatasi `SAVER_CAP` %, ambang Badan HP 2 °C di bawah Kernel Default (40 °C) |
+| 🧠 Kernel Default | `seimbang` | Bawaan. CPU diturunkan bertahap bila Badan HP ≥ `TARGET_TEMP` (42 °C) |
+| 🎮 Performa | `game` | Performa penuh, CPU diturunkan bila Badan HP ≥ `GAME_LIMIT` (45 °C), boost aplikasi di layar |
+
+Sejak v2.9.0 ambang mode dibaca dari suhu **Badan HP** (sensor kulit HP, yang terasa di tangan), bukan prosesor. Prosesor Dimensity HP ini saat santai pun sekitar 50 °C, sehingga ambang 42 °C pada prosesor (v2.8) membatasi CPU hampir sepanjang waktu. Satu langkah turun (10 %), lalu tiga kali cek untuk melihat hasilnya; naik lagi setelah tiga kali cek ≥ 1 °C di bawah ambang. Tanpa sensor Badan HP, suhu baterai yang dipakai. Di semua mode ada **rem darurat** bila prosesor ≥ 95 °C. "Panas" di tab Suhu juga berarti Badan HP ≥ 42 °C.
 
 **Henti** melepas semua kontrol milik modul sehingga pengaturan vendor (HyperOS/MediaTek) berjalan sendiri. Tombol Action di root manager berpindah ke mode berikutnya.
 

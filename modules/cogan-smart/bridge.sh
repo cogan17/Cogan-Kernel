@@ -143,6 +143,11 @@ read_thermal_sensors() {
   done | awk -f "$MODROOT/thermal/thermal.awk" -f "$MODROOT/thermal/sensors.awk"
 }
 
+# Phone body (skin) temperature of a zone list in tenths of °C, or -9999 without a skin sensor.
+body_temp() {
+  awk -v mode=body -v zones="$1" -f "$MODROOT/thermal/thermal.awk" -f "$MODROOT/thermal/report.awk"
+}
+
 # A very short, boot-scoped snapshot makes a tab switch reuse the same measurement.
 # Controllers bypass this cache and always read the hardware. No sysfs writes here.
 sensor_snapshot() {

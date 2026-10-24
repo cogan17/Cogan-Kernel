@@ -159,10 +159,14 @@ class SamplerTests(unittest.TestCase):
     def test_heat_notification_only_when_enabled_and_hot(self):
         self.phone.run("sampler.sh", "--once")
         self.assertFalse((self.phone.base / "notifications").exists())
-        self.assertEqual(json.loads(self.phone.report("set", "NOTIFY", "1", "NOTIFY_TEMP", "50")), {"ok": 1})
+        # v2.9: the phone body (39 °C here), not the processor (55 °C), decides.
+        self.assertEqual(json.loads(self.phone.report("set", "NOTIFY", "1", "NOTIFY_TEMP", "40")), {"ok": 1})
+        self.phone.run("sampler.sh", "--once")
+        self.assertFalse((self.phone.base / "notifications").exists())
+        self.assertEqual(json.loads(self.phone.report("set", "NOTIFY_TEMP", "39")), {"ok": 1})
         self.phone.run("sampler.sh", "--once")
         notes = (self.phone.base / "notifications").read_text()
-        self.assertIn("Prosesor 55 °C", notes)
+        self.assertIn("Badan HP 39 °C", notes)
         self.assertIn("Mobile Legends", notes)
         self.phone.run("sampler.sh", "--once")               # at most once every 10 minutes
         self.assertEqual(len((self.phone.base / "notifications").read_text().splitlines()), 1)
@@ -195,16 +199,18 @@ class ReportTests(unittest.TestCase):
         lines = []
         for i in range(140):
             ts = start + i * 20
+            # "Hot" is the phone body (shell_back) at or above 42 °C since v2.9.
             if i < 60:     # Mobile Legends: GPU heavy and hot
-                lines.append(sample(ts, "com.mobile.legends", {"soc_max": 470 + i % 30, "gpu1": 460, "battery": 370},
-                                    cpu=280, gpu=70, top="com.mobile.legends:250"))
+                lines.append(sample(ts, "com.mobile.legends", {"soc_max": 470 + i % 30, "gpu1": 460, "battery": 370,
+                                    "shell_back": 430 + i % 5}, cpu=280, gpu=70, top="com.mobile.legends:250"))
             elif i < 90:   # Instagram while Play services work in the background
-                lines.append(sample(ts, "com.instagram.android", {"soc_max": 430, "battery": 360},
+                lines.append(sample(ts, "com.instagram.android", {"soc_max": 430, "battery": 360, "shell_back": 425},
                                     cpu=200, top="com.google.android.gms:150;com.instagram.android:40"))
             elif i < 120:  # screen off, cool
-                lines.append(sample(ts, "screen_off", {"soc_max": 350, "battery": 330}, cpu=30))
+                lines.append(sample(ts, "screen_off", {"soc_max": 350, "battery": 330, "shell_back": 360}, cpu=30))
             else:          # fast charging on the home screen (the newest 20 samples)
-                lines.append(sample(ts, "com.miui.home", {"soc_max": 440, "battery": 400}, charging=1, current=2500))
+                lines.append(sample(ts, "com.miui.home", {"soc_max": 440, "battery": 400, "shell_back": 425},
+                                    charging=1, current=2500))
         # Older samples and a sample from the future are ignored.
         lines.insert(0, sample(start - 9 * 86400, "com.mobile.legends", {"soc_max": 990}))
         lines.insert(1, sample(now + 3600, "com.mobile.legends", {"soc_max": 990}))
@@ -235,6 +241,24 @@ class ReportTests(unittest.TestCase):
         groups = {group["name"]: group for group in summary["groups"]}
         self.assertLessEqual({"Prosesor", "GPU", "Baterai"}, set(groups))
         self.assertEqual((groups["GPU"]["avg"], groups["GPU"]["peak"]), (460, 460))   # only samples with a GPU zone
+        self.assertEqual((groups["Badan HP"]["id"], groups["Prosesor"]["id"]), ("skin", "cpu"))
+        # Per app, kernel and mode: the phone body; the peak tile stays the processor.
+        self.assertEqual((apps["com.mobile.legends"]["avg"], apps["com.mobile.legends"]["peak"]), (432, 434))
+        self.assertIn("Penyebab panas (Badan HP ≥ 42.0 °C)", summary["text"])
+        self.assertEqual(max(value for _, value in summary["series"]), 434)
+
+    def test_a_hot_processor_alone_is_not_hot(self):
+        now = int(time.time())
+        lines = [sample(now - 600 + i * 20, "com.android.chrome", {"soc_max": 650, "battery": 380, "shell_back": 395}, cpu=300)
+                 for i in range(10)]
+        # Without a phone body sensor the battery stands in for it.
+        lines += [sample(now - 300 + i * 20, "com.android.chrome", {"soc_max": 650, "battery": 425}, cpu=300) for i in range(5)]
+        for old in (self.phone.data / "data").glob("*.tsv"):
+            old.unlink()
+        write(self.phone.data / "data" / time.strftime("%Y-%m-%d.tsv", time.gmtime(now + 7 * 3600)), "".join(lines))
+        summary = json.loads(self.phone.report("summary", "3600"))
+        self.assertEqual((summary["samples"], summary["hot_pct"], summary["peak"]["t"]), (15, 33, 650))
+        self.assertEqual([cause["name"] for cause in summary["causes"]], ["Aplikasi berat: Chrome"])
 
     def test_summary_per_power_mode(self):
         start = self.now - 140 * 20
@@ -273,7 +297,9 @@ class ReportTests(unittest.TestCase):
         self.assertEqual(now["main"], 550)                     # read from the sensors just now
         self.assertEqual((now["app"], now["charging"], now["release"]), ("Layar utama (launcher)", 1, "6.1.177-Cogan-r3"))
         self.assertEqual(now["running"], 0)
-        self.assertIn({"name": "soc_max", "group": "Prosesor", "t": 550}, now["zones"])
+        self.assertIn({"name": "soc_max", "group": "Prosesor", "id": "cpu", "t": 550}, now["zones"])
+        self.assertEqual((now["body"], now["body_from"]), (390, "skin"))   # the warmer of shell_back and board_ntc
+        self.assertIn({"name": "Badan HP", "id": "skin", "t": 390}, now["groups"])
 
     def test_save_writes_txt_and_csv(self):
         saved = json.loads(self.phone.report("save", "3600"))
