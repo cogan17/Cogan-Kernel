@@ -1,15 +1,20 @@
-# Checkpoint — 24 Okt 2026 · Rilis dari run tanpa GitHub App
+# Checkpoint — 24 Okt 2026, 09.45 WIB · r2 terbit
 
 Sesi berikutnya mulai dari sini. Aturannya ada di `CLAUDE.md`. Semua waktu dalam WIB.
 
 ## Sedang berjalan
-- Tidak ada. r2 menunggu owner menekan **Rilis dari run** (langkah pertama di bawah).
+- Tidak ada.
 
 ## Sudah selesai
-### Perbaikan rilis dan pilihan GitHub App (owner 24 Okt)
+### r2 terbit (terbukti CI dan HP)
+- Pre-release [`v26.10.24-r2`](https://github.com/cogan17/Xiomi_14T_Pro/releases/tag/v26.10.24-r2), terbit 09.39 WIB lewat [Rilis dari run 40055078111](https://github.com/cogan17/Xiomi_14T_Pro/actions/runs/40055078111) (owner), dari Builder run [40046361218](https://github.com/cogan17/Xiomi_14T_Pro/actions/runs/40046361218).
+- Isi: ACK 6.1.176 (`2026-09_r4`), KernelSU Next dev-susfs `d21e0a6` (33405), SUSFS v2.3.0 `c27ebe9`, NoMount v2.2.0, Unicode fix `fa76c90`, gate KMI CRC beda 0. Label "diuji di HP" (owner menjalankan r2 di HP, 08.49 WIB).
+- Tag menunjuk `main` `7fafb5a` (aturan #29, workflow commit build berbeda). Aset: ZIP kernel `sha256:1e3cd537…ea11`, manager dan spoofed sama dengan arsip r5/r6, NoMount v2.2.0, `checksums.txt`.
+
+### Perbaikan Rilis dari run (owner 24 Okt)
 - [Run rilis 40052126936](https://github.com/cogan17/Xiomi_14T_Pro/actions/runs/40052126936) gagal saat `gh release create`: HTTP 403. Build sumber `40046361218`, unduhan, SHA256 dan gate KMI lolos. Commit sumber `4730fee1297fa5ef1a779a4223136ab1912b09e2` memiliki workflow berbeda dari `main`; GITHUB_TOKEN bawaan tidak dapat diberi Workflows: write untuk membuat tag itu.
 - **#27**, merge `8f6c580`: dukungan PAT `RELEASE_TOKEN` dan diagnostik 403. [Validate 40052599557](https://github.com/cogan17/Xiomi_14T_Pro/actions/runs/40052599557): **138/138 tes lolos**, YAML dan shell lolos.
-- #28 (GitHub App) diganti atas saran Claude yang diikuti owner: **tanpa App, PAT atau secret**. Langkah Terbitkan membandingkan tree `.github/workflows` commit build dengan commit yang menjalankan rilis; sama → tag di commit build, beda → tag di `GITHUB_SHA` (aturan lama repo pendahulu yang sudah terbukti). Untuk run 40046361218 tree-nya beda (`2fcfc9e` vs `004fde4` di `main`), jadi tag akan menunjuk commit `main`. Tes lokal 144/144 lolos, actionlint bersih; publikasi sungguhan belum terbukti.
+- #28 (GitHub App) diganti atas saran Claude yang diikuti owner: **tanpa App, PAT atau secret**. Langkah Terbitkan membandingkan tree `.github/workflows` commit build dengan commit yang menjalankan rilis; sama → tag di commit build, beda → tag di `GITHUB_SHA` (aturan lama repo pendahulu yang sudah terbukti). Untuk run 40046361218 tree-nya beda (`2fcfc9e` vs `004fde4` di `main`), jadi tag menunjuk commit `main`. #29 merge `7fafb5a`, Validate lolos; terbukti oleh rilis r2.
 
 ### Dasar repo (owner 23 Okt)
 - README simpel ID/EN, CHANGELOG, panduan, keaslian & kredit, modul Cogan Smart Kernel + tes, `CLAUDE.md` (tanpa kunci, gate KMI tetap, summary 2 bahasa, hemat run).
@@ -41,7 +46,7 @@ Sesi berikutnya mulai dari sini. Aturannya ada di `CLAUDE.md`. Semua waktu dalam
 - **r2 (kandidat Unicode fix) berjalan di HP** (owner, tangkapan layar 08.49 WIB, "r2 selesai"):
   - Versi kernel `6.1.176-Cogan-Rothko-ACK-r2-35f0a136c`, dibangun 07.47 WIB (00:47:23 UTC).
   - Builder run #4 [40046361218](https://github.com/cogan17/Xiomi_14T_Pro/actions/runs/40046361218): KSUN 6.1.176, Unicode fix, gate CRC beda 0 (juga terhadap stok 6.1.138).
-  - Apakah r2 sudah diterbitkan belum dicek saat checkpoint.
+  - Diterbitkan 09.39 WIB sebagai Pre-release `v26.10.24-r2` (lihat di atas).
 
 ## Belum terbukti
 - Uji khusus Unicode fix di HP (nama file berkarakter tak terlihat) belum dilaporkan terpisah; yang dilaporkan: r2 berjalan di HP.
@@ -57,6 +62,5 @@ Sesi berikutnya mulai dari sini. Aturannya ada di `CLAUDE.md`. Semua waktu dalam
 - Sublevel tidak diuji satu per satu di HP; cukup bukti CI.
 
 ## Langkah pertama sesi berikutnya
-1. Owner menjalankan **Rilis dari run → Run workflow** dari `main`: `run_id=40046361218`, **Pre-Release**, diuji di HP `true`, catatan `Tested on my device.`. Artefak tersedia sampai sekitar **31 Okt 2026, 08.02 WIB**. Jangan rerun job lama.
-2. Verifikasi rilis `v26.10.24-r2`: Pre-release, SHA256 aset sama dengan artefak, summary ID/EN benar. Baru sesudah itu catat r2 di CHANGELOG ID/EN dan status uji README.
-3. Pekerjaan lain tetap tertunda: tabel sublevel lewat tombol **Cek sublevel baru** manual; 145/138 menunggu simonpunk; BakaSU menunggu pengembangnya. Jangan melanjutkannya tanpa permintaan owner.
+1. Bila owner meminta: catat r2 di CHANGELOG ID/EN dan status uji README (belum dikerjakan).
+2. Pekerjaan lain tetap tertunda: tabel sublevel lewat tombol **Cek sublevel baru** manual; 145/138 menunggu simonpunk; BakaSU menunggu pengembangnya. Jangan melanjutkannya tanpa permintaan owner.
