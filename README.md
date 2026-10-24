@@ -82,7 +82,7 @@ Builder memakai rilis ACK resmi `android14-6.1` sejak kernel bawaan HP; `lts` = 
 | 138 | `2025-06_r17` | ⏳ KernelSU Next: [Tunggu simonpunk memperbarui SUSFS: patch kernel terbaru tidak cocok dengan ACK 6.1.138](https://github.com/cogan17/Xiomi_14T_Pro/actions/runs/40048269498) · kernel bawaan HP; arsip r5 diuji di HP |
 <!-- sublevel:end -->
 
-Unicode fix (opsional) terbukti di 176 (CI) dan 138 (lokal); sublevel lain diharapkan cocok. Bila patch WildKernel belum cocok, build berhenti: lepas centang Unicode fix untuk tetap build.
+Unicode fix (opsional) lolos build + gate KMI di 157, 162, 172 dan 176, dan terpasang bersih di 138 dan 145 ([CI](https://github.com/cogan17/Xiomi_14T_Pro/actions/runs/40048269498)). Bila patch WildKernel belum cocok, build berhenti: lepas centang Unicode fix untuk tetap build.
 
 </details>
 
