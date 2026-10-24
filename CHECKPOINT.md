@@ -1,49 +1,58 @@
-# Checkpoint — 24 Okt 2026, ±00.20 WIB (diperbarui ±07.10 WIB: Validate, Unicode fix, Cogan Smart di r1, bersih branch)
+# Checkpoint — 24 Okt 2026, ±08.50 WIB
 
 Sesi berikutnya mulai dari sini. Aturannya ada di `CLAUDE.md`. Semua waktu dalam WIB.
 
 ## Sedang berjalan
-- Tidak ada run Actions atau PR terbuka di repo ini. #1–#15 sudah di-merge. Branch tinggal `main`.
+- Saat checkpoint tidak ada run Actions atau PR terbuka yang diketahui (tidak dicek ulang, sesuai aturan checkpoint). #1–#25 sudah di-merge. Branch tinggal `main`.
 
-## Sudah selesai (repo baru, owner 23 Okt)
-- **Fase A:** README simpel ID/EN, CHANGELOG, panduan, keaslian & kredit lengkap, modul Cogan Smart Kernel + 75 tes, `CLAUDE.md` (tanpa kunci, gate KMI tetap, summary 2 bahasa, hemat run).
-- **Arsip rilis:** r5, r6, r8, cogan-smart-v2.8.1 dan v2.8.2 disalin dari `cogan17/Kernel-14t-pro` (run 39981928955, SHA256 cocok). Kernel arsip diganti nama 24 Okt (owner) menjadi arsip r5, arsip r6, arsip r8 dengan tag `arsip-v26.10.22-r5`, `arsip-v26.10.22-r6`, `arsip-v26.10.23-r8`.
-- **Workflow:** Cogan Kernel Builder, Rilis dari run, Cogan Smart Release, Hapus log run lama (diuji mode cek), Validate (#10).
-- **Builder run 1** (39984036101, KSUN & BakaSU, `lts`, CI), terbukti CI:
-  - KSUN 6.1.176, fork pershoot `d21e0a6` (33405), SUSFS `c27ebe9`, NoMount v2.2.0;
-  - gate `CRC differs 0` terhadap BSP dan stok 6.1.138;
-  - BakaSU tidak dibangun: tunggu pengembang BakaSU (rc3 belum siap untuk SUSFS terbaru).
-- **Perbaikan setelah run 1:**
-  - #4: ccache disimpan di `~/.ccache`.
-  - #5: alat AnyKernel3 dari branch osm0sis `arm64-tools`. Flash r1 di HP gagal karena alat 32-bit (`magiskboot: syntax error`); flash berhenti sebelum `boot` ditulis. Paket kini ditolak bila ada alat non-arm64 (diuji lokal).
-  - #5: Rilis dari run mengunduh file lewat ID artifact + cek SHA256. Run 39990063457 gagal karena `gh run download` membongkar ZIP kernel.
+## Sudah selesai
+### Dasar repo (owner 23 Okt)
+- README simpel ID/EN, CHANGELOG, panduan, keaslian & kredit, modul Cogan Smart Kernel + tes, `CLAUDE.md` (tanpa kunci, gate KMI tetap, summary 2 bahasa, hemat run).
+- **Workflow (semua manual):** Cogan Kernel Builder, Rilis dari run, Cogan Smart Release, Hapus log run lama, Cek sublevel baru. Validate hanya jalan di PR ke `main` (tes, YAML, shell; tanpa build).
+- **Arsip:** r5, r6, r8, cogan-smart-v2.8.1 dan v2.8.2 dari `cogan17/Kernel-14t-pro`. Kernel arsip bernama arsip r5/r6/r8 dengan tag `arsip-v26.10.22-r5`, `arsip-v26.10.22-r6`, `arsip-v26.10.23-r8` (#7).
 
-- **r1, rilis pertama repo ini** (owner, 24 Okt), terbukti CI dan HP:
-  - Builder run #2 ([39992351534](https://github.com/cogan17/Xiomi_14T_Pro/actions/runs/39992351534), 00.06 WIB, commit `ebab365` dengan perbaikan #4 dan #5): KSUN 6.1.176, SUSFS v2.3.0 `c27ebe9`, NoMount v2.2.0, gate `CRC differs 0`.
-  - Terbit sebagai Pre-release [`v26.10.23-r1`](https://github.com/cogan17/Xiomi_14T_Pro/releases/tag/v26.10.23-r1) lewat Rilis dari run #3 (05.51 WIB), ditandai diuji di HP. Rilis dari run #2 (05.42 WIB) ditolak di langkah *Periksa run*: ID run `39238126721` bukan run Builder repo ini.
-  - Diuji owner di HP (tangkapan layar KernelSU Next ±05.57 WIB): BUILT-IN (GKI2) 33405, SUSFS v2.3.0, NoMount v2.2.0 (605) terpasang, SELinux Enforcing. Modul NoMount v2.2.0 hanya mau dipasang di kernel dengan driver v22, jadi yang berjalan memang r1 (arsip r6 membawa driver v21).
-  - Versi kernel di layar manager tampil `6.1.170-android14-11-g9876543210ab…`, bukan 6.1.176: kemungkinan besar disamarkan spoof uname SUSFS. Versi asli: `su -c cat /sys/kernel/cogan/banner`.
-- **Arsip r5, r6, r8** pindah ke tag `arsip-…` (#7, run 40038421596; id rilis, nama file dan SHA256 sama; tag lama dihapus). Tombol sekali pakainya dihapus (#8).
-- **README dan CHANGELOG** mencatat r1 sebagai rilis repo ini yang diuji di HP (#9).
-- **Yang digabung dari WildKernel (owner 24 Okt: "yang bisa digabungkan, lanjutkan"; jangan merusak yang ada):**
-  - #10 **Validate** di setiap PR: tes, YAML workflow, sintaks shell; tanpa build kernel (±30 detik). `.gitignore` untuk `__pycache__`; 18 file `.pyc` keluar dari git.
-  - #11 **centang Unicode Fix**, mati secara default: patch terbaru `WildKernels/kernel_patches` dipasang ketat; tidak cocok = "Tunggu WildKernel"; gate KMI tetap. Patch hanya mengubah `fs/unicode/utf8-norm.c`, yang identik di Linux stable 6.1–6.1.190 (kernel.org, **bukan ACK**) dan di ACK 6.1.138. ACK terbaru saat ini 6.1.176 (`android14-6.1-2026-09_r4`). Terbukti: ACK 6.1.138 (lokal, patch terpasang ketat) dan 6.1.176 (CI). ACK 145, 157, 162 dan 172 belum dibuktikan langsung, diharapkan cocok; bila tidak, build berhenti "Tunggu WildKernel". Bukti CI [run 40041706993](https://github.com/cogan17/Xiomi_14T_Pro/actions/runs/40041706993) (KSUN 6.1.176, CI): gate `CRC differs 0` (juga terhadap stok 6.1.138), fitur `SUSFS, BBRv3 (default, also bbr3), BBG, NoMount, Unicode fix, Cogan Bridge, Full LTO`, `UNICODE_FIX=fa76c90`.
-  - Tidak berlaku untuk rothko: Ptrace (kernel < 5.16), BTF (sudah aktif di kernel bawaan), FUSE-BPF (6.12). Tetap tidak dipakai: DroidSpaces, NTSync, Performance, `allow_version_mismatch`, page size, keep_kmi.
-- **Cogan Smart Kernel fokus ke r1** (#12): owner menguji v2.8.2 di r1 (tangkapan layar 06.47 WIB: Cogan r1 · 6.1.176 terverifikasi lewat Cogan Bridge, mengecas cepat 3868 mA, pencatat suhu, penjaga modul aman). Label rilis `cogan-smart-v2.8.2` = "r1 (6.1.176) + arsip r6, termasuk HyperCharge" (run 40041708914); default `kernel_uji` = `r1 (6.1.176)`.
-- **Bersih branch:** "Automatically delete head branches" diaktifkan owner. 9 branch PR #1–#9 dihapus lewat tombol sekali pakai (#13, run 40043075372; dari sesi Claude hapus branch ditolak 403), tombolnya dihapus (#14).
+### r1: rilis pertama repo ini (terbukti CI dan HP)
+- Builder run #2 [39992351534](https://github.com/cogan17/Xiomi_14T_Pro/actions/runs/39992351534): KSUN 6.1.176, SUSFS v2.3.0 `c27ebe9`, NoMount v2.2.0, gate `CRC differs 0`.
+- Pre-release [`v26.10.23-r1`](https://github.com/cogan17/Xiomi_14T_Pro/releases/tag/v26.10.23-r1), diuji owner di HP. Cogan Smart v2.8.2 diuji owner di r1 (#12).
+
+### Sesudah checkpoint 07.10 WIB
+- **#16–#18:**
+  - Klaim "ACK sampai 190" diluruskan: 6.1.190 adalah Linux stable, bukan ACK.
+  - README memuat tabel sublevel yang didukung.
+  - Sebutan 141 dihapus.
+- **#19 form Builder:** centang SUSFS dihapus (SUSFS selalu ada), root default KernelSU Next. NoMount opsional; bila dicentang, selalu tertanam di kernel (bukan LKM).
+- **#20 summary Builder:** satu tabel hasil dua bahasa (✅ berhasil, ❌ gagal + alasan, ⏳ tunggu siapa), ZIP + sha256.
+- **#21 resolve:** coba ulang saat 429/503 dan satu Makefile per bulan. Run #5 gagal 429, run berikutnya lolos.
+- **#22 Teks Telegram:** kotak kode ID/EN siap salin (✨ Baru diukur dari rilis sebelumnya, 🔧 Perbaikan dari commit `fix(kernel…)`). Muncul di summary Builder (satu build) dan Rilis dari run.
+- **#23 + #25 Cek sublevel baru:** hanya manual oleh owner. Owner: "Jangan otomatis, Manual run workflow saja"; tanpa jadwal dan tanpa pemicu `workflow_run`.
+  - Satu tombol: catat run Builder terakhir dari `main` (atau `run_id`) ke `kernel/sublevels.json` + tabel README, lalu bangun rilis ACK baru dengan semua fitur bila ada.
+  - Tabel README menampilkan ✅ lolos build + gate KMI, ⏳ tunggu hulu, atau 🧪 repo pendahulu. Sublevel yang gagal di sini tidak dicantumkan.
+  - Jangan mengedit tabel di antara penanda `sublevel:start/end` dengan tangan.
+- **Run #6, bukti `semua` + Unicode fix** ([40048269498](https://github.com/cogan17/Xiomi_14T_Pro/actions/runs/40048269498), 08.06–08.34 WIB):
+  - 176, 172, 162, 157: ✅ build + gate KMI, CRC beda 0, `UNICODE_FIX=fa76c90`.
+  - 145 dan 138: ⏳ tunggu simonpunk. Patch SUSFS terbaru `c27ebe9` gagal 1 hunk di `fs/namespace.c`; Unicode fix sendiri terpasang bersih. Tag 138 yang dibangun sekarang `2025-06_r17` (rilis ACK terbaru di sublevel itu; kernel bawaan HP `r11`).
+  - 141: ❌ ditolak gate KMI.
+  - Hasilnya dicatat ke README (commit `3d2b531`, versi otomatis sebelum #25). #24 menyesuaikan kalimat Unicode fix di README dan CLAUDE.md.
+- **r2 (kandidat Unicode fix) berjalan di HP** (owner, tangkapan layar 08.49 WIB, "r2 selesai"):
+  - Versi kernel `6.1.176-Cogan-Rothko-ACK-r2-35f0a136c`, dibangun 07.47 WIB (00:47:23 UTC).
+  - Builder run #4 [40046361218](https://github.com/cogan17/Xiomi_14T_Pro/actions/runs/40046361218): KSUN 6.1.176, Unicode fix, gate CRC beda 0 (juga terhadap stok 6.1.138).
+  - Apakah r2 sudah diterbitkan belum dicek saat checkpoint.
 
 ## Belum terbukti
-- Unicode fix di HP: mengubah cara nama file berkarakter tak terlihat dicocokkan di penyimpanan internal. Uji HP sebelum build dengan centang ini dirilis.
+- Uji khusus Unicode fix di HP (nama file berkarakter tak terlihat) belum dilaporkan terpisah; yang dilaporkan: r2 berjalan di HP.
+- Tombol Cek sublevel baru versi manual (#25) belum pernah ditekan. Bagian catat sudah terbukti lewat versi otomatis (run 40050437017).
 - Terbit langsung dari Builder (Release Type Pre-Release/Release).
-- Varian BakaSU di repo ini (belum dibangun: tunggu pengembang BakaSU).
-- ZIP dari Builder run #1 (bukan rilis r1) **jangan dipakai**: alat flasher-nya 32-bit.
+- Varian BakaSU (tunggu pengembang BakaSU: rc3 belum siap untuk SUSFS terbaru).
+- ZIP dari Builder run #1 jangan dipakai (alat flasher 32-bit).
 
 ## Keputusan owner 24 Okt
-- Repo lama `cogan17/Kernel-14t-pro` sudah diarsipkan owner: **abaikan** (termasuk PR #148 dan r9). Pengingat 25 Okt 12.30 WIB yang masih menunjuk repo lama juga diabaikan.
-- r1 **tetap Pre-release** ("ada hal yang perlu dipastikan").
+- Repo lama `cogan17/Kernel-14t-pro` sudah diarsipkan: **abaikan**.
+- r1 tetap Pre-release.
+- Cek sublevel baru **hanya manual**; jangan menambah jadwal atau pemicu otomatis.
+- Sublevel tidak diuji satu per satu di HP; cukup bukti CI.
 
 ## Langkah pertama sesi berikutnya
 1. Jangan lanjut sebelum owner meminta.
-2. Owner: run bukti `semua` dengan centang Unicode Fix (KernelSU Next, ACK 138–176) "nanti saja"; jalankan hanya bila owner meminta.
-3. Bila owner mau, uji Unicode fix: satu build CI (KernelSU Next, `lts`, centang Unicode Fix) untuk di-flash owner, lalu cek nama file di penyimpanan internal tetap normal.
-4. Varian BakaSU tetap menunggu pengembang BakaSU; summary Builder memberi tahu bila sudah siap.
+2. **r2:** bila belum terbit, owner menjalankan **Rilis dari run** dengan `run_id` 40046361218 dan centang diuji di HP (Pre-release/Release keputusan owner). Teks Telegram muncul di summary-nya. Artefak run itu hanya bertahan 7 hari (sampai ±31 Okt 07.47 WIB). Sesudah terbit: catat r2 di CHANGELOG ID/EN dan status uji README.
+3. Tabel sublevel diperbarui lewat tombol **Cek sublevel baru** (manual).
+4. 145/138 menunggu simonpunk (SUSFS); BakaSU menunggu pengembangnya. Summary Builder memberi tahu bila sudah siap.
