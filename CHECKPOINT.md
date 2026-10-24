@@ -1,11 +1,22 @@
-# Checkpoint — 24 Okt 2026, ±08.50 WIB
+# Checkpoint — 24 Okt 2026, 09.20 WIB · GitHub App untuk Rilis dari run
 
 Sesi berikutnya mulai dari sini. Aturannya ada di `CLAUDE.md`. Semua waktu dalam WIB.
 
 ## Sedang berjalan
-- Saat checkpoint tidak ada run Actions atau PR terbuka yang diketahui (tidak dicek ulang, sesuai aturan checkpoint). #1–#25 sudah di-merge. Branch tinggal `main`.
+- Integrasi GitHub App untuk **Rilis dari run** disiapkan sesuai keputusan owner. Pendaftaran/instalasi App dan pengisian variable/secret akun belum selesai pada sesi ini: browser berhenti pada halaman login GitHub. Jangan menganggap App sudah aktif atau r2 sudah terbit.
+- Pekerjaan checkpoint terdahulu tidak dilanjutkan. Perubahan sesi ini hanya autentikasi rilis, panduan, tes dan checkpoint.
+- Status PR dan Validate akhir untuk perubahan ini tercatat pada PR integrasi GitHub App; jangan menjalankan build kernel atau publikasi hanya untuk menguji konfigurasi yang belum lengkap.
 
 ## Sudah selesai
+### Perbaikan rilis dan pilihan GitHub App (owner 24 Okt)
+- [Run rilis 40052126936](https://github.com/cogan17/Xiomi_14T_Pro/actions/runs/40052126936) gagal saat `gh release create`: HTTP 403. Build sumber `40046361218`, unduhan, SHA256 dan gate KMI lolos. Commit sumber `4730fee1297fa5ef1a779a4223136ab1912b09e2` memiliki workflow berbeda dari `main`; GITHUB_TOKEN bawaan tidak dapat diberi Workflows: write untuk membuat tag itu.
+- **#27**, merge `8f6c580`: dukungan PAT `RELEASE_TOKEN` dan diagnostik 403. [Validate 40052599557](https://github.com/cogan17/Xiomi_14T_Pro/actions/runs/40052599557): **138/138 tes lolos**, YAML dan shell lolos.
+- Owner memilih **GitHub App** agar tidak memperbarui PAT berkala. Workflow kini menyiapkan token baru lewat action resmi `actions/create-github-app-token@v3`, khusus repo ini, dengan Contents + Workflows: write. Token dibuat sesudah unduhan/gate dan dicabut action saat job selesai. Pemicu tetap `workflow_dispatch`; tidak ada jadwal atau rilis otomatis.
+- `GITHUB_TOKEN` untuk baca run/artefak kini read-only. SHA publikasi memakai `run.json` yang sudah divalidasi, sehingga App tidak membutuhkan izin Actions. SHA256, gate KMI dan penolakan rilis duplikat tetap ketat. `RELEASE_TOKEN` PAT tidak dipakai lagi.
+- Pengaturan yang harus tersedia: **variable** `RELEASE_APP_CLIENT_ID` = Client ID (bukan App ID); **secret** `RELEASE_APP_PRIVATE_KEY` = seluruh PEM. App harus terpasang pada `cogan17/Xiomi_14T_Pro` dengan Contents + Workflows: Read and write. Detail ID/EN: `docs/masalah-dan-log.md` dan `.en.md`.
+- Tes rilis lokal: **10/10 lolos** (3 release notes + 7 tes workflow, termasuk konfigurasi tidak lengkap, publikasi tanpa izin Actions, SHA asli, Pre-Release/Release, duplikat, 403 dan 500). Input action dicocokkan dengan `action.yml` resmi v3. Ini bukti kode/simulasi; bukan bukti App terpasang atau publikasi sungguhan.
+- Tidak ada private key, token, atau kredensial akun yang disimpan di source/checkpoint. Pendaftaran App dan uji rilis sungguhan masih menunggu owner.
+
 ### Dasar repo (owner 23 Okt)
 - README simpel ID/EN, CHANGELOG, panduan, keaslian & kredit, modul Cogan Smart Kernel + tes, `CLAUDE.md` (tanpa kunci, gate KMI tetap, summary 2 bahasa, hemat run).
 - **Workflow (semua manual):** Cogan Kernel Builder, Rilis dari run, Cogan Smart Release, Hapus log run lama, Cek sublevel baru. Validate hanya jalan di PR ke `main` (tes, YAML, shell; tanpa build).
@@ -52,7 +63,8 @@ Sesi berikutnya mulai dari sini. Aturannya ada di `CLAUDE.md`. Semua waktu dalam
 - Sublevel tidak diuji satu per satu di HP; cukup bukti CI.
 
 ## Langkah pertama sesi berikutnya
-1. Jangan lanjut sebelum owner meminta.
-2. **r2:** bila belum terbit, owner menjalankan **Rilis dari run** dengan `run_id` 40046361218 dan centang diuji di HP (Pre-release/Release keputusan owner). Teks Telegram muncul di summary-nya. Artefak run itu hanya bertahan 7 hari (sampai ±31 Okt 07.47 WIB). Sesudah terbit: catat r2 di CHANGELOG ID/EN dan status uji README.
-3. Tabel sublevel diperbarui lewat tombol **Cek sublevel baru** (manual).
-4. 145/138 menunggu simonpunk (SUSFS); BakaSU menunggu pengembangnya. Summary Builder memberi tahu bila sudah siap.
+1. **Selesaikan pengaturan GitHub App**, setelah owner meminta: daftar pada akun cogan17, Webhook Active mati, tanpa OAuth/device flow, izin Contents + Workflows: Read and write, Only on this account. Pasang hanya ke `Xiomi_14T_Pro`.
+2. Simpan Client ID di Actions variable `RELEASE_APP_CLIENT_ID` dan seluruh private key PEM di Actions secret `RELEASE_APP_PRIVATE_KEY`. Konektor GitHub sesi ini tidak memiliki operasi pendaftaran App/pengaturan secret; browser memerlukan login owner. Jangan meminta private key atau password lewat chat.
+3. Setelah App dan konfigurasi lengkap, jalankan **Rilis dari run → Run workflow** terbaru dari `main`, `run_id=40046361218`, **Pre-Release**, diuji di HP `true`, catatan `Tested on my device.` (input yang digunakan owner pada run gagal). Gunakan artefak build hijau yang sama; tidak perlu membangun ulang. File rilis wajib tersedia sampai sekitar **31 Okt 2026, 08.02 WIB**. Jangan rerun job lama karena ia memakai workflow lama.
+4. Verifikasi tag `v26.10.24-r2` menunjuk commit sumber `4730fee1297fa5ef1a779a4223136ab1912b09e2`, SHA256 aset sama dengan artefak, jenis Pre-release, dan summary ID/EN benar. Baru sesudah rilis terbukti terbit, catat r2 di CHANGELOG ID/EN dan status uji README.
+5. Pekerjaan lain tetap tertunda: tabel sublevel lewat tombol **Cek sublevel baru** manual; 145/138 menunggu simonpunk; BakaSU menunggu pengembangnya. Jangan melanjutkannya tanpa permintaan owner.
