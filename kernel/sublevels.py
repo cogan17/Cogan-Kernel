@@ -6,8 +6,8 @@ reads it. Per sublevel: the ACK release tag, and per root manager (KSUN, BSU) th
 newest run that built it (ok, gagal, tunggu with whom to wait for). "pendahulu" marks sublevels
 proven only in the predecessor repository. The README row follows the newest result here: built,
 waiting for an upstream update, or (nothing built here yet) proven in the predecessor; a sublevel
-that failed here is not listed. The daily check builds an ACK release whose tag has not been tried
-yet, with every feature (owner 2026-10-24).
+that failed here is not listed. The check, started by hand (owner 2026-10-24: no schedule), builds an
+ACK release whose tag has not been tried yet, with every feature.
 
 Usage: sublevels.py check  [--github-output FILE]
        sublevels.py mark   --tag TAG --sublevel N --date YYYY-MM-DD
@@ -41,7 +41,7 @@ def save(record, path=RECORD):
     path.write_text(json.dumps(ordered, indent=1, ensure_ascii=False) + "\n")
 
 
-# ---- daily check ----------------------------------------------------------------------------
+# ---- check for a new ACK release ------------------------------------------------------------
 
 def is_new(record, tag, sublevel):
     """True when this ACK release tag has not been tried yet (a result, or a build already started)."""
@@ -50,7 +50,7 @@ def is_new(record, tag, sublevel):
 
 
 def mark(record, tag, sublevel, date):
-    """The daily check started a build of this release: never start it twice."""
+    """The check started a build of this release: never start it twice."""
     entry = record.get(str(sublevel), {})
     keep = {"note": entry["note"]} if "note" in entry else {}
     record[str(sublevel)] = {"tag": tag, "dicoba": date, **(entry if entry.get("tag") == tag else keep)}
