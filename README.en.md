@@ -69,7 +69,7 @@
 <details>
 <summary>🧩 <b>Supported sublevels</b></summary>
 
-The builder uses the official ACK `android14-6.1` releases since the phone's stock kernel; `lts` = the newest. Every day the **Cek sublevel baru** workflow builds a new ACK release with every feature; what passes the build and the KMI gate is added to this table automatically.
+The builder uses the official ACK `android14-6.1` releases since the phone's stock kernel; `lts` = the newest. Every day the **Cek sublevel baru** workflow builds a new ACK release with every feature; the newest result of every build here goes into this table automatically: ✅ passed the build and the KMI gate, ⏳ waiting for an upstream update.
 
 <!-- sublevel:start -->
 | Sublevel | ACK release | Status |

@@ -69,7 +69,7 @@
 <details>
 <summary>🧩 <b>Sublevel yang didukung</b></summary>
 
-Builder memakai rilis ACK resmi `android14-6.1` sejak kernel bawaan HP; `lts` = yang terbaru. Setiap hari workflow **Cek sublevel baru** membangun rilis ACK baru dengan semua fitur; yang lolos build dan gate KMI otomatis masuk tabel ini.
+Builder memakai rilis ACK resmi `android14-6.1` sejak kernel bawaan HP; `lts` = yang terbaru. Setiap hari workflow **Cek sublevel baru** membangun rilis ACK baru dengan semua fitur; hasil terbaru setiap build di sini otomatis masuk tabel ini: ✅ lolos build dan gate KMI, ⏳ menunggu pembaruan hulu.
 
 <!-- sublevel:start -->
 | Sublevel | Rilis ACK | Status |

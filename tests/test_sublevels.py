@@ -22,7 +22,7 @@ class SublevelsTest(unittest.TestCase):
         if status == "ok":
             (folder / "build.env").write_text(f"ACK_TAG={tag}\nZIP_SHA256={'a' * 64}\n")
         elif status == "tunggu":
-            (folder / "wait.json").write_text('{"id": "Tunggu.", "en": "Wait."}')
+            (folder / "wait.json").write_text('{"id": "Tunggu simonpunk.", "en": "Wait for simonpunk."}')
         else:
             (folder / "stage.txt").write_text("KMI gate\n")
 
@@ -50,7 +50,8 @@ class SublevelsTest(unittest.TestCase):
         changed = sl.record_run(record, self.base / "info", "42", sl.snapshot_tags(snapshots))
         self.assertIn(("141", "KernelSU Next", "gagal"), changed)
         self.assertEqual(record["176"]["KSUN"], {"status": "ok", "run": 42})
-        self.assertEqual(record["176"]["BSU"], {"status": "tunggu", "run": 42})
+        self.assertEqual(record["176"]["BSU"], {"status": "tunggu", "run": 42,
+                                                "wait": {"id": "Tunggu simonpunk.", "en": "Wait for simonpunk."}})
         self.assertEqual(record["176"]["note"]["id"], "r1 diuji di HP")
         self.assertNotIn("pendahulu", record["172"])  # proven here now
         self.assertEqual(record["141"], {"tag": "android14-6.1-2025-07_r13", "KSUN": {"status": "gagal", "run": 42}})
@@ -65,11 +66,18 @@ class SublevelsTest(unittest.TestCase):
         record = {"176": {"tag": TAG, "KSUN": {"status": "ok", "run": 9}, "note": {"id": "r1 diuji di HP", "en": "r1 tested"}},
                   "141": {"tag": "android14-6.1-2025-07_r13", "KSUN": {"status": "gagal", "run": 9}},
                   "180": {"tag": "android14-6.1-2026-12_r1", "dicoba": "2026-12-01"},
+                  "162": {"tag": "android14-6.1-2026-03_r24", "pendahulu": True, "KSUN": {"status": "gagal", "run": 9}},
+                  "145": {"tag": "android14-6.1-2025-09_r36", "pendahulu": True,
+                          "KSUN": {"status": "tunggu", "run": 9, "wait": {"id": "Tunggu simonpunk.", "en": "Wait."}}},
                   "138": {"tag": "android14-6.1-2025-06_r11", "pendahulu": True}}
         text = sl.table(record, "id")
         self.assertIn("| **176** (`lts`) | `2026-09_r4` | ✅ KernelSU Next: [build + gate KMI]"
                       "(https://github.com/cogan17/Xiomi_14T_Pro/actions/runs/9) · r1 diuji di HP |", text)
         self.assertIn("| 138 | `2025-06_r11` | 🧪 lolos build + gate KMI di repo pendahulu |", text)
+        # The newest result here decides: waiting for upstream is listed, a failure here is not.
+        self.assertIn("| 145 | `2025-09_r36` | ⏳ KernelSU Next: [Tunggu simonpunk]"
+                      "(https://github.com/cogan17/Xiomi_14T_Pro/actions/runs/9) |", text)
+        self.assertNotIn("162", text)
         self.assertNotIn("141", text)
         self.assertNotIn("180", text)
         self.assertIn("| 138 | `2025-06_r11` | 🧪 passed build + KMI gate in the predecessor repository |",

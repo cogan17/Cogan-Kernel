@@ -3,9 +3,11 @@
 
 kernel/sublevels.json is a record of what the Cogan Kernel Builder proved, not a lock: no build
 reads it. Per sublevel: the ACK release tag, and per root manager (KSUN, BSU) the result of the
-newest run that built it (ok, gagal, tunggu). "pendahulu" marks sublevels proven only in the
-predecessor repository. The README shows ok and pendahulu sublevels; the daily check builds an ACK
-release whose tag has not been tried yet, with every feature (owner 2026-10-24).
+newest run that built it (ok, gagal, tunggu with whom to wait for). "pendahulu" marks sublevels
+proven only in the predecessor repository. The README row follows the newest result here: built,
+waiting for an upstream update, or (nothing built here yet) proven in the predecessor; a sublevel
+that failed here is not listed. The daily check builds an ACK release whose tag has not been tried
+yet, with every feature (owner 2026-10-24).
 
 Usage: sublevels.py check  [--github-output FILE]
        sublevels.py mark   --tag TAG --sublevel N --date YYYY-MM-DD
@@ -24,8 +26,9 @@ READMES = {"id": HERE.parent / "README.md", "en": HERE.parent / "README.en.md"}
 START, END = "<!-- sublevel:start -->", "<!-- sublevel:end -->"
 ROOTS = {"KSUN": "KernelSU Next", "BSU": "BakaSU"}
 WORDS = {"id": {"head": "| Sublevel | Rilis ACK | Status |", "ok": "✅ {roots}: [build + gate KMI]({url})",
-                "pendahulu": "🧪 lolos build + gate KMI di repo pendahulu"},
+                "tunggu": "⏳ {roots}: [{why}]({url})", "pendahulu": "🧪 lolos build + gate KMI di repo pendahulu"},
          "en": {"head": "| Sublevel | ACK release | Status |", "ok": "✅ {roots}: [build + KMI gate]({url})",
+                "tunggu": "⏳ {roots}: [{why}]({url})",
                 "pendahulu": "🧪 passed build + KMI gate in the predecessor repository"}}
 
 
@@ -64,14 +67,15 @@ def newest_ack():
 # ---- recording a Builder run ------------------------------------------------------------------
 
 def outcome(folder):
-    """ok, gagal or tunggu from the files a build left behind (see kernel/run_summary.py)."""
+    """(ok, gagal or tunggu, ACK tag, whom to wait for) from the files a build left behind
+    (see kernel/run_summary.py)."""
     env = dict(line.split("=", 1) for line in (folder / "build.env").read_text().splitlines() if "=" in line) \
         if (folder / "build.env").is_file() else {}
     if env.get("ZIP_SHA256"):
-        return "ok", env.get("ACK_TAG", "")
+        return "ok", env.get("ACK_TAG", ""), None
     if (folder / "wait.json").is_file():
-        return "tunggu", ""
-    return "gagal", ""
+        return "tunggu", "", json.loads((folder / "wait.json").read_text())
+    return "gagal", "", None
 
 
 def snapshot_tags(snapshots):
@@ -91,7 +95,7 @@ def record_run(record, info, run_id, tags=None):
         if not match:
             continue
         root, sublevel = match[1], match[2]
-        status, tag = outcome(folder)
+        status, tag, wait = outcome(folder)
         entry = record.setdefault(sublevel, {})
         tag = tag or (tags or {}).get(sublevel) or entry.get("tag", "")
         if entry.get("tag") and tag and entry["tag"] != tag:
@@ -99,7 +103,7 @@ def record_run(record, info, run_id, tags=None):
         entry["tag"] = tag
         if status == "ok":
             entry.pop("pendahulu", None)  # proven in this repository now
-        entry[root] = {"status": status, "run": int(run_id)}
+        entry[root] = {"status": status, "run": int(run_id), **({"wait": wait} if wait else {})}
         changed.append((sublevel, ROOTS[root], status))
     return changed
 
@@ -113,13 +117,15 @@ def table(record, lang, repo="cogan17/Xiomi_14T_Pro"):
         entry = record[sublevel]
         if not shown(entry):
             continue
-        ok = [r for r in ROOTS if entry.get(r, {}).get("status") == "ok"]
-        if ok:
-            run = max(entry[r]["run"] for r in ok)
-            status = w["ok"].format(roots=" · ".join(ROOTS[r] for r in ok),
-                                    url=f"https://github.com/{repo}/actions/runs/{run}")
-        else:
-            status = w["pendahulu"]
+        status = w["pendahulu"]
+        for kind in ("ok", "tunggu"):
+            found = [r for r in ROOTS if entry.get(r, {}).get("status") == kind]
+            if found:
+                run = max(entry[r]["run"] for r in found)
+                why = entry[found[0]].get("wait", {}).get(lang, "").rstrip(".")
+                status = w[kind].format(roots=" · ".join(ROOTS[r] for r in found), why=why,
+                                        url=f"https://github.com/{repo}/actions/runs/{run}")
+                break
         note = entry.get("note", {}).get(lang)
         name = f"**{sublevel}** (`lts`)" if int(sublevel) == lts else sublevel
         tag = entry.get("tag", "").replace("android14-6.1-", "")
@@ -128,7 +134,9 @@ def table(record, lang, repo="cogan17/Xiomi_14T_Pro"):
 
 
 def shown(entry):
-    return entry.get("pendahulu") or any(entry.get(r, {}).get("status") == "ok" for r in ROOTS)
+    """Built or waiting here, or not built here yet but proven in the predecessor."""
+    results = [entry[r]["status"] for r in ROOTS if r in entry]
+    return "ok" in results or "tunggu" in results or (entry.get("pendahulu") and not results)
 
 
 def write_readmes(record, paths=READMES):
