@@ -7,12 +7,12 @@ from kernel import resolve as r
 REFS = {
     "refs/tags/android14-6.1-2025-05_r9": "a" * 40,  # before the phone's own release: never picked
     "refs/tags/android14-6.1-2025-06_r11": "b" * 40,
-    "refs/tags/android14-6.1-2025-07_r13": "c" * 40,
+    "refs/tags/android14-6.1-2025-09_r36": "c" * 40,
     "refs/tags/android14-6.1-2026-09_r4": "d" * 40,
     "refs/tags/android14-6.1-2026-09_r2": "e" * 40,
     "refs/tags/android14-6.1-lts-x": "f" * 40,
 }
-SUBLEVELS = {"android14-6.1-2025-06_r11": 138, "android14-6.1-2025-07_r13": 141,
+SUBLEVELS = {"android14-6.1-2025-06_r11": 138, "android14-6.1-2025-09_r36": 145,
              "android14-6.1-2026-09_r4": 176, "android14-6.1-2026-09_r2": 176}
 
 
@@ -28,7 +28,7 @@ class AckTest(unittest.TestCase):
     def test_releases_since_the_phone_newest_first(self):
         self.assertEqual([tag for tag, _ in self.releases],
                          ["android14-6.1-2026-09_r4", "android14-6.1-2026-09_r2",
-                          "android14-6.1-2025-07_r13", "android14-6.1-2025-06_r11"])
+                          "android14-6.1-2025-09_r36", "android14-6.1-2025-06_r11"])
 
     def test_lts_is_the_newest_release(self):
         self.assertEqual(r.pick_ack(self.releases, "lts", self.sublevel), [("android14-6.1-2026-09_r4", "d" * 40, 176)])
@@ -36,11 +36,11 @@ class AckTest(unittest.TestCase):
 
     def test_a_number_is_the_newest_release_of_that_sublevel(self):
         self.assertEqual(r.pick_ack(self.releases, "176", self.sublevel), [("android14-6.1-2026-09_r4", "d" * 40, 176)])
-        self.assertEqual(r.pick_ack(self.releases, "138, 141", self.sublevel),
-                         [("android14-6.1-2025-06_r11", "b" * 40, 138), ("android14-6.1-2025-07_r13", "c" * 40, 141)])
+        self.assertEqual(r.pick_ack(self.releases, "138, 145", self.sublevel),
+                         [("android14-6.1-2025-06_r11", "b" * 40, 138), ("android14-6.1-2025-09_r36", "c" * 40, 145)])
 
     def test_semua_is_every_sublevel_once(self):
-        self.assertEqual([sub for _, _, sub in r.pick_ack(self.releases, "semua", self.sublevel)], [138, 141, 176])
+        self.assertEqual([sub for _, _, sub in r.pick_ack(self.releases, "semua", self.sublevel)], [138, 145, 176])
 
     def test_unknown_sublevel_or_format_is_refused(self):
         with self.assertRaisesRegex(ValueError, "6.1.150"):
