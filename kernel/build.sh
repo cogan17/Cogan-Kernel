@@ -22,7 +22,9 @@ KOUT="$WORK/kernel-out"
 mkdir -p "$WORK" "$OUT"
 
 log() { echo "[+] $*"; }
-fail() { echo "::error::$*"; exit 1; }
+# The run summary (kernel/run_summary.py) reads where a failed build stopped and why.
+group() { echo "::group::$*"; printf '%s\n' "$*" > "$OUT/stage.txt"; }
+fail() { echo "::error::$*"; printf '%s\n' "$*" > "$OUT/error.txt"; exit 1; }
 # A newer upstream version that does not fit yet: the summary names whom to wait for.
 wait_for() {
   python3 -c 'import json, sys; json.dump({"id": sys.argv[1], "en": sys.argv[2]}, open(sys.argv[3], "w"))' \
@@ -51,7 +53,7 @@ NAME="${BRAND:-Cogan}-Rothko-ACK"
 ROOT_REPO="$(snap root_source.repo)"
 ROOT_COMMIT="$(snap root_source.commit)"
 
-echo "::group::Toolchain (Neutron clang $(snap neutron.tag))"
+group "Toolchain (Neutron clang $(snap neutron.tag))"
 mkdir -p "$WORK/clang"
 curl -fsSL --retry 3 "$(snap neutron.url)" | tar -I zstd -x -C "$WORK/clang"
 export PATH="$WORK/clang/bin:$HOME/.local/bin:$PATH"
@@ -68,7 +70,7 @@ fi
 pahole --version
 echo "::endgroup::"
 
-echo "::group::Kernel source: ACK $ACK_TAG (6.1.$SUBLEVEL)"
+group "Kernel source: ACK $ACK_TAG (6.1.$SUBLEVEL)"
 git init -q "$KSRC"
 git -C "$KSRC" fetch -q --depth=1 https://android.googlesource.com/kernel/common "$ACK_COMMIT"
 git -C "$KSRC" checkout -q FETCH_HEAD
@@ -77,17 +79,17 @@ LINUX_VERSION="$(make -s -C "$KSRC" kernelversion)"
 git -C "$KSRC" -c user.name=Cogan -c user.email=builder@localhost commit -q --allow-empty -m "ACK $ACK_TAG"
 echo "::endgroup::"
 
-echo "::group::Stock kernel reference of the phone (KMI gate)"
+group "Stock kernel reference of the phone (KMI gate)"
 python3 "$HERE/scripts/stock_reference.py" --device rothko "$WORK/stock"
 echo "::endgroup::"
 
-echo "::group::Vendor module compatibility: module force-load, no protected exports"
+group "Vendor module compatibility: module force-load, no protected exports"
 apply "$HERE/patches/force-load-modules.patch"
 rm -f "$KSRC"/android/*protected_exports*
 echo "::endgroup::"
 
 if [ "${NETWORKING:-true}" = "true" ]; then
-  echo "::group::BBRv3 (default TCP, also bbr3) with the stock KMI layout"
+  group "BBRv3 (default TCP, also bbr3) with the stock KMI layout"
   # The patch set of this sublevel, or of the newest sublevel below it.
   BBR_SUB=""
   for dir in "$HERE"/patches/bbrv3/[0-9]*; do
@@ -104,7 +106,7 @@ if [ "${NETWORKING:-true}" = "true" ]; then
 fi
 
 if [ "${UNICODE:-false}" = "true" ]; then
-  echo "::group::Unicode fix (WildKernel) $(snap unicode.commit | cut -c1-12)"
+  group "Unicode fix (WildKernel) $(snap unicode.commit | cut -c1-12)"
   # Names with ignorable code points (zero-width characters) no longer fold to the same name on
   # casefolded storage. The newest patch of WildKernel's kernel_patches, applied strictly.
   RAW="$(snap unicode.repo | sed 's#^https://github.com/#https://raw.githubusercontent.com/#')"
@@ -117,7 +119,7 @@ fi
 
 cd "$KSRC"
 if [ "${BBG:-true}" = "true" ]; then
-  echo "::group::Baseband Guard $(snap bbg.commit | cut -c1-12)"
+  group "Baseband Guard $(snap bbg.commit | cut -c1-12)"
   git clone -q "$(snap bbg.repo)" Baseband-guard
   git -C Baseband-guard checkout -q --detach "$(snap bbg.commit)"
   bash Baseband-guard/setup.sh "$(snap bbg.commit)" || log "BBG setup.sh exited non-zero; checking its results"
@@ -134,7 +136,7 @@ if [ "${BBG:-true}" = "true" ]; then
   echo "::endgroup::"
 fi
 
-echo "::group::$ROOT_NAME $ROOT_COMMIT"
+group "$ROOT_NAME $ROOT_COMMIT"
 if [ "$ROOT" = "KSUN" ]; then
   BRANCH="$(snap root_source.branch)"
   curl -fsSL "https://raw.githubusercontent.com/pershoot/KernelSU-Next/$ROOT_COMMIT/kernel/setup.sh" -o "$WORK/root-setup.sh"
@@ -151,7 +153,7 @@ else
 fi
 echo "::endgroup::"
 
-echo "::group::SUSFS $(snap susfs.commit | cut -c1-12)"
+group "SUSFS $(snap susfs.commit | cut -c1-12)"
 git clone -q --filter=blob:none -b "$(snap susfs.branch)" "$(snap susfs.repo)" "$WORK/susfs"
 git -C "$WORK/susfs" checkout -q "$(snap susfs.commit)"
 cp -R "$WORK/susfs/kernel_patches/fs/." fs/
@@ -163,7 +165,7 @@ SUSFS_VERSION="$(sed -n 's/^#define SUSFS_VERSION "\(.*\)"/\1/p' include/linux/s
 echo "::endgroup::"
 
 if [ "${NOMOUNT:-true}" = "true" ]; then
-  echo "::group::NoMount $(snap nomount.tag)"
+  group "NoMount $(snap nomount.tag)"
   curl -fsSL "https://raw.githubusercontent.com/maxsteeel/nomount/$(snap nomount.commit)/kernel/setup.sh" -o "$WORK/nomount-setup.sh"
   bash "$WORK/nomount-setup.sh" "$(snap nomount.tag)" \
     || wait_for "Tunggu maxsteeel: NoMount $(snap nomount.tag) tidak terpasang di ACK 6.1.$SUBLEVEL." \
@@ -171,7 +173,7 @@ if [ "${NOMOUNT:-true}" = "true" ]; then
   echo "::endgroup::"
 fi
 
-echo "::group::Cogan Bridge and configuration"
+group "Cogan Bridge and configuration"
 python3 "$HERE/scripts/install_cogan_bridge.py" "$KSRC" --device rothko
 DEFCONFIG=arch/arm64/configs/gki_defconfig
 {
@@ -208,18 +210,18 @@ done
 ! grep -qx 'CONFIG_IPV6_SUBTREES=y' "$KOUT/.config" || fail "CONFIG_IPV6_SUBTREES must stay off (vendor KMI)"
 echo "::endgroup::"
 
-echo "::group::Building kernel"
+group "Building kernel"
 "${MAKE[@]}"
 echo "::endgroup::"
 
-echo "::group::KMI gate: Xiaomi 14T Pro vendor modules"
+group "KMI gate: Xiaomi 14T Pro vendor modules"
 python3 "$HERE/scripts/kmi_compat.py" --device rothko "$KSRC" "$KOUT" --reference "$HERE/bsp" \
   --stock-reference "$WORK/stock" --json "$OUT/kmi-compat.json" --github-env "$WORK/kmi.env"
 KMI_COMPAT="$(sed -n 's/^KMI_COMPAT=//p' "$WORK/kmi.env")"
 FEATURES="$(python3 "$HERE/scripts/kernel_features.py" "$KOUT/.config" "$KSRC")"
 echo "::endgroup::"
 
-echo "::group::AnyKernel3 package"
+group "AnyKernel3 package"
 cd "$WORK"
 git clone -q "$(snap anykernel.repo)" anykernel
 git -C anykernel checkout -q --detach "$(snap anykernel.commit)"
@@ -248,7 +250,7 @@ with zipfile.ZipFile(sys.argv[1]) as archive:
 PY
 echo "::endgroup::"
 
-echo "::group::Manager and NoMount module"
+group "Manager and NoMount module"
 download_digest() {  # url, file, sha256:digest (from the release API)
   curl -fsSL --retry 3 "$1" -o "$2"
   [ -z "$3" ] || [ "sha256:$(sha256sum "$2" | cut -d' ' -f1)" = "$3" ] || fail "$(basename "$2"): SHA256 differs from its release"
@@ -289,6 +291,8 @@ echo "::endgroup::"
   echo "NOMOUNT=$([ "${NOMOUNT:-true}" = "true" ] && snap nomount.tag || echo -)"
   echo "BBG_COMMIT=$([ "${BBG:-true}" = "true" ] && snap bbg.commit || echo -)"
   echo "UNICODE_FIX=$([ "${UNICODE:-false}" = "true" ] && snap unicode.commit || echo -)"
+  echo "ZIP=$ZIP"
+  echo "ZIP_SHA256=$(sha256sum "$OUT/$ZIP" | cut -d' ' -f1)"
   echo "NEUTRON=$(snap neutron.tag)"
   echo "FEATURES=$FEATURES"
   echo "KMI_COMPAT=$KMI_COMPAT"
