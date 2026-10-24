@@ -33,14 +33,9 @@
  },
  "145": {
   "tag": "android14-6.1-2025-09_r36",
-  "pendahulu": true,
   "KSUN": {
-   "status": "tunggu",
-   "run": 40048269498,
-   "wait": {
-    "id": "Tunggu simonpunk memperbarui SUSFS: patch kernel terbaru tidak cocok dengan ACK 6.1.145.",
-    "en": "Wait for simonpunk to update SUSFS: its newest kernel patch does not fit ACK 6.1.145."
-   }
+   "status": "ok",
+   "run": 40061712549
   }
  },
  "141": {
@@ -57,12 +52,8 @@
   },
   "tag": "android14-6.1-2025-06_r17",
   "KSUN": {
-   "status": "tunggu",
-   "run": 40048269498,
-   "wait": {
-    "id": "Tunggu simonpunk memperbarui SUSFS: patch kernel terbaru tidak cocok dengan ACK 6.1.138.",
-    "en": "Wait for simonpunk to update SUSFS: its newest kernel patch does not fit ACK 6.1.138."
-   }
+   "status": "ok",
+   "run": 40061712549
   }
  }
 }
