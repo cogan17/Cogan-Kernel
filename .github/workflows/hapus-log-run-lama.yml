@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       simpan_hari:
-        description: "Simpan run dari sekian hari terakhir (1–90) / keep runs of the last N days"
+        description: "Simpan run dari sekian hari terakhir (1–90); run yang dihapus ikut menghapus artifact-nya / keep runs of the last N days; deleting a run deletes its artifacts"
         type: string
         default: "7"
       konfirmasi:

@@ -69,7 +69,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p info snapshots
-          # Artifacts last 7 days: an older run has nothing left to record.
+          # Artifacts last 90 days: an older run has nothing left to record.
           compgen -G "info/build-info-*" > /dev/null && echo "found=true" >> "$GITHUB_OUTPUT" || echo "found=false" >> "$GITHUB_OUTPUT"
           python3 kernel/sublevels.py record --info info --snapshots snapshots --run "$RUN" | tee recorded.txt
       - name: Cek / check
@@ -137,8 +137,8 @@ jobs:
               echo "- 🇮🇩 ❌ Gagal mencatat [run $RUN]($run_url); lihat pesan error di atas."
               echo "- 🇬🇧 ❌ Could not record [run $RUN]($run_url); see the error above."
             elif [ "$FOUND" != "true" ]; then
-              echo "- 🇮🇩 ℹ️ [Run $RUN]($run_url) tidak punya hasil build lagi (artefak hanya bertahan 7 hari, atau run gagal sebelum build)."
-              echo "- 🇬🇧 ℹ️ [Run $RUN]($run_url) has no build results left (artifacts last 7 days, or the run failed before any build)."
+              echo "- 🇮🇩 ℹ️ [Run $RUN]($run_url) tidak punya hasil build lagi (artefak hanya bertahan 90 hari, atau run gagal sebelum build)."
+              echo "- 🇬🇧 ℹ️ [Run $RUN]($run_url) has no build results left (artifacts last 90 days, or the run failed before any build)."
             elif [ "$README" = "true" ]; then
               echo "- 🇮🇩 ✅ Hasil [run $RUN]($run_url) dicatat; tabel sublevel README diperbarui."
               echo "- 🇬🇧 ✅ [Run $RUN]($run_url) recorded; the README sublevel table is updated."
