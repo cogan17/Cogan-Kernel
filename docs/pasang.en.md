@@ -36,7 +36,7 @@ Copy the result to a **PC or USB drive**, not only the phone. Also keep the **st
 ## 3. After it boots
 
 1. Install the root manager app from the same release package (**KernelSU Next** or **BakaSU**, matching the kernel ZIP), then the **NoMount** metamodule.
-2. *Optional:* the **[Cogan Smart Kernel](https://github.com/cogan17/Xiomi_14T_Pro/blob/main/modules/cogan-smart/README.md)** module. Its development is parked (bug fixes only); the kernel runs normally without it. If you install it, reboot once, then check the module WebUI: **"Identitas asli · terverifikasi"** (real identity, verified) and **"✓ kernel dibuat untuk HP ini"** (kernel built for this phone).
+2. *Optional:* the **[Cogan Smart Kernel](https://github.com/cogan17/Cogan-Kernel/blob/main/modules/cogan-smart/README.md)** module. Its development is parked (bug fixes only); the kernel runs normally without it. If you install it, reboot once, then check the module WebUI: **"Identitas asli · terverifikasi"** (real identity, verified) and **"✓ kernel dibuat untuk HP ini"** (kernel built for this phone).
 
 > 💡 The kernel version in Settings may look different (e.g. `6.1.170`). That is SUSFS spoofing `uname`. The Cogan Smart module reads the real identity through Cogan Bridge.
 

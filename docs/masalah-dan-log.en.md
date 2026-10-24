@@ -2,7 +2,7 @@
 
 [← Back to README](../README.en.md) · <img src="https://flagcdn.com/24x18/id.png" width="22" alt=""> [Bahasa Indonesia](masalah-dan-log.md)
 
-Something wrong? Collect the logs below, then report on **[Issues](https://github.com/cogan17/Xiomi_14T_Pro/issues)** or the **[Telegram Community](https://t.me/coganTWRP)** with the kernel version (`r…`), the HyperOS version and what happened.
+Something wrong? Collect the logs below, then report on **[Issues](https://github.com/cogan17/Cogan-Kernel/issues)** or the **[Telegram Community](https://t.me/coganTWRP)** with the kernel version (`r…`), the HyperOS version and what happened.
 
 ---
 

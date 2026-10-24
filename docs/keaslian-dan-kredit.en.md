@@ -2,7 +2,7 @@
 
 [← Back to README](../README.en.md) · <img src="https://flagcdn.com/24x18/id.png" width="22" alt=""> [Bahasa Indonesia](keaslian-dan-kredit.md)
 
-The Cogan kernel for the Xiaomi 14T Pro (`rothko`) is built automatically by GitHub Actions in **[cogan17/Xiomi_14T_Pro](https://github.com/cogan17/Xiomi_14T_Pro)**. The build workflow of this repository **digitally signs** the kernel ZIP (artifact attestation), so anyone can prove where it came from.
+The Cogan kernel for the Xiaomi 14T Pro (`rothko`) is built automatically by GitHub Actions in **[cogan17/Cogan-Kernel](https://github.com/cogan17/Cogan-Kernel)** (named `Xiomi_14T_Pro` until 24 Oct 2026; GitHub redirects the old links). The build workflow of this repository **digitally signs** the kernel ZIP (artifact attestation), so anyone can prove where it came from.
 
 This repository continues **[cogan17/Kernel-14t-pro](https://github.com/cogan17/Kernel-14t-pro)**. The old releases of that repository are copied here as an **archive** (see [Release archive](#-release-archive)). The archived files are unchanged to the bit: same SHA256, still signed in the name of their original repository.
 
@@ -12,14 +12,15 @@ This repository continues **[cogan17/Kernel-14t-pro](https://github.com/cogan17/
 
 ## How to check authenticity
 
-1. **Proof page:** [github.com/cogan17/Xiomi_14T_Pro/attestations](https://github.com/cogan17/Xiomi_14T_Pro/attestations) for builds of this repository; [github.com/cogan17/Kernel-14t-pro/attestations](https://github.com/cogan17/Kernel-14t-pro/attestations) for the archived releases.
+1. **Proof page:** [github.com/cogan17/Cogan-Kernel/attestations](https://github.com/cogan17/Cogan-Kernel/attestations) for builds of this repository; [github.com/cogan17/Kernel-14t-pro/attestations](https://github.com/cogan17/Kernel-14t-pro/attestations) for the archived releases.
 2. **With the GitHub CLI:**
    ```
-   gh attestation verify <zip> --repo cogan17/Xiomi_14T_Pro     # builds of this repository
-   gh attestation verify <zip> --repo cogan17/Kernel-14t-pro    # archived releases r5, r6, r8 (arsip-… tags)
+   gh attestation verify <zip> --repo cogan17/Cogan-Kernel     # builds of this repository after the rename (24 Oct 2026)
+   gh attestation verify <zip> --repo cogan17/Xiomi_14T_Pro    # r1, r2 and other builds before the rename
+   gh attestation verify <zip> --repo cogan17/Kernel-14t-pro   # archived releases r5, r6, r8 (arsip-… tags)
    ```
-   Only a genuine ZIP passes.
-3. **The run page in [Actions](https://github.com/cogan17/Xiomi_14T_Pro/actions):** every build shows the KMI gate result, the version of every component, the feature list and the sha256 of its ZIP.
+   Only a genuine ZIP passes. A signature keeps the repository name at build time, so r1 and r2 still name `Xiomi_14T_Pro` (the same repository, before the rename). `--owner cogan17` accepts all three.
+3. **The run page in [Actions](https://github.com/cogan17/Cogan-Kernel/actions):** every build shows the KMI gate result, the version of every component, the feature list and the sha256 of its ZIP.
 4. **On the phone** (Termux / root manager terminal):
    ```
    su -c cat /sys/kernel/cogan/banner
@@ -42,7 +43,7 @@ This repository continues **[cogan17/Kernel-14t-pro](https://github.com/cogan17/
 
 ## 📦 Release archive
 
-The old releases of [cogan17/Kernel-14t-pro](https://github.com/cogan17/Kernel-14t-pro/releases) (archive r5, r6, r8) are copied unchanged to this repository's [Releases](https://github.com/cogan17/Xiomi_14T_Pro/releases): their titles start with **📦 Arsip** and the kernel tags with `arsip-`. Each release carries its own notes, `checksums.txt` and the signature of its original repository. Cogan Smart Kernel module releases and their SHA256 are in the [module README](../modules/cogan-smart/README.md).
+The old releases of [cogan17/Kernel-14t-pro](https://github.com/cogan17/Kernel-14t-pro/releases) (archive r5, r6, r8) are copied unchanged to this repository's [Releases](https://github.com/cogan17/Cogan-Kernel/releases): their titles start with **📦 Arsip** and the kernel tags with `arsip-`. Each release carries its own notes, `checksums.txt` and the signature of its original repository. Cogan Smart Kernel module releases and their SHA256 are in the [module README](../modules/cogan-smart/README.md).
 
 ---
 

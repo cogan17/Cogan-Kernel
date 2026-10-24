@@ -1,5 +1,5 @@
 ### AnyKernel3 Ramdisk Mod Script
-## Cogan Kernel · Xiaomi 14T Pro (rothko) · github.com/cogan17/Xiomi_14T_Pro
+## Cogan Kernel · Xiaomi 14T Pro (rothko) · github.com/cogan17/Cogan-Kernel
 ## Only the kernel in boot changes: split_boot + flash_boot keep the phone's boot header and
 ## ramdisk; vendor_boot, init_boot, vbmeta and dtbo are never touched.
 

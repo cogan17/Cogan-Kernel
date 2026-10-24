@@ -36,7 +36,7 @@ Salin hasilnya ke **PC atau flashdisk**, jangan hanya di HP. Simpan juga `boot.i
 ## 3. Setelah menyala
 
 1. Pasang aplikasi root manager dari paket rilis yang sama (**KernelSU Next** atau **BakaSU**, sesuai ZIP kernel), lalu metamodule **NoMount**.
-2. *Opsional:* modul **[Cogan Smart Kernel](https://github.com/cogan17/Xiomi_14T_Pro/blob/main/modules/cogan-smart/README.md)**. Pengembangannya sedang diparkir (hanya perbaikan bug); kernel berjalan normal tanpanya. Bila dipasang, reboot sekali, lalu cek di WebUI modul: **"Identitas asli · terverifikasi"** dan **"✓ kernel dibuat untuk HP ini"**.
+2. *Opsional:* modul **[Cogan Smart Kernel](https://github.com/cogan17/Cogan-Kernel/blob/main/modules/cogan-smart/README.md)**. Pengembangannya sedang diparkir (hanya perbaikan bug); kernel berjalan normal tanpanya. Bila dipasang, reboot sekali, lalu cek di WebUI modul: **"Identitas asli · terverifikasi"** dan **"✓ kernel dibuat untuk HP ini"**.
 
 > 💡 Versi kernel di Setelan bisa tampil lain (mis. `6.1.170`). Itu SUSFS yang menyamarkan `uname`. Identitas asli dibaca modul Cogan Smart lewat Cogan Bridge.
 

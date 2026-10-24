@@ -2,7 +2,7 @@
 
 [← Kembali ke README](../README.md) · <img src="https://flagcdn.com/24x18/gb.png" width="22" alt=""> [English](masalah-dan-log.en.md)
 
-Ada kendala? Kumpulkan log di bawah, lalu laporkan di **[Issues](https://github.com/cogan17/Xiomi_14T_Pro/issues)** atau **[Komunitas Telegram](https://t.me/coganTWRP)** beserta versi kernel (`r…`), versi HyperOS, dan apa yang terjadi.
+Ada kendala? Kumpulkan log di bawah, lalu laporkan di **[Issues](https://github.com/cogan17/Cogan-Kernel/issues)** atau **[Komunitas Telegram](https://t.me/coganTWRP)** beserta versi kernel (`r…`), versi HyperOS, dan apa yang terjadi.
 
 ---
 

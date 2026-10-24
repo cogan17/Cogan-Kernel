@@ -40,10 +40,10 @@ elif [[ "$1 $2" == "release create" ]]; then
     denied) echo 'HTTP 403: Resource not accessible by integration' >&2; exit 1;;
     server-error) echo 'HTTP 500: server error' >&2; exit 1;;
   esac
-  echo 'https://github.com/cogan17/Xiomi_14T_Pro/releases/tag/v26.10.24-r2'
-elif [[ "$1 $2" == "api repos/cogan17/Xiomi_14T_Pro/contents/.github?ref=$SOURCE_SHA" ]]; then
+  echo 'https://github.com/cogan17/Cogan-Kernel/releases/tag/v26.10.24-r2'
+elif [[ "$1 $2" == "api repos/cogan17/Cogan-Kernel/contents/.github?ref=$SOURCE_SHA" ]]; then
   echo "$WORKFLOWS_AT_SOURCE"
-elif [[ "$1 $2" == "api repos/cogan17/Xiomi_14T_Pro/contents/.github?ref=$GITHUB_SHA" ]]; then
+elif [[ "$1 $2" == "api repos/cogan17/Cogan-Kernel/contents/.github?ref=$GITHUB_SHA" ]]; then
   echo "$WORKFLOWS_AT_MAIN"
 else
   echo "Unexpected request: $*" >&2
@@ -52,7 +52,7 @@ fi
 ''')
         gh.chmod(0o755)
         self.env = dict(os.environ, PATH=f"{self.root / 'bin'}:{os.environ['PATH']}",
-                        CASE="success", GITHUB_REPOSITORY="cogan17/Xiomi_14T_Pro",
+                        CASE="success", GITHUB_REPOSITORY="cogan17/Cogan-Kernel",
                         GITHUB_SERVER_URL="https://github.com", SOURCE_RUN="40046361218",
                         SOURCE_SHA=SOURCE_SHA, GITHUB_SHA=MAIN_SHA,
                         WORKFLOWS_AT_SOURCE="tree1", WORKFLOWS_AT_MAIN="tree1",

@@ -2,7 +2,7 @@
 
 [← Kembali ke README](../README.md) · <img src="https://flagcdn.com/24x18/gb.png" width="22" alt=""> [English](keaslian-dan-kredit.en.md)
 
-Kernel Cogan untuk Xiaomi 14T Pro (`rothko`) dibangun otomatis oleh GitHub Actions di **[cogan17/Xiomi_14T_Pro](https://github.com/cogan17/Xiomi_14T_Pro)**. ZIP kernel **ditandatangani secara digital** (artifact attestation) oleh workflow build repo ini, jadi siapa pun bisa membuktikan asal-usulnya.
+Kernel Cogan untuk Xiaomi 14T Pro (`rothko`) dibangun otomatis oleh GitHub Actions di **[cogan17/Cogan-Kernel](https://github.com/cogan17/Cogan-Kernel)** (sampai 24 Okt 2026 bernama `Xiomi_14T_Pro`; tautan lama dialihkan GitHub). ZIP kernel **ditandatangani secara digital** (artifact attestation) oleh workflow build repo ini, jadi siapa pun bisa membuktikan asal-usulnya.
 
 Repo ini lanjutan dari **[cogan17/Kernel-14t-pro](https://github.com/cogan17/Kernel-14t-pro)**. Rilis lama dari repo itu disalin ke sini sebagai **arsip** (lihat [Arsip rilis](#-arsip-rilis)). File arsip tidak berubah satu bit pun: SHA256-nya sama, dan tanda tangannya tetap atas nama repo asalnya.
 
@@ -12,14 +12,15 @@ Repo ini lanjutan dari **[cogan17/Kernel-14t-pro](https://github.com/cogan17/Ker
 
 ## Cara cek keaslian
 
-1. **Halaman bukti:** [github.com/cogan17/Xiomi_14T_Pro/attestations](https://github.com/cogan17/Xiomi_14T_Pro/attestations) untuk build repo ini; [github.com/cogan17/Kernel-14t-pro/attestations](https://github.com/cogan17/Kernel-14t-pro/attestations) untuk rilis arsip.
+1. **Halaman bukti:** [github.com/cogan17/Cogan-Kernel/attestations](https://github.com/cogan17/Cogan-Kernel/attestations) untuk build repo ini; [github.com/cogan17/Kernel-14t-pro/attestations](https://github.com/cogan17/Kernel-14t-pro/attestations) untuk rilis arsip.
 2. **Lewat GitHub CLI:**
    ```
-   gh attestation verify <zip> --repo cogan17/Xiomi_14T_Pro     # build repo ini
-   gh attestation verify <zip> --repo cogan17/Kernel-14t-pro    # rilis arsip r5, r6, r8 (tag arsip-…)
+   gh attestation verify <zip> --repo cogan17/Cogan-Kernel     # build repo ini setelah ganti nama (24 Okt 2026)
+   gh attestation verify <zip> --repo cogan17/Xiomi_14T_Pro    # r1, r2 dan build lain sebelum ganti nama
+   gh attestation verify <zip> --repo cogan17/Kernel-14t-pro   # rilis arsip r5, r6, r8 (tag arsip-…)
    ```
-   Hanya ZIP asli yang lolos.
-3. **Halaman run di [Actions](https://github.com/cogan17/Xiomi_14T_Pro/actions):** tiap build menampilkan hasil gate KMI, versi setiap komponen, daftar fitur, dan sha256 ZIP-nya.
+   Hanya ZIP asli yang lolos. Tanda tangan menyimpan nama repo saat build, jadi r1 dan r2 tetap menyebut `Xiomi_14T_Pro` (repo yang sama, sebelum ganti nama). `--owner cogan17` menerima ketiganya.
+3. **Halaman run di [Actions](https://github.com/cogan17/Cogan-Kernel/actions):** tiap build menampilkan hasil gate KMI, versi setiap komponen, daftar fitur, dan sha256 ZIP-nya.
 4. **Di HP** (Termux / terminal root manager):
    ```
    su -c cat /sys/kernel/cogan/banner
@@ -42,7 +43,7 @@ Repo ini lanjutan dari **[cogan17/Kernel-14t-pro](https://github.com/cogan17/Ker
 
 ## 📦 Arsip rilis
 
-Rilis lama dari [cogan17/Kernel-14t-pro](https://github.com/cogan17/Kernel-14t-pro/releases) (arsip r5, r6, r8) disalin apa adanya ke [Releases](https://github.com/cogan17/Xiomi_14T_Pro/releases) repo ini: judulnya diawali **📦 Arsip** dan tag kernelnya berawalan `arsip-`. Setiap rilis membawa catatan, `checksums.txt` dan tanda tangan repo asalnya sendiri. Rilis dan SHA256 modul Cogan Smart Kernel ada di [README modul](../modules/cogan-smart/README.md).
+Rilis lama dari [cogan17/Kernel-14t-pro](https://github.com/cogan17/Kernel-14t-pro/releases) (arsip r5, r6, r8) disalin apa adanya ke [Releases](https://github.com/cogan17/Cogan-Kernel/releases) repo ini: judulnya diawali **📦 Arsip** dan tag kernelnya berawalan `arsip-`. Setiap rilis membawa catatan, `checksums.txt` dan tanda tangan repo asalnya sendiri. Rilis dan SHA256 modul Cogan Smart Kernel ada di [README modul](../modules/cogan-smart/README.md).
 
 ---
 
