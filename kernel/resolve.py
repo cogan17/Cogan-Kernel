@@ -23,6 +23,8 @@ import re
 import subprocess
 import sys
 import tempfile
+import time
+import urllib.error
 import urllib.request
 from pathlib import Path
 
@@ -76,12 +78,20 @@ def ls_remote(url, *patterns):
     return refs
 
 
-def http(url, token=None):
+def http(url, token=None, attempts=3, sleep=time.sleep):
     headers = {"Accept": "application/vnd.github+json", "User-Agent": "cogan-rothko-builder"}
     if token and "api.github.com" in url:
         headers["Authorization"] = "Bearer " + token
-    with urllib.request.urlopen(urllib.request.Request(url, headers=headers), timeout=60) as response:
-        return response.read()
+    for attempt in range(1, attempts + 1):
+        try:
+            with urllib.request.urlopen(urllib.request.Request(url, headers=headers), timeout=60) as response:
+                return response.read()
+        except urllib.error.HTTPError as error:
+            # googlesource answers 429 when asked too often: wait as it says, then try again.
+            if error.code not in (429, 503) or attempt == attempts:
+                raise
+            retry = error.headers.get("Retry-After", "") if error.headers else ""
+            sleep(int(retry) if retry.isdigit() else 15 * attempt)
 
 
 def api(path):
@@ -119,8 +129,14 @@ def pick_ack(releases, wanted, sublevel_of=ack_sublevel):
         if not re.fullmatch(r"\d+(,\d+)*", wanted.replace(" ", "")):
             raise ValueError("Kernel Sublevel: lts, a number such as 176, several (162,172) or semua")
         numbers = {int(n) for n in wanted.replace(" ", "").split(",")}
-    picked = {}
+    picked, months = {}, set()
     for tag, sha in releases:  # newest first: the first release of a sublevel is its newest
+        # Every _rN of a month comes from that month's release branch, at the same sublevel:
+        # read one Makefile per month (googlesource refuses too many requests, HTTP 429).
+        month = tag.rsplit("_r", 1)[0]
+        if month in months:
+            continue
+        months.add(month)
         sublevel = sublevel_of(tag)
         if sublevel not in picked and (numbers is None or sublevel in numbers):
             picked[sublevel] = (tag, sha, sublevel)
