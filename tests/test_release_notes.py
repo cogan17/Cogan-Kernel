@@ -28,6 +28,14 @@ class ReleaseNotesTest(unittest.TestCase):
         self.assertIn("**Diuji owner di Xiaomi 14T Pro.**", text)
         self.assertIn("> baris 1\n> line 2", text)
 
+    def test_unicode_fix_line_only_when_built_with_it(self):
+        line = "- Unicode fix: WildKernel `fa76c90e2cb2`"
+        self.assertNotIn("Unicode fix", rn.notes(ENV, FILES, "https://run", "cogan17/Xiomi_14T_Pro"))
+        self.assertNotIn("Unicode fix", rn.notes({**ENV, "UNICODE_FIX": "-"}, FILES, "https://run", "cogan17/Xiomi_14T_Pro"))
+        text = rn.notes({**ENV, "UNICODE_FIX": "fa76c90e2cb284e6ce22b0b008ad4dd19820dbb1"}, FILES, "https://run",
+                        "cogan17/Xiomi_14T_Pro")
+        self.assertIn(line, text)
+
 
 if __name__ == "__main__":
     unittest.main()

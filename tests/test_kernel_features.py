@@ -17,12 +17,32 @@ CONFIG_LTO_CLANG_FULL=y
 # CONFIG_LTO_CLANG_THIN is not set
 """
 BBR_V3_SOURCE = "/* BBR v3 */\n#define BBR_VERSION\t\t3\n"
+# fs/unicode/utf8-norm.c around the decomposition step, before and after WildKernel's unicode fix.
+UTF8_STOCK = """\t\t} else if (ccc == DECOMPOSE) {
+\t\t\tu8c->len -= utf8clen(u8c->s);
+\t\t\tu8c->p = u8c->s + utf8clen(u8c->s);
+\t\t\tu8c->s = LEAF_STR(leaf);
+\t\t\t/* Empty decomposition implies CCC 0. */
+\t\t\tif (*u8c->s == '\\0') {
+"""
+UTF8_FIXED = """\t\t} else if (ccc == DECOMPOSE) {
+\t\t\t// Check if the decomposition result is empty (e.g., zero-width space)
+\t\t\tif (*LEAF_STR(leaf) == '\\0') {
+\t\t\t\tccc = STOPPER;
+"""
 
 
 class KernelFeaturesTests(unittest.TestCase):
     def test_full_ksun_susfs_build(self):
         self.assertEqual(kf.features(FULL, BBR_V3_SOURCE),
                          ["SUSFS", "BBRv3 (default)", "BBG", "NoMount", "Full LTO"])
+
+    def test_unicode_fix_is_read_from_the_source(self):
+        config = FULL + "CONFIG_UNICODE=y\n"
+        self.assertEqual(kf.features(config, BBR_V3_SOURCE, UTF8_FIXED),
+                         ["SUSFS", "BBRv3 (default)", "BBG", "NoMount", "Unicode fix", "Full LTO"])
+        self.assertNotIn("Unicode fix", kf.features(config, BBR_V3_SOURCE, UTF8_STOCK))
+        self.assertNotIn("Unicode fix", kf.features(FULL, BBR_V3_SOURCE, UTF8_FIXED))  # no CONFIG_UNICODE
 
     def test_cogan_bridge_is_reported(self):
         self.assertEqual(kf.features(FULL + "CONFIG_COGAN_BRIDGE=y\n", BBR_V3_SOURCE),

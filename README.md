@@ -61,6 +61,7 @@
 - ✅ **BBRv3** sebagai TCP bawaan (`bbr` dan `bbr3`)
 - ✅ **Cogan Bridge**: kernel dan modul Cogan Smart saling mengenal (`/sys/kernel/cogan`)
 - ✅ Full LTO, cek perangkat di ZIP (hanya `rothko`)
+- ⚙️ Opsional, mati secara default: **Unicode fix** (WildKernel). Nama file berisi karakter tak terlihat (mis. zero-width) di penyimpanan internal tidak lagi dianggap sama dengan nama tanpa karakter itu (celah *unicode bypass* untuk menemukan path yang disembunyikan)
 - ✅ Tiap build dicek otomatis terhadap ABI kernel bawaan (gate KMI); gagal = tidak ada ZIP
 
 </details>

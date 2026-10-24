@@ -108,7 +108,7 @@ aeae97436cf3c83f032d4d2a837581cd51b56c93eaf952e459f358d20ce39931  4-NOMOUNT-MODU
 | **[AnyKernel3](https://github.com/osm0sis/AnyKernel3)** (osm0sis) | Kernel ZIP installer |
 | **[Neutron Clang](https://github.com/Neutron-Toolchains)** | Kernel compiler |
 | **[Kernel Flasher](https://github.com/fatalcoder524/KernelFlasher)** (fatalcoder524) | Flashing and `boot` backup app |
-| **[WildKernels](https://github.com/WildKernels/GKI_KernelSU_SUSFS)** | Inspiration for the build workflow form |
+| **[WildKernels](https://github.com/WildKernels/GKI_KernelSU_SUSFS)** | Inspiration for the build workflow form and Validate; the optional Unicode fix patch from [kernel_patches](https://github.com/WildKernels/kernel_patches) |
 | **GKI-Duchamp · AK3-GKID** (Ahmed Al-Nassif) | Base of the early kernel experiments (no longer used) |
 | **[cogan17/Cogan](https://github.com/cogan17/Cogan)** | Origin of the build engine |
 

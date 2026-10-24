@@ -108,7 +108,7 @@ aeae97436cf3c83f032d4d2a837581cd51b56c93eaf952e459f358d20ce39931  4-NOMOUNT-MODU
 | **[AnyKernel3](https://github.com/osm0sis/AnyKernel3)** (osm0sis) | Installer ZIP kernel |
 | **[Neutron Clang](https://github.com/Neutron-Toolchains)** | Compiler kernel |
 | **[Kernel Flasher](https://github.com/fatalcoder524/KernelFlasher)** (fatalcoder524) | Aplikasi flash dan cadangan `boot` |
-| **[WildKernels](https://github.com/WildKernels/GKI_KernelSU_SUSFS)** | Inspirasi tampilan form workflow build |
+| **[WildKernels](https://github.com/WildKernels/GKI_KernelSU_SUSFS)** | Inspirasi tampilan form workflow build dan Validate; patch Unicode fix opsional dari [kernel_patches](https://github.com/WildKernels/kernel_patches) |
 | **GKI-Duchamp · AK3-GKID** (Ahmed Al-Nassif) | Dasar percobaan kernel awal (tidak dipakai lagi) |
 | **[cogan17/Cogan](https://github.com/cogan17/Cogan)** | Asal mesin build |
 
