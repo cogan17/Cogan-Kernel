@@ -139,7 +139,7 @@
     <label class="f">Lanjut cas di (%) <input id="sCHARGE_RESUME" type="number" min="40" max="99"></label>
     <div id="chargePolicy" class="muted" style="margin:8px 0"></div>
     <label class="f">Jeda cas karena suhu oleh modul <input id="sCHARGE_THERMAL" type="checkbox"></label>
-    <p class="muted">Bawaan: aktif. Cas dijeda sebentar bila baterai terlalu panas atau, di Kernel Default, bila cas membuat Badan HP panas; lanjut setelah turun 3 °C. Matikan untuk menyerahkan suhu cas sepenuhnya ke sistem HP.</p>
+    <p class="muted">Bawaan: mati. Suhu cas diatur sistem HP (HyperCharge). Nyalakan untuk jeda tambahan dari modul: cas dijeda bila baterai terlalu panas atau, di Kernel Default, bila cas membuat Badan HP panas; lanjut setelah turun 3 °C.</p>
     <label class="f">Jeda bila baterai ≥ (°C) <input id="sBATT_TEMP_STOP" type="number" min="35" max="50"></label>
     <label class="f">Kernel Default: jeda cas bila cas bikin panas <input id="sHEAT_PAUSE_CHARGE" type="checkbox"></label>
     <div class="row">
@@ -155,7 +155,7 @@
     <label class="f">Kernel Default: ambang Badan HP (°C) <input id="sTARGET_TEMP" type="number" min="38" max="46"></label>
     <label class="f">Performa: rem di Badan HP (°C) <input id="sGAME_LIMIT" type="number" min="40" max="50"></label>
     <label class="f">Hemat: CPU besar maks (%) <input id="sSAVER_CAP" type="number" min="30" max="90"></label>
-    <p class="muted">Ambang mode dibaca dari suhu Badan HP (yang terasa di tangan). Hemat 2 °C di bawah Kernel Default. Langkah halus: mulai 1 °C sebelum ambang, CPU besar turun 10% per langkah sampai 60%, CPU kecil (yang menjaga UI tetap lancar) paling akhir dan tidak di bawah 80%. Di semua mode ada rem darurat bila prosesor ≥ 95 °C.</p>
+    <p class="muted">Ambang mode dibaca dari suhu Badan HP (yang terasa di tangan). Hemat 2 °C di bawah Kernel Default. Langkah halus: mulai 1 °C sebelum ambang, CPU besar turun 10% per langkah sampai 60%, CPU kecil (yang menjaga UI tetap lancar) paling akhir dan tidak di bawah 80%. CPU hanya diturunkan saat prosesor bekerja (≥ 60 °C); panas dari cas atau ruangan tidak membuat CPU diturunkan. Di semua mode ada rem darurat bila prosesor ≥ 95 °C.</p>
     <label class="f">Performa: boost aplikasi di layar <input id="sGAME_BOOST" type="checkbox"></label>
     <label class="f">Cek tiap (detik) <input id="sINTERVAL" type="number" min="5" max="60"></label>
     <label class="f">Terapkan ulang tiap interval <input id="sFORCE" type="checkbox"></label>
@@ -251,7 +251,7 @@ function render(s) {
   const sensorAge = s.sensor_ts ? Math.max(0, Math.floor(Date.now() / 1000) - s.sensor_ts) : -1;
   $('limitLine').title = sensorAge >= 0 ? `Sensor langsung · ${sensorAge} dtk lalu` : 'Sensor tidak tersedia';
   if (st && s.running) {
-    $('cpuLine').textContent = [body > -9999 && (s.body_from === 'battery' ? 'Baterai (tanpa sensor Badan HP)' : 'Badan HP'), cpu, `target batas CPU besar ${st.big}%`, `kecil ${st.little}%`, st.brake ? `rem darurat prosesor ≥ ${s.brake} °C` : ''].filter(Boolean).join(' · ');
+    $('cpuLine').textContent = [body > -9999 && (s.body_from === 'battery' ? 'Baterai (tanpa sensor Badan HP)' : 'Badan HP'), cpu, `target batas CPU besar ${st.big}%`, `kecil ${st.little}%`, st.brake ? `rem darurat prosesor ≥ ${s.brake} °C` : '', !st.brake && st.busy === 0 && body >= (limit - 1) * 10 ? 'prosesor santai: CPU tidak diturunkan' : ''].filter(Boolean).join(' · ');
     $('causeLine').textContent = [st.cause && `Penyebab: ${st.cause}`, st.app && `Aplikasi: ${st.app}`, st.boost ? 'Boost Performa aktif' : '', st.native_cooling ? 'Cooling CPU kernel aktif' : ''].filter(Boolean).join(' · ');
   } else {
     $('cpuLine').textContent = [cpu, 'pengendali berhenti'].filter(Boolean).join(' · ');

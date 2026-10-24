@@ -28,7 +28,7 @@ GAME_BOOST=1           # Performa: give the app on screen a minimum CPU share (u
 CHARGE_CTRL=1          # auto cut charging on/off
 CHARGE_STOP=95         # owner default, retained settings are not silently changed
 CHARGE_RESUME=90
-CHARGE_THERMAL=1       # module heat pauses on top of the phone's own (owner 2026-10-24); 0 = the phone only
+CHARGE_THERMAL=0       # 0 = HyperCharge and the phone manage charging heat (owner 2026-10-24); 1 = module pauses too
 BATT_TEMP_STOP=42      # optional module pause threshold, only when CHARGE_THERMAL=1
 HEAT_PAUSE_CHARGE=1    # Kernel Default: pause while charging heats the phone body, gated by CHARGE_THERMAL
 INTERVAL=10            # seconds between checks
@@ -36,11 +36,13 @@ FORCE=0               # 1 = reapply supported controls on every check
 AUTOSTART=1
 CTRL_VER=2             # 2 = thresholds are phone body temperatures; older configs meant the processor
 CPU_BRAKE=95           # every mode: emergency brake when the processor reaches this (°C), not a setting
+CPU_WORK=60            # the CPU is lowered only while the processor works this hot (°C): an idle CPU, or heat
+                       # from charging or the room, is not what a lower CPU cap cools (owner 2026-10-24)
 . "$MODROOT/bridge.sh"
 
 defaults() {
   MODE=seimbang; TARGET_TEMP=42; GAME_LIMIT=45; SAVER_CAP=60; GAME_BOOST=1
-  CHARGE_CTRL=1; CHARGE_STOP=95; CHARGE_RESUME=90; CHARGE_THERMAL=1; BATT_TEMP_STOP=42
+  CHARGE_CTRL=1; CHARGE_STOP=95; CHARGE_RESUME=90; CHARGE_THERMAL=0; BATT_TEMP_STOP=42
   HEAT_PAUSE_CHARGE=1; INTERVAL=10; FORCE=0; AUTOSTART=1; CTRL_VER=2
 }
 
@@ -78,9 +80,8 @@ load_config() {
   done < "$CONFIG"
   [ "$CHARGE_RESUME" -lt "$CHARGE_STOP" ] || CHARGE_RESUME=$((CHARGE_STOP - 5))
   # A config from v2.8 and older: its temperatures were processor thresholds, so they do not carry
-  # over to the phone body, and the owner turned the module's charging heat pause on again
-  # (2026-10-24). Everything else (mode, charge limits, interval) stays as the user saved it.
-  if [ "$CTRL_VER" != 2 ]; then TARGET_TEMP=42; GAME_LIMIT=45; CHARGE_THERMAL=1; CTRL_VER=2; fi
+  # over to the phone body. Everything else (mode, charging, interval) stays as the user saved it.
+  if [ "$CTRL_VER" != 2 ]; then TARGET_TEMP=42; GAME_LIMIT=45; CTRL_VER=2; fi
 }
 
 write_config() {

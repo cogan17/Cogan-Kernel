@@ -15,20 +15,21 @@ Indonesia:
   (A720, yang menjaga UI tetap lancar) ke 90% dan 80%. Batas terdalam 60/80%, bukan 40%.
   Badan HP berubah pelan, jadi tiap langkah ditunggu tiga kali cek; naik lagi setelah tiga
   kali cek ≥ 1,5 °C di bawah ambang. Hemat tetap turun dari batasnya sendiri.
-- Simulasi pada log owner: Kernel Default berjalan penuh ±75% waktu, ±9% hanya diturunkan
-  ringan (CPU besar 80–90%), dan langkah terdalam 60/80% ±12% (saat Badan HP lama ≥ 42 °C).
-- Jeda cas karena suhu oleh modul kini **aktif secara bawaan** (owner): cas dijeda bila
-  baterai ≥ 42 °C atau, di Kernel Default, bila cas membuat Badan HP ≥ ambang; lanjut setelah
-  turun 3 °C. Dari log owner, 35% waktu Badan HP ≥ 42 °C terjadi saat mengecas. Bisa
-  dimatikan di kartu Cas.
+- CPU hanya diturunkan saat prosesor bekerja (≥ 60 °C). Panas dari cas (HyperCharge),
+  ruangan atau HP yang santai tidak didinginkan oleh batas CPU, dan batas yang tertinggal dari
+  saat itu hanya memperlambat pemakaian berikutnya; saat prosesor santai batasnya dilepas
+  bertahap (owner, setelah uji HP 24 Okt: 3 jam data dengan HyperCharge 9,2 A).
+- Simulasi saat layar menyala: data 3 jam owner, CPU penuh ±89% waktu (sebelumnya ±53%) dan
+  tidak pernah ≤ 60%; log 3 hari, CPU penuh ±95% (sebelumnya ±75%).
+- Jeda cas karena suhu oleh modul tetap **mati secara bawaan** (owner: HyperCharge yang
+  mengatur); setelan yang tersimpan tidak diubah.
 - GPU: tab Daya membaca node GPU HP ini (devfreq Mali, GED, gpufreqv2) dan menampilkannya di
   Kontrol kernel. **Baca saja**, tidak ada yang ditulis; batas GPU untuk game dipasang
   setelah node ini terbukti di HP.
 - Rem darurat di semua mode: bila prosesor ≥ 95 °C, CPU diturunkan setiap cek.
 - Tanpa sensor Badan HP, suhu baterai yang dipakai.
 - Ambang suhu dari konfigurasi v2.8 dan sebelumnya (masih bermakna prosesor) diganti
-  dengan bawaan baru, dan jeda cas karena suhu dinyalakan. Mode, batas isi cas dan
-  interval tetap seperti yang disimpan.
+  dengan bawaan baru. Mode, setelan cas dan interval tetap seperti yang disimpan.
 - Tab Suhu: "panas" berarti Badan HP ≥ 42 °C (dari log owner: ±9% waktu, sebelumnya
   97%). Penyebab panas, grafik, serta rata-rata/tertinggi per aplikasi, kernel dan mode
   memakai Badan HP. Notifikasi panas juga membaca Badan HP. Prosesor tetap tampil di
@@ -36,7 +37,9 @@ Indonesia:
 - Tab Daya menampilkan Badan HP sebagai suhu utama, prosesor di sebelahnya, dan
   penanda rem darurat. Jeda cas karena panas (opsional) juga memakai Badan HP.
 - Pengujian: tes pengendali dan pencatat dengan sysfs tiruan, memakai mksh dan
-  One True Awk 20231127. Simulasi pada log 3 hari owner. Belum diuji di HP.
+  One True Awk 20231127. Simulasi pada log 3 hari dan data 3 jam owner. Uji HP owner
+  (24 Okt, versi sebelum aturan "prosesor bekerja"): Badan HP terbaca dari `quiet_therm`,
+  tab Daya/Suhu/Modul tampil, saklar cas `input_suspend` ditemukan.
 
 English:
 
@@ -53,13 +56,15 @@ English:
   60/80%, not 40%. The phone body changes slowly, so each step waits three checks; the
   CPU steps back up after three checks at least 1.5 °C below the threshold. Power saver
   still steps down from its own cap.
-- Simulated on the owner's log: Kernel Default runs at full speed about 75% of the time,
-  about 9% only lightly lowered (big cores 80–90%), and at the deepest step 60/80% about
-  12% (when the phone body stays at 42 °C or more).
-- Module charging heat pauses are now **on by default** (owner): charging pauses when the
-  battery reaches 42 °C or, in Kernel Default, when charging heats the phone body to the
-  threshold; it resumes 3 °C lower. In the owner's log, 35% of the phone-body-hot time was
-  while charging. It can be turned off in the Charging card.
+- The CPU is only lowered while the processor works (60 °C or more). Heat from charging
+  (HyperCharge), the room or an idle phone is not cooled by a CPU cap, and a cap kept from
+  then only slows the next use; with an idle processor the cap is released step by step
+  (owner, after the phone test on 24 Oct: 3 hours of data with 9.2 A HyperCharge).
+- Simulated with the screen on: the owner's 3-hour data, full CPU about 89% of the time
+  (previously about 53%) and never at 60% or less; the 3-day log, full CPU about 95%
+  (previously about 75%).
+- Module charging heat pauses stay **off by default** (owner: HyperCharge is in charge);
+  saved settings are not changed.
 - GPU: the Power tab reads this phone's GPU nodes (Mali devfreq, GED, gpufreqv2) and shows
   them under Kernel controls. **Read only**, nothing is written; a GPU limit for games comes
   once these nodes are proven on the phone.
@@ -67,8 +72,7 @@ English:
   steps down at every check.
 - Without a phone body sensor, the battery temperature is used.
 - Temperature thresholds from v2.8 and older configurations (which meant the processor)
-  are replaced by the new defaults, and the charging heat pause is turned on. Mode, charge
-  limits and interval are kept.
+  are replaced by the new defaults. Mode, charging settings and interval are kept.
 - Temperature tab: "hot" means phone body ≥ 42 °C (owner's log: about 9% of the time,
   previously 97%). Heat causes, the chart and per-app, per-kernel and per-mode
   average/peak use the phone body. The heat notification reads the phone body too. The
@@ -78,7 +82,9 @@ English:
   and an emergency-brake marker. The optional heat-based charging pause uses the phone
   body as well.
 - Validation: controller and recorder tests on a fake sysfs with mksh and One True Awk
-  20231127, plus a simulation on the owner's 3-day log. Not yet tested on the phone.
+  20231127, plus simulations on the owner's 3-day log and 3-hour data. Owner's phone test
+  (24 Oct, the version before the "processor works" rule): the phone body reads from
+  `quiet_therm`, the Power/Temperature/Modules tabs work, charging switch `input_suspend` found.
 
 ## Penyesuaian HyperCharge / HyperCharge adjustment — v2.8.2
 

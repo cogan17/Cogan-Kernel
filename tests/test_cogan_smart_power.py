@@ -179,7 +179,7 @@ class PowerModeTests(unittest.TestCase):
         self.assertEqual(self.phone.caps(), {"policy0": 2000000, "policy4": 3000000, "policy7": 3250000})
 
     def test_balanced_steps_the_cpu_down_and_back_up(self):
-        self.phone.set_temp(60.0)
+        self.phone.set_temp(65.0)                                         # the processor works
         self.phone.set_body(42.5)
         state = self.phone.step()
         self.assertEqual((state["mode"], state["limit"], state["level"], state["big"]), ("seimbang", 42, 1, 90))
@@ -204,6 +204,7 @@ class PowerModeTests(unittest.TestCase):
 
     def test_smooth_steps_big_cores_first_little_cores_last(self):
         # Owner 2026-10-24, "as smooth as possible": from 1 °C under the limit only two gentle steps.
+        self.phone.set_temp(65.0)
         self.phone.set_body(41.2)
         levels = [self.phone.step()["level"] for _ in range(12)]
         self.assertEqual(max(levels), 2)
@@ -216,6 +217,20 @@ class PowerModeTests(unittest.TestCase):
         self.assertEqual(sorted(set(caps), reverse=True), [(70, 100), (60, 100), (60, 90), (60, 80)])
         self.assertEqual(caps[-1], (60, 80))
         self.assertEqual(self.phone.caps(), {"policy0": 1500000, "policy4": 1500000, "policy7": 1200000})
+
+    def test_an_idle_processor_is_not_lowered(self):
+        # Heat from charging, the room or an idle phone: a lower CPU cap does not cool it, and a cap kept
+        # from then would only slow the next use (owner 2026-10-24).
+        self.phone.set_body(43.5)
+        self.phone.set_temp(52.0)
+        self.assertEqual([self.phone.step()["level"] for _ in range(6)], [0] * 6)
+        self.phone.set_temp(66.0)                                         # the processor works: steps
+        self.assertEqual([self.phone.step()["level"] for _ in range(5)], [1, 1, 1, 2, 2])
+        self.phone.set_temp(55.0)                                         # idle again: speed comes back
+        levels = [self.phone.step()["level"] for _ in range(6)]
+        self.assertEqual(levels, [2, 2, 1, 1, 1, 0])
+        state = self.phone.step()
+        self.assertEqual((state["busy"], state["big"], state["little"]), (0, 100, 100))
 
     def test_processor_brake_in_every_mode(self):
         self.phone.set_body(36.0)
@@ -253,7 +268,7 @@ class PowerModeTests(unittest.TestCase):
         config = self.phone.report("status")["config"]
         self.assertEqual((config["mode"], config["TARGET_TEMP"], config["GAME_LIMIT"], config["CHARGE_STOP"], config["INTERVAL"]),
                          ("game", 42, 45, 80, 15))
-        self.assertEqual(config["CHARGE_THERMAL"], 1)                      # the owner turned the heat pause on again
+        self.assertEqual(config["CHARGE_THERMAL"], 0)                      # kept as saved
         self.assertEqual(self.phone.report("set", "TARGET_TEMP", "44"), {"ok": 1})
         self.assertIn("CTRL_VER=2", (self.phone.data / "config").read_text())
         config = self.phone.report("status")["config"]
@@ -261,7 +276,7 @@ class PowerModeTests(unittest.TestCase):
 
     def test_saver_and_game(self):
         self.assertEqual(self.phone.report("mode", "hemat"), {"ok": 1})
-        self.phone.set_temp(55.0)
+        self.phone.set_temp(65.0)
         self.phone.set_body(35.0)
         state = self.phone.step()
         self.assertEqual((state["limit"], state["big"], state["little"]), (40, 60, 80))
@@ -303,11 +318,11 @@ class PowerModeTests(unittest.TestCase):
         self.save_switch()
         self.phone.set_body(36.0)   # a hot battery pauses charging; the CPU follows the phone body
         self.phone.set_battery(50, "Charging", 42.5)
-        # Opted out (CHARGE_THERMAL=0): the phone manages charging heat, HyperCharge is not paused.
-        self.assertEqual(self.phone.report("set", "CHARGE_THERMAL", "0"), {"ok": 1})
+        # Default (CHARGE_THERMAL=0, owner 2026-10-24): HyperCharge and the phone manage charging heat.
+        self.assertEqual(self.phone.report("status")["config"]["CHARGE_THERMAL"], 0)
         self.assertEqual(self.phone.step()["charge_off"], "")
         self.assertEqual(self.phone.node("input_suspend"), "0")
-        # The default since v2.9.0 (owner 2026-10-24): the battery threshold and the Kernel Default heat pause.
+        # Opted in, the battery threshold and the Kernel Default heat pause apply.
         self.assertEqual(self.phone.report("set", "CHARGE_THERMAL", "1"), {"ok": 1})
         self.phone.start_recorder()
         self.assertEqual(self.phone.step()["charge_off"], "baterai")
@@ -318,6 +333,7 @@ class PowerModeTests(unittest.TestCase):
         # Cogan Thermal Monitor says charging heats the phone: Seimbang pauses charging.
         self.phone.set_battery(50, "Charging", 35.0)
         self.phone.set_body(43.0)
+        self.phone.set_temp(65.0)                                         # and the processor works
         self.phone.monitor_report("Cas cepat")
         state = self.phone.step()
         self.assertEqual((state["charge_off"], state["source"], state["cause"]), ("panas", "monitor", "Cas cepat"))
@@ -346,7 +362,7 @@ class PowerModeTests(unittest.TestCase):
     def test_failsafe_and_switch_off(self):
         self.save_switch()
         self.phone.set_battery(90, "Charging", 44.0)
-        self.assertEqual(self.phone.step()["charge_off"], "batas baterai")   # full enough, and the battery is hot
+        self.assertEqual(self.phone.step()["charge_off"], "batas")      # heat alone pauses only when opted in
         self.phone.set_battery(12, "Discharging", 44.0)                   # nearly empty: always charge
         self.assertEqual(self.phone.step()["charge_off"], "")
         self.phone.set_battery(90, "Charging", 30.0)

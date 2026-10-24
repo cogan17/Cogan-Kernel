@@ -1,6 +1,6 @@
 # Cogan Smart Kernel (modul)
 
-**Versi terbaru: v2.8.2** (`versionCode` 16). v2.9.0 (mode mengikuti Badan HP, langkah halus, jeda cas karena suhu aktif lagi) menunggu uji HP. Catatan perubahan lengkap ada di [`CHANGELOG.md`](CHANGELOG.md).
+**Versi terbaru: v2.8.2** (`versionCode` 16). v2.9.0 (mode mengikuti Badan HP, langkah halus, CPU hanya diturunkan saat prosesor bekerja) menunggu uji HP. Catatan perubahan lengkap ada di [`CHANGELOG.md`](CHANGELOG.md).
 
 ## ⬇️ Unduh
 
@@ -46,9 +46,9 @@ Langkah halus (Kernel Default dan Performa):
 | 1–4 | 90 → 60 % | 100 % |
 | 5–6 | 60 % | 90 → 80 % |
 
-Mulai 1 °C sebelum ambang dengan langkah 1–2 saja; tiap langkah ditunggu tiga kali cek (Badan HP berubah pelan); naik lagi setelah tiga kali cek ≥ 1,5 °C di bawah ambang. Hemat turun 10 % dari `SAVER_CAP`. Di semua mode ada **rem darurat** bila prosesor ≥ 95 °C. Cogan Bridge ABI 1 memberi satu batas untuk semua inti X4 dan satu untuk A720.
+Mulai 1 °C sebelum ambang dengan langkah 1–2 saja; tiap langkah ditunggu tiga kali cek (Badan HP berubah pelan); naik lagi setelah tiga kali cek ≥ 1,5 °C di bawah ambang. CPU hanya diturunkan saat prosesor bekerja (≥ 60 °C): panas dari cas, ruangan atau HP yang santai tidak membuat CPU diturunkan, dan saat prosesor santai batasnya dilepas bertahap. Hemat turun 10 % dari `SAVER_CAP`. Di semua mode ada **rem darurat** bila prosesor ≥ 95 °C. Cogan Bridge ABI 1 memberi satu batas untuk semua inti X4 dan satu untuk A720.
 
-Jeda cas karena suhu (`CHARGE_THERMAL`) **aktif secara bawaan** sejak v2.9.0. GPU dibaca saja (Kontrol kernel); batas GPU menyusul setelah node-nya terbukti di HP.
+Jeda cas karena suhu (`CHARGE_THERMAL`) tetap **mati secara bawaan**: HyperCharge dan sistem HP yang mengatur suhu cas. GPU dibaca saja (Kontrol kernel); batas GPU menyusul setelah node-nya terbukti di HP.
 
 **Henti** melepas semua kontrol milik modul sehingga pengaturan vendor (HyperOS/MediaTek) berjalan sendiri. Tombol Action di root manager berpindah ke mode berikutnya.
 

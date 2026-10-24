@@ -187,6 +187,7 @@ class CompanionTests(unittest.TestCase):
         root=self.p.sys/'class/thermal/cooling_device0'
         for k,v in {'type':'cpu-cooling','cur_state':'2','max_state':'8'}.items():write(root/k,v+'\n')
         self.p.set_body(45)
+        self.p.set_temp(65)
         state=self.p.step()
         self.assertEqual((state['level'],state['native_cooling']),(1,1))
         self.assertEqual([self.p.step()['level'] for _ in range(3)],[1,1,2])
