@@ -18,7 +18,7 @@ R2 = {**R1, "RELEASE": "v26.10.24-r2", "UNICODE_FIX": "fa76c90e2cb284e6ce22b0b00
 RELEASES = [  # newest first, as the API lists them
     {"tag_name": "cogan-smart-v2.8.2", "body": "module", "target_commitish": "a" * 40},
     {"tag_name": "v26.10.23-r1", "target_commitish": "e" * 40,
-     "body": rn.notes(R1, ["1-KERNEL_x.zip"], "https://run", "cogan17/Xiomi_14T_Pro", tested=True)},
+     "body": rn.notes(R1, ["1-KERNEL_x.zip"], "https://run", "cogan17/Cogan-Kernel", tested=True)},
     {"tag_name": "arsip-v26.10.23-r8", "body": "- Root: BakaSU `5b76b884c75f` + SUSFS v2.3.0 `2474336`"},
 ]
 

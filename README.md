@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/cogan17/Xiomi_14T_Pro/releases"><b>⬇️ Unduh Kernel</b></a>
+  <a href="https://github.com/cogan17/Cogan-Kernel/releases"><b>⬇️ Unduh Kernel</b></a>
   &nbsp;·&nbsp;
   <a href="docs/pasang.md"><b>📖 Panduan</b></a>
   &nbsp;·&nbsp;
@@ -21,7 +21,7 @@
 </p>
 
 > [!WARNING]
-> **Masih tahap uji.** Build yang lolos uji di HP maintainer terbit sebagai **Pre-release** di [Releases](https://github.com/cogan17/Xiomi_14T_Pro/releases); belum ada rilis resmi. Flash hanya bila kamu sudah punya cadangan `boot` dan paham cara [kembali ke stok](docs/kembali-ke-stok.md).
+> **Masih tahap uji.** Build yang lolos uji di HP maintainer terbit sebagai **Pre-release** di [Releases](https://github.com/cogan17/Cogan-Kernel/releases); belum ada rilis resmi. Flash hanya bila kamu sudah punya cadangan `boot` dan paham cara [kembali ke stok](docs/kembali-ke-stok.md).
 
 ---
 
@@ -74,15 +74,15 @@ Builder memakai rilis ACK resmi `android14-6.1` sejak kernel bawaan HP; `lts` = 
 <!-- sublevel:start -->
 | Sublevel | Rilis ACK | Status |
 |---|---|---|
-| **176** (`lts`) | `2026-09_r4` | ✅ KernelSU Next: [build + gate KMI](https://github.com/cogan17/Xiomi_14T_Pro/actions/runs/40048269498) · r1 dan r2 diuji di HP |
-| 172 | `2026-06_r14` | ✅ KernelSU Next: [build + gate KMI](https://github.com/cogan17/Xiomi_14T_Pro/actions/runs/40048269498) |
-| 162 | `2026-03_r24` | ✅ KernelSU Next: [build + gate KMI](https://github.com/cogan17/Xiomi_14T_Pro/actions/runs/40048269498) |
-| 157 | `2025-12_r32` | ✅ KernelSU Next: [build + gate KMI](https://github.com/cogan17/Xiomi_14T_Pro/actions/runs/40048269498) |
-| 145 | `2025-09_r36` | ✅ KernelSU Next: [build + gate KMI](https://github.com/cogan17/Xiomi_14T_Pro/actions/runs/40061712549) |
-| 138 | `2025-06_r17` | ✅ KernelSU Next: [build + gate KMI](https://github.com/cogan17/Xiomi_14T_Pro/actions/runs/40061712549) · kernel bawaan HP; arsip r5 diuji di HP |
+| **176** (`lts`) | `2026-09_r4` | ✅ KernelSU Next: [build + gate KMI](https://github.com/cogan17/Cogan-Kernel/actions/runs/40048269498) · r1 dan r2 diuji di HP |
+| 172 | `2026-06_r14` | ✅ KernelSU Next: [build + gate KMI](https://github.com/cogan17/Cogan-Kernel/actions/runs/40048269498) |
+| 162 | `2026-03_r24` | ✅ KernelSU Next: [build + gate KMI](https://github.com/cogan17/Cogan-Kernel/actions/runs/40048269498) |
+| 157 | `2025-12_r32` | ✅ KernelSU Next: [build + gate KMI](https://github.com/cogan17/Cogan-Kernel/actions/runs/40048269498) |
+| 145 | `2025-09_r36` | ✅ KernelSU Next: [build + gate KMI](https://github.com/cogan17/Cogan-Kernel/actions/runs/40061712549) |
+| 138 | `2025-06_r17` | ✅ KernelSU Next: [build + gate KMI](https://github.com/cogan17/Cogan-Kernel/actions/runs/40061712549) · kernel bawaan HP; arsip r5 diuji di HP |
 <!-- sublevel:end -->
 
-Unicode fix (opsional) lolos build + gate KMI di 157, 162, 172 dan 176, dan terpasang bersih di 138 dan 145 ([CI](https://github.com/cogan17/Xiomi_14T_Pro/actions/runs/40048269498)). Bila patch WildKernel belum cocok, build berhenti: lepas centang Unicode fix untuk tetap build.
+Unicode fix (opsional) lolos build + gate KMI di 157, 162, 172 dan 176, dan terpasang bersih di 138 dan 145 ([CI](https://github.com/cogan17/Cogan-Kernel/actions/runs/40048269498)). Bila patch WildKernel belum cocok, build berhenti: lepas centang Unicode fix untuk tetap build.
 
 </details>
 

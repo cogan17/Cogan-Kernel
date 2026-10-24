@@ -2,11 +2,11 @@
 
 [← Back to README](README.en.md) · <img src="https://flagcdn.com/24x18/id.png" width="22" alt=""> [Bahasa Indonesia](CHANGELOG.md)
 
-Topmost = newest build. Builds that pass the phone test are published as a **Pre-release** in [Releases](https://github.com/cogan17/Xiomi_14T_Pro/releases); there is no official release yet.
+Topmost = newest build. Builds that pass the phone test are published as a **Pre-release** in [Releases](https://github.com/cogan17/Cogan-Kernel/releases); there is no official release yet.
 
 > 📦 r2–r8 and the early experiments were made in the predecessor repository [cogan17/Kernel-14t-pro](https://github.com/cogan17/Kernel-14t-pro). Releases r5, r6 and r8 are copied to this repository's Releases as an archive with the same files. Here they are named **archive r5, archive r6, archive r8** and their tags start with `arsip-` (e.g. `arsip-v26.10.22-r5`), so they never clash with this repository's own release numbers.
 
-## r2 — 24 Oct 2026 · `6.1.176-Cogan-Rothko-ACK-r2` · [Pre-release](https://github.com/cogan17/Xiomi_14T_Pro/releases/tag/v26.10.24-r2)
+## r2 — 24 Oct 2026 · `6.1.176-Cogan-Rothko-ACK-r2` · [Pre-release](https://github.com/cogan17/Cogan-Kernel/releases/tag/v26.10.24-r2)
 
 **KernelSU Next + SUSFS** on the official Google ACK 6.1.176 (`android14-6.1-2026-09_r4`), as in r1, plus the Unicode fix.
 
@@ -17,7 +17,7 @@ Other components are the same as r1: KernelSU Next `d21e0a6` (33405), SUSFS v2.3
 
 Status: ✅ passed the owner's phone test (24 Oct): kernel `6.1.176-Cogan-Rothko-ACK-r2-35f0a136c` runs with the Unicode fix installed. Test in `/data/media/0`: `UJI.txt` still finds `uji.txt` (case-insensitive storage), but `u`+U+200B+`ji.txt` now gives `No such file or directory`. KMI gate: 0 differing symbols.
 
-## r1 — 24 Oct 2026 · `6.1.176-Cogan-Rothko-ACK-r1` · [Pre-release](https://github.com/cogan17/Xiomi_14T_Pro/releases/tag/v26.10.23-r1)
+## r1 — 24 Oct 2026 · `6.1.176-Cogan-Rothko-ACK-r1` · [Pre-release](https://github.com/cogan17/Cogan-Kernel/releases/tag/v26.10.23-r1)
 
 This repository's first release: **KernelSU Next + SUSFS** on the official Google ACK 6.1.176 (`android14-6.1-2026-09_r4`), with the newest components at build time.
 
@@ -30,7 +30,7 @@ This repository's first release: **KernelSU Next + SUSFS** on the official Googl
 
 Status: ✅ passed the owner's phone test (KernelSU Next works, SUSFS v2.3.0, NoMount v2.2.0, SELinux Enforcing; 24 Oct). KMI gate: 0 differing symbols.
 
-## archive r8 — 23 Oct 2026 · `6.1.176-Cogan-Rothko-ACK-r8` · [Pre-release](https://github.com/cogan17/Xiomi_14T_Pro/releases/tag/arsip-v26.10.23-r8)
+## archive r8 — 23 Oct 2026 · `6.1.176-Cogan-Rothko-ACK-r8` · [Pre-release](https://github.com/cogan17/Cogan-Kernel/releases/tag/arsip-v26.10.23-r8)
 
 The **BakaSU + SUSFS** variant on the official Google ACK 6.1.176. The KernelSU Next variant stays archive r6.
 
@@ -43,7 +43,7 @@ The **BakaSU + SUSFS** variant on the official Google ACK 6.1.176. The KernelSU 
 
 Status: ✅ passed the owner's phone test (BakaSU working, SUSFS v2.3.0, SELinux Enforcing; 23 Oct). KMI gate: 0 differing symbols.
 
-## archive r6 — 22 Oct 2026 · `6.1.176-Cogan-Rothko-ACK-r6` · [Pre-release](https://github.com/cogan17/Xiomi_14T_Pro/releases/tag/arsip-v26.10.22-r6)
+## archive r6 — 22 Oct 2026 · `6.1.176-Cogan-Rothko-ACK-r6` · [Pre-release](https://github.com/cogan17/Cogan-Kernel/releases/tag/arsip-v26.10.22-r6)
 
 Built from the **official Google ACK `android14-6.1-2026-09_r4` (6.1.176)**, the newest ACK release, instead of the phone's stock 6.1.138.
 
@@ -55,7 +55,7 @@ Built from the **official Google ACK `android14-6.1-2026-09_r4` (6.1.176)**, the
 
 Status: ✅ boots, and the owner's phone checks are fine (22 Oct).
 
-## archive r5 — 22 Oct 2026 · `6.1.138-Cogan-Rothko-ACK-r5` · [Pre-release](https://github.com/cogan17/Xiomi_14T_Pro/releases/tag/arsip-v26.10.22-r5)
+## archive r5 — 22 Oct 2026 · `6.1.138-Cogan-Rothko-ACK-r5` · [Pre-release](https://github.com/cogan17/Cogan-Kernel/releases/tag/arsip-v26.10.22-r5)
 
 ### 🔧 Fixed
 - The kernel's KernelSU Next version is now **33405**, the same as the official CI manager `v3.4.2-50-gb427a3f9`, so the manager no longer asks for an update (r4: 33418).

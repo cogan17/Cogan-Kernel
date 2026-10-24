@@ -2,6 +2,8 @@
 
 Repo ini lanjutan dari [cogan17/Kernel-14t-pro](https://github.com/cogan17/Kernel-14t-pro) (owner, 23 Okt 2026). Riwayat pengembangan, keputusan lama (D-001 … D-031) dan sumber BSP Xiaomi tetap di repo itu.
 
+Nama repo **`cogan17/Cogan-Kernel`** sejak 24 Okt 2026 (owner; sebelumnya `cogan17/Xiomi_14T_Pro`). GitHub mengalihkan tautan lama, asalkan nama lama tidak dipakai repo baru. Tanda tangan build sebelum ganti nama (r1, r2) tetap menyebut `Xiomi_14T_Pro`; build sesudahnya menyebut `Cogan-Kernel`.
+
 ## Tanpa atribusi AI
 
 - Author dan committer memakai identitas owner: `git config user.name Cogan` dan `git config user.email 79615344+cogan17@users.noreply.github.com`.

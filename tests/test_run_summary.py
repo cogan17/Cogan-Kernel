@@ -43,7 +43,7 @@ class RunSummaryTest(unittest.TestCase):
         (self.snapshots / "BSU.json").write_text(json.dumps({"root": "BSU", "wait": {
             "id": "Tunggu pengembang BakaSU.", "en": "Wait for the BakaSU developer."}}))
         matrix = [build("KSUN", s) for s in (176, 141, 162, 157, 145)]
-        text = rs.summary(matrix, self.info, self.snapshots, "cogan17/Xiomi_14T_Pro")
+        text = rs.summary(matrix, self.info, self.snapshots, "cogan17/Cogan-Kernel")
         self.assertIn("**1 berhasil · 4 gagal · 1 tidak dibangun**", text)
         self.assertIn("**1 built · 4 failed · 1 not built**", text)
         self.assertIn("| KernelSU Next 6.1.176 | ✅ Berhasil | `v26.10.24-r2` · gate KMI OK, CRC beda 0 |", text)
@@ -71,8 +71,8 @@ class RunSummaryTest(unittest.TestCase):
 
     def test_published_release_and_failed_signing(self):
         self.left("KSUN", 176, build_env=f"RELEASE=v26.10.24-r2\nZIP=z.zip\nZIP_SHA256={'b' * 64}\nKMI_COMPAT={KMI_OK}\n")
-        text = rs.summary([build("KSUN", 176)], self.info, self.snapshots, "cogan17/Xiomi_14T_Pro", release="success")
-        self.assertIn("Terbit: [v26.10.24-r2](https://github.com/cogan17/Xiomi_14T_Pro/releases/tag/v26.10.24-r2)", text)
+        text = rs.summary([build("KSUN", 176)], self.info, self.snapshots, "cogan17/Cogan-Kernel", release="success")
+        self.assertIn("Terbit: [v26.10.24-r2](https://github.com/cogan17/Cogan-Kernel/releases/tag/v26.10.24-r2)", text)
         self.assertIn("Published: [v26.10.24-r2]", text)
         text = rs.summary([build("KSUN", 176)], self.info, self.snapshots, "r/r", attest="failure", release="failure")
         self.assertIn("❌ Tanda tangan ZIP gagal", text)
