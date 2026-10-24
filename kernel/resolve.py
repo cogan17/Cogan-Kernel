@@ -40,7 +40,9 @@ NOMOUNT = "https://github.com/maxsteeel/nomount"
 BBG = "https://github.com/vc-teahouse/Baseband-guard"
 ANYKERNEL = "https://github.com/osm0sis/AnyKernel3"
 NEUTRON = "Neutron-Toolchains/clang-build-catalogue"
-# fs/unicode/utf8-norm.c is the same from 6.1 to 6.1.190 (ACK included): one patch for every 6.1 release.
+# The patch touches only fs/unicode/utf8-norm.c. That file is the same in Linux stable 6.1 to 6.1.190
+# (kernel.org, not ACK) and in ACK 6.1.138; proven on ACK 6.1.138 (local) and 6.1.176 (CI). Other ACK
+# releases are expected to fit; a release where it does not stops the build (wait for WildKernel).
 UNICODE_FIX = "https://github.com/WildKernels/kernel_patches"
 UNICODE_FIX_PATCH = "common/unicode_bypass_fix_6.1+.patch"
 RELEASE = re.compile(r"v(\d+)\.(\d+)\.(\d+)(?:-rc(\d+))?")
