@@ -354,7 +354,9 @@ jobs:
       - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
-          sparse-checkout: kernel/run_summary.py
+          sparse-checkout: |
+            kernel/run_summary.py
+            kernel/telegram.py
           sparse-checkout-cone-mode: false
       - uses: actions/download-artifact@v8.0.2
         continue-on-error: true
@@ -366,6 +368,20 @@ jobs:
         with:
           name: snapshots-${{ github.run_number }}
           path: snapshots
+      - name: Teks Telegram / Telegram post
+        continue-on-error: true  # best effort: the result table never depends on it
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE: ${{ needs.release.result }}
+        run: |
+          set -euo pipefail
+          mapfile -t built < <(grep -l '^ZIP_SHA256=' info/*/build.env 2>/dev/null || true)
+          [ "${#built[@]}" -eq 1 ] || { echo "Teks Telegram hanya untuk satu build / one build only"; exit 0; }
+          link="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          if [ "$RELEASE" = "success" ]; then
+            link="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/tag/$(sed -n 's/^RELEASE=//p' "${built[0]}")"
+          fi
+          python3 kernel/telegram.py "${built[0]}" --repo "$GITHUB_REPOSITORY" --sha "$GITHUB_SHA" --link "$link" --out telegram
       - name: Hasil / results
         env:
           MATRIX: ${{ needs.resolve.outputs.matrix }}
@@ -375,4 +391,4 @@ jobs:
         run: |
           mkdir -p info snapshots
           python3 kernel/run_summary.py --matrix "$MATRIX" --info info --snapshots snapshots --repo "$GITHUB_REPOSITORY" \
-            --resolve "$RESOLVE" --attest "$ATTEST" --release "$RELEASE" >> "$GITHUB_STEP_SUMMARY"
+            --resolve "$RESOLVE" --attest "$ATTEST" --release "$RELEASE" --telegram telegram >> "$GITHUB_STEP_SUMMARY"

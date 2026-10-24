@@ -78,6 +78,19 @@ class RunSummaryTest(unittest.TestCase):
         self.assertIn("❌ Tanda tangan ZIP gagal", text)
         self.assertIn("❌ Publishing failed", text)
 
+    def test_telegram_post_is_shown_in_a_code_block_for_one_build(self):
+        self.left("KSUN", 176, build_env=f"RELEASE=v26.10.24-r2\nZIP=z.zip\nZIP_SHA256={'c' * 64}\nKMI_COMPAT={KMI_OK}\n")
+        posts = Path(self.temp.name) / "telegram"
+        posts.mkdir()
+        (posts / "id.txt").write_text("🧠 Cogan Kernel\n✨ Baru\n")
+        (posts / "en.txt").write_text("🧠 Cogan Kernel\n✨ New\n")
+        text = rs.summary([build("KSUN", 176)], self.info, self.snapshots, "r/r", telegram=posts)
+        self.assertIn("**📣 Teks Telegram** (salin lewat tombol di pojok kanan atas kotak)\n\n```text\n"
+                      "🧠 Cogan Kernel\n✨ Baru\n```", text)
+        self.assertIn("**📣 Telegram post** (copy with the button at the top right of the box)\n\n```text\n"
+                      "🧠 Cogan Kernel\n✨ New\n```", text)
+        self.assertNotIn("Telegram", rs.summary([build("KSUN", 176)], self.info, self.snapshots, "r/r"))
+
     def test_cli_reads_the_workflow_matrix(self):
         import io
         from contextlib import redirect_stdout
