@@ -209,9 +209,10 @@ def ksun_manager(base, api=api):
 
 def bakasu_main(api=api):
     """(commit, manager) of the newest BakaSU main commit the official CI built a manager for.
-    Commits that only change other files get no CI run, so the newest main commit may not be it."""
+    The manager artifact is enough: the run itself may still be posting to Telegram, or fail
+    there (owner 24 Okt 2026). Commits that only change other files get no CI run."""
     repo, workflow, _ = BAKASU_CI
-    runs = api(f"repos/{repo}/actions/workflows/{workflow}/runs?branch=main&event=push&status=success&per_page=1")
+    runs = api(f"repos/{repo}/actions/workflows/{workflow}/runs?branch=main&event=push&per_page=5")
     for ci in runs.get("workflow_runs", []):
         found = ci_manager(BAKASU_CI, ci, api)
         if found:
