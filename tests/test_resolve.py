@@ -41,6 +41,29 @@ class AckTest(unittest.TestCase):
 
     def test_semua_is_every_sublevel_once(self):
         self.assertEqual([sub for _, _, sub in r.pick_ack(self.releases, "semua", self.sublevel)], [138, 145, 176])
+        # One Makefile per month: 2026-09_r2 shares the sublevel of 2026-09_r4 and is not asked.
+        self.assertEqual(self.asked, ["android14-6.1-2026-09_r4", "android14-6.1-2025-09_r36",
+                                      "android14-6.1-2025-06_r11"])
+
+    def test_http_waits_and_retries_on_too_many_requests(self):
+        import io
+        import urllib.error
+        from unittest import mock
+        calls, slept = [], []
+
+        def urlopen(request, timeout):
+            calls.append(request.full_url)
+            if len(calls) < 3:
+                raise urllib.error.HTTPError(request.full_url, 429, "Too Many Requests",
+                                             {"Retry-After": "2"} if len(calls) == 1 else {}, io.BytesIO())
+            return io.BytesIO(b"ok")
+        with mock.patch.object(r.urllib.request, "urlopen", urlopen):
+            self.assertEqual(r.http("https://example.invalid/x", sleep=slept.append), b"ok")
+        self.assertEqual((len(calls), slept), (3, [2, 30]))
+        with mock.patch.object(r.urllib.request, "urlopen", urlopen):
+            calls.clear()
+            with self.assertRaises(urllib.error.HTTPError):
+                r.http("https://example.invalid/x", attempts=1, sleep=slept.append)
 
     def test_unknown_sublevel_or_format_is_refused(self):
         with self.assertRaisesRegex(ValueError, "6.1.150"):
