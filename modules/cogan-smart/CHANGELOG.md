@@ -1,9 +1,18 @@
 # Cogan Smart Kernel v2.9.1
 
-## Nama aplikasi, batas CPU di log, sensor macet / App names, CPU cap in the log, stuck sensors — v2.9.1
+## Satu angka Badan HP, nama aplikasi, batas CPU di log, sensor macet / One phone body number, app names, CPU cap in the log, stuck sensors — v2.9.1
 
 Indonesia:
 
+- Satu angka Badan HP di semua tempat: suhu badan milik HyperOS sendiri (`hyperos_board`, dari
+  `board_sensor_temp`) bila ada, lalu sensor kulit terpanas, lalu baterai. Tab Daya, tab Suhu,
+  kartu Rem HyperOS, log dan pengendali memakai angka yang sama. Owner: "suhu masih inkonsistensi".
+  Dari CSV 6 jam owner (1.257 sampel): angka HyperOS rata-rata 0,1 °C di bawah `quiet_therm` dan
+  90% waktu dalam −0,7…+0,3 °C, jadi ambang 39/41/44 °C tetap.
+- Naik-turun: dari data yang sama, perubahan antar-sampel kecil (90% di bawah 0,3 °C); lompatan
+  besar terjadi saat prosesor bekerja keras (baterai ikut naik) atau saat HP tidur/reboot, ketika
+  log berhenti 3–5 menit. Grafik kini terputus pada jeda itu, bukan menarik garis curam, dan
+  memakai rata-rata tiap potongan waktu, bukan puncaknya; suhu tertinggi tetap di kotak Tertinggi.
 - Nama aplikasi asli di tab Suhu, ringkasan dan log yang disimpan. Nama diambil dari root manager
   (KernelSU Next dan BakaSU sama-sama menyediakan `getPackagesInfo`), paling sering tiap 6 jam,
   untuk nama paket yang belum dikenal. Contoh dari log owner: `weonse.bxmfmy.qeomje` (manager
@@ -22,6 +31,16 @@ Indonesia:
 
 English:
 
+- One phone body number everywhere: HyperOS's own body temperature (`hyperos_board`, from
+  `board_sensor_temp`) when there, else the hottest skin sensor, else the battery. The Power tab,
+  the Temperature tab, the HyperOS brakes card, the log and the controller use the same number.
+  Owner: "the temperature is still inconsistent". In the owner's 6-hour CSV (1,257 samples) the
+  HyperOS number is 0.1 °C below `quiet_therm` on average and within −0.7…+0.3 °C 90% of the time,
+  so the 39/41/44 °C thresholds stay.
+- Ups and downs: in the same data, sample-to-sample changes are small (90% under 0.3 °C); big jumps
+  come with a hard-working processor (the battery rises too) or across sleep and restarts, when the
+  log pauses for 3–5 minutes. The chart now breaks at such gaps instead of drawing a steep line, and
+  plots the average of each slice instead of its peak; the highest reading stays in the Peak tile.
 - Real app names in the Temperature tab, summaries and saved logs. Names come from the root manager
   (KernelSU Next and BakaSU both offer `getPackagesInfo`), at most every 6 hours, for package names
   not known yet. From the owner's log: `weonse.bxmfmy.qeomje` (a spoofed manager, its package name is

@@ -364,6 +364,21 @@ class ReportTests(unittest.TestCase):
         write(self.phone.data / "data" / time.strftime("%Y-%m-%d.tsv", time.gmtime(now + 7 * 3600)), "".join(calm))
         self.assertEqual(json.loads(self.phone.report("summary", "3600"))["stuck"], "")
 
+    def test_the_phone_body_is_hyperos_own_number(self):
+        # Owner 2026-10-24, "suhu masih inkonsistensi": one Badan HP everywhere, the number HyperOS uses.
+        now = int(time.time())
+        lines = [sample(now - 600 + i * 20, "com.android.chrome", {"soc_max": 550, "battery": 380, "shell_back": 418,
+                                                                     "hyperos_board": 406}) for i in range(10)]
+        for old in (self.phone.data / "data").glob("*.tsv"):
+            old.unlink()
+        write(self.phone.data / "data" / time.strftime("%Y-%m-%d.tsv", time.gmtime(now + 7 * 3600)), "".join(lines))
+        summary = json.loads(self.phone.report("summary", "3600"))
+        body = {group["id"]: group for group in summary["groups"]}["skin"]
+        self.assertEqual((body["avg"], body["peak"], summary["hot_pct"]), (406, 406, 0))   # 41.8 elsewhere would be hot
+        write(self.phone.sys / "class/thermal/thermal_message/board_sensor_temp", "37400\n")
+        live = json.loads(self.phone.report("now"))
+        self.assertEqual((live["body"], {g["id"]: g["t"] for g in live["groups"]}["skin"]), (374, 374))   # shell_back is 39.0
+
     def test_live_tiles_skip_a_stuck_sensor(self):
         write(self.phone.sys / "class/thermal/thermal_zone20/type", "mtk-master-charger\n")
         write(self.phone.sys / "class/thermal/thermal_zone20/temp", "50000\n")

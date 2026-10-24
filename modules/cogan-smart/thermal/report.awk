@@ -34,16 +34,18 @@ mode == "pkgs" { pk[$2]; np = split($10, tp, ";"); for (i = 1; i <= np; i++) { s
     # CPU cap of Cogan Smart · Power at this sample (column 14 since v2.9.1): big %, little %, heat step.
     capb = capl = capv = -1
     if (NF >= 14 && split($14, cp, "/") == 3) { capb = cp[1] + 0; capl = cp[2] + 0; capv = cp[3] + 0 }
-    split("", gmax)
+    split("", gmax); bd = -9999
     m = split(zl, z, ",")
     for (i = 1; i <= m; i++) {
         if (split(z[i], kv, "=") != 2) continue
         v = kv[2] + 0
+        if (kv[1] == "hyperos_board") bd = v
         if (stuck_now(kv[1], v)) continue   # also fills GC: a week holds millions of zone readings
         g = GC[kv[1]]
         if (!(g in gmax) || v > gmax[g]) gmax[g] = v
     }
     if (!("bat" in gmax) && bat > -999) gmax["bat"] = bat
+    if (bd > -9999) gmax["skin"] = bd   # the phone body is HyperOS's own number when there (see body_temp)
     # Only test with "in": reading gmax["gpu"] would create it and count 0 °C for that sample.
     main = -9999
     if ("cpu" in gmax) main = gmax["cpu"]
@@ -278,8 +280,9 @@ function json_summary(   s, i, g, step, b, j, mx, sep) {
         s = s ",\"stuck\":\"" jesc(stuck_list()) "\""
         step = int((n + 119) / 120); s = s ",\"series\":["; sep = ""
         for (b = 1; b <= n; b += step) {
-            mx = ser_v[b]; for (j = b; j < b + step && j <= n; j++) if (ser_v[j] > mx) mx = ser_v[j]
-            s = s sep sprintf("[%d,%d]", ser_ts[b], mx); sep = ","
+            # The average of each slice: a calm trend line; the peak tile keeps the highest reading.
+            mx = 0; for (j = b; j < b + step && j <= n; j++) mx += ser_v[j]
+            s = s sep sprintf("[%d,%d]", ser_ts[b], int(mx / (j - b) + 0.5)); sep = ","
         }
         s = s "]"
     }
@@ -292,7 +295,7 @@ function pkgs_json(   p, s, c) {
 }
 function jesc_text(t) { t = jesc(t); gsub(/\n/, "\\n", t); gsub(/\t/, " ", t); return t }
 
-function json_now(   f, zl2, m2, z2, kv2, i, s, sep, gm, g, mainv, bodyv, bodyf, age, stk) {
+function json_now(   f, zl2, m2, z2, kv2, i, s, sep, gm, g, mainv, bodyv, bodyf, age, stk, bdn) {
     split(last, f, "\t")
     # A live read with no usable zones must never resurrect a historical temperature.
     zl2 = fresh
@@ -301,8 +304,10 @@ function json_now(   f, zl2, m2, z2, kv2, i, s, sep, gm, g, mainv, bodyv, bodyf,
         if (split(z2[i], kv2, "=") != 2) continue
         g = group(kv2[1]); stk = index("," SKIP ",", "," kv2[1] ",") > 0   # stuck: listed, not in its group
         if (!stk && (!(g in gm) || kv2[2] + 0 > gm[g])) gm[g] = kv2[2] + 0
+        if (kv2[1] == "hyperos_board") bdn = kv2[2] + 0
         s = s sep sprintf("{\"name\":\"%s\",\"group\":\"%s\",\"id\":\"%s\",\"t\":%d,\"stuck\":%d}", jesc(kv2[1]), group_name(g), g, kv2[2], stk); sep = ","
     }
+    if (bdn != "") gm["skin"] = bdn
     mainv = main_temp(zl2)
     bodyv = -9999; bodyf = ""
     if ("skin" in gm) { bodyv = gm["skin"]; bodyf = "skin" } else if ("bat" in gm) { bodyv = gm["bat"]; bodyf = "battery" }
