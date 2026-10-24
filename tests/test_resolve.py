@@ -128,7 +128,7 @@ class KsunManagerTest(unittest.TestCase):
     def test_the_ci_run_of_the_base_commit(self):
         artifacts = [{"name": "manager", "id": 1, "expired": False}, {"name": "manager-spoofed", "id": 2, "expired": False}]
         found = r.ksun_manager("b" * 40, self.api([{"id": 9, "html_url": "u"}], artifacts))
-        self.assertEqual(found, {"run": 9, "url": "u", "manager": 1, "spoofed": 2})
+        self.assertEqual(found, {"repo": "KernelSU-Next/KernelSU-Next", "run": 9, "url": "u", "manager": 1, "spoofed": 2})
 
     def test_no_or_expired_build_means_wait(self):
         expired = [{"name": "manager", "id": 1, "expired": True}]
@@ -136,6 +136,32 @@ class KsunManagerTest(unittest.TestCase):
             with self.assertRaises(r.Wait) as caught:
                 r.ksun_manager("b" * 40, self.api(runs, expired))
             self.assertIn("bbbbbbbbbbbb", caught.exception.id_text)
+
+
+class BakasuMainTest(unittest.TestCase):
+    # Owner 2026-10-24 (Baka-SU/BakaSU#214): BakaSU main before its next release.
+    def test_newest_successful_main_build_and_its_manager(self):
+        asked = []
+
+        def api(path):
+            asked.append(path)
+            if "/runs?" in path:
+                return {"workflow_runs": [{"id": 7, "html_url": "u", "head_sha": "c" * 40}]}
+            return {"artifacts": [{"name": "Manager-release", "id": 3, "expired": False},
+                                  {"name": "Spoofed-Manager-release", "id": 4, "expired": False},
+                                  {"name": "Manager-debug", "id": 5, "expired": False}]}
+        commit, manager = r.bakasu_main(api)
+        self.assertEqual(commit, "c" * 40)
+        self.assertEqual(manager, {"repo": "Baka-SU/BakaSU", "run": 7, "url": "u", "manager": 3, "spoofed": 4})
+        self.assertIn("build-manager.yml/runs?branch=main&event=push&status=success", asked[0])
+
+    def test_no_main_build_means_wait(self):
+        for runs, artifacts in (([], []), ([{"id": 7, "html_url": "u", "head_sha": "c" * 40}],
+                                           [{"name": "Manager-release", "id": 3, "expired": True}])):
+            api = lambda path: {"workflow_runs": runs} if "/runs?" in path else {"artifacts": artifacts}
+            with self.assertRaises(r.Wait) as caught:
+                r.bakasu_main(api)
+            self.assertIn("BakaSU di main", caught.exception.id_text)
 
 
 class UnicodeFixTest(unittest.TestCase):
