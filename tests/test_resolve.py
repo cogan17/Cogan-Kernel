@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """Offline tests for kernel/resolve.py: newest ACK release per sublevel, tags, hooks, KSUN manager."""
+import subprocess
+import tempfile
 import unittest
+from pathlib import Path
 
 from kernel import resolve as r
 
@@ -88,6 +91,32 @@ class TagsAndHooksTest(unittest.TestCase):
         self.assertEqual(r.hook_state("static int my_write_context(void)\n\tmy_write_context();\n"), "static")
         self.assertEqual(r.hook_state("int my_write_context(void)\nstatic int my_write_context(void);\n"), "global")
         self.assertEqual(r.hook_state("\tmy_write_context();\n"), "missing")
+
+    def test_bakasu_ready_follows_a_macro_name(self):
+        # BakaSU main, 24 Oct 2026: the hook SUSFS calls is the macro name of a global function.
+        with tempfile.TemporaryDirectory() as tmp:
+            git = lambda *args: subprocess.run(["git", "-C", tmp, *args], check=True, capture_output=True, text=True)
+            git("init", "-q")
+            git("config", "user.name", "t"); git("config", "user.email", "t@t"); git("config", "commit.gpgsign", "false")
+            patch = Path(tmp, r.SUSFS_PATCH)
+            patch.parent.mkdir(parents=True)
+            patch.write_text("+extern int my_setprocattr(const char *name, void *value, size_t size);\n"
+                             "+\t\treturn my_setprocattr(name, value, size);\n")
+            git("add", "-A"); git("commit", "-qm", "susfs"); git("branch", "susfs")
+            git("rm", "-rq", "kernel_patches")
+            hide = Path(tmp, "kernel/feature/selinux_hide.c")
+            hide.parent.mkdir(parents=True)
+            hide.write_text("#ifdef KSU_COMPAT_HAS_SUSFS_FEATURE_SELINUX_HIDE\n"
+                            "    #define ksu_handle_selinux_setprocattr my_setprocattr\n#endif\n"
+                            "int __nocfi ksu_handle_selinux_setprocattr(const char *name, void *value, size_t size)\n{\n}\n")
+            git("add", "-A"); git("commit", "-qm", "bakasu"); git("branch", "bakasu")
+            self.assertIsNone(r.bakasu_ready(tmp, "bakasu", "susfs"))
+            hide.write_text(hide.read_text().replace("int __nocfi", "static int __nocfi"))
+            git("commit", "-qam", "static"); git("branch", "static")
+            self.assertEqual(r.bakasu_ready(tmp, "static", "susfs"), "`my_setprocattr` static")
+            hide.write_text("int ksu_handle_selinux_setprocattr(void)\n{\n}\n")
+            git("commit", "-qam", "no macro"); git("branch", "plain")
+            self.assertEqual(r.bakasu_ready(tmp, "plain", "susfs"), "`my_setprocattr` missing")
 
 
 class KsunManagerTest(unittest.TestCase):

@@ -216,8 +216,22 @@ def bakasu_ready(repo, bakasu_ref, susfs_ref):
     # The suspension (BakaSU 48fa4bb7): an unconditional $(error) in its SUSFS makefile.
     blocked = (grep("-E", r"^\$\(error", path=":(glob)kernel/**/*susfs*").strip()
                or grep("-F", "Please wait susfs update").strip())
+
+    def find_hook(name):
+        found = hook_state(grep("-h", "-E", rf"(^|[^A-Za-z0-9_]){name}[[:space:]]*\("))
+        if found != "missing":
+            return found
+        # A hook may be the macro name of another function, e.g. BakaSU main (24 Oct 2026):
+        # "#define ksu_handle_selinux_setprocattr my_setprocattr" once SUSFS brings its SELinux hide.
+        defines = grep("-h", "-E", rf"^[[:space:]]*#[[:space:]]*define[[:space:]]+[A-Za-z_][A-Za-z0-9_]*[[:space:]]+{name}[[:space:]]*$")
+        for alias in re.findall(rf"define\s+([A-Za-z_]\w*)\s+{name}\s*$", defines, re.M):
+            found = hook_state(grep("-h", "-E", rf"(^|[^A-Za-z0-9_]){alias}[[:space:]]*\("))
+            if found != "missing":
+                return found
+        return "missing"
+
     needed = needed_hooks(run("git", "-C", repo, "show", f"{susfs_ref}:{SUSFS_PATCH}"))
-    states = {name: hook_state(grep("-h", "-E", rf"(^|[^A-Za-z0-9_]){name}[[:space:]]*\(")) for name in needed}
+    states = {name: find_hook(name) for name in needed}
     problems = (["SUSFS diblokir di BakaSU / SUSFS blocked in BakaSU"] if blocked else []) + [
         f"`{name}` {state}" for name, state in states.items() if state != "global"]
     return ", ".join(problems) or None
