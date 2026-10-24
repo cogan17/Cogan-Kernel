@@ -1,0 +1,158 @@
+name: Cek sublevel baru
+
+# Owner 24 Okt 2026: cek sublevel secara mandiri; rilis ACK baru langsung dibangun dengan semua fitur
+# dan yang lolos dicatat di README.
+# - cek (setiap hari, atau tombol tanpa run_id): rilis ACK terbaru yang tag-nya belum pernah dicoba
+#   dijalankan di Cogan Kernel Builder (CI, KernelSU Next & BakaSU, semua centang termasuk Unicode Fix).
+# - catat (setiap Builder dari main selesai, atau tombol dengan run_id): hasil per sublevel masuk
+#   kernel/sublevels.json dan tabel README (ID/EN), langsung di main. Catatan, bukan kunci.
+
+on:
+  schedule:
+    - cron: "17 22 * * *"  # 05.17 WIB
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: "Kosong = cek sublevel baru sekarang; isi ID run Builder = catat hasilnya ke README / empty = check now; a Builder run ID = record it"
+        type: string
+        default: ""
+  workflow_run:
+    workflows: ["Cogan Kernel Builder"]
+    types: [completed]
+
+concurrency:
+  group: cek-sublevel-${{ github.event_name == 'workflow_run' || inputs.run_id != '' }}
+  cancel-in-progress: false
+
+jobs:
+  cek:
+    name: Cek sublevel baru / check for a new sublevel
+    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.run_id == '')
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write   # starts the Cogan Kernel Builder
+      contents: write  # marks the release as tried in kernel/sublevels.json
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          ref: main
+      - name: Cek / check
+        id: cek
+        run: python3 kernel/sublevels.py check --github-output "$GITHUB_OUTPUT"
+      - name: Bangun dengan semua fitur / build with every feature
+        if: steps.cek.outputs.new == 'true'
+        env:
+          SUBLEVEL: ${{ steps.cek.outputs.sublevel }}
+          TAG: ${{ steps.cek.outputs.tag }}
+        run: |
+          set -euo pipefail
+          gh workflow run build-kernel.yml --repo "$GITHUB_REPOSITORY" --ref main -f release_type=CI \
+            -f kernel_sublevel="$SUBLEVEL" -f root_flavor="KernelSU Next & BakaSU" \
+            -f use_nomount=true -f use_bbg=true -f use_net=true -f use_unicode=true
+          # Tried once: the next daily check does not start the same release again.
+          python3 kernel/sublevels.py mark --tag "$TAG" --sublevel "$SUBLEVEL" --date "$(TZ=Asia/Jakarta date +%F)"
+          git config user.name Cogan
+          git config user.email 79615344+cogan17@users.noreply.github.com
+          git commit -q -am "docs(sublevel): rilis ACK baru $TAG sedang dibangun"
+          git pull -q --rebase origin main
+          git push -q origin HEAD:main
+      - name: Ringkasan / summary
+        if: always()
+        env:
+          OUTCOME: ${{ steps.cek.outcome }}
+          NEW: ${{ steps.cek.outputs.new }}
+          TAG: ${{ steps.cek.outputs.tag }}
+          SUBLEVEL: ${{ steps.cek.outputs.sublevel }}
+        run: |
+          builder="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/workflows/build-kernel.yml"
+          {
+            echo "## 🔎 Cek sublevel baru / new sublevel check"
+            echo
+            if [ "$OUTCOME" != "success" ]; then
+              echo "- 🇮🇩 ❌ Gagal mengecek rilis ACK; lihat pesan error di atas."
+              echo "- 🇬🇧 ❌ Could not check the ACK releases; see the error above."
+            elif [ "$NEW" = "true" ]; then
+              echo "- 🇮🇩 🆕 Rilis ACK baru \`$TAG\` (6.1.$SUBLEVEL): [Cogan Kernel Builder]($builder) dijalankan dengan semua fitur. Hasilnya otomatis dicatat di README."
+              echo "- 🇬🇧 🆕 New ACK release \`$TAG\` (6.1.$SUBLEVEL): [Cogan Kernel Builder]($builder) started with every feature. The result is recorded in the README automatically."
+            else
+              echo "- 🇮🇩 ✅ Tidak ada yang baru: rilis ACK terbaru \`$TAG\` (6.1.$SUBLEVEL) sudah pernah dibangun."
+              echo "- 🇬🇧 ✅ Nothing new: the newest ACK release \`$TAG\` (6.1.$SUBLEVEL) was built before."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  catat:
+    name: Catat hasil Builder / record the Builder result
+    if: >-
+      (github.event_name == 'workflow_run' && github.event.workflow_run.head_branch == 'main'
+       && github.event.workflow_run.event == 'workflow_dispatch')
+      || (github.event_name == 'workflow_dispatch' && inputs.run_id != '')
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read     # the Builder run's artifacts
+      contents: write  # README and kernel/sublevels.json on main
+    env:
+      RUN: ${{ github.event.workflow_run.id || inputs.run_id }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          ref: main
+      - uses: actions/download-artifact@v8.0.2
+        continue-on-error: true
+        with:
+          pattern: build-info-*
+          path: info
+          run-id: ${{ env.RUN }}
+          github-token: ${{ github.token }}
+      - uses: actions/download-artifact@v8.0.2
+        continue-on-error: true
+        with:
+          pattern: snapshots-*
+          path: snapshots
+          merge-multiple: true
+          run-id: ${{ env.RUN }}
+          github-token: ${{ github.token }}
+      - name: Catat / record
+        id: catat
+        run: |
+          set -euo pipefail
+          [[ "$RUN" =~ ^[0-9]+$ ]] || { echo "::error::run_id: angka / a number"; exit 1; }
+          mkdir -p info snapshots
+          python3 kernel/sublevels.py record --info info --snapshots snapshots --run "$RUN" | tee recorded.txt
+          if git diff --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            git config user.name Cogan
+            git config user.email 79615344+cogan17@users.noreply.github.com
+            git add kernel/sublevels.json README.md README.en.md
+            git commit -q -m "docs(sublevel): catat hasil Builder run $RUN"
+            git pull -q --rebase origin main
+            git push -q origin HEAD:main
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Ringkasan / summary
+        if: always()
+        env:
+          OUTCOME: ${{ steps.catat.outcome }}
+          CHANGED: ${{ steps.catat.outputs.changed }}
+        run: |
+          run_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$RUN"
+          {
+            echo "## 🧩 Catat sublevel / record sublevels"
+            echo
+            if [ "$OUTCOME" != "success" ]; then
+              echo "- 🇮🇩 ❌ Gagal mencatat [run $RUN]($run_url); lihat pesan error di atas."
+              echo "- 🇬🇧 ❌ Could not record [run $RUN]($run_url); see the error above."
+            else
+              if [ "$CHANGED" = "true" ]; then
+                echo "- 🇮🇩 ✅ Hasil [run $RUN]($run_url) dicatat; tabel sublevel README diperbarui."
+                echo "- 🇬🇧 ✅ [Run $RUN]($run_url) recorded; the README sublevel table is updated."
+              else
+                echo "- 🇮🇩 ✅ [Run $RUN]($run_url) tidak mengubah catatan."
+                echo "- 🇬🇧 ✅ [Run $RUN]($run_url) changed nothing in the record."
+              fi
+              echo
+              sed 's/^/    /' recorded.txt 2>/dev/null || true
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"

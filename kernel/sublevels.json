@@ -1,0 +1,37 @@
+{
+ "176": {
+  "tag": "android14-6.1-2026-09_r4",
+  "KSUN": {
+   "status": "ok",
+   "run": 40046361218
+  },
+  "note": {
+   "id": "r1 diuji di HP",
+   "en": "r1 tested on the phone"
+  }
+ },
+ "172": {
+  "tag": "android14-6.1-2026-06_r14",
+  "pendahulu": true
+ },
+ "162": {
+  "tag": "android14-6.1-2026-03_r24",
+  "pendahulu": true
+ },
+ "157": {
+  "tag": "android14-6.1-2025-12_r32",
+  "pendahulu": true
+ },
+ "145": {
+  "tag": "android14-6.1-2025-09_r36",
+  "pendahulu": true
+ },
+ "138": {
+  "tag": "android14-6.1-2025-06_r11",
+  "pendahulu": true,
+  "note": {
+   "id": "kernel bawaan HP; arsip r5 diuji di HP",
+   "en": "the phone's stock kernel; archive r5 tested on the phone"
+  }
+ }
+}
