@@ -9,7 +9,7 @@ Sesi berikutnya mulai dari sini. Aturannya ada di `CLAUDE.md`. Semua waktu dalam
 ### r2 terbit (terbukti CI dan HP)
 - Pre-release [`v26.10.24-r2`](https://github.com/cogan17/Xiomi_14T_Pro/releases/tag/v26.10.24-r2), terbit 09.39 WIB lewat [Rilis dari run 40055078111](https://github.com/cogan17/Xiomi_14T_Pro/actions/runs/40055078111) (owner), dari Builder run [40046361218](https://github.com/cogan17/Xiomi_14T_Pro/actions/runs/40046361218).
 - Isi: ACK 6.1.176 (`2026-09_r4`), KernelSU Next dev-susfs `d21e0a6` (33405), SUSFS v2.3.0 `c27ebe9`, NoMount v2.2.0, Unicode fix `fa76c90`, gate KMI CRC beda 0. Label "diuji di HP" (owner menjalankan r2 di HP, 08.49 WIB).
-- r2 tercatat di CHANGELOG ID/EN, status uji README dan catatan sublevel 176 (`kernel/sublevels.json` → `sublevels.py readme`). Status: diuji di HP; owner mengonfirmasi Unicode fix terpasang di r2 (09.50 WIB, summary build + versi kernel di HP).
+- r2 tercatat di CHANGELOG ID/EN, status uji README dan catatan sublevel 176 (`kernel/sublevels.json` → `sublevels.py readme`). Status: diuji di HP; owner mengonfirmasi Unicode fix terpasang di r2 (09.50 WIB) dan bekerja (uji Termux 09.54 WIB: `UJI.txt` ditemukan, `u`+U+200B+`ji.txt` tidak ditemukan).
 - Tag menunjuk `main` `7fafb5a` (aturan #29, workflow commit build berbeda). Aset: ZIP kernel `sha256:1e3cd537…ea11`, manager dan spoofed sama dengan arsip r5/r6, NoMount v2.2.0, `checksums.txt`.
 
 ### Perbaikan Rilis dari run (owner 24 Okt)
