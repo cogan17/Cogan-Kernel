@@ -6,7 +6,7 @@
 
 | Versi | versionCode | ZIP siap pasang | Catatan | Salinan di repo | SHA256 ZIP |
 |---|---|---|---|---|---|
-| **v2.9.0** (terbaru) | 17 | [Cogan-Smart-Kernel-v2.9.0.zip](https://github.com/cogan17/Cogan-Kernel/releases/download/cogan-smart-v2.9.0/Cogan-Smart-Kernel-v2.9.0.zip) | [What's New](https://github.com/cogan17/Cogan-Kernel/releases/download/cogan-smart-v2.9.0/Cogan-Smart-v2.9.0-Whats-New-and-Fixes.txt) | [`rilis/v2.9.0`](rilis/v2.9.0) | `10d7677a2a4db6cfb9b42354ab9843a5a2c63ae49047440db600669b31cb4450` |
+| **v2.9.0** (terbaru) | 17 | [Cogan-Smart-Kernel-v2.9.0.zip](https://github.com/cogan17/Cogan-Kernel/releases/download/cogan-smart-v2.9.0/Cogan-Smart-Kernel-v2.9.0.zip) | [What's New](https://github.com/cogan17/Cogan-Kernel/releases/download/cogan-smart-v2.9.0/Cogan-Smart-v2.9.0-Whats-New-and-Fixes.txt) | [`rilis/v2.9.0`](rilis/v2.9.0) | `460e8433c4bf5fa88679bff8d4a472f779367c6033076050e6487aa58f05b2bd` |
 | v2.8.2 | 16 | [Cogan-Smart-Kernel-v2.8.2.zip](https://github.com/cogan17/Cogan-Kernel/releases/download/cogan-smart-v2.8.2/Cogan-Smart-Kernel-v2.8.2.zip) | [What's New](https://github.com/cogan17/Cogan-Kernel/releases/download/cogan-smart-v2.8.2/Cogan-Smart-v2.8.2-Whats-New-and-Fixes.txt) | [`rilis/v2.8.2`](rilis/v2.8.2) | `73f6d9c9a167d1528057ff84c65d6db371a5cde63e1435ca6e5e4f14bfc367d5` |
 | v2.8.1 | 15 | [Cogan-Smart-Kernel-v2.8.1.zip](https://github.com/cogan17/Cogan-Kernel/releases/download/cogan-smart-v2.8.1/Cogan-Smart-Kernel-v2.8.1.zip) | [What's New](https://github.com/cogan17/Cogan-Kernel/releases/download/cogan-smart-v2.8.1/Cogan-Smart-v2.8.1-Whats-New-and-Fixes.txt) | [`rilis/v2.8.1`](rilis/v2.8.1) | `441e0780d77480f6642a84f5478ce61d659110a640ca6b025f51d2c718ce594f` |
 

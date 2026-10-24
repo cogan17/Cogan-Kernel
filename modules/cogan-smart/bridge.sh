@@ -153,18 +153,17 @@ read_thermal_sensors() {
 # HyperOS's own thermal state (thermal_message), read only: what the phone itself limits right now.
 # JSON {"present":0|1,"board":tenths,"sconfig":"…","temp_state":"…","cpu_limits":"…","modem_limit":"…",
 #       "wifi_limit":"…","max_brightness":"…","video_mode":"…"}; each value is the node's first line.
+# Part of every live status, so it costs one awk: the nodes are read with shell builtins.
 hyperos_json() {
   hj_dir=$CB_SYS/class/thermal/thermal_message
   if [ ! -d "$hj_dir" ]; then printf '{"present":0}'; return; fi
-  hj_board=$(read_node "$hj_dir/board_sensor_temp")
-  case "$hj_board" in ''|*[!0-9-]*) hj_board=-9999 ;; *) hj_board=$((hj_board / 100)) ;; esac
-  printf '{"present":1,"board":%d' "$hj_board"
-  for hj_pair in sconfig:sconfig temp_state:temp_state cpu_limits:cpu_limits modem_limit:modem_limit \
-                 wifi_limit:wifi_limit max_brightness:thermal_max_brightness video_mode:video_mode; do
-    printf ',"%s":' "${hj_pair%%:*}"
-    json_string "$(read_node "$hj_dir/${hj_pair#*:}" | cut -c1-120)"
-  done
-  printf '}'
+  for hj_node in board_sensor_temp sconfig temp_state cpu_limits modem_limit wifi_limit thermal_max_brightness video_mode; do
+    read_node "$hj_dir/$hj_node"; echo
+  done | awk 'BEGIN { split("board sconfig temp_state cpu_limits modem_limit wifi_limit max_brightness video_mode", K, " ") }
+    NR == 1 { board = ($0 ~ /^-?[0-9]+$/) ? int($0 / 100) : -9999; next }
+    { v = substr($0, 1, 120); gsub(/\\/, "\\\\", v); gsub(/"/, "\\\"", v); gsub(/\t/, "\\t", v); gsub(/\r/, "", v)
+      s = s sprintf(",\"%s\":\"%s\"", K[NR], v) }
+    END { printf "{\"present\":1,\"board\":%d%s}", board, s }'
 }
 
 # Phone body (skin) temperature of a zone list in tenths of °C, or -9999 without a skin sensor.

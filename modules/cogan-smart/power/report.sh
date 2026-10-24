@@ -141,9 +141,9 @@ status_json() {
     printf ',"device":'; device_json
     [ "$cp_status_detail" = brief ] || { printf ',"cooling":'; cooling_json; }
     printf ',"gpu":'; gpu_json
-    printf ',"hyperos":'; hyperos_json
     printf ',"peer":'; peer_json "$CT_MOD" "$CT_DATA/run/sampler.pid" thermal/sampler.sh
   fi
+  printf ',"hyperos":'; hyperos_json
   printf ',"controls":'; controls_json
   printf ',"restore_pending":%d' "$([ -f "$CP_RUN/restore_pending" ] && echo 1 || echo 0)"
   printf ',"backend":'; json_string "$(cat "$CP_RUN/backend" 2>/dev/null)"

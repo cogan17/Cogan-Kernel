@@ -431,6 +431,12 @@ class PowerModeTests(unittest.TestCase):
         self.assertEqual(status["hyperos"], {"present": 1, "board": 406, "sconfig": "10", "temp_state": "0",
                                              "cpu_limits": "cpu7 2800000", "modem_limit": "0", "wifi_limit": "",
                                              "max_brightness": "4095", "video_mode": ""})
+        # Every live read carries it too, so the card stays when the page reopens (owner 2026-10-24:
+        # "nanti ada nanti ilang").
+        self.assertEqual(self.phone.report("live")["hyperos"], status["hyperos"])
+        write(message / "cpu_limits", 'cpu7 "2800000"\tx\\y\n')                  # quoted and escaped as JSON
+        self.assertEqual(self.phone.report("live")["hyperos"]["cpu_limits"], 'cpu7 "2800000"\tx\\y')
+        write(message / "cpu_limits", "cpu7 2800000\n")
         # The board temperature joins the phone body group: the controller reads it like a skin sensor.
         self.assertEqual((status["body"], status["body_from"]), (406, "skin"))
         self.phone.set_temp(65.0)
