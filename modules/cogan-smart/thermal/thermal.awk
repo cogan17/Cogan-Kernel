@@ -23,8 +23,9 @@ function group_name(g) {
            g == "wifi" ? "Wi-Fi" : tr("Lainnya", "Other")
 }
 
-# Friendly names for common packages; anything else keeps its package name.
-function label(pkg) {
+# Friendly names for common packages, then the app names the root manager reported for this phone
+# (LABELS, see report.sh labels); anything else keeps its package name.
+function label(pkg,   l) {
     if (pkg == "" || pkg == "-") return tr("Tidak diketahui", "Unknown")
     if (pkg == "screen_off") return tr("Layar mati", "Screen off")
     if (pkg == "com.instagram.android") return "Instagram"
@@ -55,7 +56,15 @@ function label(pkg) {
     if (pkg == "system_server") return tr("Sistem Android", "Android system")
     if (pkg == "surfaceflinger") return tr("SurfaceFlinger (tampilan)", "SurfaceFlinger (display)")
     if (pkg == "com.termux") return "Termux"
-    return pkg
+    l = learned(pkg)
+    return l != "" ? l : pkg
+}
+function learned(pkg,   line, kv) {
+    if (!LBL_READ) {
+        LBL_READ = 1
+        if (LABELS != "") { while ((getline line < LABELS) > 0) if (split(line, kv, "\t") == 2) LBL[kv[1]] = kv[2]; close(LABELS) }
+    }
+    return (pkg in LBL) ? LBL[pkg] : ""
 }
 
 # The power part's modes, as written to modes.tsv.

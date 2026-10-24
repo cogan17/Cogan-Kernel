@@ -1,4 +1,42 @@
-# Cogan Smart Kernel v2.9.0
+# Cogan Smart Kernel v2.9.1
+
+## Nama aplikasi, batas CPU di log, sensor macet / App names, CPU cap in the log, stuck sensors — v2.9.1
+
+Indonesia:
+
+- Nama aplikasi asli di tab Suhu, ringkasan dan log yang disimpan. Nama diambil dari root manager
+  (KernelSU Next dan BakaSU sama-sama menyediakan `getPackagesInfo`), paling sering tiap 6 jam,
+  untuk nama paket yang belum dikenal. Contoh dari log owner: `weonse.bxmfmy.qeomje` (manager
+  spoofed, nama paketnya sengaja acak) menjadi nama manager-nya, `com.anthropic.claude` menjadi
+  Claude. Nama disimpan di `labels.tsv`; nama dengan karakter kontrol atau lebih dari 60 byte
+  dibuang. Tanpa API itu, nama paket tetap tampil seperti sebelumnya.
+- Batas CPU di log: tiap sampel mencatat batas CPU dari pengendali Daya (CPU besar/kecil dan
+  langkah panas). Ringkasan menulis berapa persen waktu CPU diturunkan karena panas dan batas
+  terendahnya, juga waktu batas mode Hemat. Baris detail dan CSV (kolom `batas_cpu`) ikut
+  menampilkannya. Data lama tanpa kolom ini tetap terbaca.
+- Sensor macet tidak dihitung: sensor yang nilainya sama persis selama 30 sampel (±10 menit)
+  sementara prosesor bergerak 5 °C atau lebih (log owner: `mtk-master-charger` tetap 50,0 °C
+  selama satu jam setelah mengecas) tidak dihitung di tabel per bagian dan kotak suhu langsung,
+  dan namanya disebut di ringkasan. Sensor Badan HP dan baterai tidak pernah dibuang.
+- CSV: nama aplikasi dan proses teratas diberi tanda kutip, karena nama aplikasi bisa memuat koma.
+
+English:
+
+- Real app names in the Temperature tab, summaries and saved logs. Names come from the root manager
+  (KernelSU Next and BakaSU both offer `getPackagesInfo`), at most every 6 hours, for package names
+  not known yet. From the owner's log: `weonse.bxmfmy.qeomje` (a spoofed manager, its package name is
+  random on purpose) becomes the manager's name, `com.anthropic.claude` becomes Claude. Names are kept
+  in `labels.tsv`; names with control characters or over 60 bytes are dropped. Without that API the
+  package names show as before.
+- CPU cap in the log: every sample records the CPU cap of the Power controller (big/little CPU and the
+  heat step). The summary shows how much of the time the CPU was lowered for heat and the lowest cap,
+  plus the time under the Power saver cap. Detail lines and the CSV (column `batas_cpu`) show it too.
+  Older data without this column still reads.
+- Stuck sensors are left out: a sensor that keeps one exact value for 30 samples (about 10 minutes)
+  while the processor moves 5 °C or more (owner's log: `mtk-master-charger` stayed at 50.0 °C for an
+  hour after charging) no longer counts in the component table and the live tiles, and the summary
+  names it. Phone body and battery sensors are never left out.
+- CSV: the app name and top processes are quoted, since an app name can hold a comma.
 
 ## Mode mengikuti Badan HP / Modes follow the phone body — v2.9.0
 
