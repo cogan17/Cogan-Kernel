@@ -95,6 +95,11 @@ jobs:
           ls -la files
 
       - name: Terbitkan / publish
+        env:
+          # A past build may have different workflow files from main. GITHUB_TOKEN cannot
+          # create its tag in that case, even with contents: write. RELEASE_TOKEN needs
+          # Contents + Workflows: write, limited to this repository (see docs/masalah-dan-log.md).
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN || github.token }}
         run: |
           set -euo pipefail
           tag="$(sed -n 's/^RELEASE=//p' info/build.env)"
@@ -109,8 +114,23 @@ jobs:
           python3 kernel/release_notes.py info/build.env files --repo "$GITHUB_REPOSITORY" "${tested[@]}" --note "$NOTE" \
             --run-url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN" > notes.md
           mode=(--prerelease); [ "$RELEASE_TYPE" = "Release" ] && mode=(--latest)
-          gh release create "$tag" files/* --repo "$GITHUB_REPOSITORY" --target "$sha" "${mode[@]}" \
-            --title "$title" --notes-file notes.md
+          if ! gh release create "$tag" files/* --repo "$GITHUB_REPOSITORY" --target "$sha" "${mode[@]}" \
+            --title "$title" --notes-file notes.md 2> release-error.txt; then
+            cat release-error.txt >&2
+            if grep -Eq 'HTTP (403|404)|Resource not accessible by integration' release-error.txt; then
+              {
+                echo "### Izin token rilis / release token permissions"
+                echo "- 🇮🇩 Run $SOURCE_RUN memakai commit \`$sha\`. Bila workflow-nya berbeda dari main, GITHUB_TOKEN tidak bisa membuat tag pada commit ini meskipun contents: write sudah aktif."
+                echo "- 🇮🇩 Owner: simpan fine-grained PAT khusus repo ini sebagai secret Actions RELEASE_TOKEN, dengan Contents: Read and write dan Workflows: Read and write. Jika sudah ada, periksa izin, akses repo, dan masa berlakunya."
+                echo "- 🇬🇧 Run $SOURCE_RUN uses commit \`$sha\`. If its workflows differ from main, GITHUB_TOKEN cannot create a tag at this commit even with contents: write."
+                echo "- 🇬🇧 Owner: save a fine-grained PAT limited to this repository as the Actions secret RELEASE_TOKEN, with Contents: Read and write and Workflows: Read and write. If already configured, check its permissions, repository access and expiry."
+                echo "- [Panduan / guide]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/blob/main/docs/masalah-dan-log.md#rilis-dari-run-gagal-http-403)"
+                echo "- [GitHub Docs](https://docs.github.com/en/rest/releases/releases#create-a-release)"
+              } | tee -a "$GITHUB_STEP_SUMMARY"
+              echo "::error::Publikasi ditolak GitHub; periksa secret RELEASE_TOKEN / GitHub refused publication; check the RELEASE_TOKEN secret."
+            fi
+            exit 1
+          fi
           {
             echo "## Rilis dari run / release from run"
             echo "- 🇮🇩 Terbit: [$tag]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/tag/$tag) ($RELEASE_TYPE)$([ "$TESTED" = "true" ] && echo ", diuji di HP")"
