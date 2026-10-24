@@ -158,7 +158,12 @@ git clone -q --filter=blob:none -b "$(snap susfs.branch)" "$(snap susfs.repo)" "
 git -C "$WORK/susfs" checkout -q "$(snap susfs.commit)"
 cp -R "$WORK/susfs/kernel_patches/fs/." fs/
 cp -R "$WORK/susfs/kernel_patches/include/linux/." include/linux/
-patch -p1 --fuzz=3 --no-backup-if-mismatch < "$WORK/susfs/kernel_patches/50_add_susfs_in_gki-android14-6.1.patch" \
+# Older ACK releases lack a few lines the patch only uses as context (kernel/scripts/susfs_context.py,
+# owner 2026-10-24); what SUSFS adds stays as simonpunk wrote it.
+notes="$(python3 "$HERE/scripts/susfs_context.py" "$WORK/susfs/kernel_patches/50_add_susfs_in_gki-android14-6.1.patch" . \
+  2>&1 > "$WORK/susfs.patch")" || fail "kernel/scripts/susfs_context.py: $notes"
+[ -z "$notes" ] || echo "::notice::$notes"
+patch -p1 --fuzz=3 --no-backup-if-mismatch < "$WORK/susfs.patch" \
   || wait_for "Tunggu simonpunk memperbarui SUSFS: patch kernel terbaru tidak cocok dengan ACK 6.1.$SUBLEVEL." \
               "Wait for simonpunk to update SUSFS: its newest kernel patch does not fit ACK 6.1.$SUBLEVEL."
 SUSFS_VERSION="$(sed -n 's/^#define SUSFS_VERSION "\(.*\)"/\1/p' include/linux/susfs.h)"
