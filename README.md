@@ -91,7 +91,7 @@ Unicode fix (opsional) lolos build + gate KMI di 157, 162, 172 dan 176, dan terp
 
 | Build | Hasil |
 |---|---|
-| `r2` (ACK 6.1.176 · KernelSU Next · Unicode fix) | ✅ Diuji di HP 24 Okt: Unicode fix terpasang (`6.1.176-Cogan-Rothko-ACK-r2-35f0a136c`) |
+| `r2` (ACK 6.1.176 · KernelSU Next · Unicode fix) | ✅ Diuji di HP 24 Okt: Unicode fix bekerja (nama dengan *zero-width space* tidak lagi cocok dengan file aslinya) |
 | `r1` (ACK 6.1.176 · KernelSU Next) | ✅ Diuji di HP 24 Okt: KernelSU Next berfungsi, SUSFS v2.3.0, NoMount v2.2.0, SELinux Enforcing |
 | `arsip r8` (ACK 6.1.176 · BakaSU) | ✅ Diuji di HP 23 Okt: BakaSU berfungsi, SUSFS v2.3.0, SELinux Enforcing |
 | `arsip r6` (ACK 6.1.176 · KernelSU Next) | ✅ Diuji di HP 22 Okt |

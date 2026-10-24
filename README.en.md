@@ -91,7 +91,7 @@ Unicode fix (optional) passes the build + KMI gate on 157, 162, 172 and 176, and
 
 | Build | Result |
 |---|---|
-| `r2` (ACK 6.1.176 · KernelSU Next · Unicode fix) | ✅ Tested on the phone 24 Oct: Unicode fix installed (`6.1.176-Cogan-Rothko-ACK-r2-35f0a136c`) |
+| `r2` (ACK 6.1.176 · KernelSU Next · Unicode fix) | ✅ Tested on the phone 24 Oct: Unicode fix works (a name with a zero-width space no longer matches the real file) |
 | `r1` (ACK 6.1.176 · KernelSU Next) | ✅ Tested on the phone 24 Oct: KernelSU Next works, SUSFS v2.3.0, NoMount v2.2.0, SELinux Enforcing |
 | `archive r8` (ACK 6.1.176 · BakaSU) | ✅ Tested on the phone 23 Oct: BakaSU works, SUSFS v2.3.0, SELinux Enforcing |
 | `archive r6` (ACK 6.1.176 · KernelSU Next) | ✅ Tested on the phone 22 Oct |

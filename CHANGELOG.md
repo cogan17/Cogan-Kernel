@@ -15,7 +15,7 @@ Versi teratas = build terbaru. Build yang lolos uji HP terbit sebagai **Pre-rele
 
 Komponen lain sama dengan r1: KernelSU Next `d21e0a6` (33405), SUSFS v2.3.0 (`c27ebe9`), NoMount v2.2.0.
 
-Status: ✅ lolos uji HP owner (24 Okt): kernel `6.1.176-Cogan-Rothko-ACK-r2-35f0a136c` berjalan dengan Unicode fix terpasang. Gate KMI: 0 simbol berbeda.
+Status: ✅ lolos uji HP owner (24 Okt): kernel `6.1.176-Cogan-Rothko-ACK-r2-35f0a136c` berjalan dengan Unicode fix terpasang. Uji di `/data/media/0`: `UJI.txt` tetap menemukan `uji.txt` (tidak membedakan huruf besar/kecil), tetapi `u`+U+200B+`ji.txt` kini `No such file or directory`. Gate KMI: 0 simbol berbeda.
 
 ## r1 — 24 Okt 2026 · `6.1.176-Cogan-Rothko-ACK-r1` · [Pre-release](https://github.com/cogan17/Xiomi_14T_Pro/releases/tag/v26.10.23-r1)
 
