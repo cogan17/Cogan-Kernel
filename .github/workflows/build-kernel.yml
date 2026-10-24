@@ -179,7 +179,7 @@ jobs:
         with:
           name: snapshots-${{ github.run_number }}
           path: snapshots
-          retention-days: 7
+          retention-days: 90
 
   build:
     name: build (${{ matrix.name }})
@@ -239,34 +239,36 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: bash kernel/build.sh
 
+      # Artifacts are kept 90 days, GitHub's maximum for a public repo (owner 24 Okt 2026); only
+      # release files never expire.
       - name: Upload 1 - kernel
         if: success()
         uses: actions/upload-artifact@v7.0.1
         with:
           path: out/1-KERNEL_*.zip
           archive: false
-          retention-days: 7
+          retention-days: 90
       - name: Upload 2 - manager
         if: success() && hashFiles('out/2-MANAGER_*') != ''
         uses: actions/upload-artifact@v7.0.1
         with:
           path: out/2-MANAGER_*.apk
           archive: false
-          retention-days: 7
+          retention-days: 90
       - name: Upload 3 - spoofed manager
         if: success() && hashFiles('out/3-MANAGER-SPOOFED_*') != ''
         uses: actions/upload-artifact@v7.0.1
         with:
           path: out/3-MANAGER-SPOOFED_*.apk
           archive: false
-          retention-days: 7
+          retention-days: 90
       - name: Upload 4 - NoMount module
         if: success() && hashFiles('out/4-NOMOUNT-MODULE_*') != ''
         uses: actions/upload-artifact@v7.0.1
         with:
           path: out/4-NOMOUNT-MODULE_*.zip
           archive: false
-          retention-days: 7
+          retention-days: 90
       - name: Upload build info
         if: always()
         uses: actions/upload-artifact@v7.0.1
@@ -279,7 +281,7 @@ jobs:
             out/stage.txt
             out/error.txt
           if-no-files-found: ignore
-          retention-days: 7
+          retention-days: 90
 
   attest:
     name: Tanda tangan / sign kernel

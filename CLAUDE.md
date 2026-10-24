@@ -19,7 +19,7 @@ Nama repo **`cogan17/Cogan-Kernel`** sejak 24 Okt 2026 (owner; sebelumnya `cogan
 
 - **Satu branch `main`**: README simpel (ID + EN), dokumen, workflow, mesin build, modul Cogan Smart Kernel.
 - **Kernel hanya dari ACK** (Android Common Kernel `android14-6.1`). GKID tidak dipakai.
-- **Root manager dua**: KernelSU Next dan BakaSU, masing-masing dengan SUSFS, versi kernel dan manager selalu sama.
+- **Root manager dua**: KernelSU Next dan BakaSU, masing-masing dengan SUSFS, versi kernel dan manager selalu sama. BakaSU diambil dari rilis terbarunya; selama rilis itu belum cocok dengan SUSFS terbaru, dari commit `main` terbaru yang sudah punya build CI manager resmi (owner 24 Okt 2026, Baka-SU/BakaSU#214). Kernel dan manager selalu dari commit yang sama.
 - **Tidak ada sistem kunci, lock atau freeze.** Setiap build memakai versi terbaru (rilis ACK, root manager, SUSFS, NoMount, BBG, AnyKernel3). Bila yang terbaru belum cocok, build berhenti dan summary menyebut siapa yang ditunggu, misalnya "Tunggu simonpunk memperbarui SUSFS" atau "Tunggu pengembang BakaSU membuka blokir SUSFS". Jangan membuat pin, mirror, atau tree beku untuk menghindarinya.
 - **Gate KMI tetap** dan tidak termasuk "kunci": ia melindungi HP dari modul vendor yang tidak cocok.
 - **SUSFS di rilis ACK lama** (owner 24 Okt 2026): patch SUSFS terbaru ditulis untuk ACK terbaru. Baris yang hanya menjadi patokan konteks dan belum ada di ACK lama dibuang dari konteks oleh `kernel/scripts/susfs_context.py` (sejauh ini `#include <trace/hooks/blk.h>` di `fs/namespace.c`, ada sejak 6.1.157; perlu untuk 138 dan 145; terbukti CI run 40061712549: 138 `2025-06_r17` dan 145 `2025-09_r36` lolos build + gate KMI, CRC beda 0). Isi SUSFS tidak diubah dan tetap versi terbaru, jadi ini bukan pin. Ketidakcocokan lain tetap berhenti "Tunggu simonpunk". Baris baru masuk daftar hanya bila terbukti sekadar konteks.
@@ -35,7 +35,7 @@ Nama repo **`cogan17/Cogan-Kernel`** sejak 24 Okt 2026 (owner; sebelumnya `cogan
 - **Diagnosa dengan bukti, bukan keyakinan.** Bandingkan artefak yang berhasil dengan yang rusak sebelum mengubah kode. Tulis jelas mana yang terukur lokal, mana yang sudah dibuktikan CI, dan mana yang sudah dibuktikan di HP.
 - **Gate gagal, bukan lolos diam-diam.** Gate KMI dan patch yang tidak bisa dipasang menghentikan build. Jangan pernah mengubahnya jadi peringatan.
 - **Jalur darurat tetap aman.** Tidak pernah wipe data, tidak pernah `flash_all_lock`. Bootloop dipulihkan lewat TWRP atau `boot` stok ([kembali ke stok](docs/kembali-ke-stok.md)). Flash selalu keputusan owner.
-- **Setiap versi punya rilis sendiri dan tidak dihapus.** Artifact Actions hanya bertahan 7 hari. Changelog ID dan EN memakai versi yang sama.
+- **Setiap versi punya rilis sendiri dan tidak dihapus.** Artifact Actions bertahan 90 hari (batas GitHub untuk repo publik, owner 24 Okt 2026); yang permanen hanya file rilis. Changelog ID dan EN memakai versi yang sama.
 - **Instruksi yang bisa dibaca dua arah: tanya dulu.**
 
 ## Hemat run workflow (owner, 23 Okt 2026)
