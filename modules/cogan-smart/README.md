@@ -1,6 +1,6 @@
 # Cogan Smart Kernel (modul)
 
-**Versi terbaru: v2.8.2** (`versionCode` 16). v2.9.0 (mode mengikuti Badan HP, langkah halus, CPU hanya diturunkan saat prosesor bekerja) menunggu uji HP. Catatan perubahan lengkap ada di [`CHANGELOG.md`](CHANGELOG.md).
+**Versi terbaru: v2.8.2** (`versionCode` 16). v2.9.0 (mode mengikuti Badan HP, langkah halus, CPU hanya diturunkan saat prosesor bekerja, penyebab panas per bagian HP dengan saran, rem HyperOS) menunggu uji HP. Catatan perubahan lengkap ada di [`CHANGELOG.md`](CHANGELOG.md).
 
 ## ⬇️ Unduh
 
@@ -21,7 +21,7 @@ Satu modul KernelSU / KernelSU Next / BakaSU / Magisk yang menggabungkan **Cogan
 | Bagian | Folder | Tugas |
 |---|---|---|
 | Daya | `power/` | Mode, batas CPU, boost aplikasi di layar, auto cut charging, readback kontrol |
-| Suhu | `thermal/` | Sensor tiap 20 detik, dugaan penyebab panas, riwayat 7 hari, simpan log |
+| Suhu | `thermal/` | Sensor tiap 20 detik (termasuk suhu papan HyperOS), dugaan penyebab panas per bagian HP dengan saran, riwayat 7 hari, simpan log |
 | Modul | `guard/` | Penjaga modul: perilaku modul lain, whitelist, hapus sampai ke akar |
 | Bersama | `bridge.sh`, `webroot/client.js` | Cogan Bridge ABI 1, transport WebUI |
 
@@ -32,11 +32,11 @@ Tiap tab adalah halaman sendiri, jadi `client.js` menyimpan jawaban baca terakhi
 
 | Di layar | Nilai internal | Perilaku |
 |---|---|---|
-| 🌿 Hemat | `hemat` | CPU besar dibatasi `SAVER_CAP` %, ambang Badan HP 2 °C di bawah Kernel Default (40 °C) |
-| 🧠 Kernel Default | `seimbang` | Bawaan. CPU diturunkan bertahap bila Badan HP ≥ `TARGET_TEMP` (42 °C) |
-| 🎮 Performa | `game` | Performa penuh, CPU diturunkan bila Badan HP ≥ `GAME_LIMIT` (45 °C), boost aplikasi di layar |
+| 🌿 Hemat | `hemat` | CPU besar dibatasi `SAVER_CAP` %, ambang Badan HP 2 °C di bawah Kernel Default (39 °C) |
+| 🧠 Kernel Default | `seimbang` | Bawaan. CPU diturunkan bertahap bila Badan HP ≥ `TARGET_TEMP` (41 °C) |
+| 🎮 Performa | `game` | Performa penuh, CPU diturunkan bila Badan HP ≥ `GAME_LIMIT` (44 °C), boost aplikasi di layar |
 
-Sejak v2.9.0 ambang mode dibaca dari suhu **Badan HP** (sensor kulit HP, yang terasa di tangan), bukan prosesor. Prosesor Dimensity HP ini saat santai pun sekitar 50 °C, sehingga ambang 42 °C pada prosesor (v2.8) membatasi CPU hampir sepanjang waktu. Tanpa sensor Badan HP, suhu baterai yang dipakai. "Panas" di tab Suhu juga berarti Badan HP ≥ 42 °C.
+Sejak v2.9.0 ambang mode dibaca dari suhu **Badan HP** (sensor kulit HP, yang terasa di tangan), bukan prosesor. Prosesor Dimensity HP ini saat santai pun sekitar 50 °C, sehingga ambang 42 °C pada prosesor (v2.8) membatasi CPU hampir sepanjang waktu. Badan HP memakai sensor kulit terpanas, termasuk suhu papan HyperOS (`board_sensor_temp`, dicatat sebagai `hyperos_board`); tanpa sensor Badan HP, suhu baterai yang dipakai. "Panas" di tab Suhu juga berarti Badan HP ≥ 41 °C. Ambang 41/44 °C dipilih owner setelah uji HP (41 °C sudah terasa hangat menuju panas).
 
 Langkah halus (Kernel Default dan Performa):
 
@@ -49,6 +49,10 @@ Langkah halus (Kernel Default dan Performa):
 Mulai 1 °C sebelum ambang dengan langkah 1–2 saja; tiap langkah ditunggu tiga kali cek (Badan HP berubah pelan); naik lagi setelah tiga kali cek ≥ 1,5 °C di bawah ambang. CPU hanya diturunkan saat prosesor bekerja (≥ 60 °C): panas dari cas, ruangan atau HP yang santai tidak membuat CPU diturunkan, dan saat prosesor santai batasnya dilepas bertahap. Hemat turun 10 % dari `SAVER_CAP`. Di semua mode ada **rem darurat** bila prosesor ≥ 95 °C. Cogan Bridge ABI 1 memberi satu batas untuk semua inti X4 dan satu untuk A720.
 
 Jeda cas karena suhu (`CHARGE_THERMAL`) tetap **mati secara bawaan**: HyperCharge dan sistem HP yang mengatur suhu cas. GPU dibaca saja (Kontrol kernel); batas GPU menyusul setelah node-nya terbukti di HP.
+
+Kartu **🧯 Rem HyperOS** di tab Daya menampilkan batas yang dipasang HyperOS sendiri (`/sys/class/thermal/thermal_message`: suhu papan, `sconfig`, `temp_state`, batas CPU, modem, Wi-Fi, kecerahan maks, mode video). Baca saja; modul tidak menulis node itu.
+
+Tab Suhu menjelaskan tiap momen panas dari ±3 menit terakhir, per bagian HP, dengan saran: cas cepat, cas, grafis (GPU), modem (data seluler), prosesor, proses latar belakang, proses kernel, layar mati, atau layar & pemakaian biasa.
 
 **Henti** melepas semua kontrol milik modul sehingga pengaturan vendor (HyperOS/MediaTek) berjalan sendiri. Tombol Action di root manager berpindah ke mode berikutnya.
 

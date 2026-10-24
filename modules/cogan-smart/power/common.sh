@@ -21,8 +21,9 @@ KEYS="MODE TARGET_TEMP GAME_LIMIT SAVER_CAP GAME_BOOST CHARGE_CTRL CHARGE_STOP C
 MODE=seimbang          # hemat (Hemat) | seimbang (Kernel Default) | game (Performa)
 # The modes read the phone body (Badan HP), what a hand feels (owner 2026-10-24); the processor
 # sits around 50 °C at rest, so a 42 °C processor target capped the CPU almost all the time.
-TARGET_TEMP=42         # Kernel Default keeps the phone body at or below this (°C); Hemat 2 °C lower
-GAME_LIMIT=45          # Performa only steps in at this phone body temperature (°C)
+TARGET_TEMP=41         # Kernel Default keeps the phone body at or below this (°C); Hemat 2 °C lower
+GAME_LIMIT=44          # Performa only steps in at this phone body temperature (°C)
+                       # Owner 24 Oct 2026: 41 °C already feels "warm, getting hot" (HyperOS board 40.6 °C)
 SAVER_CAP=60           # Hemat: top speed of the big cores (% of their maximum)
 GAME_BOOST=1           # Performa: give the app on screen a minimum CPU share (uclamp)
 CHARGE_CTRL=1          # auto cut charging on/off
@@ -34,23 +35,23 @@ HEAT_PAUSE_CHARGE=1    # Kernel Default: pause while charging heats the phone bo
 INTERVAL=10            # seconds between checks
 FORCE=0               # 1 = reapply supported controls on every check
 AUTOSTART=1
-CTRL_VER=2             # 2 = thresholds are phone body temperatures; older configs meant the processor
+CTRL_VER=3             # 3 = phone body thresholds of 24 Oct 2026; older configs keep their other settings
 CPU_BRAKE=95           # every mode: emergency brake when the processor reaches this (°C), not a setting
 CPU_WORK=60            # the CPU is lowered only while the processor works this hot (°C): an idle CPU, or heat
                        # from charging or the room, is not what a lower CPU cap cools (owner 2026-10-24)
 . "$MODROOT/bridge.sh"
 
 defaults() {
-  MODE=seimbang; TARGET_TEMP=42; GAME_LIMIT=45; SAVER_CAP=60; GAME_BOOST=1
+  MODE=seimbang; TARGET_TEMP=41; GAME_LIMIT=44; SAVER_CAP=60; GAME_BOOST=1
   CHARGE_CTRL=1; CHARGE_STOP=95; CHARGE_RESUME=90; CHARGE_THERMAL=0; BATT_TEMP_STOP=42
-  HEAT_PAUSE_CHARGE=1; INTERVAL=10; FORCE=0; AUTOSTART=1; CTRL_VER=2
+  HEAT_PAUSE_CHARGE=1; INTERVAL=10; FORCE=0; AUTOSTART=1; CTRL_VER=3
 }
 
 limits() {   # limits KEY -> "min max" of a numeric setting
   case "$1" in
     TARGET_TEMP) echo "38 46" ;;
     GAME_LIMIT) echo "40 50" ;;
-    CTRL_VER) echo "2 2" ;;
+    CTRL_VER) echo "3 3" ;;
     SAVER_CAP) echo "30 90" ;;
     GAME_BOOST|CHARGE_CTRL|CHARGE_THERMAL|HEAT_PAUSE_CHARGE|FORCE|AUTOSTART) echo "0 1" ;;
     CHARGE_STOP) echo "50 100" ;;
@@ -79,9 +80,9 @@ load_config() {
     valid "$key" "$value" && eval "$key=\$value"   # key is one of the settings above
   done < "$CONFIG"
   [ "$CHARGE_RESUME" -lt "$CHARGE_STOP" ] || CHARGE_RESUME=$((CHARGE_STOP - 5))
-  # A config from v2.8 and older: its temperatures were processor thresholds, so they do not carry
-  # over to the phone body. Everything else (mode, charging, interval) stays as the user saved it.
-  if [ "$CTRL_VER" != 2 ]; then TARGET_TEMP=42; GAME_LIMIT=45; CTRL_VER=2; fi
+  # Older temperatures do not carry over: v2.8 meant the processor, early v2.9.0 test builds used
+  # 42/45 °C. Everything else (mode, charging, interval) stays as the user saved it.
+  if [ "$CTRL_VER" != 3 ]; then TARGET_TEMP=41; GAME_LIMIT=44; CTRL_VER=3; fi
 }
 
 write_config() {

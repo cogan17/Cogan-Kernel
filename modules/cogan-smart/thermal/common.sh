@@ -16,17 +16,19 @@ CONFIG=$CT_DATA/config
 # Settings (WebUI writes $CONFIG; only these keys and plain numbers are accepted).
 INTERVAL=20
 RETENTION_DAYS=7
-HOT_TEMP=42       # "hot" = phone body (Badan HP) at or above this (°C), owner 2026-10-24
+HOT_TEMP=41       # "hot" = phone body (Badan HP) at or above this (°C), owner 2026-10-24
 NOTIFY=0
 NOTIFY_TEMP=45    # optional notification, also on the phone body
 AUTOSTART=1
+CFG_VER=2         # 2 = HOT_TEMP of 24 Oct 2026; an older saved HOT_TEMP (processor, or 42) is replaced
 . "$MODROOT/bridge.sh"
 
-defaults() { INTERVAL=20; RETENTION_DAYS=7; HOT_TEMP=42; NOTIFY=0; NOTIFY_TEMP=45; AUTOSTART=1; }
+defaults() { INTERVAL=20; RETENTION_DAYS=7; HOT_TEMP=41; NOTIFY=0; NOTIFY_TEMP=45; AUTOSTART=1; CFG_VER=2; }
 
 load_config() {
   defaults
   [ -f "$CONFIG" ] || return 0
+  CFG_VER=0
   while IFS='=' read -r key value; do
     uint "$value" || continue
     case "$key" in
@@ -36,8 +38,10 @@ load_config() {
       NOTIFY) [ "$value" -le 1 ] && NOTIFY=$value ;;
       NOTIFY_TEMP) [ "$value" -ge 38 ] && [ "$value" -le 55 ] && NOTIFY_TEMP=$value ;;
       AUTOSTART) [ "$value" -le 1 ] && AUTOSTART=$value ;;
+      CFG_VER) CFG_VER=$value ;;
     esac
   done < "$CONFIG"
+  if [ "$CFG_VER" != 2 ]; then HOT_TEMP=41; CFG_VER=2; fi
 }
 
 write_config() {
@@ -50,6 +54,7 @@ write_config() {
     echo "NOTIFY=$NOTIFY"
     echo "NOTIFY_TEMP=$NOTIFY_TEMP"
     echo "AUTOSTART=$AUTOSTART"
+    echo "CFG_VER=$CFG_VER"
   } > "$CONFIG.tmp.$$" && mv "$CONFIG.tmp.$$" "$CONFIG" || return 1
   chmod 600 "$CONFIG"
 }

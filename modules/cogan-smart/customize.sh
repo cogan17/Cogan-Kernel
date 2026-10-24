@@ -28,7 +28,7 @@ for old in cogan_power cogan_thermal; do
   ui_print "- Modul lama $old dihapus saat reboot (data sudah disalin)"
 done
 
-ui_print "- Mode bawaan: Kernel Default (badan HP dijaga ≤ 42 °C, rem prosesor 95 °C)"
+ui_print "- Mode bawaan: Kernel Default (badan HP dijaga ≤ 41 °C, CPU turun hanya saat prosesor bekerja, rem prosesor 95 °C)"
 ui_print "- Suhu dicatat tiap 20 detik, riwayat 7 hari, log di /sdcard/Download/CoganThermal"
 ui_print "- Suhu cas mengikuti sistem HP; jeda suhu modul nonaktif secara bawaan. Auto cut tetap 95/90."
 ui_print "- Cogan Bridge: identitas asli + CPU QoS bila kernel mendukung ABI 1"

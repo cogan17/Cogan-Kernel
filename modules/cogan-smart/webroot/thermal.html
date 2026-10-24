@@ -54,6 +54,7 @@
   .barrow .t { display: flex; justify-content: space-between; gap: 8px; }
   .barrow .b { height: 6px; background: var(--chip); border-radius: 4px; margin-top: 3px; overflow: hidden; }
   .barrow .b i { display: block; height: 100%; background: var(--hot); border-radius: 4px; }
+  .barrow small { display: block; margin-top: 3px; }
   h3 { font-size: 13px; margin: 14px 0 2px; color: var(--muted); font-weight: 600; }
   label.f { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--line); }
   label.f:last-of-type { border-bottom: 0; }
@@ -192,7 +193,7 @@ const UI = CoganUI, api = UI.create(REPORT);
 const report = (args, options) => api.report(args, options);
 let feedbackTimer;
 let poller, identityAt = 0, coolingAt = 0;
-let hot = 42, range = 3600, summaryText = '', status = null, editing = false, currentNow = null;
+let hot = 41, range = 3600, summaryText = '', status = null, editing = false, currentNow = null;
 
 function esc(s) { return String(s).replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'})[c]); }
 function deg(t) { return (t / 10).toFixed(1); }
@@ -279,8 +280,9 @@ function chart(series) {
     <div class="axis"><span>${clock(t0)}</span><span class="hot">Badan HP - - ${hot} °C</span><span>${clock(t1)}</span></div>`;
 }
 
-function bars(list, fmt) {
-  return '<div class="bars">' + list.map(c => `<div class="barrow"><div class="t"><span>${esc(c.name)}</span><span>${fmt(c)}</span></div><div class="b"><i style="width:${c.pct}%"></i></div></div>`).join('') + '</div>';
+// Causes per part of the phone, each with what helps (the report writes the tip in the page language).
+function causeBars(list) {
+  return '<div class="bars">' + list.map(c => `<div class="barrow"><div class="t"><span>${esc(c.name)}</span><span>${c.pct}%</span></div><div class="b"><i style="width:${c.pct}%"></i></div>${c.tip ? `<small class="muted" translate="no">💡 ${esc(c.tip)}</small>` : ''}</div>`).join('') + '</div>';
 }
 
 async function loadSummary(background = true) {
@@ -295,7 +297,7 @@ async function loadSummary(background = true) {
       <div><small>Tertinggi (${esc(p.group)})</small><b class="${level(p.t, 'cpu')}">${deg(p.t)} °C</b> <span class="muted">${esc(p.clock)}</span><br><span class="muted">${esc(p.app)}${p.charging ? ' · mengecas' : ''}</span></div>
       <div><small>Waktu panas (Badan HP ≥ ${hot} °C)</small><b class="${s.hot_pct ? 'hot' : 'ok'}">${s.hot_pct}%</b><br><span class="muted">${s.samples} sampel · ${esc(s.from)}–${esc(s.to)}</span></div>
     </div>`;
-  h += '<h3>🔥 Penyebab panas</h3>' + (s.causes.length ? bars(s.causes, c => c.pct + '%') : '<div class="muted">Tidak ada momen panas. 👍</div>');
+  h += '<h3>🔥 Penyebab panas</h3>' + (s.causes.length ? causeBars(s.causes) : '<div class="muted">Tidak ada momen panas. 👍</div>');
   h += '<h3>📱 Per aplikasi</h3><table>' + s.apps.map(a => `<tr><td>${esc(a.name)} <span class="muted">${a.pct}%</span></td><td class="${level(a.peak)}">${deg(a.avg)} / ${deg(a.peak)} °C</td></tr>`).join('') + '</table>';
   h += '<div class="muted" style="margin-top:4px">Badan HP rata-rata / tertinggi</div>';
   h += '<h3>🐧 Per kernel</h3><table>' + s.kernels.map(k => `<tr><td>${esc(UI.shortKernel(k.name))} <span class="muted">${k.pct}%</span></td><td>${deg(k.avg)} / ${deg(k.peak)} °C</td></tr>`).join('') + '</table>';

@@ -129,6 +129,12 @@
     <table id="policies"></table>
   </details>
 
+  <details class="card fold hidden" id="hyperosCard">
+    <summary><span>🧯 Rem HyperOS</span><small class="muted" id="hyperosBrief"></small></summary>
+    <table id="hyperos"></table>
+    <p class="muted">Baca saja: batas yang dipasang HyperOS sendiri (thermal_message). Modul tidak mengubahnya. Suhu papan HyperOS juga dicatat di tab Suhu sebagai sensor hyperos_board (Badan HP).</p>
+  </details>
+
   <details class="card fold" id="chargeCard">
     <summary><span>🔌 Cas</span><small class="muted" id="chargeBrief"></small></summary>
     <div class="muted" id="switchLine"></div>
@@ -217,6 +223,19 @@ function gpuText(g) {
   return (parts.length ? parts.join(' · ') : 'Node GPU belum ditemukan.') + ' · Baca saja: batas GPU dipasang setelah node ini terbukti di HP.';
 }
 
+// HyperOS's own brakes (thermal_message), read only. Values are shown as the phone reports them.
+const HYPEROS = [['board', 'Suhu papan HyperOS'], ['sconfig', 'Profil termal (sconfig)'], ['temp_state', 'Status suhu (temp_state)'],
+                 ['cpu_limits', 'Batas CPU HyperOS'], ['modem_limit', 'Batas modem'], ['wifi_limit', 'Batas Wi-Fi'],
+                 ['max_brightness', 'Kecerahan maks'], ['video_mode', 'Mode video']];
+function renderHyperos(h) {
+  $('hyperosCard').classList.toggle('hidden', !h || !h.present);
+  if (!h || !h.present) return;
+  const value = (key, v) => key === 'board' ? (v > -9999 ? deg(v) + ' °C' : '') : String(v ?? '');
+  const rows = HYPEROS.filter(([key]) => value(key, h[key]) !== '');
+  $('hyperosBrief').textContent = h.board > -9999 ? deg(h.board) + '°' : '';
+  UI.html('hyperos', rows.map(([key, name]) => `<tr><td>${esc(name)}</td><td>${esc(value(key, h[key]))}</td></tr>`).join('') || '<tr><td>Node HyperOS kosong.</td></tr>');
+}
+
 function render(s) {
   if (s.ok === 0) { toast(s.error); return; }
   UI.kernel(s, {...(s.peer || status?.peer), installed: s.monitor.installed, running: s.monitor.running}, 'Thermal');
@@ -279,6 +298,7 @@ function render(s) {
   const results = {applied:'diterima', limited:'dibatasi lebih rendah', conflict:'berubah/ditolak', write_failed:'gagal ditulis', unsupported:'tidak didukung'};
   if (s.restore_pending) $('backend').textContent += ' · Pemulihan belum selesai; tekan Henti setelah node dapat ditulis.';
   if (s.gpu) $('gpuInfo').textContent = gpuText(s.gpu);
+  if (s.hyperos) renderHyperos(s.hyperos);
   UI.html('controls', (s.controls || []).map(v => `<tr><td>${esc(v.node)}<br><small>${esc(results[v.result] || v.result)}</small></td><td>${esc(v.requested)} → ${esc(v.actual)}</td></tr>`).join('') || '<tr><td colspan="2">Belum ada hasil penerapan.</td></tr>');
   CoganI18n.apply();
 }

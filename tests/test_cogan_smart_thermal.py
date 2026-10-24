@@ -148,6 +148,18 @@ class SamplerTests(unittest.TestCase):
         self.assertIn("battery=360", zones)
         self.assertNotIn("unused_sensor", zones)
         self.assertNotIn("broken", zones)
+        self.assertNotIn("hyperos_board", zones)
+
+    def test_hyperos_board_temperature_is_logged_as_phone_body(self):
+        # Owner 2026-10-24: HyperOS's board_sensor_temp (40613) next to quiet_therm, in the same log.
+        write(self.phone.sys / "class/thermal/thermal_message/board_sensor_temp", "40613\n")
+        self.phone.run("sampler.sh", "--once")
+        zones = self.lines()[0][12]
+        self.assertIn("hyperos_board=406", zones)
+        now = json.loads(self.phone.report("now"))
+        board = [zone for zone in now["zones"] if zone["name"] == "hyperos_board"]
+        self.assertEqual((board[0]["t"], board[0]["id"]), (406, "skin"))
+        self.assertEqual((now["body"], now["body_from"]), (406, "skin"))
 
     def test_latest_report_for_other_modules(self):
         self.phone.run("sampler.sh", "--once")
@@ -199,7 +211,7 @@ class ReportTests(unittest.TestCase):
         lines = []
         for i in range(140):
             ts = start + i * 20
-            # "Hot" is the phone body (shell_back) at or above 42 °C since v2.9.
+            # "Hot" is the phone body (shell_back) at or above 41 °C (v2.9.0).
             if i < 60:     # Mobile Legends: GPU heavy and hot
                 lines.append(sample(ts, "com.mobile.legends", {"soc_max": 470 + i % 30, "gpu1": 460, "battery": 370,
                                     "shell_back": 430 + i % 5}, cpu=280, gpu=70, top="com.mobile.legends:250"))
@@ -230,7 +242,11 @@ class ReportTests(unittest.TestCase):
         self.assertEqual(summary["causes"][0]["name"], "Grafis berat: Mobile Legends")
         self.assertIn("Latar belakang: com.google.android.gms", causes)
         self.assertIn("Cas cepat", causes)
-        self.assertEqual(sum(causes.values()), 100)
+        self.assertLessEqual(abs(sum(causes.values()) - 100), 1)          # rounded per cause
+        kinds = {cause["kind"]: cause["tip"] for cause in summary["causes"]}
+        self.assertEqual(kinds["gpu"], "Turunkan grafis atau FPS di game itu.")
+        self.assertIn("HyperCharge", kinds["fast"])
+        self.assertIn("➜ Saran: Turunkan grafis atau FPS di game itu.", summary["text"])
         apps = {app["pkg"]: app for app in summary["apps"]}
         self.assertEqual(apps["com.mobile.legends"]["name"], "Mobile Legends")
         self.assertEqual(apps["screen_off"]["name"], "Layar mati")
@@ -244,7 +260,7 @@ class ReportTests(unittest.TestCase):
         self.assertEqual((groups["Badan HP"]["id"], groups["Prosesor"]["id"]), ("skin", "cpu"))
         # Per app, kernel and mode: the phone body; the peak tile stays the processor.
         self.assertEqual((apps["com.mobile.legends"]["avg"], apps["com.mobile.legends"]["peak"]), (432, 434))
-        self.assertIn("Penyebab panas (Badan HP ≥ 42.0 °C)", summary["text"])
+        self.assertIn("Penyebab panas (Badan HP ≥ 41.0 °C)", summary["text"])
         self.assertEqual(max(value for _, value in summary["series"]), 434)
 
     def test_a_hot_processor_alone_is_not_hot(self):
@@ -259,6 +275,26 @@ class ReportTests(unittest.TestCase):
         summary = json.loads(self.phone.report("summary", "3600"))
         self.assertEqual((summary["samples"], summary["hot_pct"], summary["peak"]["t"]), (15, 33, 650))
         self.assertEqual([cause["name"] for cause in summary["causes"]], ["Aplikasi berat: Chrome"])
+
+    def test_causes_per_part_of_the_phone(self):
+        # Owner's log 2026-10-24: YouTube over 5G warmed the phone; the modem was the hottest part.
+        now = int(time.time())
+        lines = [sample(now - 900 + i * 20, "com.google.android.youtube", {"soc_max": 530, "battery": 400, "shell_back": 420},
+                        cpu=120, net="wifi:0,cell:400") for i in range(20)]
+        # Then Wi-Fi, still warm: screen and ordinary use.
+        lines += [sample(now - 450 + i * 20, "com.google.android.youtube", {"soc_max": 500, "battery": 405, "shell_back": 415},
+                         cpu=120) for i in range(20)]
+        for old in (self.phone.data / "data").glob("*.tsv"):
+            old.unlink()
+        write(self.phone.data / "data" / time.strftime("%Y-%m-%d.tsv", time.gmtime(now + 7 * 3600)), "".join(lines))
+        summary = json.loads(self.phone.report("summary", "3600"))
+        causes = {cause["name"]: cause for cause in summary["causes"]}
+        self.assertEqual(set(causes), {"Modem (data seluler): YouTube", "Layar & pemakaian: YouTube"})
+        self.assertEqual(causes["Modem (data seluler): YouTube"]["kind"], "modem")
+        self.assertIn("Wi-Fi", causes["Modem (data seluler): YouTube"]["tip"])
+        self.assertIn("kecerahan", causes["Layar & pemakaian: YouTube"]["tip"])
+        english = json.loads(self.phone.report("--lang", "en", "summary", "3600"))
+        self.assertIn("Modem (cellular data): YouTube", [cause["name"] for cause in english["causes"]])
 
     def test_summary_per_power_mode(self):
         start = self.now - 140 * 20

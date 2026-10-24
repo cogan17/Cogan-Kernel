@@ -67,7 +67,7 @@ class CompanionTests(unittest.TestCase):
         status = self.p.report('reset')
         self.assertEqual(int(node.read_text()), 2000000)
         self.assertEqual((status['config']['CHARGE_STOP'], status['config']['CHARGE_RESUME']), (95, 90))
-        self.assertEqual((status['config']['TARGET_TEMP'], status['config']['AUTOSTART'], status['running']), (42, 0, 0))
+        self.assertEqual((status['config']['TARGET_TEMP'], status['config']['AUTOSTART'], status['running']), (41, 0, 0))
 
     def test_force_retries_changed_cpu_limit_and_reports_actual_values(self):
         self.p.report('set', 'MODE', 'hemat')
@@ -107,7 +107,7 @@ class CompanionTests(unittest.TestCase):
         before = rows[0].read_bytes()
         self.t.report('set', 'HOT_TEMP', '50', 'INTERVAL', '60')
         s = json.loads(self.t.report('reset'))
-        self.assertEqual((s['hot'], s['interval'], s['autostart'], s['running']), (42, 20, 0, 0))
+        self.assertEqual((s['hot'], s['interval'], s['autostart'], s['running']), (41, 20, 0, 0))
         self.assertEqual(rows[0].read_bytes(), before)
 
     def test_invalid_multi_setting_request_is_atomic_and_cannot_inject_config_lines(self):

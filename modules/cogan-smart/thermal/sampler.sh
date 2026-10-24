@@ -57,9 +57,10 @@ sample() {
   echo "$now" > "$CT_RUN/last"
 
   # Short report of this sample for other modules (Cogan Smart · Power reads it):
-  # ts  main_temp  battery_temp  charging  app_label  cause
+  # ts  main_temp  battery_temp  charging  app_label  cause (from the last few samples, see report.awk)
+  tail -n 9 "$CT_DATA/data/$day.tsv" > "$CT_RUN/recent.tsv"
   awk -v mode=latest -v since=0 -v now=$((now + 1)) -v HOT=$((HOT_TEMP * 10)) \
-      -f "$MODDIR/thermal.awk" -f "$MODDIR/report.awk" "$CT_RUN/sample.tsv" > "$CT_RUN/latest.tmp" 2>/dev/null
+      -f "$MODDIR/thermal.awk" -f "$MODDIR/report.awk" "$CT_RUN/recent.tsv" > "$CT_RUN/latest.tmp" 2>/dev/null
   [ -s "$CT_RUN/latest.tmp" ] && mv "$CT_RUN/latest.tmp" "$CT_RUN/latest"
   IFS='	' read -r _ main _ _ label _ < "$CT_RUN/latest" 2>/dev/null
   [ "$NOTIFY" = 1 ] || return 0
