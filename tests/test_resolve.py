@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """Offline tests for kernel/resolve.py: newest ACK release per sublevel, tags, hooks, KSUN manager."""
+import subprocess
+import tempfile
 import unittest
+from pathlib import Path
 
 from kernel import resolve as r
 
@@ -89,6 +92,32 @@ class TagsAndHooksTest(unittest.TestCase):
         self.assertEqual(r.hook_state("int my_write_context(void)\nstatic int my_write_context(void);\n"), "global")
         self.assertEqual(r.hook_state("\tmy_write_context();\n"), "missing")
 
+    def test_bakasu_ready_follows_a_macro_name(self):
+        # BakaSU main, 24 Oct 2026: the hook SUSFS calls is the macro name of a global function.
+        with tempfile.TemporaryDirectory() as tmp:
+            git = lambda *args: subprocess.run(["git", "-C", tmp, *args], check=True, capture_output=True, text=True)
+            git("init", "-q")
+            git("config", "user.name", "t"); git("config", "user.email", "t@t"); git("config", "commit.gpgsign", "false")
+            patch = Path(tmp, r.SUSFS_PATCH)
+            patch.parent.mkdir(parents=True)
+            patch.write_text("+extern int my_setprocattr(const char *name, void *value, size_t size);\n"
+                             "+\t\treturn my_setprocattr(name, value, size);\n")
+            git("add", "-A"); git("commit", "-qm", "susfs"); git("branch", "susfs")
+            git("rm", "-rq", "kernel_patches")
+            hide = Path(tmp, "kernel/feature/selinux_hide.c")
+            hide.parent.mkdir(parents=True)
+            hide.write_text("#ifdef KSU_COMPAT_HAS_SUSFS_FEATURE_SELINUX_HIDE\n"
+                            "    #define ksu_handle_selinux_setprocattr my_setprocattr\n#endif\n"
+                            "int __nocfi ksu_handle_selinux_setprocattr(const char *name, void *value, size_t size)\n{\n}\n")
+            git("add", "-A"); git("commit", "-qm", "bakasu"); git("branch", "bakasu")
+            self.assertIsNone(r.bakasu_ready(tmp, "bakasu", "susfs"))
+            hide.write_text(hide.read_text().replace("int __nocfi", "static int __nocfi"))
+            git("commit", "-qam", "static"); git("branch", "static")
+            self.assertEqual(r.bakasu_ready(tmp, "static", "susfs"), "`my_setprocattr` static")
+            hide.write_text("int ksu_handle_selinux_setprocattr(void)\n{\n}\n")
+            git("commit", "-qam", "no macro"); git("branch", "plain")
+            self.assertEqual(r.bakasu_ready(tmp, "plain", "susfs"), "`my_setprocattr` missing")
+
 
 class KsunManagerTest(unittest.TestCase):
     def api(self, runs, artifacts):
@@ -99,7 +128,7 @@ class KsunManagerTest(unittest.TestCase):
     def test_the_ci_run_of_the_base_commit(self):
         artifacts = [{"name": "manager", "id": 1, "expired": False}, {"name": "manager-spoofed", "id": 2, "expired": False}]
         found = r.ksun_manager("b" * 40, self.api([{"id": 9, "html_url": "u"}], artifacts))
-        self.assertEqual(found, {"run": 9, "url": "u", "manager": 1, "spoofed": 2})
+        self.assertEqual(found, {"repo": "KernelSU-Next/KernelSU-Next", "run": 9, "url": "u", "manager": 1, "spoofed": 2})
 
     def test_no_or_expired_build_means_wait(self):
         expired = [{"name": "manager", "id": 1, "expired": True}]
@@ -107,6 +136,32 @@ class KsunManagerTest(unittest.TestCase):
             with self.assertRaises(r.Wait) as caught:
                 r.ksun_manager("b" * 40, self.api(runs, expired))
             self.assertIn("bbbbbbbbbbbb", caught.exception.id_text)
+
+
+class BakasuMainTest(unittest.TestCase):
+    # Owner 2026-10-24 (Baka-SU/BakaSU#214): BakaSU main before its next release.
+    def test_newest_successful_main_build_and_its_manager(self):
+        asked = []
+
+        def api(path):
+            asked.append(path)
+            if "/runs?" in path:
+                return {"workflow_runs": [{"id": 7, "html_url": "u", "head_sha": "c" * 40}]}
+            return {"artifacts": [{"name": "Manager-release", "id": 3, "expired": False},
+                                  {"name": "Spoofed-Manager-release", "id": 4, "expired": False},
+                                  {"name": "Manager-debug", "id": 5, "expired": False}]}
+        commit, manager = r.bakasu_main(api)
+        self.assertEqual(commit, "c" * 40)
+        self.assertEqual(manager, {"repo": "Baka-SU/BakaSU", "run": 7, "url": "u", "manager": 3, "spoofed": 4})
+        self.assertIn("build-manager.yml/runs?branch=main&event=push&status=success", asked[0])
+
+    def test_no_main_build_means_wait(self):
+        for runs, artifacts in (([], []), ([{"id": 7, "html_url": "u", "head_sha": "c" * 40}],
+                                           [{"name": "Manager-release", "id": 3, "expired": True}])):
+            api = lambda path: {"workflow_runs": runs} if "/runs?" in path else {"artifacts": artifacts}
+            with self.assertRaises(r.Wait) as caught:
+                r.bakasu_main(api)
+            self.assertIn("BakaSU di main", caught.exception.id_text)
 
 
 class UnicodeFixTest(unittest.TestCase):

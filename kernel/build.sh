@@ -147,7 +147,7 @@ if [ "$ROOT" = "KSUN" ]; then
   KSU_VERSION="$(snap root_source.ksu_version)"
 else
   curl -fsSL "https://raw.githubusercontent.com/Baka-SU/BakaSU/$ROOT_COMMIT/kernel/setup.sh" -o "$WORK/root-setup.sh"
-  bash "$WORK/root-setup.sh" "$(snap root_source.tag)"
+  bash "$WORK/root-setup.sh" "$ROOT_COMMIT"   # a release tag's commit, or a main commit (resolve.py)
   [ "$(git -C KernelSU rev-parse HEAD)" = "$ROOT_COMMIT" ] || fail "BakaSU checkout is not $ROOT_COMMIT"
   KSU_VERSION=""
 fi
@@ -260,20 +260,25 @@ download_digest() {  # url, file, sha256:digest (from the release API)
   curl -fsSL --retry 3 "$1" -o "$2"
   [ -z "$3" ] || [ "sha256:$(sha256sum "$2" | cut -d' ' -f1)" = "$3" ] || fail "$(basename "$2"): SHA256 differs from its release"
 }
-if [ "$ROOT" = "KSUN" ]; then
+if [ "$(snap manager.kind)" = "release" ]; then
+  download_digest "$(snap manager.url)" "$OUT/2-MANAGER_BakaSU_$(snap root_source.tag).apk" "$(snap manager.digest)"
+else
+  # The official CI build of the kernel's own commit: KernelSU Next, or BakaSU main.
   for kind in manager spoofed; do
     id="$(snap "manager.$kind" 2>/dev/null)" || continue
     curl -fsSL -H "Authorization: Bearer $GH_TOKEN" \
-      "https://api.github.com/repos/KernelSU-Next/KernelSU-Next/actions/artifacts/$id/zip" -o "$WORK/$kind.zip"
+      "https://api.github.com/repos/$(snap manager.repo)/actions/artifacts/$id/zip" -o "$WORK/$kind.zip"
     apk="$(unzip -Z1 "$WORK/$kind.zip" | grep '\.apk$' | head -n 1)"
-    [ -n "$apk" ] || fail "KernelSU Next CI artifact $id has no APK"
+    [ -n "$apk" ] || fail "$ROOT_NAME CI artifact $id has no APK"
     unzip -p "$WORK/$kind.zip" "$apk" > "$WORK/$kind.apk"
-    label="$(echo "$apk" | sed -E 's/^KernelSU_Next_//; s/-spoofed//; s/-release\.apk$//; s/\.apk$//')"
     prefix=$([ "$kind" = manager ] && echo 2-MANAGER || echo 3-MANAGER-SPOOFED)
-    mv "$WORK/$kind.apk" "$OUT/${prefix}_KernelSU-Next_${label}.apk"
+    if [ "$ROOT" = "KSUN" ]; then
+      label="$(echo "$apk" | sed -E 's/^KernelSU_Next_//; s/-spoofed//; s/-release\.apk$//; s/\.apk$//')"
+      mv "$WORK/$kind.apk" "$OUT/${prefix}_KernelSU-Next_${label}.apk"
+    else
+      mv "$WORK/$kind.apk" "$OUT/${prefix}_BakaSU_main-$(echo "$ROOT_COMMIT" | cut -c1-8).apk"
+    fi
   done
-else
-  download_digest "$(snap manager.url)" "$OUT/2-MANAGER_BakaSU_$(snap root_source.tag).apk" "$(snap manager.digest)"
 fi
 if [ "${NOMOUNT:-true}" = "true" ]; then
   download_digest "$(snap nomount.url)" "$OUT/4-NOMOUNT-MODULE_$(snap nomount.tag).zip" "$(snap nomount.digest)"

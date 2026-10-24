@@ -2,8 +2,9 @@
 """Newest version of every component of a rothko build, and whom to wait for when one does not fit.
 
 No lock, pin or frozen tree (owner 2026-10-23): every run takes the newest official ACK
-android14-6.1 release, the newest KernelSU Next (pershoot dev-susfs) or BakaSU release, the newest
-SUSFS, NoMount release, Baseband Guard, AnyKernel3 and Neutron clang. The commits found here are
+android14-6.1 release, the newest KernelSU Next (pershoot dev-susfs) or BakaSU release (BakaSU main
+while its newest release does not take the newest SUSFS yet), the newest SUSFS, NoMount release,
+Baseband Guard, AnyKernel3 and Neutron clang. The commits found here are
 the run's snapshot, passed to every build job so they all build the same thing.
 
 When the newest version cannot work on rothko yet, the variant is not built and the summary says
@@ -35,6 +36,8 @@ KSUN_FORK = "https://github.com/pershoot/KernelSU-Next"
 KSUN_FORK_BRANCH = "dev-susfs"
 KSUN_CI = ("KernelSU-Next/KernelSU-Next", "build-manager-ci.yml", {"manager": "manager", "spoofed": "manager-spoofed"})
 BAKASU = "https://github.com/Baka-SU/BakaSU"
+# BakaSU's official CI builds the manager of every main commit with its release key, like its releases.
+BAKASU_CI = ("Baka-SU/BakaSU", "build-manager.yml", {"manager": "Manager-release", "spoofed": "Spoofed-Manager-release"})
 SUSFS = "https://gitlab.com/simonpunk/susfs4ksu"
 SUSFS_BRANCH = "gki-android14-6.1"
 SUSFS_PATCH = "kernel_patches/50_add_susfs_in_gki-android14-6.1.patch"
@@ -178,20 +181,43 @@ def ksun_version(repo, head, base_branch):
     return base, 30000 + int(run("git", "-C", repo, "rev-list", "--count", base).strip())
 
 
+def ci_manager(ci, run_info, api=api):
+    """Manager artifacts of one official CI run, or None when its manager is gone (expired)."""
+    repo, _, names = ci
+    # BakaSU's runs have 30 artifacts, the API's default page: ask for 100.
+    listed = api(f"repos/{repo}/actions/runs/{run_info['id']}/artifacts?per_page=100")["artifacts"]
+    artifacts = {a["name"]: a for a in listed if not a["expired"]}
+    if names["manager"] not in artifacts:
+        return None
+    return {"repo": repo, "run": run_info["id"], "url": run_info["html_url"],
+            **{key: artifacts[name]["id"] for key, name in names.items() if name in artifacts}}
+
+
 def ksun_manager(base, api=api):
     """Official KernelSU Next CI run that built the manager at the kernel's base commit."""
-    repo, workflow, names = KSUN_CI
+    repo, workflow, _ = KSUN_CI
     runs = api(f"repos/{repo}/actions/workflows/{workflow}/runs?head_sha={base}&status=success&per_page=5")
     for ci in runs.get("workflow_runs", []):
-        artifacts = {a["name"]: a for a in api(f"repos/{repo}/actions/runs/{ci['id']}/artifacts")["artifacts"]
-                     if not a["expired"]}
-        if names["manager"] in artifacts:
-            return {"run": ci["id"], "url": ci["html_url"],
-                    **{key: artifacts[name]["id"] for key, name in names.items() if name in artifacts}}
+        found = ci_manager(KSUN_CI, ci, api)
+        if found:
+            return found
     raise Wait(f"Tunggu build CI resmi manager KernelSU Next untuk commit `{base[:12]}` "
                "(belum ada atau artifact-nya sudah kedaluwarsa).",
                f"Wait for the official KernelSU Next CI manager build of commit `{base[:12]}` "
                "(none yet, or its artifact expired).")
+
+
+def bakasu_main(api=api):
+    """(commit, manager) of the newest BakaSU main commit the official CI built a manager for.
+    Commits that only change other files get no CI run, so the newest main commit may not be it."""
+    repo, workflow, _ = BAKASU_CI
+    runs = api(f"repos/{repo}/actions/workflows/{workflow}/runs?branch=main&event=push&status=success&per_page=1")
+    for ci in runs.get("workflow_runs", []):
+        found = ci_manager(BAKASU_CI, ci, api)
+        if found:
+            return ci["head_sha"], found
+    raise Wait("Tunggu build CI resmi manager BakaSU di main (belum ada atau artifact-nya sudah kedaluwarsa).",
+               "Wait for the official BakaSU CI manager build on main (none yet, or its artifact expired).")
 
 
 def needed_hooks(susfs_patch_text):
@@ -216,8 +242,22 @@ def bakasu_ready(repo, bakasu_ref, susfs_ref):
     # The suspension (BakaSU 48fa4bb7): an unconditional $(error) in its SUSFS makefile.
     blocked = (grep("-E", r"^\$\(error", path=":(glob)kernel/**/*susfs*").strip()
                or grep("-F", "Please wait susfs update").strip())
+
+    def find_hook(name):
+        found = hook_state(grep("-h", "-E", rf"(^|[^A-Za-z0-9_]){name}[[:space:]]*\("))
+        if found != "missing":
+            return found
+        # A hook may be the macro name of another function, e.g. BakaSU main (24 Oct 2026):
+        # "#define ksu_handle_selinux_setprocattr my_setprocattr" once SUSFS brings its SELinux hide.
+        defines = grep("-h", "-E", rf"^[[:space:]]*#[[:space:]]*define[[:space:]]+[A-Za-z_][A-Za-z0-9_]*[[:space:]]+{name}[[:space:]]*$")
+        for alias in re.findall(rf"define\s+([A-Za-z_]\w*)\s+{name}\s*$", defines, re.M):
+            found = hook_state(grep("-h", "-E", rf"(^|[^A-Za-z0-9_]){alias}[[:space:]]*\("))
+            if found != "missing":
+                return found
+        return "missing"
+
     needed = needed_hooks(run("git", "-C", repo, "show", f"{susfs_ref}:{SUSFS_PATCH}"))
-    states = {name: hook_state(grep("-h", "-E", rf"(^|[^A-Za-z0-9_]){name}[[:space:]]*\(")) for name in needed}
+    states = {name: find_hook(name) for name in needed}
     problems = (["SUSFS diblokir di BakaSU / SUSFS blocked in BakaSU"] if blocked else []) + [
         f"`{name}` {state}" for name, state in states.items() if state != "global"]
     return ", ".join(problems) or None
@@ -254,19 +294,32 @@ def resolve(root, sublevel, work, unicode=False):
         run("git", "-C", repo, "fetch", "-q", "--depth=1", BAKASU, f"{sha}:refs/check/bakasu")
         problem = bakasu_ready(repo, "refs/check/bakasu", "refs/check/susfs")
         if problem:
-            raise Wait(f"Tunggu pengembang BakaSU: rilis terbaru {tag} belum siap untuk SUSFS terbaru "
-                       f"`{susfs[:12]}` ({problem}). Atau tunggu simonpunk menyesuaikan SUSFS.",
-                       f"Wait for the BakaSU developer: the newest release {tag} is not ready for the newest "
-                       f"SUSFS `{susfs[:12]}` ({problem}). Or wait for simonpunk to adapt SUSFS.")
-        release = api(f"repos/Baka-SU/BakaSU/releases/tags/{tag}")
-        apks = [a for a in release["assets"] if a["name"].endswith(".apk")]
-        if not apks:
-            raise Wait(f"Tunggu pengembang BakaSU menerbitkan APK manager untuk {tag}.",
-                       f"Wait for the BakaSU developer to publish the manager APK of {tag}.")
-        apk = next((a for a in apks if "universal" in a["name"] or "arm64" in a["name"]), apks[0])
-        snap["root_source"] = {"repo": BAKASU, "tag": tag, "commit": sha}
-        snap["manager"] = {"kind": "release", "name": apk["name"], "url": apk["browser_download_url"],
-                           "digest": apk.get("digest", "")}
+            # Before the next release, BakaSU main may already take the newest SUSFS (owner 24 Okt 2026,
+            # Baka-SU/BakaSU#214). Kernel and manager then come from the same main commit.
+            try:
+                main, manager = bakasu_main()
+                run("git", "-C", repo, "fetch", "-q", "--depth=1", BAKASU, f"{main}:refs/check/bakasu-main")
+                main_problem = bakasu_ready(repo, "refs/check/bakasu-main", "refs/check/susfs")
+                main_id = main_en = f"main `{main[:12]}`: {main_problem}"
+            except Wait as wait:
+                main, main_problem, main_id, main_en = None, True, wait.id_text, wait.en_text
+            if main_problem:
+                raise Wait(f"Tunggu pengembang BakaSU: rilis terbaru {tag} belum siap untuk SUSFS terbaru "
+                           f"`{susfs[:12]}` ({problem}); {main_id}. Atau tunggu simonpunk menyesuaikan SUSFS.",
+                           f"Wait for the BakaSU developer: the newest release {tag} is not ready for the newest "
+                           f"SUSFS `{susfs[:12]}` ({problem}); {main_en}. Or wait for simonpunk to adapt SUSFS.")
+            snap["root_source"] = {"repo": BAKASU, "branch": "main", "commit": main}
+            snap["manager"] = {"kind": "ci", **manager}
+        else:
+            release = api(f"repos/Baka-SU/BakaSU/releases/tags/{tag}")
+            apks = [a for a in release["assets"] if a["name"].endswith(".apk")]
+            if not apks:
+                raise Wait(f"Tunggu pengembang BakaSU menerbitkan APK manager untuk {tag}.",
+                           f"Wait for the BakaSU developer to publish the manager APK of {tag}.")
+            apk = next((a for a in apks if "universal" in a["name"] or "arm64" in a["name"]), apks[0])
+            snap["root_source"] = {"repo": BAKASU, "tag": tag, "commit": sha}
+            snap["manager"] = {"kind": "release", "name": apk["name"], "url": apk["browser_download_url"],
+                               "digest": apk.get("digest", "")}
     tag, sha = newest_tag(ls_remote(NOMOUNT, "refs/tags/v*"), STABLE)
     release = api(f"repos/maxsteeel/nomount/releases/tags/{tag}")
     module = next((a for a in release["assets"] if a["name"].endswith(".zip")), None)
