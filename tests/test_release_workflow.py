@@ -9,6 +9,7 @@ from pathlib import Path
 
 WORKFLOW = Path(__file__).resolve().parents[1] / ".github/workflows/release-from-run.yml"
 SOURCE_SHA = "4730fee1297fa5ef1a779a4223136ab1912b09e2"
+MAIN_SHA = "3a81421" + "0" * 33
 
 
 def script(name):
@@ -40,8 +41,12 @@ elif [[ "$1 $2" == "release create" ]]; then
     server-error) echo 'HTTP 500: server error' >&2; exit 1;;
   esac
   echo 'https://github.com/cogan17/Xiomi_14T_Pro/releases/tag/v26.10.24-r2'
+elif [[ "$1 $2" == "api repos/cogan17/Xiomi_14T_Pro/contents/.github?ref=$SOURCE_SHA" ]]; then
+  echo "$WORKFLOWS_AT_SOURCE"
+elif [[ "$1 $2" == "api repos/cogan17/Xiomi_14T_Pro/contents/.github?ref=$GITHUB_SHA" ]]; then
+  echo "$WORKFLOWS_AT_MAIN"
 else
-  echo 'Unexpected API request: the App has no Actions permission' >&2
+  echo "Unexpected request: $*" >&2
   exit 2
 fi
 ''')
@@ -49,6 +54,8 @@ fi
         self.env = dict(os.environ, PATH=f"{self.root / 'bin'}:{os.environ['PATH']}",
                         CASE="success", GITHUB_REPOSITORY="cogan17/Xiomi_14T_Pro",
                         GITHUB_SERVER_URL="https://github.com", SOURCE_RUN="40046361218",
+                        SOURCE_SHA=SOURCE_SHA, GITHUB_SHA=MAIN_SHA,
+                        WORKFLOWS_AT_SOURCE="tree1", WORKFLOWS_AT_MAIN="tree1",
                         GITHUB_STEP_SUMMARY=str(self.root / "summary.md"),
                         RELEASE_TYPE="Pre-Release", TESTED="true", NOTE="Tested on my device.")
 
@@ -60,24 +67,7 @@ fi
         path = self.root / "summary.md"
         return path.read_text() if path.exists() else ""
 
-    def test_incomplete_app_setup_stops_with_bilingual_instructions(self):
-        for client, key in (("", "false"), ("Iv1.example", "false"), ("", "true")):
-            with self.subTest(client=client, key=key):
-                result = self.run_step("Periksa pengaturan App / check App setup",
-                                       RELEASE_APP_CLIENT_ID=client, HAS_RELEASE_APP_PRIVATE_KEY=key)
-                self.assertEqual(result.returncode, 1, result.stderr)
-                self.assertIn("RELEASE_APP_CLIENT_ID", self.summary())
-                self.assertIn("RELEASE_APP_PRIVATE_KEY", self.summary())
-                self.assertIn("🇮🇩", self.summary())
-                self.assertIn("🇬🇧", self.summary())
-                self.assertFalse((self.root / "called.txt").exists())
-
-    def test_complete_app_configuration_passes_without_api_calls(self):
-        result = self.run_step("Periksa pengaturan App / check App setup",
-                               RELEASE_APP_CLIENT_ID="Iv1.example", HAS_RELEASE_APP_PRIVATE_KEY="true")
-        self.assertEqual(result.returncode, 0, result.stderr)
-
-    def test_publish_uses_validated_source_without_actions_permission(self):
+    def test_same_workflows_tag_the_build_commit(self):
         result = self.run_step("Terbitkan / publish")
         self.assertEqual(result.returncode, 0, result.stderr)
         args = (self.root / "called.txt").read_text().splitlines()
@@ -101,20 +91,25 @@ fi
         self.assertEqual(result.returncode, 1)
         self.assertFalse((self.root / "called.txt").exists())
 
-    def test_permissions_failure_points_to_app_setup(self):
-        result = self.run_step("Terbitkan / publish", CASE="denied")
-        self.assertEqual(result.returncode, 1)
-        self.assertIn("RELEASE_APP_PRIVATE_KEY", self.summary())
-        self.assertIn("Contents dan Workflows", self.summary())
-        self.assertIn("Contents and Workflows", self.summary())
-        self.assertNotIn("Terbit:", self.summary())
+    def test_different_workflows_tag_this_run_commit(self):
+        result = self.run_step("Terbitkan / publish", WORKFLOWS_AT_MAIN="tree2")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        args = (self.root / "called.txt").read_text().splitlines()
+        self.assertEqual(args[args.index("--target") + 1], MAIN_SHA)
 
-    def test_server_failure_is_not_reported_as_permissions_failure(self):
-        result = self.run_step("Terbitkan / publish", CASE="server-error")
-        self.assertEqual(result.returncode, 1)
-        self.assertIn("HTTP 500", result.stderr)
-        self.assertNotIn("RELEASE_APP_PRIVATE_KEY", self.summary())
+    def test_unreadable_workflows_tag_this_run_commit(self):
+        result = self.run_step("Terbitkan / publish", WORKFLOWS_AT_SOURCE="", WORKFLOWS_AT_MAIN="")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        args = (self.root / "called.txt").read_text().splitlines()
+        self.assertEqual(args[args.index("--target") + 1], MAIN_SHA)
 
+    def test_refused_release_stops_without_publish_summary(self):
+        for case in ("denied", "server-error"):
+            with self.subTest(case=case):
+                result = self.run_step("Terbitkan / publish", CASE=case)
+                self.assertEqual(result.returncode, 1)
+                self.assertIn("HTTP", result.stderr)
+                self.assertNotIn("Terbit:", self.summary())
 
 if __name__ == "__main__":
     unittest.main()
