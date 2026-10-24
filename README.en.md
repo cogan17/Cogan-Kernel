@@ -82,7 +82,7 @@ The builder uses the official ACK `android14-6.1` releases since the phone's sto
 | 138 | `2025-06_r17` | ⏳ KernelSU Next: [Wait for simonpunk to update SUSFS: its newest kernel patch does not fit ACK 6.1.138](https://github.com/cogan17/Xiomi_14T_Pro/actions/runs/40048269498) · the phone's stock kernel; archive r5 tested on the phone |
 <!-- sublevel:end -->
 
-Unicode fix (optional) is proven on 176 (CI) and 138 (locally); other sublevels are expected to fit. If WildKernel's patch does not fit yet, the build stops: untick Unicode fix to build anyway.
+Unicode fix (optional) passes the build + KMI gate on 157, 162, 172 and 176, and applies cleanly on 138 and 145 ([CI](https://github.com/cogan17/Xiomi_14T_Pro/actions/runs/40048269498)). If WildKernel's patch does not fit yet, the build stops: untick Unicode fix to build anyway.
 
 </details>
 
