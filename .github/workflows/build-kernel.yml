@@ -175,6 +175,7 @@ jobs:
           PY
 
       - uses: actions/upload-artifact@v7.0.1
+        if: always()
         with:
           name: snapshots-${{ github.run_number }}
           path: snapshots
@@ -238,38 +239,6 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: bash kernel/build.sh
 
-      - name: Summary
-        if: always()
-        env:
-          NAME: ${{ matrix.name }}
-          OUTCOME: ${{ steps.build.outcome }}
-        run: |
-          python3 - <<'PY'
-          import json, os
-          from pathlib import Path
-          out = Path("out")
-          name, ok = os.environ["NAME"], os.environ["OUTCOME"] == "success"
-          lines = [f"## {name}", ""]
-          env = dict(l.split("=", 1) for l in (out / "build.env").read_text().splitlines() if "=" in l) if (out / "build.env").exists() else {}
-          wait = json.loads((out / "wait.json").read_text()) if (out / "wait.json").exists() else None
-          files = sorted(p.name for p in out.glob("[1-4]-*"))
-          for lang, flag, done, failed in (("id", "🇮🇩 Bahasa Indonesia", "✅ Berhasil", "❌ Gagal"),
-                                           ("en", "🇬🇧 English", "✅ Built", "❌ Failed")):
-              lines += [f"<details{' open' if lang == 'id' else ''}><summary>{flag}</summary>", ""]
-              if ok:
-                  lines += [f"**{done}:** `{env.get('RELEASE_NAME', '')}` · `{env.get('LINUX_VERSION', '')}` · {env.get('VARIANT', '')}",
-                            "", f"- {env.get('KMI_COMPAT', '').split('; BSP:')[0]}", f"- Fitur / features: {env.get('FEATURES', '')}", "",
-                            *[f"- `{f}`" for f in files]]
-              elif wait:
-                  lines += [f"> [!WARNING]\n> ⏳ {wait[lang]}"]
-              else:
-                  lines += [f"**{failed}.** " + ("Lihat langkah merah pertama di log. Kalau gate KMI yang berhenti, kernel ini tidak aman untuk HP."
-                                                 if lang == "id" else "See the first red step in the log. If the KMI gate stopped, this kernel is not safe for the phone.")]
-              lines += ["", "</details>", ""]
-          with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as handle:
-              handle.write("\n".join(lines) + "\n")
-          PY
-
       - name: Upload 1 - kernel
         if: success()
         uses: actions/upload-artifact@v7.0.1
@@ -307,6 +276,8 @@ jobs:
             out/build.env
             out/kmi-compat.json
             out/wait.json
+            out/stage.txt
+            out/error.txt
           if-no-files-found: ignore
           retention-days: 7
 
@@ -329,14 +300,6 @@ jobs:
       - uses: actions/attest@v4.2.2
         with:
           subject-path: kernel/*.zip
-      - name: Cara cek / how to check
-        run: |
-          {
-            echo "### 🔏 Keaslian / Authenticity"
-            for f in kernel/*.zip; do echo "- \`${f#kernel/}\` sha256 \`$(sha256sum "$f" | cut -d' ' -f1)\`"; done
-            echo
-            echo "\`gh attestation verify <zip> --repo $GITHUB_REPOSITORY\`"
-          } >> "$GITHUB_STEP_SUMMARY"
 
   release:
     name: Terbit / publish (${{ inputs.release_type }})
@@ -379,3 +342,37 @@ jobs:
           gh release create "$tag" files/* --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" "${mode[@]}" \
             --title "$title" --notes-file notes.md
           { echo "## Rilis / release: [$tag]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/tag/$tag) ($RELEASE_TYPE)"; echo; cat notes.md; } >> "$GITHUB_STEP_SUMMARY"
+
+  # One result table for the whole run (owner 2026-10-24): built, failed (and why) and not built,
+  # in Indonesian and English, README style. Runs whatever happened before it.
+  summary:
+    name: Ringkasan / summary
+    needs: [resolve, build, attest, release]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: kernel/run_summary.py
+          sparse-checkout-cone-mode: false
+      - uses: actions/download-artifact@v8.0.2
+        continue-on-error: true
+        with:
+          pattern: build-info-*
+          path: info
+      - uses: actions/download-artifact@v8.0.2
+        continue-on-error: true
+        with:
+          name: snapshots-${{ github.run_number }}
+          path: snapshots
+      - name: Hasil / results
+        env:
+          MATRIX: ${{ needs.resolve.outputs.matrix }}
+          RESOLVE: ${{ needs.resolve.result }}
+          ATTEST: ${{ needs.attest.result }}
+          RELEASE: ${{ needs.release.result }}
+        run: |
+          mkdir -p info snapshots
+          python3 kernel/run_summary.py --matrix "$MATRIX" --info info --snapshots snapshots --repo "$GITHUB_REPOSITORY" \
+            --resolve "$RESOLVE" --attest "$ATTEST" --release "$RELEASE" >> "$GITHUB_STEP_SUMMARY"

@@ -118,3 +118,13 @@ jobs:
             echo
             cat notes.md
           } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Ringkasan bila gagal / summary on failure
+        if: failure() || cancelled()
+        run: |
+          {
+            echo "## ❌ Rilis dari run gagal / Release from run failed"
+            echo
+            echo "- 🇮🇩 Tidak ada rilis yang diterbitkan. Alasannya ada di pesan error di atas (langkah merah pertama)."
+            echo "- 🇬🇧 No release was published. The reason is in the error message above (the first red step)."
+          } >> "$GITHUB_STEP_SUMMARY"

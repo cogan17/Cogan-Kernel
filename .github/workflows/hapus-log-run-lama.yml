@@ -94,3 +94,13 @@ jobs:
             echo "|---|---|---|---|---|"
             head -n 200 picked.tsv | awk -F'\t' '{printf "| %s | %s | %s | %s | %s |\n", $1, $2, $3, $4, $5}'
           } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Ringkasan bila gagal / summary on failure
+        if: failure() || cancelled()
+        run: |
+          {
+            echo "## ❌ Hapus log run lama gagal / Delete old run logs failed"
+            echo
+            echo "- 🇮🇩 Run yang belum dihapus tetap ada. Alasannya ada di pesan error di atas (langkah merah pertama)."
+            echo "- 🇬🇧 Runs not deleted yet are kept. The reason is in the error message above (the first red step)."
+          } >> "$GITHUB_STEP_SUMMARY"
