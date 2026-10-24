@@ -67,6 +67,22 @@
 </details>
 
 <details>
+<summary>🧩 <b>Supported sublevels</b></summary>
+
+The builder uses the official ACK `android14-6.1` releases since the phone's stock kernel; `lts` = the newest. New ACK releases are picked up automatically; the KMI gate decides.
+
+| Sublevel | ACK release | Status |
+|---|---|---|
+| **176** (`lts`) | `2026-09_r4` | ✅ r1, tested on the phone |
+| 172 · 162 · 157 · 145 | `2026-06_r14` · `2026-03_r24` · `2025-12_r32` · `2025-09_r36` | 🧪 passed build + KMI gate in the predecessor repository; not built here yet |
+| 138 | `2025-06_r11` (the phone's stock kernel) | 🧪 same; archive r5 tested on the phone |
+| 141 | `2025-07_r13` | ❌ rejected by the KMI gate (2 vendor hooks the phone's modules use are missing) |
+
+Unicode fix (optional) is proven on 176 (CI) and 138 (locally); other sublevels are expected to fit. If WildKernel's patch does not fit yet, the build stops: untick Unicode fix to build anyway.
+
+</details>
+
+<details>
 <summary>🧪 <b>Test status</b></summary>
 
 | Build | Result |

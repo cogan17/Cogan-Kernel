@@ -67,6 +67,22 @@
 </details>
 
 <details>
+<summary>🧩 <b>Sublevel yang didukung</b></summary>
+
+Builder memakai rilis ACK resmi `android14-6.1` sejak kernel bawaan HP; `lts` = yang terbaru. Rilis ACK baru ikut otomatis, gate KMI yang memutuskan.
+
+| Sublevel | Rilis ACK | Status |
+|---|---|---|
+| **176** (`lts`) | `2026-09_r4` | ✅ r1, diuji di HP |
+| 172 · 162 · 157 · 145 | `2026-06_r14` · `2026-03_r24` · `2025-12_r32` · `2025-09_r36` | 🧪 lolos build + gate KMI di repo pendahulu; di repo ini belum dibuild |
+| 138 | `2025-06_r11` (kernel bawaan HP) | 🧪 sama; arsip r5 diuji di HP |
+| 141 | `2025-07_r13` | ❌ ditolak gate KMI (2 vendor hook yang dipakai modul HP tidak ada) |
+
+Unicode fix (opsional) terbukti di 176 (CI) dan 138 (lokal); sublevel lain diharapkan cocok. Bila patch WildKernel belum cocok, build berhenti: lepas centang Unicode fix untuk tetap build.
+
+</details>
+
+<details>
 <summary>🧪 <b>Status uji</b></summary>
 
 | Build | Hasil |
