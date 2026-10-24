@@ -27,12 +27,12 @@ on:
         type: string
         default: "Cogan"
       root_flavor:
-        description: "Root Flavor"
+        description: "Root Flavor (selalu dengan SUSFS / always with SUSFS). BakaSU dibangun bila sudah siap / BakaSU is built once it is ready"
         type: choice
-        default: "KernelSU Next & BakaSU"
+        default: "KernelSU Next"
         options:
-          - "KernelSU Next & BakaSU"
           - "KernelSU Next"
+          - "KernelSU Next & BakaSU"
           - "BakaSU"
       lto:
         description: "LTO"
@@ -50,12 +50,8 @@ on:
         description: "Build Time: N = sekarang / now, atau mis. Thu Jan 1 00:00:00 UTC 2026"
         type: string
         default: "N"
-      use_susfs:
-        description: "SUSFS"
-        type: boolean
-        default: true
       use_nomount:
-        description: "NoMount (tertanam di kernel / built in)"
+        description: "NoMount: dicentang = tertanam di kernel, bukan LKM, modulnya ikut di rilis; dilepas = tanpa NoMount / ticked = built into the kernel (never an LKM), module in the release; unticked = no NoMount"
         type: boolean
         default: true
       use_bbg:
@@ -92,7 +88,6 @@ jobs:
       BRAND: ${{ inputs.brand_name }}
       REVISION: ${{ inputs.build_revision }}
       BUILD_TIME: ${{ inputs.build_time }}
-      USE_SUSFS: ${{ inputs.use_susfs }}
       USE_UNICODE: ${{ inputs.use_unicode }}
       DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
     steps:
@@ -103,7 +98,6 @@ jobs:
       - name: Periksa isian / check the form
         run: |
           set -euo pipefail
-          [ "$USE_SUSFS" = "true" ] || { echo "::error::SUSFS wajib untuk rothko saat ini / SUSFS is required on rothko for now"; exit 1; }
           [[ "$BRAND" =~ ^[A-Za-z0-9_-]{1,12}$ ]] || { echo "::error::Kernel Branding: huruf, angka, _ atau -, maks. 12 / up to 12 letters, digits, _ or -"; exit 1; }
           [[ -z "$REVISION" || "$REVISION" =~ ^r[0-9]+$ ]] || { echo "::error::Build Revision: r + angka, mis. r10 / r followed by digits"; exit 1; }
           if [ "$BUILD_TIME" != "N" ]; then
