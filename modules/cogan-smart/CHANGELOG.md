@@ -9,14 +9,26 @@ Indonesia:
   saat santai pun sekitar 50 °C: dari log 3 hari owner (8.340 sampel), ambang 42 °C pada
   prosesor terlewati 97% waktu, sehingga Kernel Default menurut kodenya membatasi CPU
   besar ke 40% hampir sepanjang waktu (dihitung dari log, belum diukur di HP).
-- Ambang baru: Hemat 40 °C, Kernel Default 42 °C, Performa 45 °C (Badan HP). Pada log
-  yang sama, Kernel Default diperkirakan berjalan penuh ±86% waktu.
-- Badan HP berubah pelan, jadi pengendali turun satu langkah (10%) lalu menunggu tiga kali
-  cek untuk melihat hasilnya, dan naik lagi setelah tiga kali cek ≥ 1 °C di bawah ambang.
+- Ambang baru: Hemat 40 °C, Kernel Default 42 °C, Performa 45 °C (Badan HP).
+- Langkah halus (owner: "se-smooth mungkin"): mulai 1 °C sebelum ambang dengan dua langkah
+  ringan saja; di ambang, CPU besar (X4) turun 10% per langkah sampai 60%, lalu CPU kecil
+  (A720, yang menjaga UI tetap lancar) ke 90% dan 80%. Batas terdalam 60/80%, bukan 40%.
+  Badan HP berubah pelan, jadi tiap langkah ditunggu tiga kali cek; naik lagi setelah tiga
+  kali cek ≥ 1,5 °C di bawah ambang. Hemat tetap turun dari batasnya sendiri.
+- Simulasi pada log owner: Kernel Default berjalan penuh ±75% waktu, ±9% hanya diturunkan
+  ringan (CPU besar 80–90%), dan langkah terdalam 60/80% ±12% (saat Badan HP lama ≥ 42 °C).
+- Jeda cas karena suhu oleh modul kini **aktif secara bawaan** (owner): cas dijeda bila
+  baterai ≥ 42 °C atau, di Kernel Default, bila cas membuat Badan HP ≥ ambang; lanjut setelah
+  turun 3 °C. Dari log owner, 35% waktu Badan HP ≥ 42 °C terjadi saat mengecas. Bisa
+  dimatikan di kartu Cas.
+- GPU: tab Daya membaca node GPU HP ini (devfreq Mali, GED, gpufreqv2) dan menampilkannya di
+  Kontrol kernel. **Baca saja**, tidak ada yang ditulis; batas GPU untuk game dipasang
+  setelah node ini terbukti di HP.
 - Rem darurat di semua mode: bila prosesor ≥ 95 °C, CPU diturunkan setiap cek.
 - Tanpa sensor Badan HP, suhu baterai yang dipakai.
 - Ambang suhu dari konfigurasi v2.8 dan sebelumnya (masih bermakna prosesor) diganti
-  dengan bawaan baru. Mode, setelan cas dan interval tetap seperti yang disimpan.
+  dengan bawaan baru, dan jeda cas karena suhu dinyalakan. Mode, batas isi cas dan
+  interval tetap seperti yang disimpan.
 - Tab Suhu: "panas" berarti Badan HP ≥ 42 °C (dari log owner: ±9% waktu, sebelumnya
   97%). Penyebab panas, grafik, serta rata-rata/tertinggi per aplikasi, kernel dan mode
   memakai Badan HP. Notifikasi panas juga membaca Badan HP. Prosesor tetap tampil di
@@ -34,17 +46,29 @@ English:
   log (8,340 samples) a 42 °C processor threshold was exceeded 97% of the time, so by its
   code Kernel Default capped the big cores at 40% almost all the time (computed from the
   log, not measured on the phone).
-- New thresholds: Power saver 40 °C, Kernel Default 42 °C, Performance 45 °C (phone
-  body). On the same log, Kernel Default is expected to run at full speed about 86% of
-  the time.
-- The phone body changes slowly, so the controller steps down once (10%) and waits three
-  checks to see the effect, and steps back up after three checks at least 1 °C below the
-  threshold.
+- New thresholds: Power saver 40 °C, Kernel Default 42 °C, Performance 45 °C (phone body).
+- Smooth steps (owner: "as smooth as possible"): from 1 °C before the threshold only two
+  light steps; at the threshold the big cores (X4) drop 10% per step down to 60%, then the
+  little cores (A720, which keep the interface fluid) to 90% and 80%. The deepest step is
+  60/80%, not 40%. The phone body changes slowly, so each step waits three checks; the
+  CPU steps back up after three checks at least 1.5 °C below the threshold. Power saver
+  still steps down from its own cap.
+- Simulated on the owner's log: Kernel Default runs at full speed about 75% of the time,
+  about 9% only lightly lowered (big cores 80–90%), and at the deepest step 60/80% about
+  12% (when the phone body stays at 42 °C or more).
+- Module charging heat pauses are now **on by default** (owner): charging pauses when the
+  battery reaches 42 °C or, in Kernel Default, when charging heats the phone body to the
+  threshold; it resumes 3 °C lower. In the owner's log, 35% of the phone-body-hot time was
+  while charging. It can be turned off in the Charging card.
+- GPU: the Power tab reads this phone's GPU nodes (Mali devfreq, GED, gpufreqv2) and shows
+  them under Kernel controls. **Read only**, nothing is written; a GPU limit for games comes
+  once these nodes are proven on the phone.
 - Emergency brake in every mode: at a processor temperature of 95 °C or more, the CPU
   steps down at every check.
 - Without a phone body sensor, the battery temperature is used.
 - Temperature thresholds from v2.8 and older configurations (which meant the processor)
-  are replaced by the new defaults. Mode, charging settings and interval are kept.
+  are replaced by the new defaults, and the charging heat pause is turned on. Mode, charge
+  limits and interval are kept.
 - Temperature tab: "hot" means phone body ≥ 42 °C (owner's log: about 9% of the time,
   previously 97%). Heat causes, the chart and per-app, per-kernel and per-mode
   average/peak use the phone body. The heat notification reads the phone body too. The

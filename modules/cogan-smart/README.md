@@ -1,6 +1,6 @@
 # Cogan Smart Kernel (modul)
 
-**Versi terbaru: v2.8.2** (`versionCode` 16). Sejak v2.8.2, jeda cas karena suhu oleh modul (`CHARGE_THERMAL`) **nonaktif secara bawaan**: suhu pengisian dikelola HP, auto cut 95/90 tetap jalan. Catatan perubahan lengkap ada di [`CHANGELOG.md`](CHANGELOG.md).
+**Versi terbaru: v2.8.2** (`versionCode` 16). v2.9.0 (mode mengikuti Badan HP, langkah halus, jeda cas karena suhu aktif lagi) menunggu uji HP. Catatan perubahan lengkap ada di [`CHANGELOG.md`](CHANGELOG.md).
 
 ## ⬇️ Unduh
 
@@ -36,7 +36,19 @@ Tiap tab adalah halaman sendiri, jadi `client.js` menyimpan jawaban baca terakhi
 | 🧠 Kernel Default | `seimbang` | Bawaan. CPU diturunkan bertahap bila Badan HP ≥ `TARGET_TEMP` (42 °C) |
 | 🎮 Performa | `game` | Performa penuh, CPU diturunkan bila Badan HP ≥ `GAME_LIMIT` (45 °C), boost aplikasi di layar |
 
-Sejak v2.9.0 ambang mode dibaca dari suhu **Badan HP** (sensor kulit HP, yang terasa di tangan), bukan prosesor. Prosesor Dimensity HP ini saat santai pun sekitar 50 °C, sehingga ambang 42 °C pada prosesor (v2.8) membatasi CPU hampir sepanjang waktu. Satu langkah turun (10 %), lalu tiga kali cek untuk melihat hasilnya; naik lagi setelah tiga kali cek ≥ 1 °C di bawah ambang. Tanpa sensor Badan HP, suhu baterai yang dipakai. Di semua mode ada **rem darurat** bila prosesor ≥ 95 °C. "Panas" di tab Suhu juga berarti Badan HP ≥ 42 °C.
+Sejak v2.9.0 ambang mode dibaca dari suhu **Badan HP** (sensor kulit HP, yang terasa di tangan), bukan prosesor. Prosesor Dimensity HP ini saat santai pun sekitar 50 °C, sehingga ambang 42 °C pada prosesor (v2.8) membatasi CPU hampir sepanjang waktu. Tanpa sensor Badan HP, suhu baterai yang dipakai. "Panas" di tab Suhu juga berarti Badan HP ≥ 42 °C.
+
+Langkah halus (Kernel Default dan Performa):
+
+| Langkah | CPU besar (X4) | CPU kecil (A720) |
+|---|---|---|
+| 0 | 100 % | 100 % |
+| 1–4 | 90 → 60 % | 100 % |
+| 5–6 | 60 % | 90 → 80 % |
+
+Mulai 1 °C sebelum ambang dengan langkah 1–2 saja; tiap langkah ditunggu tiga kali cek (Badan HP berubah pelan); naik lagi setelah tiga kali cek ≥ 1,5 °C di bawah ambang. Hemat turun 10 % dari `SAVER_CAP`. Di semua mode ada **rem darurat** bila prosesor ≥ 95 °C. Cogan Bridge ABI 1 memberi satu batas untuk semua inti X4 dan satu untuk A720.
+
+Jeda cas karena suhu (`CHARGE_THERMAL`) **aktif secara bawaan** sejak v2.9.0. GPU dibaca saja (Kontrol kernel); batas GPU menyusul setelah node-nya terbukti di HP.
 
 **Henti** melepas semua kontrol milik modul sehingga pengaturan vendor (HyperOS/MediaTek) berjalan sendiri. Tombol Action di root manager berpindah ke mode berikutnya.
 

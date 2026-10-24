@@ -4,11 +4,13 @@
 # the phone), then:
 #
 #   CPU     Hemat caps the big cores at SAVER_CAP %; Kernel Default (seimbang, TARGET_TEMP) and Hemat
-#           (2 °C lower) lower the CPU top speed 10 % per step while the phone body is too warm and give
+#           (2 °C lower) lower the CPU top speed in small steps while the phone body is too warm and give
 #           it back when it is cool again; Performa (game) runs free and only steps in at GAME_LIMIT.
-#           Every mode brakes when the processor reaches CPU_BRAKE.
-#   Charge  stops at CHARGE_STOP % and resumes at CHARGE_RESUME %. Charging heat is managed
-#           by the phone by default. Module temperature pauses require CHARGE_THERMAL=1.
+#           Kernel Default and Performa keep the big cores at 60 % or more and touch the little cores
+#           last (level_caps). Every mode brakes when the processor reaches CPU_BRAKE.
+#   Charge  stops at CHARGE_STOP % and resumes at CHARGE_RESUME %. With CHARGE_THERMAL=1 (default since
+#           v2.9.0) it also pauses while the battery is hot or, in Kernel Default, while charging heats
+#           the phone body; CHARGE_THERMAL=0 leaves charging heat to the phone alone.
 #
 # Usage: controller.sh [--once]
 
@@ -16,6 +18,23 @@ MODDIR=${0%/*}; [ "$MODDIR" = "$0" ] && MODDIR=.   # started as "sh controller.s
 . "$MODDIR/common.sh"
 
 state() { cat "$CP_RUN/$1" 2>/dev/null || echo "$2"; }
+
+# Big and little core caps (%) of a step level, as LC_BIG and LC_LITTLE. Owner 2026-10-24, "as smooth
+# as possible": Kernel Default and Performa lower the big cores (X4 on rothko) 10 % per step down to
+# 60 %, then the little cores (A720, which keep the interface fluid) to 90 % and 80 %. Hemat goes on
+# down from its own cap, as before.
+level_caps() {
+  if [ "$MODE" = hemat ]; then
+    LC_BIG=$((SAVER_CAP - $1 * 10)); [ "$LC_BIG" -lt 20 ] && LC_BIG=20
+    LC_LITTLE=$((LC_BIG + 20)); [ "$LC_LITTLE" -gt 100 ] && LC_LITTLE=100
+    return
+  fi
+  case "$1" in
+    0) LC_BIG=100; LC_LITTLE=100 ;; 1) LC_BIG=90; LC_LITTLE=100 ;; 2) LC_BIG=80; LC_LITTLE=100 ;;
+    3) LC_BIG=70; LC_LITTLE=100 ;; 4) LC_BIG=60; LC_LITTLE=100 ;; 5) LC_BIG=60; LC_LITTLE=90 ;;
+    *) LC_BIG=60; LC_LITTLE=80 ;;
+  esac
+}
 
 step() {
   lock_take "$CP_RUN/step.lock" || return 1
@@ -48,10 +67,11 @@ step() {
   # Charging first: when the monitor says charging is the heat source, pausing it may be enough.
   charge_step
 
-  # CPU: the phone body warms and cools slowly, so one step (10 %) down while it is at or above the
-  # limit and not cooling, then three checks to see what that step did; one step up after three checks
-  # at least 1 °C under the limit. The processor brake steps down at every check. While charging was
-  # just paused for heat, that pause gets its three checks first.
+  # CPU: the phone body warms and cools slowly, so one step down while it is warm and not cooling, then
+  # three checks to see what that step did. From 1 °C under the limit only the first two (gentle) steps
+  # are taken, at the limit all of them; one step back up after three checks at least 1.5 °C under the
+  # limit. The processor brake steps down at every check. While charging was just paused for heat,
+  # that pause gets its three checks first.
   case "$MODE" in
     hemat) limit=$((TARGET_TEMP - 2)) ;;
     game) limit=$GAME_LIMIT ;;
@@ -66,28 +86,27 @@ step() {
   if [ "$brake" = 1 ]; then
     cool=0
     [ "$step_level" -lt 6 ] && { step_level=$((step_level + 1)); hold=3; }
-  elif [ "$body" -gt -9999 ] && [ "$body" -ge $((limit * 10)) ]; then
+  elif [ "$body" -gt -9999 ] && [ "$body" -ge $(((limit - 1) * 10)) ]; then
     cool=0
-    if [ "$hold" = 0 ] && [ "$body" -ge $((prev - 2)) ] && [ "$step_level" -lt 6 ]; then
+    room=6; [ "$body" -lt $((limit * 10)) ] && room=2
+    if [ "$hold" = 0 ] && [ "$body" -ge $((prev - 2)) ] && [ "$step_level" -lt "$room" ]; then
       step_level=$((step_level + 1)); hold=3
     fi
-  elif [ "$body" -le $(((limit - 1) * 10)) ] && [ "$main" -lt $(((CPU_BRAKE - 5) * 10)) ] && [ "$step_level" -gt 0 ]; then
+  elif [ "$body" -le $(((limit - 1) * 10 - 5)) ] && [ "$main" -lt $(((CPU_BRAKE - 5) * 10)) ] && [ "$step_level" -gt 0 ]; then
     cool=$((cool + 1))
     [ "$cool" -ge 3 ] && { step_level=$((step_level - 1)); cool=0; }
   else
     cool=0
   fi
   echo "$step_level" > "$CP_RUN/level"; echo "$cool" > "$CP_RUN/cool"; echo "$hold" > "$CP_RUN/hold"; echo "$body" > "$CP_RUN/prev"
-  if [ "$MODE" = hemat ]; then big=$((SAVER_CAP - step_level * 10)); else big=$((100 - step_level * 10)); fi
-  [ "$big" -lt 20 ] && big=20
-  little=$((big + 20)); [ "$little" -gt 100 ] && little=100
+  level_caps "$step_level"; big=$LC_BIG; little=$LC_LITTLE
   set_cpu_cap "$big" "$little"
   if [ "$step_level" -gt "$old_level" ] && [ "$brake" = 1 ]; then
-    event "Rem darurat: prosesor $(deg "$main") °C ≥ $CPU_BRAKE °C: CPU dibatasi $big%"
+    event "Rem darurat: prosesor $(deg "$main") °C ≥ $CPU_BRAKE °C: CPU besar $big%, kecil $little%"
   elif [ "$step_level" -gt "$old_level" ]; then
-    event "Badan HP $(deg "$body") °C ≥ $limit °C${cause:+ ($cause)}: CPU dibatasi $big%"
+    event "Badan HP $(deg "$body") °C (batas $limit °C)${cause:+ ($cause)}: CPU besar $big%, kecil $little%"
   elif [ "$step_level" -lt "$old_level" ]; then
-    event "Badan HP turun ke $(deg "$body") °C: CPU $big%"
+    event "Badan HP turun ke $(deg "$body") °C: CPU besar $big%, kecil $little%"
   fi
   if [ "$MODE" = game ] && [ "$GAME_BOOST" = 1 ]; then set_boost 1; else set_boost 0; fi
   write_state
@@ -106,9 +125,8 @@ charge_step() {
       *" batas "*) [ "$level_pct" -gt "$CHARGE_RESUME" ] && reasons="batas" ;;
       *) [ "$CHARGE_STOP" -lt 100 ] && [ "$level_pct" -ge "$CHARGE_STOP" ] && { [ "$status" = charging ] || [ "$status" = full ]; } && reasons="batas" ;;
     esac
-    # Do not interrupt HyperCharge based on module thresholds unless the user opts in.
-    # An absent key in an older config defaults to 0; saved 95/90 and other settings survive.
-    # No thermal driver, OEM charging limit, or charger negotiation setting is changed.
+    # Module heat pauses (CHARGE_THERMAL=1, the default since v2.9.0) only switch charging off and on;
+    # no thermal driver, OEM charging limit, or charger negotiation setting is changed.
     if [ "$CHARGE_THERMAL" = 1 ]; then
       case " $was " in
         *" baterai "*) [ "$btemp" -gt $(((BATT_TEMP_STOP - 3) * 10)) ] && reasons="$reasons baterai" ;;

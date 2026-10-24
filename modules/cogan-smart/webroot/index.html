@@ -139,7 +139,7 @@
     <label class="f">Lanjut cas di (%) <input id="sCHARGE_RESUME" type="number" min="40" max="99"></label>
     <div id="chargePolicy" class="muted" style="margin:8px 0"></div>
     <label class="f">Jeda cas karena suhu oleh modul <input id="sCHARGE_THERMAL" type="checkbox"></label>
-    <p class="muted">Bawaan: pengaturan suhu cas diserahkan ke sistem HP. Modul hanya mengatur batas isi. Aktifkan opsi ini jika ingin jeda suhu tambahan dari modul. Kolom di bawah aktif setelah opsi ini dinyalakan.</p>
+    <p class="muted">Bawaan: aktif. Cas dijeda sebentar bila baterai terlalu panas atau, di Kernel Default, bila cas membuat Badan HP panas; lanjut setelah turun 3 °C. Matikan untuk menyerahkan suhu cas sepenuhnya ke sistem HP.</p>
     <label class="f">Jeda bila baterai ≥ (°C) <input id="sBATT_TEMP_STOP" type="number" min="35" max="50"></label>
     <label class="f">Kernel Default: jeda cas bila cas bikin panas <input id="sHEAT_PAUSE_CHARGE" type="checkbox"></label>
     <div class="row">
@@ -155,7 +155,7 @@
     <label class="f">Kernel Default: ambang Badan HP (°C) <input id="sTARGET_TEMP" type="number" min="38" max="46"></label>
     <label class="f">Performa: rem di Badan HP (°C) <input id="sGAME_LIMIT" type="number" min="40" max="50"></label>
     <label class="f">Hemat: CPU besar maks (%) <input id="sSAVER_CAP" type="number" min="30" max="90"></label>
-    <p class="muted">Ambang mode dibaca dari suhu Badan HP (yang terasa di tangan). Hemat 2 °C di bawah Kernel Default. Di semua mode ada rem darurat bila prosesor ≥ 95 °C.</p>
+    <p class="muted">Ambang mode dibaca dari suhu Badan HP (yang terasa di tangan). Hemat 2 °C di bawah Kernel Default. Langkah halus: mulai 1 °C sebelum ambang, CPU besar turun 10% per langkah sampai 60%, CPU kecil (yang menjaga UI tetap lancar) paling akhir dan tidak di bawah 80%. Di semua mode ada rem darurat bila prosesor ≥ 95 °C.</p>
     <label class="f">Performa: boost aplikasi di layar <input id="sGAME_BOOST" type="checkbox"></label>
     <label class="f">Cek tiap (detik) <input id="sINTERVAL" type="number" min="5" max="60"></label>
     <label class="f">Terapkan ulang tiap interval <input id="sFORCE" type="checkbox"></label>
@@ -172,6 +172,7 @@
     <summary><span>🎛️ Kontrol kernel</span></summary>
     <p class="muted" id="backend">Belum diterapkan.</p>
     <table><thead><tr><th>Kontrol</th><th>Diminta → terbaca</th></tr></thead><tbody id="controls"></tbody></table>
+    <p class="muted" id="gpuInfo"></p>
     <p class="muted">Angka CPU adalah batas maksimum, bukan frekuensi tetap. Batas vendor/termal yang lebih rendah tetap berlaku. Ambang suhu mengatur kapan modul bertindak; tidak menjamin suhu fisik tetap pada angka itu.</p>
   </details>
   <details class="card fold" id="logCard">
@@ -207,6 +208,15 @@ function ghz(khz) { return (khz / 1e6).toFixed(2) + ' GHz'; }
 function toast(msg) { UI.text('actionStatus', msg); $('actionStatus').classList.remove('hidden'); clearTimeout(feedbackTimer); feedbackTimer = setTimeout(() => { if (!$('actionStatus').classList.contains('working')) $('actionStatus').classList.add('hidden'); }, 4000); }
 window.addEventListener('unhandledrejection', e => { toast('Gagal: ' + (e.reason && e.reason.message || e.reason)); e.preventDefault(); });
 
+// GPU nodes of this phone, read only: a GPU limit comes once they are proven on the phone.
+function gpuText(g) {
+  const mhz = hz => Math.round(hz / 1e6) + ' MHz';
+  const parts = (g.devfreq || []).map(d => [`GPU ${d.name}: ${mhz(d.cur)} / maks ${mhz(d.max)}`, `${d.steps} langkah`, d.writable ? 'bisa diatur' : 'tidak bisa ditulis'].join(' · '));
+  if (g.ged && g.ged.cur >= 0) parts.push(`GED ${g.ged.cur} · upbound ${g.ged.upbound} · level ${g.ged.levels}`);
+  if (g.gpufreqv2) parts.push('gpufreqv2 ada');
+  return (parts.length ? parts.join(' · ') : 'Node GPU belum ditemukan.') + ' · Baca saja: batas GPU dipasang setelah node ini terbukti di HP.';
+}
+
 function render(s) {
   if (s.ok === 0) { toast(s.error); return; }
   UI.kernel(s, {...(s.peer || status?.peer), installed: s.monitor.installed, running: s.monitor.running}, 'Thermal');
@@ -241,7 +251,7 @@ function render(s) {
   const sensorAge = s.sensor_ts ? Math.max(0, Math.floor(Date.now() / 1000) - s.sensor_ts) : -1;
   $('limitLine').title = sensorAge >= 0 ? `Sensor langsung · ${sensorAge} dtk lalu` : 'Sensor tidak tersedia';
   if (st && s.running) {
-    $('cpuLine').textContent = [body > -9999 && (s.body_from === 'battery' ? 'Baterai (tanpa sensor Badan HP)' : 'Badan HP'), cpu, `target batas CPU besar ${st.big}%`, st.brake ? `rem darurat prosesor ≥ ${s.brake} °C` : ''].filter(Boolean).join(' · ');
+    $('cpuLine').textContent = [body > -9999 && (s.body_from === 'battery' ? 'Baterai (tanpa sensor Badan HP)' : 'Badan HP'), cpu, `target batas CPU besar ${st.big}%`, `kecil ${st.little}%`, st.brake ? `rem darurat prosesor ≥ ${s.brake} °C` : ''].filter(Boolean).join(' · ');
     $('causeLine').textContent = [st.cause && `Penyebab: ${st.cause}`, st.app && `Aplikasi: ${st.app}`, st.boost ? 'Boost Performa aktif' : '', st.native_cooling ? 'Cooling CPU kernel aktif' : ''].filter(Boolean).join(' · ');
   } else {
     $('cpuLine').textContent = [cpu, 'pengendali berhenti'].filter(Boolean).join(' · ');
@@ -268,6 +278,7 @@ function render(s) {
   $('backend').textContent = s.running ? `Backend: ${s.backend || 'menunggu penerapan'}${c.FORCE ? ' · terapkan ulang aktif' : ''}${st ? ' · hasil ' + Math.max(0, Math.floor(Date.now()/1000-st.ts)) + ' dtk lalu' : ''}` : 'Pengendali berhenti.';
   const results = {applied:'diterima', limited:'dibatasi lebih rendah', conflict:'berubah/ditolak', write_failed:'gagal ditulis', unsupported:'tidak didukung'};
   if (s.restore_pending) $('backend').textContent += ' · Pemulihan belum selesai; tekan Henti setelah node dapat ditulis.';
+  if (s.gpu) $('gpuInfo').textContent = gpuText(s.gpu);
   UI.html('controls', (s.controls || []).map(v => `<tr><td>${esc(v.node)}<br><small>${esc(results[v.result] || v.result)}</small></td><td>${esc(v.requested)} → ${esc(v.actual)}</td></tr>`).join('') || '<tr><td colspan="2">Belum ada hasil penerapan.</td></tr>');
   CoganI18n.apply();
 }

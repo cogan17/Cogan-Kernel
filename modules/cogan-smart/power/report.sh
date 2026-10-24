@@ -140,6 +140,7 @@ status_json() {
     printf ',"kernel":'; kernel_json
     printf ',"device":'; device_json
     [ "$cp_status_detail" = brief ] || { printf ',"cooling":'; cooling_json; }
+    printf ',"gpu":'; gpu_json
     printf ',"peer":'; peer_json "$CT_MOD" "$CT_DATA/run/sampler.pid" thermal/sampler.sh
   fi
   printf ',"controls":'; controls_json

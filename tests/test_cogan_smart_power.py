@@ -191,14 +191,31 @@ class PowerModeTests(unittest.TestCase):
             self.phone.step()
         self.phone.set_body(42.1)                                         # cooling already: no step
         self.assertEqual(self.phone.step()["level"], 2)
-        self.phone.set_body(41.5)                                         # under the limit, not 1 °C under
+        self.phone.set_body(41.5)                                         # just under the limit: gentle steps only
         self.assertEqual(self.phone.step()["level"], 2)
-        self.phone.set_body(40.9)
+        self.phone.set_body(40.9)                                         # not yet 1.5 °C under: hold
+        self.assertEqual(self.phone.step()["level"], 2)
+        self.phone.set_body(40.4)
         self.assertEqual([self.phone.step()["level"] for _ in range(3)], [2, 2, 1])   # three cool checks
         self.assertEqual(self.phone.caps()["policy4"], 2700000)
         events = self.phone.events()
-        self.assertIn("Badan HP turun ke 40.9 °C: CPU 90%", events[0])
-        self.assertTrue(any("Badan HP 42.5 °C ≥ 42 °C: CPU dibatasi 90%" in event for event in events))
+        self.assertIn("Badan HP turun ke 40.4 °C: CPU besar 90%, kecil 100%", events[0])
+        self.assertTrue(any("Badan HP 42.5 °C (batas 42 °C): CPU besar 90%, kecil 100%" in event for event in events))
+
+    def test_smooth_steps_big_cores_first_little_cores_last(self):
+        # Owner 2026-10-24, "as smooth as possible": from 1 °C under the limit only two gentle steps.
+        self.phone.set_body(41.2)
+        levels = [self.phone.step()["level"] for _ in range(12)]
+        self.assertEqual(max(levels), 2)
+        # At the limit: the big cores go down to 60 %, then the little cores to 90 % and 80 %.
+        self.phone.set_body(43.0)
+        caps = []
+        for _ in range(20):
+            state = self.phone.step()
+            caps.append((state["big"], state["little"]))
+        self.assertEqual(sorted(set(caps), reverse=True), [(70, 100), (60, 100), (60, 90), (60, 80)])
+        self.assertEqual(caps[-1], (60, 80))
+        self.assertEqual(self.phone.caps(), {"policy0": 1500000, "policy4": 1500000, "policy7": 1200000})
 
     def test_processor_brake_in_every_mode(self):
         self.phone.set_body(36.0)
@@ -211,7 +228,7 @@ class PowerModeTests(unittest.TestCase):
             self.assertEqual(levels, [1, 2], mode)
             state = self.phone.step()
             self.assertEqual((state["brake"], state["big"]), (1, start - 30), mode)
-            self.assertIn("Rem darurat: prosesor 95.5 °C ≥ 95 °C: CPU dibatasi", self.phone.events()[0])
+            self.assertIn("Rem darurat: prosesor 95.5 °C ≥ 95 °C: CPU besar", self.phone.events()[0])
             self.phone.set_temp(91.0)                                     # not yet 5 °C under the brake
             self.assertEqual(self.phone.step()["level"], 3)
         self.phone.set_temp(70.0)
@@ -231,10 +248,12 @@ class PowerModeTests(unittest.TestCase):
 
     def test_v28_temperatures_do_not_carry_over(self):
         # A v2.8 config: its TARGET_TEMP and GAME_LIMIT were processor thresholds.
-        write(self.phone.data / "config", "MODE=game\nTARGET_TEMP=44\nGAME_LIMIT=48\nCHARGE_STOP=80\nCHARGE_RESUME=75\nINTERVAL=15\n")
+        write(self.phone.data / "config", "MODE=game\nTARGET_TEMP=44\nGAME_LIMIT=48\nCHARGE_STOP=80\nCHARGE_RESUME=75\n"
+                                          "CHARGE_THERMAL=0\nINTERVAL=15\n")
         config = self.phone.report("status")["config"]
         self.assertEqual((config["mode"], config["TARGET_TEMP"], config["GAME_LIMIT"], config["CHARGE_STOP"], config["INTERVAL"]),
                          ("game", 42, 45, 80, 15))
+        self.assertEqual(config["CHARGE_THERMAL"], 1)                      # the owner turned the heat pause on again
         self.assertEqual(self.phone.report("set", "TARGET_TEMP", "44"), {"ok": 1})
         self.assertIn("CTRL_VER=2", (self.phone.data / "config").read_text())
         config = self.phone.report("status")["config"]
@@ -250,7 +269,7 @@ class PowerModeTests(unittest.TestCase):
         self.phone.set_body(40.0)                                         # Hemat steps down from its own cap
         self.assertEqual(self.phone.step()["big"], 50)
         self.phone.report("mode", "game")
-        self.phone.set_body(44.5)
+        self.phone.set_body(43.5)
         state = self.phone.step()
         self.assertEqual((state["limit"], state["big"], state["boost"]), (45, 100, 1))
         self.assertEqual(self.phone.caps(), {"policy0": 2000000, "policy4": 3000000, "policy7": 3250000})
@@ -284,10 +303,11 @@ class PowerModeTests(unittest.TestCase):
         self.save_switch()
         self.phone.set_body(36.0)   # a hot battery pauses charging; the CPU follows the phone body
         self.phone.set_battery(50, "Charging", 42.5)
-        # v2.8.2 default (CHARGE_THERMAL=0): the phone manages charging heat, HyperCharge is not paused.
+        # Opted out (CHARGE_THERMAL=0): the phone manages charging heat, HyperCharge is not paused.
+        self.assertEqual(self.phone.report("set", "CHARGE_THERMAL", "0"), {"ok": 1})
         self.assertEqual(self.phone.step()["charge_off"], "")
         self.assertEqual(self.phone.node("input_suspend"), "0")
-        # Opted in, the battery threshold and the Kernel Default heat pause apply again.
+        # The default since v2.9.0 (owner 2026-10-24): the battery threshold and the Kernel Default heat pause.
         self.assertEqual(self.phone.report("set", "CHARGE_THERMAL", "1"), {"ok": 1})
         self.phone.start_recorder()
         self.assertEqual(self.phone.step()["charge_off"], "baterai")
@@ -326,7 +346,7 @@ class PowerModeTests(unittest.TestCase):
     def test_failsafe_and_switch_off(self):
         self.save_switch()
         self.phone.set_battery(90, "Charging", 44.0)
-        self.assertEqual(self.phone.step()["charge_off"], "batas")      # heat alone pauses only when opted in
+        self.assertEqual(self.phone.step()["charge_off"], "batas baterai")   # full enough, and the battery is hot
         self.phone.set_battery(12, "Discharging", 44.0)                   # nearly empty: always charge
         self.assertEqual(self.phone.step()["charge_off"], "")
         self.phone.set_battery(90, "Charging", 30.0)
@@ -352,6 +372,7 @@ class PowerModeTests(unittest.TestCase):
         status = self.phone.report("status")
         self.assertEqual((status["running"], status["main"], status["switch"], status["state"]), (0, 400, "", None))
         self.assertEqual((status["body"], status["body_from"]), (300, "battery"))   # no phone body sensor here
+        self.assertEqual(status["gpu"], {"devfreq": [], "ged": {"cur": -1, "upbound": -1, "levels": -1}, "gpufreqv2": 0})
         self.assertEqual(status["battery"], {"level": 50, "status": "charging", "temp": 300, "current": 1000})
         # v2.8: a report without a running recorder is not used.
         self.assertEqual({k: status["monitor"][k] for k in keys},
@@ -362,6 +383,24 @@ class PowerModeTests(unittest.TestCase):
         self.assertEqual({k: monitor[k] for k in keys}, {"installed": 1, "running": 1, "fresh": 1, "stalled": 0,
                                                          "cause": "Aplikasi berat: Instagram", "app": "Instagram"})
         self.assertEqual(monitor["pid"], self.phone.recorder.pid)
+
+    def test_gpu_nodes_are_reported_and_never_written(self):
+        mali = self.phone.sys / "class/devfreq/13000000.mali"
+        for name, value in {"cur_freq": "850000000", "max_freq": "1300000000", "min_freq": "265000000",
+                            "available_frequencies": "1300000000 1100000000 850000000 265000000"}.items():
+            write(mali / name, value + "\n")
+        write(self.phone.sys / "class/devfreq/ufshc/max_freq", "1\n")       # not a GPU
+        write(self.phone.sys / "kernel/ged/hal/current_freqency", "850000\n")
+        before = {path: path.read_text() for path in self.phone.sys.rglob("*") if path.is_file()}
+        self.phone.set_body(44.0)
+        for _ in range(4):
+            self.phone.step()
+        gpu = self.phone.report("status")["gpu"]
+        self.assertEqual(gpu["devfreq"], [{"name": "13000000.mali", "cur": 850000000, "max": 1300000000, "min": 265000000,
+                                           "steps": 4, "writable": 1}])
+        self.assertEqual(gpu["ged"]["cur"], 850000)
+        for path in (mali / "max_freq", mali / "min_freq", self.phone.sys / "kernel/ged/hal/current_freqency"):
+            self.assertEqual(path.read_text(), before[path])
 
     def test_start_and_stop_put_everything_back(self):
         self.save_switch()

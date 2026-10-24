@@ -28,9 +28,9 @@ GAME_BOOST=1           # Performa: give the app on screen a minimum CPU share (u
 CHARGE_CTRL=1          # auto cut charging on/off
 CHARGE_STOP=95         # owner default, retained settings are not silently changed
 CHARGE_RESUME=90
-CHARGE_THERMAL=0      # 0 = leave charging heat management to the phone; retain percentage cutoff
+CHARGE_THERMAL=1       # module heat pauses on top of the phone's own (owner 2026-10-24); 0 = the phone only
 BATT_TEMP_STOP=42      # optional module pause threshold, only when CHARGE_THERMAL=1
-HEAT_PAUSE_CHARGE=1    # optional CPU-heat pause in Kernel Default, gated by CHARGE_THERMAL
+HEAT_PAUSE_CHARGE=1    # Kernel Default: pause while charging heats the phone body, gated by CHARGE_THERMAL
 INTERVAL=10            # seconds between checks
 FORCE=0               # 1 = reapply supported controls on every check
 AUTOSTART=1
@@ -40,7 +40,7 @@ CPU_BRAKE=95           # every mode: emergency brake when the processor reaches 
 
 defaults() {
   MODE=seimbang; TARGET_TEMP=42; GAME_LIMIT=45; SAVER_CAP=60; GAME_BOOST=1
-  CHARGE_CTRL=1; CHARGE_STOP=95; CHARGE_RESUME=90; CHARGE_THERMAL=0; BATT_TEMP_STOP=42
+  CHARGE_CTRL=1; CHARGE_STOP=95; CHARGE_RESUME=90; CHARGE_THERMAL=1; BATT_TEMP_STOP=42
   HEAT_PAUSE_CHARGE=1; INTERVAL=10; FORCE=0; AUTOSTART=1; CTRL_VER=2
 }
 
@@ -78,8 +78,9 @@ load_config() {
   done < "$CONFIG"
   [ "$CHARGE_RESUME" -lt "$CHARGE_STOP" ] || CHARGE_RESUME=$((CHARGE_STOP - 5))
   # A config from v2.8 and older: its temperatures were processor thresholds, so they do not carry
-  # over to the phone body. Everything else (mode, charging, interval) stays as the user saved it.
-  if [ "$CTRL_VER" != 2 ]; then TARGET_TEMP=42; GAME_LIMIT=45; CTRL_VER=2; fi
+  # over to the phone body, and the owner turned the module's charging heat pause on again
+  # (2026-10-24). Everything else (mode, charge limits, interval) stays as the user saved it.
+  if [ "$CTRL_VER" != 2 ]; then TARGET_TEMP=42; GAME_LIMIT=45; CHARGE_THERMAL=1; CTRL_VER=2; fi
 }
 
 write_config() {
@@ -329,6 +330,31 @@ set_cpu_cap() {
     record_control "$cp_name" "$cp_freq" "${cp_actual:-unknown}" "$cp_result"
   done
   [ "$cp_count" -gt 0 ] || record_control cpu 0 unknown unsupported
+}
+
+# GPU frequency controls this phone offers, read only (owner 2026-10-24: a GPU limit for games comes
+# once these nodes are proven on the phone). Nothing here is written. JSON:
+#   {"devfreq":[{"name","cur","max","min","steps","writable"}],"ged":{"cur","upbound","levels"},"gpufreqv2":0|1}
+gpu_num() {   # first number on the first line of a node, or the fallback
+  gn_value=$(read_node "$1" | sed -n 's/^[^0-9-]*\(-\{0,1\}[0-9][0-9]*\).*/\1/p')
+  printf '%s' "${gn_value:-$2}"
+}
+gpu_json() {
+  printf '{"devfreq":['
+  gj_sep=""
+  for gj_dev in "$CP_SYS"/class/devfreq/*; do
+    [ -r "$gj_dev/max_freq" ] || continue
+    case "${gj_dev##*/}" in *mali*|*gpu*|*GPU*|*13000000*) ;; *) continue ;; esac
+    gj_steps=$(wc -w < "$gj_dev/available_frequencies" 2>/dev/null)
+    printf '%s{"name":"%s","cur":%d,"max":%d,"min":%d,"steps":%d,"writable":%d}' "$gj_sep" "${gj_dev##*/}" \
+      "$(gpu_num "$gj_dev/cur_freq" 0)" "$(gpu_num "$gj_dev/max_freq" 0)" "$(gpu_num "$gj_dev/min_freq" 0)" \
+      "${gj_steps:-0}" "$([ -w "$gj_dev/max_freq" ] && echo 1 || echo 0)"
+    gj_sep=","
+  done
+  gj_ged=$CP_SYS/kernel/ged/hal
+  printf '],"ged":{"cur":%d,"upbound":%d,"levels":%d},"gpufreqv2":%d}' "$(gpu_num "$gj_ged/current_freqency" -1)" \
+    "$(gpu_num "$gj_ged/custom_upbound_gpu_freq" -1)" "$(gpu_num "$gj_ged/total_gpu_freq_level_count" -1)" \
+    "$([ -d "$CP_PROC/gpufreqv2" ] && echo 1 || echo 0)"
 }
 
 native_cpu_cooling() {
