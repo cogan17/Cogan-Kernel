@@ -302,12 +302,14 @@ async function loadSummary(background = true) {
       <div><small>Waktu panas (Badan HP ≥ ${hot} °C)</small><b class="${s.hot_pct ? 'hot' : 'ok'}">${s.hot_pct}%</b><br><span class="muted">${s.samples} sampel · ${esc(s.from)}–${esc(s.to)}</span></div>
     </div>`;
   h += '<h3>🔥 Penyebab panas</h3>' + (s.causes.length ? causeBars(s.causes) : '<div class="muted">Tidak ada momen panas. 👍</div>');
+  if (s.spikes && s.spikes.length) h += `<h3>📈 Lonjakan suhu</h3><div class="muted">Badan HP naik ≥ 2 °C dalam 5 menit: ${s.spike_count} kali</div>` + s.spikes.map(p => `<div class="barrow"><div class="t"><span>${esc(p.from)}–${esc(p.to)} · ${deg(p.t0)} → ${deg(p.t1)} °C (+${deg(p.t1 - p.t0)})</span></div><div>${esc(p.cause)}</div>${p.tip ? `<small class="muted" translate="no">💡 ${esc(p.tip)}</small>` : ''}</div>`).join('');
   h += '<h3>📱 Per aplikasi</h3><table>' + s.apps.map(a => `<tr><td>${esc(a.name)} <span class="muted">${a.pct}%</span></td><td class="${level(a.peak)}">${deg(a.avg)} / ${deg(a.peak)} °C</td></tr>`).join('') + '</table>';
   h += '<div class="muted" style="margin-top:4px">Badan HP rata-rata / tertinggi</div>';
   h += '<h3>🐧 Per kernel</h3><table>' + s.kernels.map(k => `<tr><td>${esc(UI.shortKernel(k.name))} <span class="muted">${k.pct}%</span></td><td>${deg(k.avg)} / ${deg(k.peak)} °C</td></tr>`).join('') + '</table>';
   if (s.modes.length) h += '<h3>⚡ Per mode</h3><table>' + s.modes.map(m => `<tr><td>${esc(m.name)} <span class="muted">${m.pct}% · panas ${m.hot_pct}%</span></td><td class="${level(m.peak)}">${deg(m.avg)} / ${deg(m.peak)} °C</td></tr>`).join('') + '</table>';
   h += '<h3>Bagian HP</h3><table>' + s.groups.map(g => `<tr><td>${esc(g.name)}</td><td class="${level(g.peak, g.id)}">${deg(g.avg)} / ${deg(g.peak)} °C</td></tr>`).join('') + '</table>';
   if (s.cpu_avg >= 0) h += `<div class="muted" style="margin-top:8px">CPU rata-rata ${Math.round(s.cpu_avg / 10)}% · proses kernel ${(s.kernel_avg / 10).toFixed(1)}%</div>`;
+  if (s.load >= 0) h += `<div class="muted">⚙️ Beban Cogan Smart (pencatat + pengendali): ${(s.load / 10).toFixed(1)}% CPU</div>`;
   // How much Cogan Smart · Power lowered the CPU (samples since v2.9.1 carry its cap).
   const c = s.cap;
   if (c && c.samples) h += `<div class="muted">🧊 ${[c.heat_pct ? `CPU diturunkan karena panas ${c.heat_pct}% waktu (terendah CPU besar ${c.min_big}%, kecil ${c.min_little}%)` : 'CPU tidak diturunkan karena panas',

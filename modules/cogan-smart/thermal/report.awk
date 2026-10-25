@@ -15,7 +15,7 @@ BEGIN {
     W = 9   # samples behind each heat cause: about 3 minutes at the default 20-second interval
     ng = split(G, GROUPS, " ")
     if (mode == "csv") {
-        printf tr("waktu,aplikasi,layar,cas,arus_mA,cpu_persen,kernel_persen,gpu_persen,proses_teratas,wifi_kBps,seluler_kBps,batas_cpu", "time,app,screen,charging,current_mA,cpu_percent,kernel_percent,gpu_percent,top_processes,wifi_kBps,cellular_kBps,cpu_cap")
+        printf tr("waktu,aplikasi,layar,cas,arus_mA,cpu_persen,kernel_persen,gpu_persen,proses_teratas,wifi_kBps,seluler_kBps,batas_cpu,beban_modul_persen", "time,app,screen,charging,current_mA,cpu_percent,kernel_percent,gpu_percent,top_processes,wifi_kBps,cellular_kBps,cpu_cap,module_load_percent")
         for (i = 1; i <= ng; i++) printf ",%s", group_name(GROUPS[i])
         print tr(",semua_sensor", ",all_sensors")
     }
@@ -34,6 +34,8 @@ mode == "pkgs" { pk[$2]; np = split($10, tp, ";"); for (i = 1; i <= np; i++) { s
     # CPU cap of Cogan Smart · Power at this sample (column 14 since v2.9.1): big %, little %, heat step.
     capb = capl = capv = -1
     if (NF >= 14 && split($14, cp, "/") == 3) { capb = cp[1] + 0; capl = cp[2] + 0; capv = cp[3] + 0 }
+    # CPU this module's recorder and controller used (column 15 since v2.9.1), % x10 of the whole phone.
+    ld = (NF >= 15 && $15 ~ /^[0-9]+$/) ? $15 + 0 : -1
     split("", gmax); bd = -9999
     m = split(zl, z, ",")
     for (i = 1; i <= m; i++) {
@@ -55,6 +57,7 @@ mode == "pkgs" { pk[$2]; np = split($10, tp, ";"); for (i = 1; i <= np; i++) { s
     heat = ("skin" in gmax) ? gmax["skin"] : ("bat" in gmax) ? gmax["bat"] : main
     n++
     remember()
+    spike_track()
     if (n == 1) first = ts
     lastts = ts
     for (g in gmax) {
@@ -84,6 +87,7 @@ mode == "pkgs" { pk[$2]; np = split($10, tp, ";"); for (i = 1; i <= np; i++) { s
         if (capv > 0) capheat++; else if (capb < 100 || capl < 100) capmode++
         if (capv > 0 && (!capmin_set || capb < capminb || (capb == capminb && capl < capminl))) { capminb = capb; capminl = capl; capmin_set = 1 }
     }
+    if (ld >= 0) { loadsum += ld; loadn++ }
     pmain = main
     if (heat >= HOT) { hot++; c = cause(); causes[c]++; ckind[c] = KIND }
     ser_ts[n] = ts; ser_v[n] = heat
@@ -132,8 +136,45 @@ function remember(   k) {
     rgpu[k] = gpu > 0 ? gpu : 0; rproc[k] = main; rcell[k] = cell_kbps(); rkern[k] = kern > 0 ? kern : 0
     rapp[k] = app
     top_first(); rtop[k] = (TOPN != "" && TOPN != app && TOPP >= 100) ? TOPN : ""
+    rupd[k] = install_now()
 }
-function cause(   m, i, k, fast, slow, g, p, c, kk, apps, ga, pa, ca, bg, a, b, bbest) {
+# Installing or updating apps (owner 2026-10-25: Play Store updates took the phone body from 37.1 to
+# 40.9 °C in 3 minutes): the installer on screen, or one using 3% of the CPU or more.
+function installer(name) { return name ~ /^(com\.android\.vending|com\.(google\.)?android\.packageinstaller|com\.miui\.packageinstaller|installd|dex2oat(32|64)?|odrefresh)$/ }
+function install_now(   parts, np, i, kv) {
+    if (installer(app)) return app
+    np = split(top, parts, ";")
+    for (i = 1; i <= np; i++) if (split(parts[i], kv, ":") == 2 && installer(kv[1]) && kv[2] + 0 >= 30) return kv[1]
+    return ""
+}
+
+# Rises of the phone body by 2 °C or more within 5 minutes, also below "hot" (owner 2026-10-25: the
+# summary said nothing about such a rise). One episode per rise; at its peak the episode keeps the
+# 5 minutes before it (lowest point, start) and the cause there, so a slow warm-up before stays out.
+function spike_track(   j, lo, lots) {
+    lo = heat; lots = ts
+    for (j = n - 1; j >= 1 && ts - ser_ts[j] <= 300; j--) if (ser_v[j] < lo) { lo = ser_v[j]; lots = ser_ts[j] }
+    if (sp_open && ts - sp_end[sp_n] > 300) sp_open = 0
+    if (!sp_open) {
+        if (heat - lo < 20) return
+        sp_n++; sp_open = 1; sp_to[sp_n] = -99999
+    }
+    if (heat > sp_to[sp_n] && heat - lo >= 20) {
+        sp_start[sp_n] = lots; sp_from[sp_n] = lo; sp_to[sp_n] = heat; sp_end[sp_n] = ts
+        sp_cause[sp_n] = cause(); sp_kind[sp_n] = KIND
+    }
+}
+# The (up to) three biggest rises, in time order, as indexes in SPK[1..].
+function spikes_pick(   i, j, t, nn, ord) {
+    nn = 0
+    for (i = 1; i <= sp_n; i++) { nn++; ord[nn] = i }
+    for (i = 2; i <= nn; i++) { t = ord[i]; for (j = i - 1; j >= 1 && sp_to[ord[j]] - sp_from[ord[j]] < sp_to[t] - sp_from[t]; j--) ord[j + 1] = ord[j]; ord[j + 1] = t }
+    if (nn > 3) nn = 3
+    for (i = 1; i <= nn; i++) SPK[i] = ord[i]
+    for (i = 2; i <= nn; i++) { t = SPK[i]; for (j = i - 1; j >= 1 && SPK[j] > t; j--) SPK[j + 1] = SPK[j]; SPK[j + 1] = t }
+    return nn
+}
+function cause(   m, i, k, fast, slow, g, p, c, kk, apps, ga, pa, ca, bg, a, b, bbest, u, ua) {
     m = n < W ? n : W
     for (i = 0; i < m; i++) {
         k = (n - i) % W
@@ -142,12 +183,20 @@ function cause(   m, i, k, fast, slow, g, p, c, kk, apps, ga, pa, ca, bg, a, b, 
         g += rgpu[k]; p += rproc[k]; c += rcell[k]; kk += rkern[k]
         ga[rapp[k]] += rgpu[k]; pa[rapp[k]] += rproc[k]; ca[rapp[k]] += rcell[k]   # who made that load
         if (rtop[k] != "") bg[rtop[k]]++
+        if (rupd[k] != "") { u++; ua[rupd[k]]++ }
     }
     b = top_key(bg); bbest = b == "" ? 0 : bg[b]
     if (fast * 2 >= m) { KIND = "fast"; return tr("Cas cepat", "Fast charging") }
+    if (u * 2 >= m) { KIND = "update"; return tr("Pembaruan aplikasi: ", "App updates: ") label(top_key(ua)) }
     if (g / m >= 50) { KIND = "gpu"; return tr("Grafis berat: ", "Heavy graphics: ") label(top_key(ga)) }
     if (c / m >= 100) { KIND = "modem"; return tr("Modem (data seluler): ", "Modem (cellular data): ") label(top_key(ca)) }
-    if (p / m >= 600) { KIND = "cpu"; return tr("Aplikasi berat: ", "Heavy app: ") label(top_key(pa)) }
+    if (p / m >= 600) {
+        a = top_key(pa)
+        if (a != "screen_off") { KIND = "cpu"; return tr("Aplikasi berat: ", "Heavy app: ") label(a) }
+        # The processor worked with the screen off: name the background process when one stood out.
+        KIND = b != "" ? "bg" : "off"
+        return b != "" ? tr("Latar belakang: ", "Background: ") label(b) : tr("Layar mati (proses latar belakang)", "Screen off (background processes)")
+    }
     if (bbest * 2 >= m) { KIND = "bg"; return tr("Latar belakang: ", "Background: ") label(b) }
     if (kk / m >= 100) { KIND = "kernel"; return tr("Proses kernel", "Kernel processes") }
     # Nothing heavy in the window: what the phone does right now.
@@ -167,8 +216,9 @@ function top_key(arr,   x, best, key) {
 # What helps against one kind of heat cause (empty when nothing simple does).
 function tip(kind) {
     if (kind == "fast") return tr("Panas dari pengisian cepat, wajar saat HyperCharge. Lepas charger atau pakai cas biasa bila terlalu panas.", "Heat from fast charging, normal with HyperCharge. Unplug or charge normally if it gets too hot.")
+    if (kind == "update") return tr("Wajar sesaat saat aplikasi diunduh dan dipasang. Atur pembaruan otomatis Play Store hanya lewat Wi-Fi, atau perbarui saat HP tidak dipakai.", "Normal for a while when apps download and install. Set Play Store auto-updates to Wi-Fi only, or update when the phone is not in use.")
     if (kind == "charge") return tr("Panas dari pengisian.", "Heat from charging.")
-    if (kind == "gpu") return tr("Turunkan grafis atau FPS di game itu.", "Lower that game's graphics or FPS.")
+    if (kind == "gpu") return tr("GPU bekerja keras (game, video, atau animasi saat scroll terus-menerus): turunkan grafis/FPS atau refresh rate, atau beri jeda sebentar.", "The GPU works hard (games, video, or animations while scrolling non-stop): lower graphics/FPS or the refresh rate, or take a short break.")
     if (kind == "modem") return tr("Pakai Wi-Fi atau 4G: modem 5G termasuk bagian terpanas.", "Use Wi-Fi or 4G: the 5G modem is among the hottest parts.")
     if (kind == "cpu") return tr("Prosesor bekerja keras: mode Hemat, atau tutup aplikasi itu.", "The processor works hard: Power saver mode, or close that app.")
     if (kind == "bg") return tr("Proses itu bekerja di belakang layar: tutup atau batasi aplikasinya.", "That process works in the background: close or restrict its app.")
@@ -181,7 +231,7 @@ function csvq(t) { gsub(/"/, "\"\"", t); return "\"" t "\"" }   # app names may 
 function csv_row(   i, g, line) {
     line = local_date(ts) " " local_clock(ts) "," csvq(label(app)) "," (app == "screen_off" ? tr("mati", "off") : tr("nyala", "on")) "," \
            (chg ? tr("ya", "yes") : tr("tidak", "no")) "," cur "," (cpu >= 0 ? cpu / 10 : "") "," (kern >= 0 ? kern / 10 : "") "," \
-           (gpu >= 0 ? gpu : "") "," csvq(top_text(top)) "," net_kbps("wifi") "," net_kbps("cell") "," (capb >= 0 ? capb "/" capl : "")
+           (gpu >= 0 ? gpu : "") "," csvq(top_text(top)) "," net_kbps("wifi") "," net_kbps("cell") "," (capb >= 0 ? capb "/" capl : "") "," (ld >= 0 ? ld / 10 : "")
     for (i = 1; i <= ng; i++) { g = GROUPS[i]; line = line "," ((g in gmax) ? deg(gmax[g]) : "") }
     print line ",\"" zl "\""
 }
@@ -206,7 +256,7 @@ function rank(arr, out,   k, n, i, j, t) {
     return n
 }
 
-function summary_text(   s, i, g, nc, order, na, apps, nk, kord, line, nm, mord) {
+function summary_text(   s, i, g, nc, order, na, apps, nk, kord, line, nm, mord, ns, j, big) {
     s = tr("Cogan Smart · Thermal — ringkasan ", "Cogan Smart · Thermal — summary ") span(secs)
     if (n == 0) return s tr("\nBelum ada data pada rentang ini. Modul mencatat tiap beberapa detik setelah HP menyala.\n", "\nNo data in this range yet. The module records at the configured interval after boot.\n")
     s = s " (" stamp(first) "–" stamp(lastts) (lastts - first < 86400 ? ", " local_date(lastts) : "") ") · " n tr(" sampel\n\n", " samples\n\n")
@@ -224,6 +274,13 @@ function summary_text(   s, i, g, nc, order, na, apps, nk, kord, line, nm, mord)
         s = s tr("  ➜ Kesimpulan: paling sering panas karena ", "  ➜ Most frequent inferred heat cause: ") order[1] ".\n"
         if (tip(ckind[order[1]]) != "") s = s tr("  ➜ Saran: ", "  ➜ Tip: ") tip(ckind[order[1]]) "\n"
     }
+    if (sp_n) {
+        ns = spikes_pick()
+        s = s sprintf(tr("\n📈 Lonjakan suhu (Badan HP naik ≥ 2 °C dalam 5 menit): %d kali\n", "\n📈 Temperature rises (phone body up ≥ 2 °C within 5 minutes): %d\n"), sp_n)
+        for (i = 1; i <= ns; i++) { j = SPK[i]; s = s "  " stamp(sp_start[j]) "–" stamp(sp_end[j]) " · " deg(sp_from[j]) " → " deg(sp_to[j]) " °C (+" deg(sp_to[j] - sp_from[j]) ") · " sp_cause[j] "\n" }
+        big = SPK[1]; for (i = 2; i <= ns; i++) if (sp_to[SPK[i]] - sp_from[SPK[i]] > sp_to[big] - sp_from[big]) big = SPK[i]
+        if (tip(sp_kind[big]) != "") s = s tr("  ➜ Saran: ", "  ➜ Tip: ") tip(sp_kind[big]) "\n"
+    }
     for (a in appn) appavg[a] = appn[a]
     na = rank(appavg, apps)
     s = s tr("\n📱 Per aplikasi (waktu · Badan HP rata-rata · tertinggi):\n", "\n📱 By app (time · phone body average · peak):\n")
@@ -239,6 +296,7 @@ function summary_text(   s, i, g, nc, order, na, apps, nk, kord, line, nm, mord)
             deg(mode_peak[mord[i]]), int(mode_hot[mord[i]] * 100 / mode_n[mord[i]] + 0.5), int(mode_n[mord[i]] * 100 / n + 0.5))
     }
     s = s tr("\nCPU rata-rata ", "\nAverage CPU ") (cpun ? sprintf("%.0f%%", cpusum / cpun / 10) : "-") tr(" · proses kernel ", " · kernel processes ") (kernn ? sprintf("%.1f%%", kernsum / kernn / 10) : "-") "\n"
+    if (loadn) s = s sprintf(tr("⚙️ Beban Cogan Smart (pencatat + pengendali): %.1f%% CPU\n", "⚙️ Cogan Smart load (recorder + controller): %.1f%% CPU\n"), loadsum / loadn / 10)
     if (capn) s = s cap_text() "\n"
     if (stuck_list() != "") s = s tr("Sensor macet, tidak dihitung: ", "Stuck sensors, left out: ") stuck_list() "\n"
     return s
@@ -264,7 +322,7 @@ function json_list(arr, total, limit, kind,   ord, nn, i, s, k) {
     return "[" s "]"
 }
 
-function json_summary(   s, i, g, step, b, j, mx, sep) {
+function json_summary(   s, i, g, step, b, j, mx, sep, ns) {
     s = sprintf("{\"samples\":%d,\"secs\":%d,\"hot\":%d,\"hot_pct\":%d", n, secs, HOT, n ? int(hot * 100 / n + 0.5) : 0)
     if (n) {
         s = s sprintf(",\"from\":\"%s\",\"to\":\"%s\",\"peak\":{\"t\":%d,\"group\":\"%s\",\"clock\":\"%s\",\"app\":\"%s\",\"cpu\":%d,\"gpu\":%d,\"charging\":%d,\"current\":%d}", \
@@ -278,6 +336,10 @@ function json_summary(   s, i, g, step, b, j, mx, sep) {
         s = s sprintf(",\"cap\":{\"samples\":%d,\"heat_pct\":%d,\"mode_pct\":%d,\"min_big\":%d,\"min_little\":%d}", capn, \
             capn ? int(capheat * 100 / capn + 0.5) : 0, capn ? int(capmode * 100 / capn + 0.5) : 0, capheat ? capminb : 100, capheat ? capminl : 100)
         s = s ",\"stuck\":\"" jesc(stuck_list()) "\""
+        s = s sprintf(",\"load\":%d,\"spike_count\":%d,\"spikes\":[", loadn ? int(loadsum / loadn + 0.5) : -1, sp_n)
+        ns = sp_n ? spikes_pick() : 0
+        for (i = 1; i <= ns; i++) { j = SPK[i]; s = s (i > 1 ? "," : "") sprintf("{\"from\":\"%s\",\"to\":\"%s\",\"t0\":%d,\"t1\":%d,\"cause\":\"%s\",\"kind\":\"%s\",\"tip\":\"%s\"}", stamp(sp_start[j]), stamp(sp_end[j]), sp_from[j], sp_to[j], jesc(sp_cause[j]), sp_kind[j], jesc(tip(sp_kind[j]))) }
+        s = s "]"
         step = int((n + 119) / 120); s = s ",\"series\":["; sep = ""
         for (b = 1; b <= n; b += step) {
             # The average of each slice: a calm trend line; the peak tile keeps the highest reading.

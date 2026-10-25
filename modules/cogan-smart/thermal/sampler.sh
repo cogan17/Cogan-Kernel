@@ -2,10 +2,11 @@
 # Cogan Smart · Thermal: background sampler. Every INTERVAL seconds it appends one line to
 # $CT_DATA/data/<date>.tsv with every temperature and what the phone was doing at that moment:
 #
-#   ts  app  screen  charging  current_mA  battery_t10  cpu_x10  kernel_x10  gpu  top  net  freqs  zones  cap
+#   ts  app  screen  charging  current_mA  battery_t10  cpu_x10  kernel_x10  gpu  top  net  freqs  zones  cap  load
 #
 # top = "name:pct_x10;..." (busiest user processes), net = "wifi:kB/s,cell:kB/s",
 # zones = "type=tenths_of_degC,...", cap = CPU cap of Cogan Smart · Power "big%/little%/step" or "-"
+# (since v2.9.1), load = CPU used by this module's recorder and power controller, % x10 of the whole phone
 # (since v2.9.1). Usage: sampler.sh [--once]
 
 MODDIR=${0%/*}; [ "$MODDIR" = "$0" ] && MODDIR=.   # started as "sh report.sh"
@@ -21,14 +22,17 @@ sample() {
   cpu_prev=$(cat "$CT_RUN/cpu.prev" 2>/dev/null)
   cat "$CT_PROC"/[0-9]*/stat > "$CT_RUN/pids.new" 2>/dev/null
   [ -f "$CT_RUN/pids.prev" ] || : > "$CT_RUN/pids.prev"
-  awk -v prev="$cpu_prev" -v cur="$cpu_now" -f "$MODDIR/cpu.awk" "$CT_RUN/pids.prev" "$CT_RUN/pids.new" \
+  mods=$$; cp_pid=""; IFS= read -r cp_pid 2>/dev/null < "$CP_DATA/run/pid" || :
+  case "$cp_pid" in ''|*[!0-9]*) ;; *) mods="$mods $cp_pid" ;; esac   # the power controller
+  awk -v prev="$cpu_prev" -v cur="$cpu_now" -v mods="$mods" -f "$MODDIR/cpu.awk" "$CT_RUN/pids.prev" "$CT_RUN/pids.new" \
     > "$CT_RUN/cpu.out" 2>/dev/null
   mv "$CT_RUN/pids.new" "$CT_RUN/pids.prev"
   echo "$cpu_now" > "$CT_RUN/cpu.prev"
-  cpu=-1; kernel=-1; top=""
+  cpu=-1; kernel=-1; top=""; load=-1
   while read -r kind a b c; do
     case "$kind" in
       C) cpu=$a; kernel=$b ;;
+      M) load=$a ;;
       P) top="$top${top:+;}$(proc_name "$b" "$c"):$a" ;;
     esac
   done < "$CT_RUN/cpu.out"
@@ -53,8 +57,8 @@ sample() {
   power_cap
 
   day=$(date +%Y-%m-%d)
-  printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$now" "$app" "$screen" "$charging" "$current" \
-    "$battery" "$cpu" "$kernel" "$gpu" "${top:--}" "$net" "$freqs" "${zones:--}" "$cap" > "$CT_RUN/sample.tsv"
+  printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$now" "$app" "$screen" "$charging" "$current" \
+    "$battery" "$cpu" "$kernel" "$gpu" "${top:--}" "$net" "$freqs" "${zones:--}" "$cap" "$load" > "$CT_RUN/sample.tsv"
   cat "$CT_RUN/sample.tsv" >> "$CT_DATA/data/$day.tsv"
   echo "$now" > "$CT_RUN/last"
 

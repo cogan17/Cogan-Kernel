@@ -1,9 +1,21 @@
 # Cogan Smart Kernel v2.9.1
 
-## Satu angka Badan HP, nama aplikasi, batas CPU di log, sensor macet / One phone body number, app names, CPU cap in the log, stuck sensors — v2.9.1
+## Satu angka Badan HP, lonjakan suhu, nama aplikasi, batas dan beban CPU / One phone body number, temperature rises, app names, CPU cap and load — v2.9.1
 
 Indonesia:
 
+- Lonjakan suhu: ringkasan menampilkan kenaikan Badan HP ≥ 2 °C dalam 5 menit beserta penyebab
+  dan sarannya, walau belum sampai "panas" (owner 25 Okt: Badan HP 37,1 → 40,9 °C dalam ±3 menit
+  dan ringkasan hanya menulis "tidak ada momen panas"). Paling banyak tiga lonjakan terbesar.
+- Penyebab baru "Pembaruan aplikasi": Play Store atau pemasang paket di layar, atau memakai CPU ≥ 3%,
+  dengan saran mengatur pembaruan otomatis Play Store. Di data owner: unduh sampai 9,5 MB/s lalu
+  memasang, CPU 70–85%.
+- Beban Cogan Smart: tiap sampel mencatat CPU yang dipakai pencatat dan pengendali modul, termasuk
+  proses anak yang sudah selesai (awk, dumpsys…), yang tidak terlihat di daftar proses teratas.
+  Ringkasan menulis rata-ratanya. Bukan termasuk WebUI yang sedang dibuka.
+- Saran "Grafis berat" kini juga untuk video dan animasi saat scroll terus-menerus, bukan hanya game.
+  Prosesor yang bekerja saat layar mati ditulis sebagai proses latar belakang, bukan "Aplikasi berat:
+  Layar mati".
 - Satu angka Badan HP di semua tempat: suhu badan milik HyperOS sendiri (`hyperos_board`, dari
   `board_sensor_temp`) bila ada, lalu sensor kulit terpanas, lalu baterai. Tab Daya, tab Suhu,
   kartu Rem HyperOS, log dan pengendali memakai angka yang sama. Owner: "suhu masih inkonsistensi".
@@ -31,6 +43,18 @@ Indonesia:
 
 English:
 
+- Temperature rises: the summary shows phone body rises of 2 °C or more within 5 minutes with their
+  cause and tip, even below "hot" (owner 25 Oct: the body went 37.1 → 40.9 °C in about 3 minutes and
+  the summary only said "no hot samples"). At most the three biggest.
+- New cause "App updates": the Play Store or a package installer on screen, or using 3% of the CPU or
+  more, with a tip about Play Store auto-updates. In the owner's data: downloads up to 9.5 MB/s, then
+  installing at 70–85% CPU.
+- Cogan Smart load: every sample records the CPU used by the module's recorder and controller,
+  including finished child processes (awk, dumpsys…) that the top-process list never shows. The
+  summary shows the average. An open WebUI is not included.
+- The "Heavy graphics" tip now also covers video and animations while scrolling non-stop, not only
+  games. A processor working with the screen off is named as a background process instead of
+  "Heavy app: Screen off".
 - One phone body number everywhere: HyperOS's own body temperature (`hyperos_board`, from
   `board_sensor_temp`) when there, else the hottest skin sensor, else the battery. The Power tab,
   the Temperature tab, the HyperOS brakes card, the log and the controller use the same number.

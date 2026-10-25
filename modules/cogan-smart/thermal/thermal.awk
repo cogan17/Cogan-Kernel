@@ -56,6 +56,7 @@ function label(pkg,   l) {
     if (pkg == "system_server") return tr("Sistem Android", "Android system")
     if (pkg == "surfaceflinger") return tr("SurfaceFlinger (tampilan)", "SurfaceFlinger (display)")
     if (pkg == "com.termux") return "Termux"
+    if (pkg == "com.android.vending") return "Google Play Store"
     l = learned(pkg)
     return l != "" ? l : pkg
 }
