@@ -148,6 +148,10 @@ class SamplerTests(unittest.TestCase):
         self.assertIn(wifi, ("wifi:300", "wifi:285"))
         self.assertEqual(cell, "cell:0")
         self.assertEqual(freqs, "p0:1800,p4:2850,p7:3250")
+        # After a restart the byte counters start again: no speed rather than a negative one.
+        net_prev.write_text(f"{int(time.time()) - 20} {10 ** 9} 0\n")
+        self.phone.run("sampler.sh", "--once")
+        self.assertEqual(self.lines()[2][10], "wifi:-,cell:0")
         self.assertIn("soc_max=550", zones)
         self.assertIn("battery=360", zones)
         self.assertNotIn("unused_sensor", zones)

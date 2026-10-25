@@ -122,7 +122,8 @@ function top_first(   parts, kv) {
     if (split(top, parts, ";") < 1 || parts[1] == "-") return
     split(parts[1], kv, ":"); TOPN = kv[1]; TOPP = kv[2] + 0
 }
-function net_kbps(kind,   kv) { if (match(net, kind ":-?[0-9]+")) { split(substr(net, RSTART, RLENGTH), kv, ":"); return kv[2] + 0 }; return "" }
+# Older logs hold a negative speed for the first sample after a restart (the counters started again): unknown.
+function net_kbps(kind,   kv) { if (match(net, kind ":-?[0-9]+")) { split(substr(net, RSTART, RLENGTH), kv, ":"); return kv[2] < 0 ? "" : kv[2] + 0 }; return "" }
 function cell_kbps() { return net_kbps("cell") + 0 }
 # "com.mobile.legends:250;..." as "Mobile Legends 25.0%; ...".
 function top_text(t,   parts, n, i, kv, s) {

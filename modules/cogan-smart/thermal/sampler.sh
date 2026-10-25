@@ -52,7 +52,10 @@ sample() {
   net="-"
   if read -r pts pwifi pcell < "$CT_RUN/net.prev" 2>/dev/null && [ "$now" -gt "$pts" ]; then
     dt=$((now - pts))
-    net="wifi:$(((wifi - pwifi) / 1024 / dt)),cell:$(((cell - pcell) / 1024 / dt))"
+    w=$(((wifi - pwifi) / 1024 / dt)); c=$(((cell - pcell) / 1024 / dt))
+    # The byte counters start again after a restart (owner's log, 12.06 WIB: -24055 kB/s): no speed then.
+    [ "$w" -ge 0 ] || w=-; [ "$c" -ge 0 ] || c=-
+    net="wifi:$w,cell:$c"
   fi
   echo "$now $wifi $cell" > "$CT_RUN/net.prev"
 
