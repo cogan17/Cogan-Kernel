@@ -1,9 +1,24 @@
 # Cogan Smart Kernel v2.9.1
 
-## Satu angka Badan HP, lonjakan suhu, nama aplikasi, batas dan beban CPU / One phone body number, temperature rises, app names, CPU cap and load — v2.9.1
+## Modul lebih hemat CPU, satu angka Badan HP, lonjakan suhu, nama aplikasi, batas CPU / A lighter module, one phone body number, temperature rises, app names, CPU cap — v2.9.1
 
 Indonesia:
 
+- Modul jauh lebih hemat CPU. Log 6 jam owner dengan build uji v2.9.1 pertama (25 Okt, 07.22–11.24
+  WIB) menunjukkan pencatat dan pengendali memakai rata-rata 4,8% CPU seluruh HP, sama di semua
+  aplikasi dan saat layar mati. Penyebabnya, tiap putaran menjalankan puluhan proses kecil: `cat` untuk
+  tiap antarmuka jaringan, `awk`, `sed` dan `dumpsys`.
+  - Kini file dibaca dengan builtin shell, dan nama proses diingat.
+  - `dumpsys` hanya dijalankan saat aplikasi di depan berganti, paling lambat tiap 2 menit.
+  - Badan HP ikut dari satu pembacaan sensor.
+  - 40 sampel terakhir (untuk sensor macet) hanya dibaca tiap 5 menit.
+  - Diukur di HP tiruan berbentuk rothko (60 sensor, 25 antarmuka jaringan):
+    - pencatat: dari ±94 menjadi ±12 proses per sampel;
+    - pengendali: dari 62 menjadi 15 proses per putaran (jalur kernel stok; dengan Cogan Bridge lebih sedikit lagi).
+  - Angka di HP belum diukur. Perilaku pengendali tidak berubah.
+- Penyebab baru "HP baru dinyalakan" untuk 5 menit pertama setelah HP menyala. Owner 25 Okt: memasang
+  v2.9.1 lalu restart, Badan HP naik 37,3 → 43,0 °C, dan laporan menulis "Aplikasi berat: Layar
+  utama". Pencatat menandai sampel pertama setelah restart (penghitung CPU mulai lagi).
 - Lonjakan suhu: ringkasan menampilkan kenaikan Badan HP ≥ 2 °C dalam 5 menit beserta penyebab
   dan sarannya, walau belum sampai "panas" (owner 25 Okt: Badan HP 37,1 → 40,9 °C dalam ±3 menit
   dan ringkasan hanya menulis "tidak ada momen panas"). Paling banyak tiga lonjakan terbesar.
@@ -12,7 +27,8 @@ Indonesia:
   memasang, CPU 70–85%.
 - Beban Cogan Smart: tiap sampel mencatat CPU yang dipakai pencatat dan pengendali modul, termasuk
   proses anak yang sudah selesai (awk, dumpsys…), yang tidak terlihat di daftar proses teratas.
-  Ringkasan menulis rata-ratanya. Bukan termasuk WebUI yang sedang dibuka.
+  Ringkasan menulis rata-ratanya dan bagian pengendali (CSV: `beban_modul_persen`,
+  `beban_pengendali_persen`). WebUI yang sedang dibuka tidak termasuk.
 - Saran "Grafis berat" kini juga untuk video dan animasi saat scroll terus-menerus, bukan hanya game.
   Prosesor yang bekerja saat layar mati ditulis sebagai proses latar belakang, bukan "Aplikasi berat:
   Layar mati".
@@ -43,6 +59,21 @@ Indonesia:
 
 English:
 
+- A much lighter module. The owner's 6-hour log with the first v2.9.1 test build (25 Oct, 07:22–11:24
+  WIB) showed the recorder and controller using 4.8% of the phone's CPU on average, the same in every
+  app and with the screen off. The cause: every round started dozens of small processes (`cat` for
+  every network interface, `awk`, `sed`, `dumpsys`).
+  - Files are now read with shell builtins, and process names are remembered.
+  - `dumpsys` runs only when the app in front changes, at least every 2 minutes.
+  - The phone body comes from the same sensor read.
+  - The last 40 samples (for stuck sensors) are read only every 5 minutes.
+  - Measured on a fake phone shaped like rothko (60 sensors, 25 network interfaces):
+    - recorder: about 94 → 12 processes per sample;
+    - controller: 62 → 15 per round (stock kernel path; fewer with Cogan Bridge).
+  - Not measured on the phone yet. The controller behaves the same.
+- New cause "Phone just started" for the first 5 minutes after the phone starts. Owner 25 Oct:
+  installing v2.9.1 and restarting took the body from 37.3 to 43.0 °C, and the report said "Heavy app:
+  Home screen". The recorder marks the first sample after a restart (the CPU counters start again).
 - Temperature rises: the summary shows phone body rises of 2 °C or more within 5 minutes with their
   cause and tip, even below "hot" (owner 25 Oct: the body went 37.1 → 40.9 °C in about 3 minutes and
   the summary only said "no hot samples"). At most the three biggest.
@@ -51,7 +82,8 @@ English:
   installing at 70–85% CPU.
 - Cogan Smart load: every sample records the CPU used by the module's recorder and controller,
   including finished child processes (awk, dumpsys…) that the top-process list never shows. The
-  summary shows the average. An open WebUI is not included.
+  summary shows the average and the controller's part (CSV: `module_load_percent`,
+  `controller_load_percent`). An open WebUI is not included.
 - The "Heavy graphics" tip now also covers video and animations while scrolling non-stop, not only
   games. A processor working with the screen off is named as a background process instead of
   "Heavy app: Screen off".

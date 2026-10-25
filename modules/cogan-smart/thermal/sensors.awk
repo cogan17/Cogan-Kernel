@@ -1,5 +1,6 @@
 # One sensor decoder for both tabs and both background workers.
 # Needs thermal.awk first. Input: type temperature (millidegrees or degrees).
+# Output: main_temp <TAB> zones <TAB> phone body (Badan HP), all in tenths of °C.
 {
     if (NF < 2 || $NF !~ /^-?[0-9]+([.][0-9]+)?$/) next
     name = $1; t = $NF + 0
@@ -12,5 +13,5 @@
 END {
     zones = ""
     for (i = 1; i <= n; i++) zones = zones (i > 1 ? "," : "") order[i] "=" best[order[i]]
-    printf "%d\t%s\n", main_temp(zones), zones
+    printf "%d\t%s\t%d\n", main_temp(zones), zones, body_temp(zones)
 }

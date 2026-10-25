@@ -47,20 +47,21 @@ defaults() {
   HEAT_PAUSE_CHARGE=1; INTERVAL=10; FORCE=0; AUTOSTART=1; CTRL_VER=3
 }
 
-limits() {   # limits KEY -> "min max" of a numeric setting
+limits_of() {   # limits_of KEY -> LIM_LO and LIM_HI of a numeric setting, no subshell
   case "$1" in
-    TARGET_TEMP) echo "38 46" ;;
-    GAME_LIMIT) echo "40 50" ;;
-    CTRL_VER) echo "3 3" ;;
-    SAVER_CAP) echo "30 90" ;;
-    GAME_BOOST|CHARGE_CTRL|CHARGE_THERMAL|HEAT_PAUSE_CHARGE|FORCE|AUTOSTART) echo "0 1" ;;
-    CHARGE_STOP) echo "50 100" ;;
-    CHARGE_RESUME) echo "40 99" ;;
-    BATT_TEMP_STOP) echo "35 50" ;;
-    INTERVAL) echo "5 60" ;;
+    TARGET_TEMP) LIM_LO=38; LIM_HI=46 ;;
+    GAME_LIMIT) LIM_LO=40; LIM_HI=50 ;;
+    CTRL_VER) LIM_LO=3; LIM_HI=3 ;;
+    SAVER_CAP) LIM_LO=30; LIM_HI=90 ;;
+    GAME_BOOST|CHARGE_CTRL|CHARGE_THERMAL|HEAT_PAUSE_CHARGE|FORCE|AUTOSTART) LIM_LO=0; LIM_HI=1 ;;
+    CHARGE_STOP) LIM_LO=50; LIM_HI=100 ;;
+    CHARGE_RESUME) LIM_LO=40; LIM_HI=99 ;;
+    BATT_TEMP_STOP) LIM_LO=35; LIM_HI=50 ;;
+    INTERVAL) LIM_LO=5; LIM_HI=60 ;;
     *) return 1 ;;
   esac
 }
+limits() { limits_of "$1" && echo "$LIM_LO $LIM_HI"; }   # limits KEY -> "min max"
 
 valid() {   # valid KEY VALUE
   if [ "$1" = MODE ]; then
@@ -68,8 +69,7 @@ valid() {   # valid KEY VALUE
   fi
   uint "$2" || return 1
   case "$2" in 0|[1-9]*) ;; *) return 1 ;; esac
-  set -- "$2" $(limits "$1")
-  [ $# = 3 ] && [ "$1" -ge "$2" ] && [ "$1" -le "$3" ]
+  limits_of "$1" && [ "$2" -ge "$LIM_LO" ] && [ "$2" -le "$LIM_HI" ]
 }
 
 load_config() {
@@ -103,18 +103,19 @@ deg() { echo "$(($1 / 10)).$(( ($1 < 0 ? -$1 : $1) % 10 ))"; }
 # BODY_T, the phone body (skin) sensor, or -9999 when the phone has none.
 read_temps() {
   rt_sample=$(read_thermal_sensors)
-  MAIN_T=${rt_sample%%	*}; BODY_T=$(body_temp "${rt_sample#*	}")
+  MAIN_T=${rt_sample%%	*}; BODY_T=${rt_sample##*	}
   case "$MAIN_T" in ''|*[!0-9-]*) MAIN_T=-9999 ;; esac
   case "$BODY_T" in ''|*[!0-9-]*) BODY_T=-9999 ;; esac
 }
 
-# Battery: "level status temp_tenths current_mA"; status is charging, full, discharging or idle.
-read_battery() {
-  level=$(cat "$BATTERY/capacity" 2>/dev/null)
-  status=$(cat "$BATTERY/status" 2>/dev/null)
-  temp=$(cat "$BATTERY/temp" 2>/dev/null)
-  current=$(cat "$BATTERY/current_now" 2>/dev/null)
-  design=$(cat "$BATTERY/charge_full_design" 2>/dev/null)
+# Battery: sets level, status (charging, full, discharging or idle), temp (tenths of °C) and current
+# (mA) with shell builtins; read_battery prints them as "level status temp current".
+battery_now() {
+  read_into level "$BATTERY/capacity"
+  read_into status "$BATTERY/status"
+  read_into temp "$BATTERY/temp"
+  read_into current "$BATTERY/current_now"
+  read_into design "$BATTERY/charge_full_design"
   case "$level" in ''|*[!0-9]*) level=-1 ;; esac
   case "$temp" in ''|*[!0-9-]*) temp=-999 ;; esac
   case "$current" in ''|*[!0-9-]*) current=0 ;; esac
@@ -122,8 +123,8 @@ read_battery() {
   current=${current#-}
   if [ "$current" -ge 20000 ] || [ "$design" -ge 100000 ]; then current=$((current / 1000)); fi   # microamps
   case "$status" in Charging) status=charging ;; Full) status=full ;; Discharging) status=discharging ;; *) status=idle ;; esac
-  echo "$level $status $temp $current"
 }
+read_battery() { battery_now; echo "$level $status $temp $current"; }
 
 monitor_installed() { [ -f "$CT_MOD/module.prop" ] && [ ! -f "$CT_MOD/disable" ]; }
 
@@ -135,7 +136,7 @@ read_monitor() {
   [ "$CS_RUNNING" = 1 ] && [ "$CS_FRESH" = 1 ] || return 1
   IFS='	' read -r m_ts m_main _ _ m_app m_cause < "$CT_DATA/run/latest" 2>/dev/null || return 1
   case "$m_ts" in ''|*[!0-9]*) return 1 ;; esac
-  m_age=$(($(date +%s) - m_ts))
+  m_age=$((${CB_NOW:-$(date +%s)} - m_ts))
   [ "$m_age" -ge 0 ] && [ "$m_age" -le "$cs_limit" ] && [ "$m_ts" -ge "$CS_STARTED" ] || return 1
   M_MAIN=$m_main; M_APP=$m_app; M_CAUSE=$m_cause
 }
@@ -254,13 +255,13 @@ restore_cpu() {
   for cp_orig in "$CP_RUN"/original/policy*; do
     [ -f "$cp_orig" ] || continue
     cp_name=${cp_orig##*/}; cp_node=$CP_SYS/devices/system/cpu/cpufreq/$cp_name/scaling_max_freq
-    cp_old=$(cat "$cp_orig"); cp_last=$(cat "$CP_RUN/written/$cp_name" 2>/dev/null)
-    cp_now=$(cat "$cp_node" 2>/dev/null)
+    read_into cp_old "$cp_orig"; read_into cp_last "$CP_RUN/written/$cp_name"
+    read_into cp_now "$cp_node"
     if [ "$cp_now" = "$cp_last" ] && uint "$cp_old"; then
       if ! (echo "$cp_old" > "$cp_node") 2>/dev/null; then
         event "Pemulihan CPU gagal: $cp_name"; cp_restore_failed=1; continue
       fi
-      [ "$(cat "$cp_node" 2>/dev/null)" = "$cp_old" ] || { cp_restore_failed=1; continue; }
+      read_into cp_now "$cp_node"; [ "$cp_now" = "$cp_old" ] || { cp_restore_failed=1; continue; }
     fi
     rm -f "$cp_orig" "$CP_RUN/written/$cp_name"
   done
@@ -293,39 +294,49 @@ set_cpu_cap() {
     (echo '0 0 0' > "$CB_ROOT/limits") 2>/dev/null
   fi
   echo sysfs > "$CP_RUN/backend"
-  mkdir -p "$CP_RUN/original" "$CP_RUN/written"
-  cp_lowest=$(cat "$CP_SYS"/devices/system/cpu/cpufreq/policy*/cpuinfo_max_freq 2>/dev/null | sort -n | head -n 1)
-  cp_highest=$(cat "$CP_SYS"/devices/system/cpu/cpufreq/policy*/cpuinfo_max_freq 2>/dev/null | sort -n | tail -n 1)
+  [ -d "$CP_RUN/original" ] && [ -d "$CP_RUN/written" ] || mkdir -p "$CP_RUN/original" "$CP_RUN/written"
+  cp_lowest=""; cp_highest=""   # the slowest and fastest cluster, by their top frequency
+  for cp_policy in "$CP_SYS"/devices/system/cpu/cpufreq/policy*; do
+    read_into cp_max "$cp_policy/cpuinfo_max_freq"; uint "$cp_max" || continue
+    { [ -z "$cp_lowest" ] || [ "$cp_max" -lt "$cp_lowest" ]; } && cp_lowest=$cp_max
+    { [ -z "$cp_highest" ] || [ "$cp_max" -gt "$cp_highest" ]; } && cp_highest=$cp_max
+  done
   cp_count=0
   for cp_policy in "$CP_SYS"/devices/system/cpu/cpufreq/policy*; do
-    cp_max=$(cat "$cp_policy/cpuinfo_max_freq" 2>/dev/null)
-    cp_min=$(cat "$cp_policy/cpuinfo_min_freq" 2>/dev/null)
+    read_into cp_max "$cp_policy/cpuinfo_max_freq"
+    read_into cp_min "$cp_policy/cpuinfo_min_freq"
     uint "$cp_max" && uint "$cp_min" || continue
     cp_count=$((cp_count + 1)); cp_pct=$cp_big; cp_name=${cp_policy##*/}
     [ "$cp_max" = "$cp_lowest" ] && [ "$cp_lowest" != "$cp_highest" ] && cp_pct=$cp_little
     cp_want=$((cp_max * cp_pct / 100)); [ "$cp_want" -lt "$cp_min" ] && cp_want=$cp_min
     cp_node=$cp_policy/scaling_max_freq
-    cp_now=$(cat "$cp_node" 2>/dev/null)
+    read_into cp_now "$cp_node"
     if ! uint "$cp_now"; then record_control "$cp_name" "$cp_want" unknown unsupported; continue; fi
     cp_orig=$CP_RUN/original/$cp_name; cp_written=$CP_RUN/written/$cp_name
     [ -f "$cp_orig" ] || echo "$cp_now" > "$cp_orig"
-    cp_ceiling=$(cat "$cp_orig"); cp_last=$(cat "$cp_written" 2>/dev/null)
+    read_into cp_ceiling "$cp_orig"; read_into cp_last "$cp_written"
     # Preserve a stricter external limit observed between our own writes.
     if [ -n "$cp_last" ] && [ "$cp_now" != "$cp_last" ] && [ "$cp_now" -lt "$cp_ceiling" ]; then
       cp_ceiling=$cp_now; echo "$cp_ceiling" > "$cp_orig"
     fi
     [ "$cp_want" -gt "$cp_ceiling" ] && cp_want=$cp_ceiling
-    cp_freq=$(awk -v want="$cp_want" '{for(i=1;i<=NF;i++) if($i+0<=want && $i+0>best)best=$i+0} END{print best+0}' "$cp_policy/scaling_available_frequencies" 2>/dev/null)
+    # The highest available step at or under the wanted speed; the steps do not change, so a running
+    # controller looks each one up once.
+    cp_key=CP_STEP_${cp_name}_$cp_want; eval "cp_freq=\${$cp_key-}"
+    if [ -z "$cp_freq" ]; then
+      cp_freq=$(awk -v want="$cp_want" '{for(i=1;i<=NF;i++) if($i+0<=want && $i+0>best)best=$i+0} END{print best+0}' "$cp_policy/scaling_available_frequencies" 2>/dev/null)
+      eval "$cp_key=\$cp_freq"
+    fi
     [ "${cp_freq:-0}" -gt 0 ] || cp_freq=$cp_want
     cp_result=applied
     if [ "$cp_now" != "$cp_freq" ]; then
       if [ "$FORCE" = 0 ] && [ "$cp_last" = "$cp_freq" ]; then cp_result=conflict
       elif (echo "$cp_freq" > "$cp_node") 2>/dev/null; then
-        cp_actual=$(cat "$cp_node" 2>/dev/null)
+        read_into cp_actual "$cp_node"
         uint "$cp_actual" && echo "$cp_actual" > "$cp_written"
       else cp_result=write_failed; fi
     fi
-    cp_actual=$(cat "$cp_node" 2>/dev/null)
+    read_into cp_actual "$cp_node"
     if [ "$cp_result" = applied ] && [ "$cp_actual" != "$cp_freq" ]; then
       if uint "$cp_actual" && [ "$cp_actual" -lt "$cp_freq" ]; then cp_result=limited; else cp_result=conflict; fi
     fi
@@ -373,7 +384,8 @@ native_cpu_cooling() {
 set_boost() {
   cp_node=$CP_CPUCTL/top-app/cpu.uclamp.min
   [ -f "$cp_node" ] || { [ "$1" = 1 ] && record_control uclamp 20 unknown unsupported; return 0; }
-  cp_current=$(cat "$cp_node" 2>/dev/null)
+  [ "$1" = 1 ] || [ -f "$CP_RUN/uclamp.orig" ] || return 0   # off and never written: nothing to do
+  read_into cp_current "$cp_node"
   if [ "$1" = 1 ]; then
     if ! printf '%s\n' "$cp_current" | grep -Eq '^[0-9]+([.][0-9]+)?$'; then
       record_control uclamp 20 unknown unsupported; return 0

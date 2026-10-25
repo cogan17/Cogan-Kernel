@@ -106,10 +106,11 @@ class FakePhone:
         return self.run("report.sh", *args)
 
 
-def sample(ts, app, zones, charging=0, current=300, cpu=150, kernel=20, gpu=10, top="-", net="wifi:5,cell:0", cap=None, load=None):
+def sample(ts, app, zones, charging=0, current=300, cpu=150, kernel=20, gpu=10, top="-", net="wifi:5,cell:0", cap=None, load=None,
+           ctl=None):
     zone_text = ",".join(f"{name}={value}" for name, value in zones.items())
     fields = (ts, app, 0 if app == "screen_off" else 1, charging, current, 350, cpu, kernel, gpu, top, net, "p0:1800", zone_text)
-    extra = ((cap or "-", load) if load is not None else (cap,) if cap else ())
+    extra = ((cap or "-", load, ctl) if ctl is not None else (cap or "-", load) if load is not None else (cap,) if cap else ())
     return "\t".join(map(str, fields + extra)) + "\n"
 
 
@@ -134,9 +135,9 @@ class SamplerTests(unittest.TestCase):
         net_prev.write_text(f"{int(time.time()) - 20} 0 0\n")
         self.phone.run("sampler.sh", "--once")
         first, second = self.lines()
-        self.assertEqual(len(second), 15)
-        ts, app, screen, charging, current, battery, cpu, kernel, gpu, top, net, freqs, zones, cap, load = second
-        self.assertEqual((cap, load), ("-", "0"))             # no power controller; this fake /proc has no module process
+        self.assertEqual(len(second), 16)
+        ts, app, screen, charging, current, battery, cpu, kernel, gpu, top, net, freqs, zones, cap, load, ctl = second
+        self.assertEqual((cap, load, ctl), ("-", "0", "0"))   # no power controller; this fake /proc has no module process
         self.assertEqual(first[6:8], ["-1", "-1"])           # no previous CPU reading yet
         self.assertEqual((app, screen, charging, current, battery, gpu), ("com.mobile.legends", "1", "1", "2100", "361", "65"))
         self.assertEqual(cpu, "400")                          # 400 of 1000 ticks busy = 40.0 %
@@ -152,6 +153,37 @@ class SamplerTests(unittest.TestCase):
         self.assertNotIn("unused_sensor", zones)
         self.assertNotIn("broken", zones)
         self.assertNotIn("hyperos_board", zones)
+
+    def test_a_running_sampler_reuses_names_and_the_focused_app(self):
+        # v2.9.1, owner's log: the recorder and controller used 4.8 % of the CPU, mostly short processes. A running
+        # sampler reads a process name once per pid and start time, and asks dumpsys for the focused app only
+        # when the processes in the top-app cpuset change.
+        base, calls = self.phone.base, self.phone.base / "calls"
+        for step in (1, 2, 3):                    # the CPU counters after each sample
+            self.phone.set_cpu(step)
+            shutil.copytree(self.phone.proc, base / f"snap/{step}")
+        self.phone.set_cpu(0)
+        write(base / "cpuset/top-app/cgroup.procs", "5000\n")
+        write(base / "focus", "com.mobile.legends\n")
+        tools = {
+            "dumpsys": f"echo dumpsys >> {calls}\n"
+                       f"case \"$2\" in displays) echo \"  mCurrentFocus=Window{{1a2b u0 $(cat {base}/focus)/x.Main}}\" ;; esac",
+            "tr": f"echo tr >> {calls}\nexec {shutil.which('tr')} \"$@\"",
+            # After the 2nd sample another app comes to the front; after the 3rd the module is disabled.
+            "sleep": f"n=$(($(cat {base}/sleeps 2>/dev/null || echo 0) + 1)); echo $n > {base}/sleeps\n"
+                     f"cp -R {base}/snap/$n/. {self.phone.proc}/\n"
+                     f"[ $n = 2 ] && {{ echo 7000 > {base}/cpuset/top-app/cgroup.procs; echo com.android.chrome > {base}/focus; }}\n"
+                     f"[ $n = 3 ] && : > {self.phone.root}/disable\nexit 0",
+        }
+        for name, body in tools.items():
+            write(self.phone.bin / name, "#!/bin/sh\n" + body + "\n")
+            (self.phone.bin / name).chmod(0o755)
+        self.phone.env["CT_CPUSET"] = str(base / "cpuset")
+        self.phone.run("sampler.sh")              # runs until the module is disabled
+        lines = self.lines()
+        self.assertEqual([line[1] for line in lines], ["com.mobile.legends", "com.mobile.legends", "com.android.chrome"])
+        self.assertEqual([line[9].split(";")[0].split(":")[0] for line in lines[1:]], ["com.mobile.legends"] * 2)
+        self.assertEqual(calls.read_text().split(), ["dumpsys", "tr", "tr", "dumpsys"])   # 2 names, learned once
 
     def test_hyperos_board_temperature_is_logged_as_phone_body(self):
         # Owner 2026-10-24: HyperOS's board_sensor_temp (40613) next to quiet_therm, in the same log.
@@ -219,19 +251,24 @@ class ModuleLoadTests(unittest.TestCase):
     def test_module_load_counts_children_it_waited_for(self):
         # utime stime cutime cstime are fields 14-17; the module's sampler (pid 300) ran awk and dumpsys.
         stat = lambda pid, comm, u, s, cu, cs: (f"{pid} ({comm}) S 1 {pid} 0 0 -1 0 0 0 0 0 {u} {s} {cu} {cs} 20 0 1 0 100 0 0")
-        before = [stat(300, "sh", 10, 5, 100, 50), stat(400, "chrome", 1000, 100, 0, 0)]
-        after = [stat(300, "sh", 12, 6, 160, 80), stat(400, "chrome", 1300, 150, 0, 0)]
+        before = [stat(300, "sh", 10, 5, 100, 50), stat(400, "chrome", 1000, 100, 0, 0), stat(500, "sh", 5, 5, 100, 100)]
+        after = [stat(300, "sh", 12, 6, 160, 80), stat(400, "chrome", 1300, 150, 0, 0), stat(500, "sh", 5, 5, 115, 115)]
         with tempfile.TemporaryDirectory() as tmp:
             files = []
             for name, lines in (("prev", before), ("new", after)):
                 path = Path(tmp) / name
                 path.write_text("\n".join(lines) + "\n")
                 files.append(str(path))
-            out = subprocess.run([AWK, "-v", "prev=cpu 1000 0 0 9000 0 0 0", "-v", "cur=cpu 1700 0 0 11300 0 0 0", "-v", "mods=300 999",
-                                  "-f", str(MODULE / "thermal/cpu.awk"), *files], capture_output=True, text=True).stdout.split("\n")
-        # 3000 ticks in all: the module 2 + 1 + 60 + 30 = 93 → 3.1 %; chrome 350 → 11.7 %.
-        self.assertEqual(out[:2], ["C 233 0", "M 31"])
-        self.assertEqual(out[2].split()[:2], ["P", "117"])
+            out = subprocess.run([AWK, "-v", "prev=cpu 1000 0 0 9000 0 0 0", "-v", "cur=cpu 1700 0 0 11300 0 0 0", "-v", "mods=300 500",
+                                  "-v", "ctl=500", "-f", str(MODULE / "thermal/cpu.awk"), *files], capture_output=True, text=True).stdout.split("\n")
+        # 3000 ticks in all: the sampler 2 + 1 + 60 + 30 = 93, the controller (pid 500) 15 + 15 → 4.1 %, of which
+        # the controller 1.0 %; chrome 350 → 11.7 %, with its start time (field 22) to tell a reused pid apart.
+        self.assertEqual(out[:2], ["C 233 0", "M 41 10"])
+        self.assertEqual(out[2].split(), ["P", "117", "400", "chrome", "100"])
+        # The counters going back means the phone restarted (-2); no previous reading at all stays -1.
+        run = lambda prev: subprocess.run([AWK, "-v", f"prev={prev}", "-v", "cur=cpu 700 0 0 1300 0 0 0", "-f", str(MODULE / "thermal/cpu.awk"),
+                                           "/dev/null", "/dev/null"], capture_output=True, text=True).stdout.split("\n")[0]
+        self.assertEqual((run("cpu 1700 0 0 11300 0 0 0"), run("")), ("C -2 -1", "C -1 -1"))
 
 
 class ReportTests(unittest.TestCase):
@@ -408,7 +445,7 @@ class ReportTests(unittest.TestCase):
         update = [sample(now - 900 + i * 20, "com.android.vending", {"soc_max": 700, "battery": 370, "hyperos_board": 371 + i * 4},
                          cpu=800, top="com.android.vending:150;system_server:110", net="wifi:9500,cell:0", load=6) for i in range(10)]
         after = [sample(now - 700 + i * 20, "com.anthropic.claude", {"soc_max": 520, "battery": 390, "hyperos_board": 405 - i},
-                        top="com.android.vending:60", load=3) for i in range(5)]
+                        top="com.android.vending:60", load=3, ctl=2) for i in range(5)]
         for old in (self.phone.data / "data").glob("*.tsv"):
             old.unlink()
         write(self.phone.data / "data" / time.strftime("%Y-%m-%d.tsv", time.gmtime(now + 7 * 3600)), "".join(calm + update + after))
@@ -421,9 +458,30 @@ class ReportTests(unittest.TestCase):
         self.assertIn("📈 Lonjakan suhu (Badan HP naik ≥ 2 °C dalam 5 menit): 1 kali", summary["text"])
         self.assertIn("36.3 → 40.7 °C (+4.4) · Pembaruan aplikasi: Google Play Store", summary["text"])
         self.assertEqual(summary["load"], 4)   # (45 × 4 + 10 × 6 + 5 × 3) / 60
-        self.assertIn("Beban Cogan Smart (pencatat + pengendali): 0.4% CPU", summary["text"])
+        self.assertIn("Beban Cogan Smart (pencatat + pengendali): 0.4% CPU (pengendali 0.2%)", summary["text"])
+        self.assertEqual(summary["load_ctl"], 2)   # only the samples that split it (column 16)
         table = list(csv.DictReader(self.phone.report("csv", "3600").splitlines()))
-        self.assertEqual(table[0]["beban_modul_persen"], "0.4")
+        self.assertEqual((table[0]["beban_modul_persen"], table[0]["beban_pengendali_persen"]), ("0.4", ""))
+        self.assertEqual((table[-1]["beban_modul_persen"], table[-1]["beban_pengendali_persen"]), ("0.3", "0.2"))
+
+    def test_a_rise_right_after_boot_is_the_boot(self):
+        # Owner 2026-10-25: installing v2.9.1 and restarting took the body from 37.3 to 43.0 °C in 2 minutes,
+        # while every app started at once; the report called it "Aplikasi berat: Layar utama".
+        now = int(time.time())
+        before = [sample(now - 1500 + i * 20, "com.miui.home", {"soc_max": 500, "battery": 360, "hyperos_board": 373}) for i in range(10)]
+        boot = [sample(now - 900 + i * 20, "com.miui.home", {"soc_max": 900, "battery": 370, "hyperos_board": 373 + i * 9},
+                       cpu=-2 if i == 0 else 980, top="system_server:146;com.facebook.katana:277") for i in range(7)]
+        later = [sample(now - 300 + i * 20, "com.google.android.youtube", {"soc_max": 700, "battery": 380, "hyperos_board": 395 + i * 7},
+                        cpu=700) for i in range(7)]   # a later rise is not the boot any more
+        for old in (self.phone.data / "data").glob("*.tsv"):
+            old.unlink()
+        write(self.phone.data / "data" / time.strftime("%Y-%m-%d.tsv", time.gmtime(now + 7 * 3600)), "".join(before + boot + later))
+        summary = json.loads(self.phone.report("summary", "3600"))
+        kinds = [(rise["kind"], rise["cause"]) for rise in summary["spikes"]]
+        self.assertEqual(kinds[0], ("boot", "HP baru dinyalakan"))
+        self.assertNotEqual(kinds[-1][0], "boot")
+        self.assertIn("Android memulai aplikasi", summary["spikes"][0]["tip"])
+        self.assertIn("HP baru dinyalakan", [cause["name"] for cause in summary["causes"]])
 
     def test_live_tiles_skip_a_stuck_sensor(self):
         write(self.phone.sys / "class/thermal/thermal_zone20/type", "mtk-master-charger\n")

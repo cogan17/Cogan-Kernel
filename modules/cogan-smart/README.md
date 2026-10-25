@@ -1,6 +1,6 @@
 # Cogan Smart Kernel (modul)
 
-**Versi terbaru: v2.9.0** (`versionCode` 17): mode mengikuti Badan HP, langkah halus, CPU hanya diturunkan saat prosesor bekerja, penyebab panas per bagian HP dengan saran, rem HyperOS. v2.9.1 (satu angka Badan HP dari HyperOS, nama aplikasi asli, batas CPU di log, sensor macet) menunggu uji HP. Catatan perubahan lengkap ada di [`CHANGELOG.md`](CHANGELOG.md).
+**Versi terbaru: v2.9.0** (`versionCode` 17): mode mengikuti Badan HP, langkah halus, CPU hanya diturunkan saat prosesor bekerja, penyebab panas per bagian HP dengan saran, rem HyperOS. v2.9.1 (modul lebih hemat CPU, satu angka Badan HP dari HyperOS, lonjakan suhu, nama aplikasi asli, batas CPU di log, sensor macet) menunggu uji HP. Catatan perubahan lengkap ada di [`CHANGELOG.md`](CHANGELOG.md).
 
 ## ⬇️ Unduh
 
@@ -13,6 +13,7 @@
 - ZIP di Pre-release ([`cogan-smart-v2.9.0`](https://github.com/cogan17/Cogan-Kernel/releases/tag/cogan-smart-v2.9.0), [`cogan-smart-v2.8.2`](https://github.com/cogan17/Cogan-Kernel/releases/tag/cogan-smart-v2.8.2), [`cogan-smart-v2.8.1`](https://github.com/cogan17/Cogan-Kernel/releases/tag/cogan-smart-v2.8.1)) dan di folder `rilis/` adalah file yang sama, byte per byte.
 - Pasang lewat root manager sebagai pembaruan modul, lalu reboot. Setelan dan riwayat tetap dipakai (ID `cogan_smart` sama).
 - Kernel tujuan: **r1** repo ini (ACK 6.1.176). Diuji owner di Xiaomi 14T Pro:
+  - build uji v2.9.1 pertama (25 Okt 2026, 07.22–11.24 WIB): pencatat dan pengendali memakai rata-rata 4,8% CPU seluruh HP. Build berikutnya memangkas proses yang dijalankan modul (diukur di HP tiruan, belum di HP);
   - **v2.9.0** (24 Okt 2026): dipakai owner 7 jam (15.38–22.38 WIB) dengan kernel r2 dan r3, mode Kernel Default dan Hemat; CPU penuh hampir sepanjang waktu, panas terbanyak saat HyperCharge. Suhu Badan HP masih terasa tidak konsisten (diperbaiki di v2.9.1);
   - **v2.8.2 dengan r1** (24 Okt 2026): identitas kernel terverifikasi lewat Cogan Bridge ("kernel dibuat untuk HP ini"), mode Kernel Default, pencatat suhu, mengecas cepat 3868 mA, penjaga modul "aman";
   - v2.8.1 dan v2.8.2 dengan kernel arsip r6 (6.1.176, 23 Okt 2026); v2.8.2 juga saat pengisian HyperCharge.

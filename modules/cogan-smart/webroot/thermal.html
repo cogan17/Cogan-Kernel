@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Cogan Smart</title>
 <link rel="stylesheet" href="theme.css?v=2.9.0">
-<script src="i18n.js?v=2.9.0"></script>
+<script src="i18n.js?v=2.9.1"></script>
 <script>try { document.documentElement.dataset.theme = localStorage.getItem('cogan.theme') || ''; } catch (_) { /* storage off: follow the phone */ }</script>
 <style>
   * { box-sizing: border-box; }
@@ -309,7 +309,7 @@ async function loadSummary(background = true) {
   if (s.modes.length) h += '<h3>⚡ Per mode</h3><table>' + s.modes.map(m => `<tr><td>${esc(m.name)} <span class="muted">${m.pct}% · panas ${m.hot_pct}%</span></td><td class="${level(m.peak)}">${deg(m.avg)} / ${deg(m.peak)} °C</td></tr>`).join('') + '</table>';
   h += '<h3>Bagian HP</h3><table>' + s.groups.map(g => `<tr><td>${esc(g.name)}</td><td class="${level(g.peak, g.id)}">${deg(g.avg)} / ${deg(g.peak)} °C</td></tr>`).join('') + '</table>';
   if (s.cpu_avg >= 0) h += `<div class="muted" style="margin-top:8px">CPU rata-rata ${Math.round(s.cpu_avg / 10)}% · proses kernel ${(s.kernel_avg / 10).toFixed(1)}%</div>`;
-  if (s.load >= 0) h += `<div class="muted">⚙️ Beban Cogan Smart (pencatat + pengendali): ${(s.load / 10).toFixed(1)}% CPU</div>`;
+  if (s.load >= 0) h += `<div class="muted">⚙️ Beban Cogan Smart (pencatat + pengendali): ${(s.load / 10).toFixed(1)}% CPU${s.load_ctl >= 0 ? ` (pengendali ${(s.load_ctl / 10).toFixed(1)}%)` : ''}</div>`;
   // How much Cogan Smart · Power lowered the CPU (samples since v2.9.1 carry its cap).
   const c = s.cap;
   if (c && c.samples) h += `<div class="muted">🧊 ${[c.heat_pct ? `CPU diturunkan karena panas ${c.heat_pct}% waktu (terendah CPU besar ${c.min_big}%, kecil ${c.min_little}%)` : 'CPU tidak diturunkan karena panas',

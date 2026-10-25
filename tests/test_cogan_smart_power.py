@@ -359,6 +359,13 @@ class PowerModeTests(unittest.TestCase):
         self.assertEqual(self.phone.step()["charge_off"], "")
         self.assertEqual(self.phone.node("input_suspend"), "0")
 
+    def test_state_stays_valid_json_with_quotes_in_the_cause(self):
+        # The controller strips backslashes and double quotes itself now (no sed process per check).
+        self.phone.start_recorder()
+        self.phone.monitor_report('Aplikasi berat: "Game" \\ X', app='My "App"\\')
+        state = self.phone.step()
+        self.assertEqual((state["source"], state["cause"], state["app"]), ("monitor", "Aplikasi berat: Game  X", "My App"))
+
     def test_failsafe_and_switch_off(self):
         self.save_switch()
         self.phone.set_battery(90, "Charging", 44.0)
