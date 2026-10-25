@@ -1,65 +1,32 @@
-# Checkpoint — 24 Okt 2026, 09.55 WIB · r2 terbit dan tercatat
+# Checkpoint — 25 Okt 2026, 15.55 WIB · Cogan Smart v2.9.0 terbit, v2.9.1 dalam uji HP
 
-Sesi berikutnya mulai dari sini. Aturannya ada di `CLAUDE.md`. Semua waktu dalam WIB.
+Sesi berikutnya mulai dari sini. Aturannya ada di `CLAUDE.md`. Semua waktu dalam WIB. Checkpoint sebelumnya (24 Okt 09.55 WIB, r2) ada di riwayat git file ini.
 
 ## Sedang berjalan
-- Tidak ada.
+- Tidak ada run workflow.
+- **PR #42** (`feat/cogan-smart-v2.9.1`) terbuka dan **ditahan sampai uji HP owner**. Isi: modul hemat CPU, satu angka Badan HP dari HyperOS, lonjakan suhu, penyebab "Pembaruan aplikasi" dan "HP baru dinyalakan", nama aplikasi asli, batas CPU dan beban modul di log, sensor macet, CSV berkutip. Commit terakhir `608925e`.
+- Owner memakai **ZIP uji v2.9.1 hemat CPU** (`ee4008fa…b46d`, isi sampai commit `27f80a7`) sejak restart 12.06 WIB. Perbaikan `608925e` (kecepatan jaringan negatif setelah restart) belum masuk ZIP.
 
-## Sudah selesai
-### r2 terbit (terbukti CI dan HP)
-- Pre-release [`v26.10.24-r2`](https://github.com/cogan17/Cogan-Kernel/releases/tag/v26.10.24-r2), terbit 09.39 WIB lewat [Rilis dari run 40055078111](https://github.com/cogan17/Cogan-Kernel/actions/runs/40055078111) (owner), dari Builder run [40046361218](https://github.com/cogan17/Cogan-Kernel/actions/runs/40046361218).
-- Isi: ACK 6.1.176 (`2026-09_r4`), KernelSU Next dev-susfs `d21e0a6` (33405), SUSFS v2.3.0 `c27ebe9`, NoMount v2.2.0, Unicode fix `fa76c90`, gate KMI CRC beda 0. Label "diuji di HP" (owner menjalankan r2 di HP, 08.49 WIB).
-- r2 tercatat di CHANGELOG ID/EN, status uji README dan catatan sublevel 176 (`kernel/sublevels.json` → `sublevels.py readme`). Status: diuji di HP; owner mengonfirmasi Unicode fix terpasang di r2 (09.50 WIB) dan bekerja (uji Termux 09.54 WIB: `UJI.txt` ditemukan, `u`+U+200B+`ji.txt` tidak ditemukan).
-- Tag menunjuk `main` `7fafb5a` (aturan #29, workflow commit build berbeda). Aset: ZIP kernel `sha256:1e3cd537…ea11`, manager dan spoofed sama dengan arsip r5/r6, NoMount v2.2.0, `checksums.txt`.
+## Sudah selesai (sejak checkpoint 24 Okt)
+- **Cogan Smart v2.9.0** (PR #36): mode mengikuti Badan HP 39/41/44 °C, langkah halus, CPU hanya diturunkan saat prosesor bekerja, penyebab panas per bagian, kartu Rem HyperOS (kedipan diperbaiki), kredit dirampingkan.
+  - Pre-release [`cogan-smart-v2.9.0`](https://github.com/cogan17/Cogan-Kernel/releases/tag/cogan-smart-v2.9.0), terbit 12.03 WIB lewat Cogan Smart Release (run 40164162891, diserahkan owner ke Claude). ZIP `7d15a729…7522` sama byte per byte dengan `rilis/v2.9.0`. "Latest" tetap kernel r3.
+  - Label "diuji di HP + HyperCharge, kernel r2 + r3 (6.1.176)" (run 40164196494). Dasar: log owner, restart 17.37 WIB 24 Okt (6 menit setelah ZIP final dikirim), HyperCharge sampai 9,4 A 19.24–20.05 WIB, r3 sejak 20.40 WIB. Owner belum menyebut sendiri ZIP mana yang terpasang; bila keliru, label diganti.
+- **Artifact** disimpan 90 hari (PR #39).
+- **BakaSU** dari commit `main` terbaru yang punya build CI manager resmi bila rilisnya belum cocok dengan SUSFS (PR #40, #41; Baka-SU/BakaSU#214). Owner membangun dan menguji di HP: bekerja.
+- **v2.9.1, temuan dari log owner:**
+  - Beban modul (pencatat + pengendali) build uji pertama: **4,8% CPU** seluruh HP, sama di semua aplikasi dan saat layar mati (log 6 jam, 05.25–11.24 WIB). Penyebab: puluhan proses kecil per putaran.
+  - Build hemat CPU (log 3 jam, 12.06–14.49 WIB): **2,9%** (pencatat 1,5%, pengendali 1,4%). Di HP tiruan: pencatat ±94 → ±12 proses per sampel, pengendali 62 → 15 per putaran.
+  - Lonjakan suhu yang dijelaskan: Play Store 06.56–06.59 WIB (unduh + pasang, CPU 70–85%), restart setelah pasang modul 07.23–07.28 WIB, Morphe 09.50 WIB.
+  - Instagram lebih panas daripada YouTube (log 3 jam dan 6 jam): CPU 52% vs 40%, GPU 24% vs 7%, arus 670 vs 497 mA. YouTube memakai dekoder video perangkat keras; Instagram terus menggambar ulang layar dan memuat banyak video. Bukan karena jaringan atau modul.
+  - Saat Instagram, pengendali hanya menurunkan CPU di 4 dari 107 sampel: prosesor rata-rata 56 °C, di bawah syarat CPU_WORK 60 °C.
+- Tes lokal: 174 tes lulus (mksh + One True Awk), 97 tes Cogan Smart lulus dengan dash + mawk dan dash + One True Awk. Validate hijau di `27f80a7`; `608925e` belum dicek.
 
-### Perbaikan Rilis dari run (owner 24 Okt)
-- [Run rilis 40052126936](https://github.com/cogan17/Cogan-Kernel/actions/runs/40052126936) gagal saat `gh release create`: HTTP 403. Build sumber `40046361218`, unduhan, SHA256 dan gate KMI lolos. Commit sumber `4730fee1297fa5ef1a779a4223136ab1912b09e2` memiliki workflow berbeda dari `main`; GITHUB_TOKEN bawaan tidak dapat diberi Workflows: write untuk membuat tag itu.
-- **#27**, merge `8f6c580`: dukungan PAT `RELEASE_TOKEN` dan diagnostik 403. [Validate 40052599557](https://github.com/cogan17/Cogan-Kernel/actions/runs/40052599557): **138/138 tes lolos**, YAML dan shell lolos.
-- #28 (GitHub App) diganti atas saran Claude yang diikuti owner: **tanpa App, PAT atau secret**. Langkah Terbitkan membandingkan tree `.github/workflows` commit build dengan commit yang menjalankan rilis; sama → tag di commit build, beda → tag di `GITHUB_SHA` (aturan lama repo pendahulu yang sudah terbukti). Untuk run 40046361218 tree-nya beda (`2fcfc9e` vs `004fde4` di `main`), jadi tag menunjuk commit `main`. #29 merge `7fafb5a`, Validate lolos; terbukti oleh rilis r2.
+## Tertunda / menunggu owner
+1. Lanjutkan pengurangan beban pengendali? Usul: pengendali hanya membaca sensor CPU/GPU dan angka Badan HP HyperOS (±20 dari 60 sensor), tanpa `awk`. Dugaan (belum terukur): sisa beban berasal dari pembacaan ±60 sensor 3 kali per 20 detik dan pengolahan daftar proses.
+2. Turunkan syarat "prosesor bekerja" (CPU_WORK) dari 60 ke 55 °C supaya Kernel Default ikut bekerja di beban seperti Instagram?
+3. Ambang bawaan 40 °C (data 6 jam: panas 18% → 22% waktu, CPU penuh 91% → 88%). Belum diubah.
+4. Hasil uji HP v2.9.1 (nilai "⚙️ Beban Cogan Smart … (pengendali …)" dan CSV) untuk memutuskan merge PR #42.
 
-### Dasar repo (owner 23 Okt)
-- README simpel ID/EN, CHANGELOG, panduan, keaslian & kredit, modul Cogan Smart Kernel + tes, `CLAUDE.md` (tanpa kunci, gate KMI tetap, summary 2 bahasa, hemat run).
-- **Workflow (semua manual):** Cogan Kernel Builder, Rilis dari run, Cogan Smart Release, Hapus log run lama, Cek sublevel baru. Validate hanya jalan di PR ke `main` (tes, YAML, shell; tanpa build).
-- **Arsip:** r5, r6, r8, cogan-smart-v2.8.1 dan v2.8.2 dari `cogan17/Kernel-14t-pro`. Kernel arsip bernama arsip r5/r6/r8 dengan tag `arsip-v26.10.22-r5`, `arsip-v26.10.22-r6`, `arsip-v26.10.23-r8` (#7).
-
-### r1: rilis pertama repo ini (terbukti CI dan HP)
-- Builder run #2 [39992351534](https://github.com/cogan17/Cogan-Kernel/actions/runs/39992351534): KSUN 6.1.176, SUSFS v2.3.0 `c27ebe9`, NoMount v2.2.0, gate `CRC differs 0`.
-- Pre-release [`v26.10.23-r1`](https://github.com/cogan17/Cogan-Kernel/releases/tag/v26.10.23-r1), diuji owner di HP. Cogan Smart v2.8.2 diuji owner di r1 (#12).
-
-### Sesudah checkpoint 07.10 WIB
-- **#16–#18:**
-  - Klaim "ACK sampai 190" diluruskan: 6.1.190 adalah Linux stable, bukan ACK.
-  - README memuat tabel sublevel yang didukung.
-  - Sebutan 141 dihapus.
-- **#19 form Builder:** centang SUSFS dihapus (SUSFS selalu ada), root default KernelSU Next. NoMount opsional; bila dicentang, selalu tertanam di kernel (bukan LKM).
-- **#20 summary Builder:** satu tabel hasil dua bahasa (✅ berhasil, ❌ gagal + alasan, ⏳ tunggu siapa), ZIP + sha256.
-- **#21 resolve:** coba ulang saat 429/503 dan satu Makefile per bulan. Run #5 gagal 429, run berikutnya lolos.
-- **#22 Teks Telegram:** kotak kode ID/EN siap salin (✨ Baru diukur dari rilis sebelumnya, 🔧 Perbaikan dari commit `fix(kernel…)`). Muncul di summary Builder (satu build) dan Rilis dari run.
-- **#23 + #25 Cek sublevel baru:** hanya manual oleh owner. Owner: "Jangan otomatis, Manual run workflow saja"; tanpa jadwal dan tanpa pemicu `workflow_run`.
-  - Satu tombol: catat run Builder terakhir dari `main` (atau `run_id`) ke `kernel/sublevels.json` + tabel README, lalu bangun rilis ACK baru dengan semua fitur bila ada.
-  - Tabel README menampilkan ✅ lolos build + gate KMI, ⏳ tunggu hulu, atau 🧪 repo pendahulu. Sublevel yang gagal di sini tidak dicantumkan.
-  - Jangan mengedit tabel di antara penanda `sublevel:start/end` dengan tangan.
-- **Run #6, bukti `semua` + Unicode fix** ([40048269498](https://github.com/cogan17/Cogan-Kernel/actions/runs/40048269498), 08.06–08.34 WIB):
-  - 176, 172, 162, 157: ✅ build + gate KMI, CRC beda 0, `UNICODE_FIX=fa76c90`.
-  - 145 dan 138: ⏳ tunggu simonpunk. Patch SUSFS terbaru `c27ebe9` gagal 1 hunk di `fs/namespace.c`; Unicode fix sendiri terpasang bersih. Tag 138 yang dibangun sekarang `2025-06_r17` (rilis ACK terbaru di sublevel itu; kernel bawaan HP `r11`).
-  - 141: ❌ ditolak gate KMI.
-  - Hasilnya dicatat ke README (commit `3d2b531`, versi otomatis sebelum #25). #24 menyesuaikan kalimat Unicode fix di README dan CLAUDE.md.
-- **r2 (kandidat Unicode fix) berjalan di HP** (owner, tangkapan layar 08.49 WIB, "r2 selesai"):
-  - Versi kernel `6.1.176-Cogan-Rothko-ACK-r2-35f0a136c`, dibangun 07.47 WIB (00:47:23 UTC).
-  - Builder run #4 [40046361218](https://github.com/cogan17/Cogan-Kernel/actions/runs/40046361218): KSUN 6.1.176, Unicode fix, gate CRC beda 0 (juga terhadap stok 6.1.138).
-  - Diterbitkan 09.39 WIB sebagai Pre-release `v26.10.24-r2` (lihat di atas).
-
-## Belum terbukti
-- Tombol Cek sublevel baru versi manual (#25) belum pernah ditekan. Bagian catat sudah terbukti lewat versi otomatis (run 40050437017).
-- Terbit langsung dari Builder (Release Type Pre-Release/Release).
-- Varian BakaSU (tunggu pengembang BakaSU: rc3 belum siap untuk SUSFS terbaru).
-- ZIP dari Builder run #1 jangan dipakai (alat flasher 32-bit).
-
-## Keputusan owner 24 Okt
-- Repo lama `cogan17/Kernel-14t-pro` sudah diarsipkan: **abaikan**.
-- r1 tetap Pre-release.
-- Cek sublevel baru **hanya manual**; jangan menambah jadwal atau pemicu otomatis.
-- Sublevel tidak diuji satu per satu di HP; cukup bukti CI.
-
-## Langkah pertama sesi berikutnya
-1. Tidak ada yang mendesak. Pekerjaan yang tertunda: tabel sublevel lewat tombol **Cek sublevel baru** manual; 145/138 menunggu simonpunk; BakaSU menunggu pengembangnya. Jangan melanjutkannya tanpa permintaan owner.
+## Langkah pertama berikutnya
+- Baca jawaban owner atas butir 1–3. Kerjakan yang dipilih di `feat/cogan-smart-v2.9.1`, uji lokal (mksh + One True Awk, dash + mawk), kemas ZIP baru (sekaligus membawa `608925e`), kirim ke owner, perbarui PR #42.
+- Bila owner menyatakan v2.9.1 baik di HP: merge PR #42, siapkan `modules/cogan-smart/rilis/v2.9.1/` (ZIP + What's New & Fixes ID/EN), lalu Cogan Smart Release (owner menyerahkannya ke Claude).
