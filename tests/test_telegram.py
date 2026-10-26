@@ -118,7 +118,8 @@ class TelegramTest(unittest.TestCase):
 
     def test_release_notes_and_post_share_measured_changes_and_fix_status(self):
         def api(path):
-            return RELEASES if "/releases?" in path else {"commits": [{"commit": {"message": "fix(kernel): ARM64 flasher"}}]}
+            return RELEASES if "/releases?" in path else {"commits": [{"commit": {
+                "message": "fix(kernel): ARM64 flasher\n\nRelease-Fix-EN: ARM64 flasher"}}]}
         measured = tg.changes(R2, "r/r", "f" * 40, api)
         release = tg.changelog_section(R2, "r/r", **measured)
         for lang in ("id", "en"):
@@ -159,6 +160,48 @@ class TelegramTest(unittest.TestCase):
         self.assertIn("**📣 Teks Telegram** (salin lewat tombol di pojok kanan atas kotak)\n\n```text\nteks\n```", text)
         self.assertIn("<details><summary>🇬🇧 English</summary>", text)
         self.assertIn("```text\ntext\n```", text)
+
+    def test_english_fixes_translate_the_indonesian_subjects_from_the_screenshot(self):
+        subjects = ["SUSFS terbaru terpasang di ACK 6.1.138 dan 6.1.145",
+                    "BakaSU main cukup punya artifact manager, tidak menunggu Telegram"]
+        commits = [{"commit": {"message": f"fix(kernel): {title} (#1)"}} for title in subjects]
+        localized = {lang: tg.fixes(commits, lang) for lang in ("id", "en")}
+        self.assertEqual(localized["id"], subjects)
+        self.assertIn("Apply the latest SUSFS patch to ACK 6.1.138 and 6.1.145", localized["en"])
+        self.assertIn("Use BakaSU main when manager artifacts are available, without waiting for Telegram upload", localized["en"])
+        english = tg.post(R2, "en", fix_titles=localized)
+        release = tg.changelog_section(R2, "r/r", fix_titles=localized).split("**🇬🇧 English**", 1)[1]
+        for text in (english, release):
+            for title in subjects:
+                self.assertNotIn(title, text)
+            self.assertIn("ACK 6.1.138 and 6.1.145", text)
+
+    def test_future_fix_translation_uses_its_language_trailer(self):
+        commit = {"commit": {"message": "fix(kernel): perbaikan baru (#100)\n\nRelease-Fix-EN: Fix a vendor module load failure"}}
+        self.assertEqual(tg.fixes([commit], "en"), ["Fix a vendor module load failure"])
+        self.assertEqual(tg.fixes([commit], "id"), ["perbaikan baru"])
+
+    def test_unknown_translation_keeps_a_source_reference_without_copying_indonesian(self):
+        commit = {"sha": "a" * 40, "html_url": "https://github.com/r/r/commit/" + "a" * 40,
+                  "commit": {"message": "fix(kernel): perbaikan yang belum memiliki terjemahan"}}
+        english = tg.fixes([commit], "en")[0]
+        self.assertIn("English description not supplied", english)
+        self.assertIn(commit["html_url"], english)
+        self.assertNotIn("perbaikan yang", english)
+
+    def test_owner_notes_are_kept_in_their_own_language(self):
+        indonesia = tg.post(R2, "id", note="Cadangkan boot sebelum memasang", note_en="Back up boot before flashing")
+        english = tg.post(R2, "en", note="Cadangkan boot sebelum memasang", note_en="Back up boot before flashing")
+        self.assertIn("Cadangkan boot sebelum memasang", indonesia)
+        self.assertNotIn("Back up boot before flashing", indonesia)
+        self.assertIn("Back up boot before flashing", english)
+        self.assertNotIn("Cadangkan boot", english)
+        self.assertNotIn("📝 Note", tg.post(R2, "en", note="Cadangkan boot sebelum memasang"))
+
+    def test_empty_localized_fix_lists_still_report_no_recorded_fixes(self):
+        english = tg.post(R2, "en", prev=tg.previous(RELEASES, R2), fix_titles={"id": [], "en": []})
+        self.assertIn("No additional kernel fix commits recorded", english)
+        self.assertNotIn("English description not supplied", english)
 
 
 if __name__ == "__main__":

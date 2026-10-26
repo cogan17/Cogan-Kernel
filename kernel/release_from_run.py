@@ -14,7 +14,7 @@ REQUIRED = ("RELEASE", "RELEASE_NAME", "LINUX_VERSION", "ACK_TAG", "ROOT_NAME", 
             "SUSFS_VERSION", "SUSFS_COMMIT", "NOMOUNT", "NEUTRON", "FEATURES", "KMI_COMPAT", "ZIP", "ZIP_SHA256")
 
 
-def prepare(info, files, run_url, repo, tested=False, note="", sha="", api=tg.gh, telegram=None, text_only=False):
+def prepare(info, files, run_url, repo, tested=False, note="", sha="", api=tg.gh, telegram=None, text_only=False, note_en=""):
     folders = sorted(path for path in info.glob("build-info-*") if path.is_dir())
     if not folders:
         raise ValueError("Tidak ada info build / no build info")
@@ -95,7 +95,8 @@ def prepare(info, files, run_url, repo, tested=False, note="", sha="", api=tg.gh
         if telegram is not None:
             out = telegram / folder.name
             out.mkdir(parents=True, exist_ok=True)
-            posts = {lang: tg.post(env, lang, link=link, tested=tested, note=note, **measured) for lang in ("id", "en")}
+            posts = {lang: tg.post(env, lang, link=link, tested=tested, note=note, note_en=note_en,
+                                  **measured) for lang in ("id", "en")}
             for lang, text in posts.items():
                 (out / f"{lang}.txt").write_text(text)
             summaries += ["<details>",
@@ -103,7 +104,7 @@ def prepare(info, files, run_url, repo, tested=False, note="", sha="", api=tg.gh
                           "", tg.summary_section(posts), "</details>", ""]
     if telegram is not None:
         (telegram / "summary.md").write_text("\n".join(summaries))
-    return metadata, compact_notes(sections, run_url, repo, tested, note, artifact_run=link == run_url)
+    return metadata, compact_notes(sections, run_url, repo, tested, note, artifact_run=link == run_url, note_en=note_en)
 
 
 def main(argv=None):
@@ -114,13 +115,14 @@ def main(argv=None):
     parser.add_argument("--repo", required=True)
     parser.add_argument("--tested", action="store_true")
     parser.add_argument("--note", default="")
+    parser.add_argument("--note-en", default="")
     parser.add_argument("--sha", default="")
     parser.add_argument("--telegram", type=Path, default=Path("telegram"))
     parser.add_argument("--text-only", action="store_true")
     args = parser.parse_args(argv)
     try:
         metadata, text = prepare(args.info, args.files, args.run_url, args.repo, args.tested, args.note,
-                                 args.sha, telegram=args.telegram, text_only=args.text_only)
+                                 args.sha, telegram=args.telegram, text_only=args.text_only, note_en=args.note_en)
     except (ValueError, OSError, zipfile.BadZipFile) as error:
         parser.exit(1, f"::error::{error}\n")
     (args.info / "release.env").write_text("".join(f"{key}={value}\n" for key, value in metadata.items()))

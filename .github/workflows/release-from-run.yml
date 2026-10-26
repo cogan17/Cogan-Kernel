@@ -25,7 +25,11 @@ on:
         type: boolean
         default: false
       catatan:
-        description: "Catatan tambahan (opsional; \\n = baris baru) / extra note"
+        description: "Catatan Bahasa Indonesia (opsional; \\n = baris baru)"
+        type: string
+        default: ""
+      catatan_en:
+        description: "English note (optional; \\n = new line)"
         type: string
         default: ""
       teks_saja:
@@ -51,6 +55,7 @@ jobs:
       RELEASE_TYPE: ${{ inputs.release_type }}
       TESTED: ${{ inputs.diuji_di_hp }}
       NOTE: ${{ inputs.catatan }}
+      NOTE_EN: ${{ inputs.catatan_en }}
       TEXT_ONLY: ${{ inputs.teks_saja }}
     steps:
       - uses: actions/checkout@v7.0.1
@@ -103,7 +108,7 @@ jobs:
           tested=(); [ "$TESTED" = "true" ] && tested=(--tested)
           preview=(); [ "$TEXT_ONLY" = "true" ] && preview=(--text-only)
           sha="$(python3 -c 'import json; print(json.load(open("run.json"))["head_sha"])')"
-          python3 -m kernel.release_from_run info files --repo "$GITHUB_REPOSITORY" "${tested[@]}" --note "$NOTE" \
+          python3 -m kernel.release_from_run info files --repo "$GITHUB_REPOSITORY" "${tested[@]}" --note "$NOTE" --note-en "$NOTE_EN" \
             --sha "$sha" --telegram telegram "${preview[@]}" \
             --run-url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN" > notes.md
           ls -la files
