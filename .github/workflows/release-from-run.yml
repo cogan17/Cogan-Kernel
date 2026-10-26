@@ -138,7 +138,7 @@ jobs:
       - name: Catatan dan teks Telegram / notes and Telegram text
         run: |
           {
-            echo "## 📣 Teks Telegram siap salin / Telegram posts ready to copy"
+            echo "## 📣 Telegram · ID/EN"
             if [ "$TEXT_ONLY" = "true" ]; then
               echo "- 🇮🇩 Mode teks saja: tidak ada rilis yang diterbitkan atau diubah."
               echo "- 🇬🇧 Text-only mode: no release was published or changed."
@@ -146,7 +146,7 @@ jobs:
             echo
             cat telegram/summary.md
             echo
-            echo '<details><summary>📝 Catatan rilis lengkap / Full release notes — What’s New & Fixes</summary>'
+            echo '<details><summary>📝 Catatan rilis / Release notes</summary>'
             echo
             cat notes.md
             echo
