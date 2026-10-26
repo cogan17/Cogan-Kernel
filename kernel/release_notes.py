@@ -15,6 +15,8 @@ USES = {
     "2": ("Aplikasi manager root", "Root manager app"),
     "3": ("Manager spoofed (nama paket disamarkan), pasang salah satu", "Spoofed manager (hidden package name), install one"),
     "4": ("Modul di manager", "Manager module"),
+    "5": ("Modul SUSFS di manager (alat `ksu_susfs`, dari commit SUSFS yang sama dengan kernel)",
+          "SUSFS module for the manager (`ksu_susfs` tool, from the kernel's own SUSFS commit)"),
 }
 
 
@@ -61,7 +63,7 @@ def main(argv=None):
     parser.add_argument("--tested", action="store_true")
     parser.add_argument("--note", default="")
     args = parser.parse_args(argv)
-    files = [p.name for p in args.files.iterdir() if p.is_file() and p.name[:2] in ("1-", "2-", "3-", "4-")]
+    files = [p.name for p in args.files.iterdir() if p.is_file() and p.name[:2] in ("1-", "2-", "3-", "4-", "5-")]
     sys.stdout.write(notes(read_env(args.build_env), files, args.run_url, args.repo, args.tested, args.note))
     return 0
 

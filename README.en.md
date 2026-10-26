@@ -71,6 +71,8 @@
 
 The builder uses the official ACK `android14-6.1` releases since the phone's stock kernel; `lts` = the newest. The **Cek sublevel baru** workflow button records the latest build in this table (✅ passed the build and the KMI gate, ⏳ waiting for an upstream update), then builds a new ACK release with every feature if there is one.
 
+The **Cek pembaruan** (check for updates) button only checks, it builds nothing: the newest version of every component (ACK, KernelSU Next, BakaSU, SUSFS, NoMount, Baseband Guard, AnyKernel3, Neutron clang, Unicode fix) against the last build, with the dates of the stable and CI versions, what is new and fixed, and whom to wait for when it cannot be built yet. When something is newer, the summary suggests running the Builder.
+
 <!-- sublevel:start -->
 | Sublevel | ACK release | Status |
 |---|---|---|

@@ -11,6 +11,7 @@ build.env (built), wait.json (a newest version does not fit yet), kmi-compat.jso
 report), error.txt (a fault of this repository) and stage.txt (the last stage it started).
 RESULT is a job result: success, failure, cancelled or skipped. DIR holds id.txt and en.txt of
 kernel/telegram.py; with one build they are shown in a code block, ready to copy for Telegram.
+--susfs DIR holds the susfs-<commit>.env files of the SUSFS module job (kernel/susfs_module.sh).
 """
 import argparse
 import json
@@ -29,7 +30,9 @@ TEXT = {
            "resolve": "❌ **Gagal sebelum build.** Lihat pesan error di atas (isian form atau versi terbaru).",
            "attest": "❌ Tanda tangan ZIP gagal: jangan terbitkan run ini.",
            "published": "Terbit: [{tag}]({url})", "unpublished": "❌ Gagal terbit: lihat job Terbit.",
-           "telegram": "**📣 Teks Telegram** (salin lewat tombol di pojok kanan atas kotak)"},
+           "telegram": "**📣 Teks Telegram** (salin lewat tombol di pojok kanan atas kotak)",
+           "susfs": "**Modul SUSFS** (simonpunk, commit SUSFS yang sama dengan kernel)",
+           "susfs_fail": "❌ Modul SUSFS gagal dibangun: lihat job Modul SUSFS. Run ini tidak bisa diterbitkan."},
     "en": {"flag": "🇬🇧 English", "build": "Build", "result": "Result", "detail": "Details",
            "ok": "✅ Built", "fail": "❌ Failed", "wait": "⏳ Not built",
            "count": "**{ok} built · {fail} failed · {wait} not built**",
@@ -39,7 +42,9 @@ TEXT = {
            "resolve": "❌ **Failed before any build.** See the error above (form input or newest versions).",
            "attest": "❌ Signing the ZIP failed: do not publish this run.",
            "published": "Published: [{tag}]({url})", "unpublished": "❌ Publishing failed: see the publish job.",
-           "telegram": "**📣 Telegram post** (copy with the button at the top right of the box)"},
+           "telegram": "**📣 Telegram post** (copy with the button at the top right of the box)",
+           "susfs": "**SUSFS module** (simonpunk, the kernel's own SUSFS commit)",
+           "susfs_fail": "❌ The SUSFS module failed to build: see the SUSFS module job. This run cannot be published."},
 }
 
 
@@ -89,8 +94,10 @@ def detail(lang, kind, values):
     return t["stage"].format(stage=values["stage"]) if values.get("stage") else t["nothing"]
 
 
-def summary(matrix, info, snapshots, repo, resolve="success", attest="success", release="skipped", telegram=None):
+def summary(matrix, info, snapshots, repo, resolve="success", attest="success", release="skipped", telegram=None,
+            susfs=None, susfs_result="skipped"):
     found = rows(matrix, info, snapshots)
+    modules = [read_env(path) for path in sorted(susfs.glob("susfs-*.env"))] if susfs and susfs.is_dir() else []
     built = [values["env"] for _, kind, values in found if kind == "ok"]
     # One features line when every build has the same features; otherwise per row.
     common = built[0].get("FEATURES", "") if built and len({env.get("FEATURES", "") for env in built}) == 1 else ""
@@ -114,6 +121,11 @@ def summary(matrix, info, snapshots, repo, resolve="success", attest="success", 
         if built:
             lines += [t["zip"].format(repo=repo),
                       *[f"- `{env.get('ZIP', '')}` · sha256 `{env['ZIP_SHA256']}`" for env in built], ""]
+        if modules:
+            lines += [t["susfs"], *[f"- `{env.get('SUSFS_MODULE', '')}` · sha256 `{env.get('SUSFS_MODULE_SHA256', '')}`"
+                                    for env in modules], ""]
+        if susfs_result == "failure":
+            lines += [t["susfs_fail"], ""]
         if attest == "failure":
             lines += [t["attest"], ""]
         if release == "success" and len(built) == 1:
@@ -138,10 +150,12 @@ def main(argv=None):
     parser.add_argument("--attest", default="success")
     parser.add_argument("--release", default="skipped")
     parser.add_argument("--telegram", type=Path)
+    parser.add_argument("--susfs", type=Path)
+    parser.add_argument("--susfs-result", default="skipped")
     args = parser.parse_args(argv)
     matrix = json.loads(args.matrix)["include"] if args.matrix.strip() else []
     sys.stdout.write(summary(matrix, args.info, args.snapshots, args.repo, args.resolve, args.attest, args.release,
-                             args.telegram))
+                             args.telegram, args.susfs, args.susfs_result))
     return 0
 
 
