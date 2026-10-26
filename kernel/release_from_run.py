@@ -7,13 +7,14 @@ import zipfile
 from pathlib import Path
 
 from kernel.release_notes import notes, read_env
+from kernel import telegram as tg
 
 ROOTS = {"KernelSU Next": "KernelSU-Next", "BakaSU": "BakaSU"}
 REQUIRED = ("RELEASE", "RELEASE_NAME", "LINUX_VERSION", "ACK_TAG", "ROOT_NAME", "ROOT_COMMIT",
             "SUSFS_VERSION", "SUSFS_COMMIT", "NOMOUNT", "NEUTRON", "FEATURES", "KMI_COMPAT", "ZIP", "ZIP_SHA256")
 
 
-def prepare(info, files, run_url, repo, tested=False, note=""):
+def prepare(info, files, run_url, repo, tested=False, note="", sha="", api=tg.gh, telegram=None, text_only=False):
     folders = sorted(path for path in info.glob("build-info-*") if path.is_dir())
     if not folders:
         raise ValueError("Tidak ada info build / no build info")
@@ -72,16 +73,39 @@ def prepare(info, files, run_url, repo, tested=False, note=""):
         raise ValueError("File tidak cocok dengan info build / files do not match build info: " +
                          ", ".join(sorted(available - selected)))
     metadata = {key: builds[0][0][key] for key in ("RELEASE", "RELEASE_NAME")}
-    if len(builds) == 1:
-        env, own = builds[0]
-        return metadata, notes(env, own, run_url, repo, tested, note)
-    sections = [f"# {metadata['RELEASE_NAME']} — Xiaomi 14T Pro (rothko)", "",
+    cached = {}
+
+    def history(path):
+        if path not in cached:
+            cached[path] = api(path)
+        return cached[path]
+
+    link = f"https://github.com/{repo}/releases/tag/{metadata['RELEASE']}"
+    if text_only:
+        releases = history(f"repos/{repo}/releases?per_page=50")
+        if not isinstance(releases, list) or not any(release.get("tag_name") == metadata["RELEASE"]
+                                                   and not release.get("draft") for release in releases):
+            link = run_url
+    sections = [] if len(builds) == 1 else [f"# {metadata['RELEASE_NAME']} — Xiaomi 14T Pro (rothko)", "",
                 "🇮🇩 Pilih **satu varian kernel** dan APK manager yang sesuai. Semua varian tersedia dalam rilis ini.",
                 "", "🇬🇧 Choose **one kernel variant** and its matching manager APK. All variants are in this release.", ""]
-    for env, own in builds:
-        section = notes(env, own, run_url, repo, tested, note).splitlines()
-        section[0] = f"## {env['ROOT_NAME']} · {env['LINUX_VERSION']}"
+    summaries = []
+    for folder, (env, own) in zip(folders, builds):
+        measured = tg.changes(env, repo, sha, history)
+        changelog = tg.changelog_section(env, repo, **measured)
+        section = notes(env, own, run_url, repo, tested, note, changelog).splitlines()
+        if len(builds) > 1:
+            section[0] = f"## {env['ROOT_NAME']} · {env['LINUX_VERSION']}"
         sections += section + [""]
+        if telegram is not None:
+            out = telegram / folder.name
+            out.mkdir(parents=True, exist_ok=True)
+            posts = {lang: tg.post(env, lang, link=link, tested=tested, note=note, **measured) for lang in ("id", "en")}
+            for lang, text in posts.items():
+                (out / f"{lang}.txt").write_text(text)
+            summaries += [f"### {env['ROOT_NAME']} · {env['LINUX_VERSION']}", "", tg.summary_section(posts)]
+    if telegram is not None:
+        (telegram / "summary.md").write_text("\n".join(summaries))
     return metadata, "\n".join(sections)
 
 
@@ -93,9 +117,13 @@ def main(argv=None):
     parser.add_argument("--repo", required=True)
     parser.add_argument("--tested", action="store_true")
     parser.add_argument("--note", default="")
+    parser.add_argument("--sha", default="")
+    parser.add_argument("--telegram", type=Path, default=Path("telegram"))
+    parser.add_argument("--text-only", action="store_true")
     args = parser.parse_args(argv)
     try:
-        metadata, text = prepare(args.info, args.files, args.run_url, args.repo, args.tested, args.note)
+        metadata, text = prepare(args.info, args.files, args.run_url, args.repo, args.tested, args.note,
+                                 args.sha, telegram=args.telegram, text_only=args.text_only)
     except (ValueError, OSError, zipfile.BadZipFile) as error:
         parser.exit(1, f"::error::{error}\n")
     (args.info / "release.env").write_text("".join(f"{key}={value}\n" for key, value in metadata.items()))

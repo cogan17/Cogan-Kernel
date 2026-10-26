@@ -26,7 +26,7 @@ def read_env(path):
     return dict(line.split("=", 1) for line in Path(path).read_text().splitlines() if "=" in line)
 
 
-def notes(env, files, run_url, repo, tested=False, note=""):
+def notes(env, files, run_url, repo, tested=False, note="", changelog=""):
     docs = f"https://github.com/{repo}/blob/main/docs"
     root = env["ROOT_NAME"] + (f" {env['ROOT_TAG']}" if env.get("ROOT_TAG") else "") + f" `{env['ROOT_COMMIT'][:12]}`"
     if env.get("KSU_VERSION"):
@@ -40,6 +40,8 @@ def notes(env, files, run_url, repo, tested=False, note=""):
              f"- {env['KMI_COMPAT'].split('; BSP:')[0]}", ""]
     if note.strip():
         lines += ["> [!NOTE]", *[f"> {line}" for line in note.replace("\\n", "\n").strip().splitlines()], ""]
+    if changelog:
+        lines += [changelog.rstrip(), ""]
     lines += ["| File | Cara pakai | How to use |", "|---|---|---|"]
     for name in sorted(files):
         id_use, en_use = USES.get(name[0], ("Pasang", "Install"))
