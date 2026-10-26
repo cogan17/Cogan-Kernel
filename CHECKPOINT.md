@@ -1,32 +1,50 @@
-# Checkpoint — 25 Okt 2026, 15.55 WIB · Cogan Smart v2.9.0 terbit, v2.9.1 dalam uji HP
+# Checkpoint — 26 Okt 2026, 21.55 WIB · modul SUSFS dua pengembang, satu teks Telegram per rilis, v2.9.1 masih uji HP
 
-Sesi berikutnya mulai dari sini. Aturannya ada di `CLAUDE.md`. Semua waktu dalam WIB. Checkpoint sebelumnya (24 Okt 09.55 WIB, r2) ada di riwayat git file ini.
+Sesi berikutnya mulai dari sini. Aturannya ada di `CLAUDE.md`. Semua waktu dalam WIB. Checkpoint sebelumnya (25 Okt 15.55 WIB) ada di riwayat git file ini.
 
 ## Sedang berjalan
-- Tidak ada run workflow.
-- **PR #42** (`feat/cogan-smart-v2.9.1`) terbuka dan **ditahan sampai uji HP owner**. Isi: modul hemat CPU, satu angka Badan HP dari HyperOS, lonjakan suhu, penyebab "Pembaruan aplikasi" dan "HP baru dinyalakan", nama aplikasi asli, batas CPU dan beban modul di log, sensor macet, CSV berkutip. Commit terakhir `608925e`.
-- Owner memakai **ZIP uji v2.9.1 hemat CPU** (`ee4008fa…b46d`, isi sampai commit `27f80a7`) sejak restart 12.06 WIB. Perbaikan `608925e` (kecepatan jaringan negatif setelah restart) belum masuk ZIP.
+- Tidak ada run workflow yang berjalan. Run terakhir dari Claude: *Rilis dari run* mode `teks_saja` untuk r4 ([40300927689](https://github.com/cogan17/Cogan-Kernel/actions/runs/40300927689), hijau 16.37 WIB, tidak menerbitkan apa pun).
+- **PR #42** (`feat/cogan-smart-v2.9.1`) terbuka dan **ditahan sampai uji HP owner**. Sudah berisi butir a + b dari checkpoint lalu (commit `02146b4`):
+  - **a:** pengendali hanya membaca sensor CPU/GPU dan Badan HP (`temp_zones`, `power/zones.awk`), tidak lagi ±60 sensor;
+  - **b:** `CPU_WORK` 60 → 55 °C.
+- ZIP uji v2.9.1 terakhir yang dikirim ke owner: `64631a42…e29c`.
 
-## Sudah selesai (sejak checkpoint 24 Okt)
-- **Cogan Smart v2.9.0** (PR #36): mode mengikuti Badan HP 39/41/44 °C, langkah halus, CPU hanya diturunkan saat prosesor bekerja, penyebab panas per bagian, kartu Rem HyperOS (kedipan diperbaiki), kredit dirampingkan.
-  - Pre-release [`cogan-smart-v2.9.0`](https://github.com/cogan17/Cogan-Kernel/releases/tag/cogan-smart-v2.9.0), terbit 12.03 WIB lewat Cogan Smart Release (run 40164162891, diserahkan owner ke Claude). ZIP `7d15a729…7522` sama byte per byte dengan `rilis/v2.9.0`. "Latest" tetap kernel r3.
-  - Label "diuji di HP + HyperCharge, kernel r2 + r3 (6.1.176)" (run 40164196494). Dasar: log owner, restart 17.37 WIB 24 Okt (6 menit setelah ZIP final dikirim), HyperCharge sampai 9,4 A 19.24–20.05 WIB, r3 sejak 20.40 WIB. Owner belum menyebut sendiri ZIP mana yang terpasang; bila keliru, label diganti.
-- **Artifact** disimpan 90 hari (PR #39).
-- **BakaSU** dari commit `main` terbaru yang punya build CI manager resmi bila rilisnya belum cocok dengan SUSFS (PR #40, #41; Baka-SU/BakaSU#214). Owner membangun dan menguji di HP: bekerja.
-- **v2.9.1, temuan dari log owner:**
-  - Beban modul (pencatat + pengendali) build uji pertama: **4,8% CPU** seluruh HP, sama di semua aplikasi dan saat layar mati (log 6 jam, 05.25–11.24 WIB). Penyebab: puluhan proses kecil per putaran.
-  - Build hemat CPU (log 3 jam, 12.06–14.49 WIB): **2,9%** (pencatat 1,5%, pengendali 1,4%). Di HP tiruan: pencatat ±94 → ±12 proses per sampel, pengendali 62 → 15 per putaran.
-  - Lonjakan suhu yang dijelaskan: Play Store 06.56–06.59 WIB (unduh + pasang, CPU 70–85%), restart setelah pasang modul 07.23–07.28 WIB, Morphe 09.50 WIB.
-  - Instagram lebih panas daripada YouTube (log 3 jam dan 6 jam): CPU 52% vs 40%, GPU 24% vs 7%, arus 670 vs 497 mA. YouTube memakai dekoder video perangkat keras; Instagram terus menggambar ulang layar dan memuat banyak video. Bukan karena jaringan atau modul.
-  - Saat Instagram, pengendali hanya menurunkan CPU di 4 dari 107 sampel: prosesor rata-rata 56 °C, di bawah syarat CPU_WORK 60 °C.
-- Tes lokal: 174 tes lulus (mksh + One True Awk), 97 tes Cogan Smart lulus dengan dash + mawk dan dash + One True Awk. Validate hijau di `27f80a7`; `608925e` belum dicek.
+## Sudah selesai (sejak checkpoint 25 Okt)
+- **Cek pembaruan** (PR #44, #45, #46, #48): tombol yang hanya mengecek.
+  - Isinya: versi dan tanggal (stabil maupun CI), yang baru dan perbaikan, kesiapan BakaSU, dua bahasa.
+  - Patokan ACK = rilis ACK terbaru yang pernah dibangun.
+- **Modul SUSFS di artifact dan rilis, dua pengembang:**
+  - file 5 simonpunk (PR #44): di-compile NDK dari commit SUSFS run itu;
+  - file 6 sidex15 dengan WebUI (PR #49): dari build CI terbarunya.
+  - Keduanya terbukti di Builder run #10 ([40279459951](https://github.com/cogan17/Cogan-Kernel/actions/runs/40279459951), 13.41 WIB): `5-SUSFS-MODULE-SIMONPUNK_v2.3.0_27e0a0e4.zip` dan `6-SUSFS-MODULE-SIDEX15_v1.5.2-CI-89b04b9.zip`. Run itu hanya CI, tanpa rilis.
+- **Satu cek, satu pencatat** (PR #49): *Cek sublevel baru* menjadi *Catat sublevel*, hanya mencatat.
+  - Owner menjalankannya 13.21 WIB: r5 (`2026-09_r5`) tercatat untuk KernelSU Next dan BakaSU (commit `f488d7c`).
+  - PR #47 memperbaiki mark lama yang menghapus hasil 176.
+- **Ringkasan run satu build** (PR #50): `download-artifact` menaruh satu-satunya `build-info-*` langsung di `info/`. Akibatnya:
+  - ringkasan run satu build menulis "❌ Gagal" dan tanpa Teks Telegram (terlihat di run #10);
+  - Catat sublevel tidak mencatat run satu build.
+  - Diganti `gh run download --pattern` (selalu per folder). **Belum terbukti di CI.**
+- **Rilis dari run untuk KSUN + BakaSU sekaligus** (PR #51–#54): What's New & Fixes, Teks Telegram, isi English tidak menyalin Indonesia.
+  - Pre-release [`v26.10.26-r4`](https://github.com/cogan17/Cogan-Kernel/releases/tag/v26.10.26-r4) terbit 15.08 WIB dari run 40284808872. Dua varian 6.1.176 (`2026-09_r5`), "diuji di HP".
+- **Satu teks Telegram per rilis** (PR #55, owner: "mesti copas 2 kali"):
+  - KernelSU Next dan BakaSU dalam satu teks ID dan satu teks EN (`telegram.release_post`);
+  - perubahan yang sama ditulis sekali, yang khusus diberi nama root-nya;
+  - run satu build tetap memberi teks yang sama seperti dulu.
+  - Run `teks_saja` 40300927689 hijau. Isi Summary tidak bisa dibaca dari sesi; owner belum memastikan hanya ada dua kotak salin.
+- Tes lokal: 206 tes lulus. Validate hijau di setiap PR yang di-merge.
 
 ## Tertunda / menunggu owner
-1. Lanjutkan pengurangan beban pengendali? Usul: pengendali hanya membaca sensor CPU/GPU dan angka Badan HP HyperOS (±20 dari 60 sensor), tanpa `awk`. Dugaan (belum terukur): sisa beban berasal dari pembacaan ±60 sensor 3 kali per 20 detik dan pengolahan daftar proses.
-2. Turunkan syarat "prosesor bekerja" (CPU_WORK) dari 60 ke 55 °C supaya Kernel Default ikut bekerja di beban seperti Instagram?
-3. Ambang bawaan 40 °C (data 6 jam: panas 18% → 22% waktu, CPU penuh 91% → 88%). Belum diubah.
-4. Hasil uji HP v2.9.1 (nilai "⚙️ Beban Cogan Smart … (pengendali …)" dan CSV) untuk memutuskan merge PR #42.
+1. Hasil uji HP v2.9.1 (ZIP `64631a42…e29c`) untuk memutuskan merge PR #42. Yang dilihat: beban pengendali, suhu saat Instagram, kelancaran scroll.
+2. Ambang bawaan 40 °C (opsi c checkpoint lalu): belum dipilih, belum diubah.
+3. Konfirmasi owner bahwa Summary *Rilis dari run* kini hanya berisi satu teks ID dan satu teks EN.
+4. Bukti CI untuk PR #50:
+   - run Builder satu build berikutnya harus menampilkan baris hijau dan Teks Telegram;
+   - *Catat sublevel* untuk run satu build harus mencatatnya.
 
 ## Langkah pertama berikutnya
-- Baca jawaban owner atas butir 1–3. Kerjakan yang dipilih di `feat/cogan-smart-v2.9.1`, uji lokal (mksh + One True Awk, dash + mawk), kemas ZIP baru (sekaligus membawa `608925e`), kirim ke owner, perbarui PR #42.
-- Bila owner menyatakan v2.9.1 baik di HP: merge PR #42, siapkan `modules/cogan-smart/rilis/v2.9.1/` (ZIP + What's New & Fixes ID/EN), lalu Cogan Smart Release (owner menyerahkannya ke Claude).
+- Tunggu owner; jangan menjalankan apa pun sebelum diminta.
+- Bila owner melaporkan v2.9.1 baik di HP:
+  1. merge PR #42;
+  2. siapkan `modules/cogan-smart/rilis/v2.9.1/` (ZIP + What's New & Fixes ID/EN);
+  3. jalankan Cogan Smart Release (owner menyerahkannya ke Claude).
+- Pada run Builder satu build berikutnya, periksa ringkasannya untuk butir 4.
