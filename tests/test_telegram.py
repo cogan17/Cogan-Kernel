@@ -71,7 +71,7 @@ class TelegramTest(unittest.TestCase):
         english = tg.post(R2, "en", prev, link="https://x/run")
         self.assertIn("✨ New\n• New features: Unicode fix", english)
         self.assertIn("⚠️ Not tested on the phone yet", english)
-        self.assertNotIn("🔧", english)
+        self.assertIn("🔧 Fixes\n• No additional kernel fix commits recorded in this range", english)
 
     def test_cli_writes_both_posts_and_survives_without_the_api(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -89,7 +89,62 @@ class TelegramTest(unittest.TestCase):
             self.assertIn("• perbaikan contoh", (out / "id.txt").read_text())
             self.assertIn(f"repos/r/r/compare/{'e' * 40}...{'f' * 40}", asked)
             tg.main([str(env), "--repo", "r/r", "--out", str(out)], api=lambda path: None)
-            self.assertIn("Rilis pertama varian ini", (out / "id.txt").read_text())
+            text = (out / "id.txt").read_text()
+            self.assertIn("Riwayat rilis belum dapat dibaca", text)
+            self.assertIn("Daftar commit perbaikan belum dapat dibaca", text)
+            self.assertNotIn("Rilis pertama varian ini", text)
+
+    def test_ack_revision_and_unicode_patch_updates_are_visible(self):
+        previous = tg.previous([{"tag_name": R2["RELEASE"], "target_commitish": "e" * 40,
+                                 "body": rn.notes(R2, [], "https://run", "r/r")}],
+                               {**R2, "RELEASE": "v26.10.26-r4"})
+        current = {**R2, "ACK_TAG": "android14-6.1-2026-09_r5", "UNICODE_FIX": "f" * 40, "NEUTRON": "24102026"}
+        text = "\n".join(tg.whats_new(current, previous, "id"))
+        self.assertIn("Rilis ACK android14-6.1-2026-09_r4 → android14-6.1-2026-09_r5", text)
+        self.assertIn("Unicode fix WildKernel `fa76c90e2cb2` → `ffffffffffff`", text)
+        self.assertIn("Neutron clang 06092026 → 24102026", text)
+
+    def test_old_preview_ignores_its_own_and_newer_releases(self):
+        releases = [{"tag_name": tag, "body": rn.notes(R1, [], "https://run", "r/r"), "target_commitish": "e" * 40}
+                    for tag in ("v26.10.26-r10", R2["RELEASE"], R1["RELEASE"])]
+        self.assertEqual(tg.previous(releases, R2)["tag"], R1["RELEASE"])
+
+    def test_release_notes_and_post_share_measured_changes_and_fix_status(self):
+        def api(path):
+            return RELEASES if "/releases?" in path else {"commits": [{"commit": {"message": "fix(kernel): ARM64 flasher"}}]}
+        measured = tg.changes(R2, "r/r", "f" * 40, api)
+        release = tg.changelog_section(R2, "r/r", **measured)
+        for lang in ("id", "en"):
+            text = tg.post(R2, lang, **measured)
+            self.assertIn("ARM64 flasher", text)
+            self.assertIn(tg.WORDS[lang]["new"], release)
+            self.assertIn(tg.WORDS[lang]["fixes"], release)
+        self.assertIn("### What's New & Fixes", release)
+        self.assertIn("[v26.10.23-r1](https://github.com/r/r/releases/tag/v26.10.23-r1)", release)
+        self.assertEqual(tg.parse_release(release)["sha"], "f" * 40)
+
+    def test_failed_compare_does_not_claim_there_were_no_fixes(self):
+        measured = tg.changes(R2, "r/r", "f" * 40, lambda path: RELEASES if "/releases?" in path else None)
+        text = tg.post(R2, "en", **measured)
+        self.assertIn("The fix commit list could not be read", text)
+        self.assertNotIn("No additional kernel fix commits", text)
+
+    def test_fix_comparison_uses_the_recorded_build_commit_instead_of_the_tag_target(self):
+        body = rn.notes(R1, [], "https://run", "r/r") + f"\n<!-- cogan-build-sha: {'d' * 40} -->\n"
+        releases = [{"tag_name": R1["RELEASE"], "target_commitish": "e" * 40, "body": body}]
+        asked = []
+
+        def api(path):
+            asked.append(path)
+            return releases if "/releases?" in path else {"commits": []}
+        tg.changes(R2, "r/r", "f" * 40, api)
+        self.assertIn(f"repos/r/r/compare/{'d' * 40}...{'f' * 40}", asked)
+
+    def test_first_release_is_only_reported_after_reading_the_history(self):
+        measured = tg.changes(R1, "r/r", api=lambda path: [])
+        text = tg.post(R1, "id", **measured)
+        self.assertIn("Rilis pertama varian ini", text)
+        self.assertIn("Belum ada rilis pembanding", text)
 
     def test_summary_section_puts_each_language_in_a_code_block(self):
         text = tg.summary_section({"id": "teks\n", "en": "text\n"})

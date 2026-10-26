@@ -28,6 +28,10 @@ on:
         description: "Catatan tambahan (opsional; \\n = baris baru) / extra note"
         type: string
         default: ""
+      teks_saja:
+        description: "Buat catatan & teks Telegram saja, tanpa menerbitkan rilis / notes and Telegram text only"
+        type: boolean
+        default: false
 
 permissions:
   actions: read
@@ -47,6 +51,7 @@ jobs:
       RELEASE_TYPE: ${{ inputs.release_type }}
       TESTED: ${{ inputs.diuji_di_hp }}
       NOTE: ${{ inputs.catatan }}
+      TEXT_ONLY: ${{ inputs.teks_saja }}
     steps:
       - uses: actions/checkout@v7.0.1
         with:
@@ -96,11 +101,15 @@ jobs:
             esac
           done < artifacts.tsv
           tested=(); [ "$TESTED" = "true" ] && tested=(--tested)
+          preview=(); [ "$TEXT_ONLY" = "true" ] && preview=(--text-only)
+          sha="$(python3 -c 'import json; print(json.load(open("run.json"))["head_sha"])')"
           python3 -m kernel.release_from_run info files --repo "$GITHUB_REPOSITORY" "${tested[@]}" --note "$NOTE" \
+            --sha "$sha" --telegram telegram "${preview[@]}" \
             --run-url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN" > notes.md
           ls -la files
 
       - name: Terbitkan / publish
+        if: ${{ !inputs.teks_saja }}
         run: |
           set -euo pipefail
           tag="$(sed -n 's/^RELEASE=//p' info/release.env)"
@@ -117,7 +126,6 @@ jobs:
           here="$(workflows_at "$GITHUB_SHA")"
           target="$sha"; [ -n "$there" ] && [ "$there" = "$here" ] || target="$GITHUB_SHA"
           (cd files && sha256sum -- * > checksums.txt)
-          tested=(); [ "$TESTED" = "true" ] && tested=(--tested)
           mode=(--prerelease); [ "$RELEASE_TYPE" = "Release" ] && mode=(--latest)
           gh release create "$tag" files/* --repo "$GITHUB_REPOSITORY" --target "$target" "${mode[@]}" \
             --title "$title" --notes-file notes.md
@@ -125,16 +133,24 @@ jobs:
             echo "## Rilis dari run / release from run"
             echo "- 🇮🇩 Terbit: [$tag]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/tag/$tag) ($RELEASE_TYPE)$([ "$TESTED" = "true" ] && echo ", diuji di HP")"
             echo "- 🇬🇧 Published: [$tag]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/tag/$tag) ($RELEASE_TYPE)$([ "$TESTED" = "true" ] && echo ", tested on the phone")"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Catatan dan teks Telegram / notes and Telegram text
+        run: |
+          {
+            echo "## 📣 Teks Telegram siap salin / Telegram posts ready to copy"
+            if [ "$TEXT_ONLY" = "true" ]; then
+              echo "- 🇮🇩 Mode teks saja: tidak ada rilis yang diterbitkan atau diubah."
+              echo "- 🇬🇧 Text-only mode: no release was published or changed."
+            fi
+            echo
+            cat telegram/summary.md
+            echo
+            echo '<details><summary>📝 Catatan rilis lengkap / Full release notes — What’s New & Fixes</summary>'
             echo
             cat notes.md
             echo
-            # Ready to copy for Telegram (best effort: the release is already published).
-            for build in info/build-info-*/build.env; do
-              echo "### $(sed -n 's/^ROOT_NAME=//p' "$build") · $(sed -n 's/^LINUX_VERSION=//p' "$build")"
-              python3 kernel/telegram.py "$build" --repo "$GITHUB_REPOSITORY" --sha "$sha" \
-                --link "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/tag/$tag" "${tested[@]}" --note "$NOTE" \
-                --out "telegram/$(basename "$(dirname "$build")")" --summary || true
-            done
+            echo '</details>'
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Ringkasan bila gagal / summary on failure

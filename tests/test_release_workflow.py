@@ -11,6 +11,8 @@ import unittest
 import zipfile
 from pathlib import Path
 
+from kernel import release_notes as rn
+
 WORKFLOW = Path(__file__).resolve().parents[1] / ".github/workflows/release-from-run.yml"
 SOURCE_SHA = "4730fee1297fa5ef1a779a4223136ab1912b09e2"
 MAIN_SHA = "3a81421" + "0" * 33
@@ -35,9 +37,10 @@ class ReleaseWorkflowTests(unittest.TestCase):
         (build / "build.env").write_text("ROOT_NAME=KernelSU Next\nLINUX_VERSION=6.1.176\n")
         (self.root / "files/1-KERNEL_fixture.zip").write_text("kernel fixture")
         (self.root / "notes.md").write_text("notes fixture\n")
-        for name in ("release_notes.py", "release_from_run.py"):
+        for name in ("release_notes.py", "release_from_run.py", "telegram.py"):
             shutil.copyfile(WORKFLOW.parents[2] / "kernel" / name, self.root / "kernel" / name)
-        (self.root / "kernel/telegram.py").write_text('print("notes fixture")\n')
+        (self.root / "releases.json").write_text("[]")
+        (self.root / "compare.json").write_text('{"commits": []}')
         gh = self.root / "bin/gh"
         gh.write_text('''#!/bin/bash
 if [[ "$1 $2" == "release view" ]]; then
@@ -58,6 +61,10 @@ elif [[ "$1 $2" == "api --paginate" ]]; then
   cat fixtures.tsv
 elif [[ "$1" == api && "$2" =~ /actions/artifacts/([0-9]+)/zip$ ]]; then
   cat "artifacts/${BASH_REMATCH[1]}"
+elif [[ "$1" == api && "$2" == *'/releases?per_page=50' ]]; then
+  cat releases.json
+elif [[ "$1" == api && "$2" == *'/compare/'* ]]; then
+  cat compare.json
 else
   echo "Unexpected request: $*" >&2
   exit 2
@@ -70,7 +77,7 @@ fi
                         SOURCE_SHA=SOURCE_SHA, GITHUB_SHA=MAIN_SHA,
                         WORKFLOWS_AT_SOURCE="tree1", WORKFLOWS_AT_MAIN="tree1",
                         GITHUB_STEP_SUMMARY=str(self.root / "summary.md"),
-                        RELEASE_TYPE="Pre-Release", TESTED="true", NOTE="Tested on my device.")
+                        RELEASE_TYPE="Pre-Release", TESTED="true", NOTE="Tested on my device.", TEXT_ONLY="false")
 
     def run_step(self, name, **env):
         return subprocess.run(["bash", "-euo", "pipefail", "-c", script(name)], cwd=self.root,
@@ -153,8 +160,60 @@ fi
             self.assertIn(f"files/{env['ZIP']}", args)
             self.assertIn(env["ZIP"], (self.root / "files/checksums.txt").read_text())
         self.assertEqual(args.count("files/4-NOMOUNT-MODULE_v2.2.0.zip"), 1)
+        result = self.run_step("Catatan dan teks Telegram / notes and Telegram text")
+        self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("KernelSU Next", self.summary())
         self.assertIn("BakaSU", self.summary())
+
+    def test_whats_new_and_fixes_are_in_the_release_and_four_copyable_posts(self):
+        self.artifacts()
+        bodies = []
+        for env in self.builds.values():
+            previous = {**env, "ROOT_COMMIT": "c" * 40, "ACK_TAG": "android14-6.1-2026-09_r4"}
+            bodies.append(rn.notes(previous, [], "https://run", "cogan17/Cogan-Kernel"))
+        (self.root / "releases.json").write_text(json.dumps([{"tag_name": "v26.10.23-r1", "target_commitish": "e" * 40,
+                                                             "body": "\n".join(bodies)}]))
+        (self.root / "compare.json").write_text(json.dumps({"commits": [
+            {"commit": {"message": "fix(kernel): perbaikan ZIP ARM64 (#1)"}},
+            {"commit": {"message": "fix(module): unrelated"}}]}))
+        result = self.download(TESTED="false")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        notes = (self.root / "notes.md").read_text()
+        self.assertEqual(notes.count("### What's New & Fixes"), 2)
+        for root in self.builds:
+            for lang in ("id", "en"):
+                post = (self.root / f"telegram/build-info-{root}-176/{lang}.txt").read_text()
+                self.assertIn("perbaikan ZIP ARM64", post)
+                self.assertIn("android14-6.1-2026-09_r4 → android14-6.1-2026-09_r5", post)
+                self.assertNotIn("unrelated", post)
+        self.assertIn("perbaikan ZIP ARM64", notes)
+        self.assertIn(f"<!-- cogan-build-sha: {SOURCE_SHA} -->", notes)
+        result = self.run_step("Catatan dan teks Telegram / notes and Telegram text")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        summary = self.summary()
+        self.assertEqual(summary.count("```text"), 4)
+        self.assertLess(summary.index("```text"), summary.index("Catatan rilis lengkap"))
+
+    def test_text_only_can_prepare_existing_release_without_publishing(self):
+        self.artifacts()
+        (self.root / "releases.json").write_text('[{"tag_name":"v26.10.24-r2","body":"existing release"}]')
+        result = self.download(TEXT_ONLY="true", CASE="exists")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        publish = WORKFLOW.read_text().split("      - name: Terbitkan / publish\n", 1)[1].split("        run: |", 1)[0]
+        self.assertIn("if: ${{ !inputs.teks_saja }}", publish)
+        result = self.run_step("Catatan dan teks Telegram / notes and Telegram text", TEXT_ONLY="true")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("tidak ada rilis yang diterbitkan atau diubah", self.summary())
+        self.assertIn("/releases/tag/v26.10.24-r2", self.summary())
+        self.assertFalse((self.root / "called.txt").exists())
+
+    def test_text_only_uses_build_download_link_when_release_does_not_exist(self):
+        self.artifacts(roots=("KSUN",))
+        result = self.download(TEXT_ONLY="true")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        post = (self.root / "telegram/build-info-KSUN-176/id.txt").read_text()
+        self.assertIn("https://github.com/cogan17/Cogan-Kernel/actions/runs/40046361218", post)
+        self.assertNotIn("/releases/tag/", post)
 
     def test_single_root_and_wrapped_artifacts_still_work(self):
         self.artifacts(roots=("KSUN",), wrapped=True)
