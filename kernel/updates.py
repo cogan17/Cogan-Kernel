@@ -150,16 +150,24 @@ class Net:
     def ksun_manager(self, base):
         return r.ksun_manager(base)
 
+    @staticmethod
+    def git_dir(repo):
+        """A scratch repository without background gc or maintenance (Cek pembaruan run 3: git still wrote
+        into .git while the folder was being removed, "Directory not empty")."""
+        r.run("git", "init", "-q", repo)
+        r.run("git", "-C", repo, "config", "gc.auto", "0")
+        r.run("git", "-C", repo, "config", "maintenance.auto", "false")
+
     def ksu_version(self, head, dev):
-        with tempfile.TemporaryDirectory(prefix="updates-ksun-") as repo:
-            r.run("git", "init", "-q", repo)
+        with tempfile.TemporaryDirectory(prefix="updates-ksun-", ignore_cleanup_errors=True) as repo:
+            self.git_dir(repo)
             r.fetch_history(repo, r.KSUN_FORK, f"{head}:refs/check/ksun", f"{dev}:refs/check/ksun-dev")
             return r.ksun_version(repo, "refs/check/ksun", "refs/check/ksun-dev")
 
     def bakasu_ready(self, release, main, susfs):
         """(problem of the release, problem of main) against SUSFS commit susfs; None = ready."""
-        with tempfile.TemporaryDirectory(prefix="updates-bakasu-") as repo:
-            r.run("git", "init", "-q", repo)
+        with tempfile.TemporaryDirectory(prefix="updates-bakasu-", ignore_cleanup_errors=True) as repo:
+            self.git_dir(repo)
             r.run("git", "-C", repo, "fetch", "-q", "--depth=1", r.SUSFS, f"{susfs}:refs/check/susfs")
             found = []
             for name, sha in (("release", release), ("main", main)):
