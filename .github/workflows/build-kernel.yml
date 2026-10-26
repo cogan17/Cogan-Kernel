@@ -416,6 +416,9 @@ jobs:
     needs: [resolve, susfs, build, attest, release]
     if: always()
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read   # the run's build-info artifacts through gh
     steps:
       - uses: actions/checkout@v7.0.1
         with:
@@ -424,11 +427,13 @@ jobs:
             kernel/run_summary.py
             kernel/telegram.py
           sparse-checkout-cone-mode: false
-      - uses: actions/download-artifact@v8.0.2
+      # gh keeps every build-info-* in a folder of its own, also when the run has only one build:
+      # download-artifact puts a lone match straight into info/ (run 10: no Telegram text, no result).
+      - name: Info build / build info
         continue-on-error: true
-        with:
-          pattern: build-info-*
-          path: info
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh run download "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" --pattern 'build-info-*' --dir info
       - uses: actions/download-artifact@v8.0.2
         continue-on-error: true
         with:
