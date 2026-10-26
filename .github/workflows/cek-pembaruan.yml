@@ -1,0 +1,37 @@
+name: Cek pembaruan
+
+# Owner 26 Okt 2026: "workflow yg bisa Check saja, hanya bisa check". Satu tombol, tanpa jadwal atau
+# pemicu otomatis (hemat run). Versi terbaru setiap komponen (ACK, KernelSU Next, BakaSU, SUSFS,
+# NoMount, Baseband Guard, AnyKernel3, Neutron clang, Unicode fix) dibandingkan dengan build terakhir:
+# versi dan tanggal rilis stabil maupun CI, mana yang lebih baru, yang baru dan perbaikan sejak build
+# terakhir, dan siapa yang ditunggu bila belum bisa dibangun (mis. SUSFS diblokir di BakaSU). Ringkasan
+# dua bahasa (kernel/updates.py). Tidak membangun, tidak menerbitkan, tidak menulis apa pun.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read   # the Builder's runs and their snapshot artifacts (the last build)
+
+concurrency:
+  group: cek-pembaruan
+  cancel-in-progress: true
+
+jobs:
+  cek:
+    name: Cek / check
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: kernel
+      - name: Cek pembaruan / check for updates
+        run: |
+          set -euo pipefail
+          python3 kernel/updates.py --repo "$GITHUB_REPOSITORY" --out updates.md > /dev/null
+          cat updates.md >> "$GITHUB_STEP_SUMMARY"
