@@ -88,7 +88,7 @@ Unicode fix (optional) passes the build + KMI gate on 157, 162, 172 and 176, and
 
 To publish an existing build, run **Rilis dari run** with the green Builder run ID. A run containing KernelSU Next and BakaSU becomes **one release** with both kernel ZIPs and their matching manager APKs, without rebuilding. Tick **diuji di HP** only if the owner tested every variant in that run on the phone.
 
-Release notes include **What's New & Fixes**, compared with the previous release of the same root manager. The run's **Summary** provides **Telegram posts ready to copy** for each variant in Indonesian and English, each in a code block with a copy button. Tick **teks_saja** to generate only notes and Telegram posts, including for an already published version; this mode does not publish or change a release.
+Release notes include **What's New & Fixes**, compared with the previous release of the same root manager. The run's **Summary** provides **one Telegram post ready to copy** for the whole release (KernelSU Next and BakaSU in one text) in Indonesian and English, each in a code block with a copy button. Tick **teks_saja** to generate only notes and Telegram posts, including for an already published version; this mode does not publish or change a release.
 
 </details>
 

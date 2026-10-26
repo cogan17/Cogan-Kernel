@@ -203,6 +203,41 @@ class TelegramTest(unittest.TestCase):
         self.assertIn("No additional kernel fix commits recorded", english)
         self.assertNotIn("English description not supplied", english)
 
+    def test_one_build_release_post_is_the_build_post(self):
+        measured = {"prev": tg.previous(RELEASES, R2), "fix_titles": {"id": ["a"], "en": ["b"]}}
+        for lang in ("id", "en"):
+            self.assertEqual(tg.release_post([(R2, measured)], lang, link="https://x", tested=True, note="n", note_en="e"),
+                             tg.post(R2, lang, link="https://x", tested=True, note="n", note_en="e", **measured))
+
+    def test_both_root_managers_share_one_post(self):
+        # Owner 2026-10-26: one Release From Run, one text to copy, not one per root manager.
+        bsu = {**R2, "ROOT_NAME": "BakaSU", "ROOT_COMMIT": "d5e9e025b8b4" + "0" * 28}
+        prev_ksun = tg.previous(RELEASES, R2)
+        prev_bsu = {**prev_ksun, "tag": "v26.10.24-r3", "root": ("BakaSU main", "2ea131d9d44e")}
+        builds = [(bsu, {"prev": prev_bsu, "fix_titles": {"id": [], "en": []}}),
+                  (R2, {"prev": prev_ksun, "fix_titles": {"id": ["SUSFS di ACK lama"], "en": ["SUSFS on old ACK"]}})]
+        text = tg.release_post(builds, "id", link="https://x/r4", tested=True, note="catatan", note_en="note")
+        self.assertIn("📦 v26.10.24-r2 · ACK 6.1.176 · BakaSU & KernelSU Next + SUSFS v2.3.0", text)
+        self.assertIn("📌 Dibandingkan dengan v26.10.24-r3 (BakaSU), v26.10.23-r1 (KernelSU Next)", text)
+        self.assertIn("✨ Baru\n• Fitur baru: Unicode fix\n• BakaSU `2ea131d9d44e` → `d5e9e025b8b4`\n", text)  # shared once
+        self.assertIn("🔧 Perbaikan\n• BakaSU: Tidak ada commit perbaikan kernel tambahan yang tercatat pada rentang ini\n"
+                      "• KernelSU Next: SUSFS di ACK lama\n", text)
+        self.assertIn("📝 Catatan\ncatatan\n\n🧩 Fitur: SUSFS, BBRv3", text)
+        self.assertEqual((text.count("🧠"), text.count("⬇️ Unduh: https://x/r4"), text.count("✅ Diuji di HP")), (1, 1, 1))
+        english = tg.release_post(builds, "en", tested=False, note="catatan", note_en="note")
+        self.assertIn("• KernelSU Next: SUSFS on old ACK", english)
+        self.assertIn("📝 Note\nnote\n", english)
+        self.assertNotIn("catatan", english)
+        self.assertIn("⚠️ Not tested on the phone yet", english)
+
+    def test_combined_post_names_what_differs(self):
+        first = {**R2, "ROOT_NAME": "BakaSU", "LINUX_VERSION": "6.1.172", "FEATURES": "SUSFS, Full LTO"}
+        text = tg.release_post([(first, {}), (R2, {"prev": tg.previous(RELEASES, R2)})], "en")
+        self.assertIn("ACK 6.1.172 / 6.1.176 · BakaSU & KernelSU Next", text)
+        self.assertIn("📌 Compared with v26.10.23-r1 (KernelSU Next 6.1.176)", text)
+        self.assertIn("• BakaSU 6.1.172: First release of this variant", text)
+        self.assertIn("🧩 Features (BakaSU 6.1.172): SUSFS, Full LTO\n🧩 Features (KernelSU Next 6.1.176): SUSFS, BBRv3", text)
+
 
 if __name__ == "__main__":
     unittest.main()

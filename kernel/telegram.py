@@ -197,6 +197,57 @@ def post(env, lang, prev=None, fix_titles=(), link="", tested=False, note="", hi
     return "\n".join(lines) + "\n"
 
 
+def merged(groups):
+    """[(label, items)] -> the items every group has, once, then each group's own items under its label."""
+    common = [item for item in groups[0][1] if all(item in items for _, items in groups[1:])]
+    own = [item if item.startswith(label) else f"{label}: {item}"
+           for label, items in groups for item in items if item not in common]
+    return common + own
+
+
+def joined(values):
+    return " / ".join(dict.fromkeys(value for value in values if value))
+
+
+def release_post(builds, lang, link="", tested=False, note="", note_en=""):
+    """One post for one release (owner 2026-10-26: "mesti copas 2 kali"): KernelSU Next and BakaSU of a
+    Release From Run share one text, each change measured against that root manager's own previous release.
+    builds: [(env, measured)] as from changes(); one build gives exactly post()."""
+    if len(builds) == 1:
+        env, measured = builds[0]
+        return post(env, lang, link=link, tested=tested, note=note, note_en=note_en, **measured)
+    w = WORDS[lang]
+    envs = [env for env, _ in builds]
+    versions = {env.get("LINUX_VERSION") for env in envs}
+    labels = [env.get("ROOT_NAME", "") + ("" if len(versions) == 1 else f" {env.get('LINUX_VERSION', '')}") for env in envs]
+    lines = ["🧠 Cogan Kernel · Xiaomi 14T Pro (rothko)",
+             f"📦 {envs[0].get('RELEASE', '')} · ACK {joined(e.get('LINUX_VERSION') for e in envs)} · "
+             f"{' & '.join(dict.fromkeys(e.get('ROOT_NAME', '') for e in envs))} + SUSFS {joined(e.get('SUSFS_VERSION') for e in envs)}"]
+    prevs = [(label, measured["prev"]["tag"]) for label, (_, measured) in zip(labels, builds) if measured.get("prev")]
+    if prevs:
+        same = len(prevs) == len(builds) and len({tag for _, tag in prevs}) == 1
+        lines += ["", "📌 " + w["baseline"].format(prev=prevs[0][1] if same else ", ".join(f"{tag} ({label})" for label, tag in prevs))]
+    new = merged([(label, whats_new(env, measured.get("prev"), lang, measured.get("history_available", True)))
+                  for label, (env, measured) in zip(labels, builds)])
+    fixed = merged([(label, fix_items(lang, measured.get("prev"), measured.get("fix_titles", ()),
+                                      measured.get("history_available", True), measured.get("fixes_available", True)))
+                    for label, (_, measured) in zip(labels, builds)])
+    lines += ["", w["new"], *[f"• {item}" for item in new], "", w["fixes"], *[f"• {item}" for item in fixed]]
+    localized_note = note if lang == "id" else note_en
+    if localized_note.strip():
+        lines += ["", w["note"], *localized_note.replace("\\n", "\n").strip().splitlines()]
+    features = {env.get("FEATURES", "") for env in envs}
+    lines.append("")
+    if len(features) == 1:
+        lines.append(f"{w['features']}: {envs[0].get('FEATURES', '')}")
+    else:
+        lines += [f"{w['features']} ({label}): {env.get('FEATURES', '')}" for label, env in zip(labels, envs)]
+    lines.append(w["tested"] if tested else w["untested"])
+    if link:
+        lines.append(f"{w['download']}: {link}")
+    return "\n".join(lines) + "\n"
+
+
 HEADINGS = {"id": ("🇮🇩 Bahasa Indonesia", "**📣 Teks Telegram** (salin lewat tombol di pojok kanan atas kotak)"),
             "en": ("🇬🇧 English", "**📣 Telegram post** (copy with the button at the top right of the box)")}
 
