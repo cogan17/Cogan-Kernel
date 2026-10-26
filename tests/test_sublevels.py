@@ -36,6 +36,22 @@ class SublevelsTest(unittest.TestCase):
         self.assertFalse(sl.is_new(record, "android14-6.1-2026-10_r2", 180))
         self.assertEqual(record["180"], {"tag": "android14-6.1-2026-10_r2", "dicoba": "2026-10-25"})
 
+    def test_trying_a_newer_release_keeps_the_proven_one(self):
+        # Owner's first check, 26 Okt 2026: marking 2026-09_r5 dropped the r4 result of 176 (tested on the phone),
+        # so the README table no longer matched the record.
+        old = {"tag": TAG, "KSUN": {"status": "ok", "run": 1}, "note": {"id": "r1 diuji di HP", "en": "r1 tested"}}
+        record = {"176": dict(old)}
+        before = sl.table(record, "id")
+        sl.mark(record, "android14-6.1-2026-09_r5", 176, "2026-10-26")
+        self.assertEqual(record["176"], {**old, "dicoba": {"tag": "android14-6.1-2026-09_r5", "date": "2026-10-26"}})
+        self.assertFalse(sl.is_new(record, "android14-6.1-2026-09_r5", 176))      # started once
+        self.assertTrue(sl.is_new(record, "android14-6.1-2026-10_r1", 176))
+        self.assertEqual(sl.table(record, "id"), before)                           # the README stays
+        self.left("KSUN", 176, "ok", "android14-6.1-2026-09_r5")                   # its results replace r4
+        sl.record_run(record, self.base / "info", "43")
+        self.assertEqual(record["176"], {"tag": "android14-6.1-2026-09_r5", "note": old["note"],
+                                         "KSUN": {"status": "ok", "run": 43}})
+
     def test_record_a_builder_run(self):
         record = {"176": {"tag": TAG, "note": {"id": "r1 diuji di HP", "en": "r1 tested"}},
                   "172": {"tag": "android14-6.1-2026-06_r14", "pendahulu": True},
