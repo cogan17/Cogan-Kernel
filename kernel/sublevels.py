@@ -46,14 +46,23 @@ def save(record, path=RECORD):
 def is_new(record, tag, sublevel):
     """True when this ACK release tag has not been tried yet (a result, or a build already started)."""
     entry = record.get(str(sublevel))
-    return not entry or entry.get("tag") != tag or not (entry.get("dicoba") or any(r in entry for r in ROOTS))
+    if not entry:
+        return True
+    tried = entry.get("dicoba")
+    if isinstance(tried, dict) and tried.get("tag") == tag:
+        return False
+    return entry.get("tag") != tag or not (tried or any(r in entry for r in ROOTS))
 
 
 def mark(record, tag, sublevel, date):
-    """The check started a build of this release: never start it twice."""
-    entry = record.get(str(sublevel), {})
-    keep = {"note": entry["note"]} if "note" in entry else {}
-    record[str(sublevel)] = {"tag": tag, "dicoba": date, **(entry if entry.get("tag") == tag else keep)}
+    """The check started a build of this release: never start it twice. The results of the release
+    proven before stay until the new one's results are recorded (record_run), so the README keeps
+    showing them (owner's first check, 26 Okt 2026: 176 `2026-09_r4`, tested on the phone, had vanished)."""
+    entry = record.setdefault(str(sublevel), {})
+    if entry.get("tag") in (None, tag) and not any(r in entry for r in ROOTS):
+        entry.update({"tag": tag, "dicoba": date})
+    else:
+        entry["dicoba"] = {"tag": tag, "date": date}
 
 
 def newest_ack():
