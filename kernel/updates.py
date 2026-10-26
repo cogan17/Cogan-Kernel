@@ -240,9 +240,16 @@ def item(key, name, **values):
 
 # ---- the components ------------------------------------------------------------------------------
 
+def ack_key(tag):
+    match = r.ACK_TAG.fullmatch(tag or "")
+    return tuple(int(n) for n in match.groups()) if match else (0, 0, 0)
+
+
 def check_ack(net, builds):
-    base = base_of(builds, "ack")
-    base_tag = base[-1]["tag"] if base else None   # the newest ACK release of the last build
+    # The newest ACK release any last build used: a compile proof of old sublevels (e.g. 138 and 145)
+    # must not hide that 176 was already built (Cek pembaruan run 2, 26 Okt 2026).
+    built = [ack["tag"] for build in builds.values() for ack in build.get("snap", {}).get("ack", [])]
+    base_tag = max(built, key=ack_key) if built else None
     releases = r.ack_releases(net.ls_remote(r.ACK, "refs/tags/android14-6.1-*"))
     tag, sha = releases[0]
     sublevel = r.ack_sublevel(tag, net.http)
@@ -251,8 +258,10 @@ def check_ack(net, builds):
     stable = {"tag": tag, "label": f"`{tag}` (6.1.{sublevel})", "date": gitiles_time(meta.get("committer", {}).get("time", ""))}
     tags = [t for t, _ in releases]
     newer_tags = tags[:tags.index(base_tag)] if base_tag in tags else []
-    lines = ([{"id": "Rilis ACK baru: " + ", ".join(f"`{t}`" for t in newer_tags),
-               "en": "New ACK releases: " + ", ".join(f"`{t}`" for t in newer_tags)}] if newer_tags else [])
+    shown = ", ".join(f"`{t}`" for t in newer_tags[:8])
+    more = len(newer_tags) - 8
+    lines = ([{"id": "Rilis ACK baru: " + shown + (f" dan {more} lainnya" if more > 0 else ""),
+               "en": "New ACK releases: " + shown + (f" and {more} more" if more > 0 else "")}] if newer_tags else [])
     return item("ack", "ACK android14-6.1", base={"label": f"`{base_tag}`"} if base_tag else None, stable=stable,
                 status="unknown" if not base_tag else "same" if base_tag == tag else "new", lines=lines)
 
@@ -453,7 +462,10 @@ def version_cell(entry, lang):
         value = entry.get(kind)
         if value and value.get("label"):
             date = when(value.get("date", ""), lang)
-            parts.append(f"{t[kind]}: {value['label']}" + (f" ({date})" if date else ""))
+            text = f"{t[kind]}: {value['label']}"
+            if date:   # "(6.1.180)" becomes "(6.1.180, 22 Okt 2026 12.25 WIB)"
+                text = text[:-1] + f", {date})" if text.endswith(")") else text + f" ({date})"
+            parts.append(text)
     stable, ci = entry.get("stable") or {}, entry.get("ci") or {}
     if stable.get("date") and ci.get("date"):
         parts.append(t["newer_ci"] if newer(ci["date"], stable["date"]) else t["newer_stable"])
