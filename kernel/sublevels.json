@@ -1,10 +1,7 @@
 {
  "176": {
-  "tag": "android14-6.1-2026-09_r4",
-  "KSUN": {
-   "status": "ok",
-   "run": 40048269498
-  },
+  "tag": "android14-6.1-2026-09_r5",
+  "dicoba": "2026-10-26",
   "note": {
    "id": "r1 dan r2 diuji di HP",
    "en": "r1 and r2 tested on the phone"
