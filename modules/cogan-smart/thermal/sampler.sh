@@ -2,71 +2,107 @@
 # Cogan Smart · Thermal: background sampler. Every INTERVAL seconds it appends one line to
 # $CT_DATA/data/<date>.tsv with every temperature and what the phone was doing at that moment:
 #
-#   ts  app  screen  charging  current_mA  battery_t10  cpu_x10  kernel_x10  gpu  top  net  freqs  zones
+#   ts  app  screen  charging  current_mA  battery_t10  cpu_x10  kernel_x10  gpu  top  net  freqs  zones  cap  load  ctl
 #
 # top = "name:pct_x10;..." (busiest user processes), net = "wifi:kB/s,cell:kB/s",
-# zones = "type=tenths_of_degC,...". Usage: sampler.sh [--once]
+# zones = "type=tenths_of_degC,...", cap = CPU cap of Cogan Smart · Power "big%/little%/step" or "-"
+# (since v2.9.1), load = CPU used by this module's recorder and power controller, % x10 of the whole phone
+# (since v2.9.1), ctl = the controller's part of load (since v2.9.1). cpu_x10 is -1 without a previous reading
+# and -2 right after the phone restarted (since v2.9.1). Usage: sampler.sh [--once]
 
 MODDIR=${0%/*}; [ "$MODDIR" = "$0" ] && MODDIR=.   # started as "sh report.sh"
 . "$MODDIR/common.sh"
 
+# Each sample starts as few processes as it can (shell builtins read the files): on the owner's phone the
+# recorder and controller together used 4.8% of the CPU in the first v2.9.1 test (25 Oct 2026).
 sample() {
-  now=$(date +%s)
-  mkdir -p "$CT_DATA/data" "$CT_RUN"
-  bridge_heartbeat thermal "$(module_code)"
+  set -- $(date '+%s %Y-%m-%d'); now=$1; day=$2
+  [ -d "$CT_DATA/data" ] && [ -d "$CT_RUN" ] || mkdir -p "$CT_DATA/data" "$CT_RUN"
+  heartbeat thermal
 
   # CPU since the previous sample: the whole phone, kernel threads and the busiest processes.
-  cpu_now=$(head -n 1 "$CT_PROC/stat")
-  cpu_prev=$(cat "$CT_RUN/cpu.prev" 2>/dev/null)
+  read_into cpu_now "$CT_PROC/stat"
+  read_into cpu_prev "$CT_RUN/cpu.prev"
   cat "$CT_PROC"/[0-9]*/stat > "$CT_RUN/pids.new" 2>/dev/null
   [ -f "$CT_RUN/pids.prev" ] || : > "$CT_RUN/pids.prev"
-  awk -v prev="$cpu_prev" -v cur="$cpu_now" -f "$MODDIR/cpu.awk" "$CT_RUN/pids.prev" "$CT_RUN/pids.new" \
-    > "$CT_RUN/cpu.out" 2>/dev/null
+  mods=$$; read_into cp_pid "$CP_DATA/run/pid"
+  case "$cp_pid" in ''|*[!0-9]*) cp_pid="" ;; *) mods="$mods $cp_pid" ;; esac   # the power controller
+  awk -v prev="$cpu_prev" -v cur="$cpu_now" -v mods="$mods" -v ctl="${cp_pid:-0}" -f "$MODDIR/cpu.awk" \
+    "$CT_RUN/pids.prev" "$CT_RUN/pids.new" > "$CT_RUN/cpu.out" 2>/dev/null
   mv "$CT_RUN/pids.new" "$CT_RUN/pids.prev"
   echo "$cpu_now" > "$CT_RUN/cpu.prev"
-  cpu=-1; kernel=-1; top=""
-  while read -r kind a b c; do
+  cpu=-1; kernel=-1; top=""; load=-1; ctl=-1; names=""
+  while read -r kind a b c d; do
     case "$kind" in
       C) cpu=$a; kernel=$b ;;
-      P) top="$top${top:+;}$(proc_name "$b" "$c"):$a" ;;
+      M) load=$a; ctl=${b:--1} ;;
+      P) # A name learned in an earlier sample, for the same pid and start time, costs no process.
+         case " ${NAMES-} " in
+           *" $b:$d="*) name=${NAMES#*" $b:$d="}; name=${name%% *} ;;
+           *) name=$(proc_name "$b" "$c") ;;
+         esac
+         names="$names $b:$d=$name"
+         top="$top${top:+;}$name:$a" ;;
     esac
   done < "$CT_RUN/cpu.out"
+  NAMES=$names
 
   # Network speed since the previous sample.
-  set -- $(read_net_bytes)
-  wifi=$1; cell=$2
+  read_net_bytes
   net="-"
   if read -r pts pwifi pcell < "$CT_RUN/net.prev" 2>/dev/null && [ "$now" -gt "$pts" ]; then
     dt=$((now - pts))
-    net="wifi:$(((wifi - pwifi) / 1024 / dt)),cell:$(((cell - pcell) / 1024 / dt))"
+    w=$(((wifi - pwifi) / 1024 / dt)); c=$(((cell - pcell) / 1024 / dt))
+    # The byte counters start again after a restart (owner's log, 12.06 WIB: -24055 kB/s): no speed then.
+    [ "$w" -ge 0 ] || w=-; [ "$c" -ge 0 ] || c=-
+    net="wifi:$w,cell:$c"
   fi
   echo "$now $wifi $cell" > "$CT_RUN/net.prev"
 
-  screen=$(read_screen)
-  if [ "$screen" = 0 ]; then app=screen_off; else app=$(read_foreground); fi
-  set -- $(read_battery)
-  charging=$1; current=$2; battery=$3
-  gpu=$(read_gpu)
-  freqs=$(read_freqs)
-  zones=$(read_zones)
+  read_screen
+  if [ "$screen" = 0 ]; then app=screen_off; FG_SET=""; else read_foreground; fi
+  read_battery
+  read_gpu
+  read_freqs
+  read_zones
+  power_cap
 
-  day=$(date +%Y-%m-%d)
-  printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$now" "$app" "$screen" "$charging" "$current" \
-    "$battery" "$cpu" "$kernel" "$gpu" "${top:--}" "$net" "$freqs" "${zones:--}" > "$CT_RUN/sample.tsv"
-  cat "$CT_RUN/sample.tsv" >> "$CT_DATA/data/$day.tsv"
+  printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$now" "$app" "$screen" "$charging" "$current" \
+    "$battery" "$cpu" "$kernel" "$gpu" "${top:--}" "$net" "$freqs" "${zones:--}" "$cap" "$load" "$ctl" > "$CT_RUN/sample.tsv"
+  IFS= read -r line < "$CT_RUN/sample.tsv"
+  printf '%s\n' "$line" >> "$CT_DATA/data/$day.tsv"
   echo "$now" > "$CT_RUN/last"
 
   # Short report of this sample for other modules (Cogan Smart · Power reads it):
   # ts  main_temp  battery_temp  charging  app_label  cause (from the last few samples, see report.awk)
-  tail -n 9 "$CT_DATA/data/$day.tsv" > "$CT_RUN/recent.tsv"
-  awk -v mode=latest -v since=0 -v now=$((now + 1)) -v HOT=$((HOT_TEMP * 10)) \
-      -f "$MODDIR/thermal.awk" -f "$MODDIR/report.awk" "$CT_RUN/recent.tsv" > "$CT_RUN/latest.tmp" 2>/dev/null
+  # The cause needs the last 12 samples. The first and every 15th sample (5 minutes) read the last 40,
+  # which also show a sensor stuck at one value (written to run/stuck for live reads).
+  SAMPLES=$((${SAMPLES:-0} + 1))
+  if [ $((SAMPLES % 15)) = 1 ]; then recent=40; stuck_file=$CT_RUN/stuck; else recent=12; stuck_file=""; fi
+  tail -n "$recent" "$CT_DATA/data/$day.tsv" > "$CT_RUN/recent.tsv"
+  awk -v mode=latest -v since=0 -v now=$((now + 1)) -v HOT=$((HOT_TEMP * 10)) -v LABELS="$CT_DATA/labels.tsv" \
+      -v STUCKFILE="$stuck_file" -f "$MODDIR/thermal.awk" -f "$MODDIR/report.awk" "$CT_RUN/recent.tsv" > "$CT_RUN/latest.tmp" 2>/dev/null
   [ -s "$CT_RUN/latest.tmp" ] && mv "$CT_RUN/latest.tmp" "$CT_RUN/latest"
   IFS='	' read -r _ main _ _ label _ < "$CT_RUN/latest" 2>/dev/null
   [ "$NOTIFY" = 1 ] || return 0
-  body=$(body_temp "$zones")
+  body=$body_t
   case "$body" in ''|*[!0-9-]*|-9999) body=$battery ;; esac   # no phone body sensor: the battery
   alert "$now" "$label" "$cpu" "$gpu" "$body"
+}
+
+# cap = the CPU cap Cogan Smart · Power applies right now as "big%/little%/step" (step 0: no heat step),
+# or "-" when its controller wrote no state in the last minute. Shell builtins only, no extra process.
+power_cap() {
+  cap=-; pc_state=""
+  IFS= read -r pc_state < "$CP_DATA/run/state.json" 2>/dev/null || :
+  pc_ts=${pc_state#*\"ts\":}; pc_ts=${pc_ts%%[!0-9]*}
+  case "$pc_ts" in ''|*[!0-9]*) return 0 ;; esac
+  [ $((now - pc_ts)) -le 60 ] && [ $((pc_ts - now)) -le 5 ] || return 0
+  pc_big=${pc_state#*\"big\":}; pc_big=${pc_big%%[!0-9]*}
+  pc_little=${pc_state#*\"little\":}; pc_little=${pc_little%%[!0-9]*}
+  pc_level=${pc_state#*\"level\":}; pc_level=${pc_level%%[!0-9]*}   # the first "level" is the step
+  [ -n "$pc_big" ] && [ -n "$pc_little" ] && [ -n "$pc_level" ] && cap="$pc_big/$pc_little/$pc_level"
+  return 0
 }
 
 # Optional heat notification (NOTIFY=1), on the phone body, at most once every 10 minutes.

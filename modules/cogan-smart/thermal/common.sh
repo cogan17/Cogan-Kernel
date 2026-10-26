@@ -8,6 +8,7 @@ CT_DATA=${CT_DATA:-/data/adb/cogan_smart/thermal}
 CT_SYS=${CT_SYS:-/sys}
 CT_PROC=${CT_PROC:-/proc}
 CT_OUT=${CT_OUT:-/sdcard/Download/CoganThermal}
+CT_CPUSET=${CT_CPUSET:-/dev/cpuset}
 CP_DATA=${CP_DATA:-/data/adb/cogan_smart/power}
 CP_MOD=${CP_MOD:-$MODROOT}   # the power part lives in the same module
 CT_RUN=$CT_DATA/run
@@ -59,39 +60,42 @@ write_config() {
   chmod 600 "$CONFIG"
 }
 
-# Every thermal zone as "type=tenths_of_degC", comma separated; one value per type (the highest).
+# The readers below set variables with shell builtins instead of printing: the sampler runs every
+# 20 seconds, and on the owner's phone its processes (cat for every network interface, awk, sed...)
+# cost more CPU than most apps (v2.9.1 log, 4.8% of the phone together with the controller).
+
+# Every thermal zone as "type=tenths_of_degC", comma separated, one value per type (the highest): zones;
+# and the phone body (Badan HP, tenths of °C, -9999 without a sensor): body_t.
 read_zones() {
-  read_thermal_sensors | cut -f 2
+  zones=$(read_thermal_sensors); body_t=${zones##*	}; zones=${zones#*	}; zones=${zones%%	*}
 }
 
-# Battery: "charging current_mA temp_tenths" (charging 1/0, current as a positive number).
+# Battery: charging (1/0), current (mA, a positive number) and battery (tenths of °C).
 read_battery() {
   bat=$CT_SYS/class/power_supply/battery
-  status=$(cat "$bat/status" 2>/dev/null)
-  current=$(cat "$bat/current_now" 2>/dev/null)
-  temp=$(cat "$bat/temp" 2>/dev/null)
+  read_into status "$bat/status"; read_into current "$bat/current_now"; read_into battery "$bat/temp"
   case "$status" in Charging) charging=1 ;; *) charging=0 ;; esac
   case "$current" in ''|*[!0-9-]*) current=0 ;; esac
-  case "$temp" in ''|*[!0-9-]*) temp=-999 ;; esac
+  case "$battery" in ''|*[!0-9-]*) battery=-999 ;; esac
   current=${current#-}
   # The kernel ABI says microamps (most phones); a few report milliamps. A design capacity in
   # microamp-hours (e.g. 5000000) means microamps too, so a small charging current stays right.
-  design=$(cat "$bat/charge_full_design" 2>/dev/null)
+  read_into design "$bat/charge_full_design"
   case "$design" in ''|*[!0-9]*) design=0 ;; esac
   if [ "$current" -ge 20000 ] || [ "$design" -ge 100000 ]; then current=$((current / 1000)); fi
-  echo "$charging $current $temp"
 }
 
-# GPU load in percent, or -1 when the kernel does not expose it.
+# GPU load in percent, or -1 when the kernel does not expose it: gpu.
 read_gpu() {
+  gpu=-1
   for node in "$CT_SYS/kernel/ged/hal/gpu_utilization" "$CT_SYS/class/kgsl/kgsl-3d0/gpu_busy_percentage" \
               "$CT_SYS/class/misc/mali0/device/utilization" "$CT_SYS/kernel/gpu/gpu_busy"; do
     [ -r "$node" ] || continue
-    value=$(awk '{ v = $1; gsub(/[^0-9]/, "", v); if (v != "") { print v + 0; exit } }' "$node" 2>/dev/null)
+    value=""; read -r value _ 2>/dev/null < "$node" || :           # the first number, e.g. "65 0 0" or "65%"
+    value=${value#"${value%%[0-9]*}"}; value=${value%%[!0-9]*}
     uint "$value" || continue
-    [ "$value" -le 100 ] && { echo "$value"; return; }
+    [ "$value" -le 100 ] && { gpu=$value; return; }
   done
-  echo -1
 }
 
 # Screen: 1 on, 0 off, -1 unknown. The panel backlight needs no dumpsys call; Android's own
@@ -101,18 +105,18 @@ bounded_dumpsys() {
   else dumpsys "$@"; fi
 }
 
-read_screen() {
+read_screen() {   # sets screen
   for node in "$CT_SYS"/class/leds/lcd-backlight/brightness "$CT_SYS"/class/backlight/*/brightness; do
     [ -r "$node" ] || continue
-    value=$(cat "$node" 2>/dev/null)
+    read_into value "$node"
     uint "$value" || continue
-    [ "$value" -gt 0 ] && echo 1 || echo 0
+    if [ "$value" -gt 0 ]; then screen=1; else screen=0; fi
     return
   done
   case "$(bounded_dumpsys deviceidle get screen 2>/dev/null)" in
-    true*) echo 1 ;;
-    false*) echo 0 ;;
-    *) echo -1 ;;
+    true*) screen=1 ;;
+    false*) screen=0 ;;
+    *) screen=-1 ;;
   esac
 }
 
@@ -122,39 +126,48 @@ focus_pkg() {
   sed -n -e 's#.*mCurrentFocus=.* u[0-9]* \([A-Za-z0-9_.]*\)/.*#\1#p' \
          -e 's#.*mFocusedApp=.* u[0-9]* \([A-Za-z0-9_.]*\)/.*#\1#p' | head -n 1
 }
-read_foreground() {
+# The focused app only changes when the processes in Android's top-app cpuset change, so dumpsys
+# (which also costs system_server work) runs only then, after the screen was off, and at least every
+# 6th sample; the cpuset is read with shell builtins. Without that cpuset, dumpsys runs every sample.
+read_foreground() {   # sets app
+  fg_set=""
+  while IFS= read -r fg_pid; do fg_set="$fg_set $fg_pid"; done 2>/dev/null < "$CT_CPUSET/top-app/cgroup.procs"
+  fg_age=$((${fg_age:-0} + 1))
+  if [ -n "$fg_set" ] && [ "$fg_set" = "${FG_SET-}" ] && [ "$fg_age" -lt 6 ]; then app=$FG_APP; return; fi
   pkg=$(bounded_dumpsys window displays 2>/dev/null | focus_pkg)
   [ -n "$pkg" ] || pkg=$(bounded_dumpsys window 2>/dev/null | focus_pkg)
-  echo "${pkg:--}"
+  app=${pkg:--}
+  FG_SET=$fg_set; FG_APP=$app; fg_age=0
+  [ -n "$pkg" ] || FG_SET=""   # unknown: ask again next time
 }
 
-# CPU frequency per policy in MHz: "p0:1800,p4:2850".
+# CPU frequency per policy in MHz: freqs = "p0:1800,p4:2850".
 read_freqs() {
-  out=""
+  freqs=""
   for policy in "$CT_SYS"/devices/system/cpu/cpufreq/policy*; do
-    khz=$(cat "$policy/scaling_cur_freq" 2>/dev/null) || continue
+    read_into khz "$policy/scaling_cur_freq"
     case "$khz" in ''|*[!0-9]*) continue ;; esac
-    out="$out${out:+,}p${policy##*policy}:$((khz / 1000))"
+    freqs="$freqs${freqs:+,}p${policy##*policy}:$((khz / 1000))"
   done
-  echo "${out:--}"
+  freqs=${freqs:--}
 }
 
-# Bytes moved on Wi-Fi and cellular interfaces: "wifi_bytes cell_bytes".
+# Bytes moved on Wi-Fi and cellular interfaces: wifi and cell. Other interfaces are not read at all
+# (a MediaTek phone has 20+ of them, mostly idle ccmni and tunnel devices).
 read_net_bytes() {
   wifi=0; cell=0
   for dev in "$CT_SYS"/class/net/*; do
     name=${dev##*/}
-    rx=$(cat "$dev/statistics/rx_bytes" 2>/dev/null) || continue
-    tx=$(cat "$dev/statistics/tx_bytes" 2>/dev/null) || continue
-    case "$name" in
-      wlan*) wifi=$((wifi + rx + tx)) ;;
-      ccmni*|rmnet*|seth*|ccemni*|ccinet*) cell=$((cell + rx + tx)) ;;
-    esac
+    case "$name" in wlan*|ccmni*|rmnet*|seth*|ccemni*|ccinet*) ;; *) continue ;; esac
+    read_into rx "$dev/statistics/rx_bytes"; read_into tx "$dev/statistics/tx_bytes"
+    case "$rx" in ''|*[!0-9]*) continue ;; esac
+    case "$tx" in ''|*[!0-9]*) continue ;; esac
+    case "$name" in wlan*) wifi=$((wifi + rx + tx)) ;; *) cell=$((cell + rx + tx)) ;; esac
   done
-  echo "$wifi $cell"
 }
 
 # Process name for a pid: the first word of its command line, e.g. "com.instagram.android".
+# The sampler remembers names by pid and start time, so this runs only for a process new in its top 5.
 proc_name() {
   name=$(tr '\0' '\n' < "$CT_PROC/$1/cmdline" 2>/dev/null | head -n 1)
   name=${name##*/}; name=${name%%:*}

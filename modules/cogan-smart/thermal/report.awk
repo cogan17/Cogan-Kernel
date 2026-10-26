@@ -1,7 +1,8 @@
 # Cogan Smart · Thermal: reports from the sampler's lines (tab separated, see sampler.sh).
-# Needs thermal.awk first. Variables: mode (text|json|csv|detail|now|latest|main|body|date|label), since, now, secs,
-# HOT (tenths of degC), TZOFF, KFILE (kernels.tsv), MFILE (modes.tsv from Cogan Smart · Power), zones (main),
-# fresh (now: zones read just now), release (now: uname -r), running (now: 1/0).
+# Needs thermal.awk first. Variables: mode (text|json|csv|detail|now|latest|pkgs|main|body|date|label), since, now,
+# secs, HOT (tenths of degC), TZOFF, KFILE (kernels.tsv), MFILE (modes.tsv from Cogan Smart · Power), zones (main),
+# fresh (now: zones read just now), release (now: uname -r), running (now: 1/0), LABELS (labels.tsv),
+# STUCKFILE (latest: where to list the sensors stuck right now), SKIP (now: those sensors, comma separated).
 
 BEGIN {
     FS = "\t"
@@ -9,11 +10,12 @@ BEGIN {
     if (mode == "body") { print body_temp(zones); done = 1; exit }
     if (mode == "date") { print local_date(since - 86400); done = 1; exit }   # oldest data file to read
     if (mode == "label") { print label(app); done = 1; exit }
+    pmain = -9999
     G = "cpu gpu bat skin modem chg pmic apu wifi other"
     W = 9   # samples behind each heat cause: about 3 minutes at the default 20-second interval
     ng = split(G, GROUPS, " ")
     if (mode == "csv") {
-        printf tr("waktu,aplikasi,layar,cas,arus_mA,cpu_persen,kernel_persen,gpu_persen,proses_teratas,wifi_kBps,seluler_kBps", "time,app,screen,charging,current_mA,cpu_percent,kernel_percent,gpu_percent,top_processes,wifi_kBps,cellular_kBps")
+        printf tr("waktu,aplikasi,layar,cas,arus_mA,cpu_persen,kernel_persen,gpu_persen,proses_teratas,wifi_kBps,seluler_kBps,batas_cpu,beban_modul_persen,beban_pengendali_persen", "time,app,screen,charging,current_mA,cpu_percent,kernel_percent,gpu_percent,top_processes,wifi_kBps,cellular_kBps,cpu_cap,module_load_percent,controller_load_percent")
         for (i = 1; i <= ng; i++) printf ",%s", group_name(GROUPS[i])
         print tr(",semua_sensor", ",all_sensors")
     }
@@ -23,20 +25,32 @@ FILENAME == KFILE { if ($1 + 0 > 0) { kn++; kts[kn] = $1 + 0; kname[kn] = $2 }; 
 FILENAME == MFILE { if ($1 + 0 > 0) { mn++; mts[mn] = $1 + 0; mname[mn] = $2 }; next }
 mode == "now" { last = $0; next }
 $1 + 0 < since || $1 + 0 > now || NF < 13 { next }
+# Package names without a name yet, for the WebUI to ask the root manager about (report.sh pkgs).
+mode == "pkgs" { pk[$2]; np = split($10, tp, ";"); for (i = 1; i <= np; i++) { split(tp[i], kv, ":"); pk[kv[1]] }; next }
 
 {
     ts = $1 + 0; app = $2; screen = $3 + 0; chg = $4 + 0; cur = $5 + 0; bat = $6 + 0
     cpu = $7 + 0; kern = $8 + 0; gpu = $9 + 0; top = $10; net = $11; zl = $13
-    split("", gmax)
+    # CPU cap of Cogan Smart · Power at this sample (column 14 since v2.9.1): big %, little %, heat step.
+    capb = capl = capv = -1
+    if (NF >= 14 && split($14, cp, "/") == 3) { capb = cp[1] + 0; capl = cp[2] + 0; capv = cp[3] + 0 }
+    # CPU this module's recorder and controller used (column 15 since v2.9.1), % x10 of the whole phone.
+    ld = (NF >= 15 && $15 ~ /^[0-9]+$/) ? $15 + 0 : -1
+    lc = (NF >= 16 && $16 ~ /^[0-9]+$/) ? $16 + 0 : -1   # the controller's part of it (column 16)
+    # The first sample after the phone restarted (the CPU counters started again, since v2.9.1): it just booted.
+    if (cpu == -2) boot_ts = ts
+    split("", gmax); bd = -9999
     m = split(zl, z, ",")
     for (i = 1; i <= m; i++) {
         if (split(z[i], kv, "=") != 2) continue
         v = kv[2] + 0
-        if (!(kv[1] in GC)) GC[kv[1]] = group(kv[1])   # a week holds millions of zone readings
+        if (kv[1] == "hyperos_board") bd = v
+        if (stuck_now(kv[1], v)) continue   # also fills GC: a week holds millions of zone readings
         g = GC[kv[1]]
         if (!(g in gmax) || v > gmax[g]) gmax[g] = v
     }
     if (!("bat" in gmax) && bat > -999) gmax["bat"] = bat
+    if (bd > -9999) gmax["skin"] = bd   # the phone body is HyperOS's own number when there (see body_temp)
     # Only test with "in": reading gmax["gpu"] would create it and count 0 °C for that sample.
     main = -9999
     if ("cpu" in gmax) main = gmax["cpu"]
@@ -46,6 +60,7 @@ $1 + 0 < since || $1 + 0 > now || NF < 13 { next }
     heat = ("skin" in gmax) ? gmax["skin"] : ("bat" in gmax) ? gmax["bat"] : main
     n++
     remember()
+    spike_track()
     if (n == 1) first = ts
     lastts = ts
     for (g in gmax) {
@@ -70,12 +85,35 @@ $1 + 0 < since || $1 + 0 > now || NF < 13 { next }
     }
     if (cpu >= 0) { cpusum += cpu; cpun++ }
     if (kern >= 0) { kernsum += kern; kernn++ }
+    if (capb >= 0) {
+        capn++
+        if (capv > 0) capheat++; else if (capb < 100 || capl < 100) capmode++
+        if (capv > 0 && (!capmin_set || capb < capminb || (capb == capminb && capl < capminl))) { capminb = capb; capminl = capl; capmin_set = 1 }
+    }
+    if (ld >= 0) { loadsum += ld; loadn++ }
+    if (lc >= 0) { ctlsum += lc; ctln++ }
+    pmain = main
     if (heat >= HOT) { hot++; c = cause(); causes[c]++; ckind[c] = KIND }
     ser_ts[n] = ts; ser_v[n] = heat
     if (mode == "csv") csv_row()
     if (mode == "detail") detail_row()
 }
 
+# A sensor that keeps one exact value while the processor moves 5 °C or more is stuck (owner 2026-10-24:
+# Charger stayed at 50.0 °C for an hour after charging); it is left out of the groups. Never the phone
+# body or the battery: they can rest at one value for minutes, and the heat measure needs them.
+function stuck_now(name, v,   g) {
+    if (!(name in GC)) GC[name] = group(name)
+    g = GC[name]
+    if (g == "skin" || g == "bat") return 0
+    if ((name in zlast) && zlast[name] == v) {
+        zrun[name]++
+        if (pmain > -9999) { if (pmain < zlo[name]) zlo[name] = pmain; if (pmain > zhi[name]) zhi[name] = pmain }
+    } else { zlast[name] = v; zrun[name] = 1; zlo[name] = 99999; zhi[name] = -99999 }
+    if (zrun[name] >= 30 && zhi[name] - zlo[name] >= 50) { stuck[name] = 1; return 1 }
+    return 0
+}
+function stuck_list(   k, s) { s = ""; for (k in stuck) s = s (s == "" ? "" : ", ") k; return s }
 function maxall(   g, b) { b = -9999; for (g in gmax) if (gmax[g] > b) b = gmax[g]; return b }
 function kernel_at(ts,   i, k) { k = "?"; for (i = 1; i <= kn; i++) if (kts[i] <= ts) k = kname[i]; return k }
 function mode_at(ts,   i, m) { m = "none"; for (i = 1; i <= mn; i++) if (mts[i] <= ts) m = mname[i]; return m }
@@ -84,7 +122,8 @@ function top_first(   parts, kv) {
     if (split(top, parts, ";") < 1 || parts[1] == "-") return
     split(parts[1], kv, ":"); TOPN = kv[1]; TOPP = kv[2] + 0
 }
-function net_kbps(kind,   kv) { if (match(net, kind ":-?[0-9]+")) { split(substr(net, RSTART, RLENGTH), kv, ":"); return kv[2] + 0 }; return "" }
+# Older logs hold a negative speed for the first sample after a restart (the counters started again): unknown.
+function net_kbps(kind,   kv) { if (match(net, kind ":-?[0-9]+")) { split(substr(net, RSTART, RLENGTH), kv, ":"); return kv[2] < 0 ? "" : kv[2] + 0 }; return "" }
 function cell_kbps() { return net_kbps("cell") + 0 }
 # "com.mobile.legends:250;..." as "Mobile Legends 25.0%; ...".
 function top_text(t,   parts, n, i, kv, s) {
@@ -102,8 +141,45 @@ function remember(   k) {
     rgpu[k] = gpu > 0 ? gpu : 0; rproc[k] = main; rcell[k] = cell_kbps(); rkern[k] = kern > 0 ? kern : 0
     rapp[k] = app
     top_first(); rtop[k] = (TOPN != "" && TOPN != app && TOPP >= 100) ? TOPN : ""
+    rupd[k] = install_now()
 }
-function cause(   m, i, k, fast, slow, g, p, c, kk, apps, ga, pa, ca, bg, a, b, bbest) {
+# Installing or updating apps (owner 2026-10-25: Play Store updates took the phone body from 37.1 to
+# 40.9 °C in 3 minutes): the installer on screen, or one using 3% of the CPU or more.
+function installer(name) { return name ~ /^(com\.android\.vending|com\.(google\.)?android\.packageinstaller|com\.miui\.packageinstaller|installd|dex2oat(32|64)?|odrefresh)$/ }
+function install_now(   parts, np, i, kv) {
+    if (installer(app)) return app
+    np = split(top, parts, ";")
+    for (i = 1; i <= np; i++) if (split(parts[i], kv, ":") == 2 && installer(kv[1]) && kv[2] + 0 >= 30) return kv[1]
+    return ""
+}
+
+# Rises of the phone body by 2 °C or more within 5 minutes, also below "hot" (owner 2026-10-25: the
+# summary said nothing about such a rise). One episode per rise; at its peak the episode keeps the
+# 5 minutes before it (lowest point, start) and the cause there, so a slow warm-up before stays out.
+function spike_track(   j, lo, lots) {
+    lo = heat; lots = ts
+    for (j = n - 1; j >= 1 && ts - ser_ts[j] <= 300; j--) if (ser_v[j] < lo) { lo = ser_v[j]; lots = ser_ts[j] }
+    if (sp_open && ts - sp_end[sp_n] > 300) sp_open = 0
+    if (!sp_open) {
+        if (heat - lo < 20) return
+        sp_n++; sp_open = 1; sp_to[sp_n] = -99999
+    }
+    if (heat > sp_to[sp_n] && heat - lo >= 20) {
+        sp_start[sp_n] = lots; sp_from[sp_n] = lo; sp_to[sp_n] = heat; sp_end[sp_n] = ts
+        sp_cause[sp_n] = cause(); sp_kind[sp_n] = KIND
+    }
+}
+# The (up to) three biggest rises, in time order, as indexes in SPK[1..].
+function spikes_pick(   i, j, t, nn, ord) {
+    nn = 0
+    for (i = 1; i <= sp_n; i++) { nn++; ord[nn] = i }
+    for (i = 2; i <= nn; i++) { t = ord[i]; for (j = i - 1; j >= 1 && sp_to[ord[j]] - sp_from[ord[j]] < sp_to[t] - sp_from[t]; j--) ord[j + 1] = ord[j]; ord[j + 1] = t }
+    if (nn > 3) nn = 3
+    for (i = 1; i <= nn; i++) SPK[i] = ord[i]
+    for (i = 2; i <= nn; i++) { t = SPK[i]; for (j = i - 1; j >= 1 && SPK[j] > t; j--) SPK[j + 1] = SPK[j]; SPK[j + 1] = t }
+    return nn
+}
+function cause(   m, i, k, fast, slow, g, p, c, kk, apps, ga, pa, ca, bg, a, b, bbest, u, ua) {
     m = n < W ? n : W
     for (i = 0; i < m; i++) {
         k = (n - i) % W
@@ -112,12 +188,22 @@ function cause(   m, i, k, fast, slow, g, p, c, kk, apps, ga, pa, ca, bg, a, b, 
         g += rgpu[k]; p += rproc[k]; c += rcell[k]; kk += rkern[k]
         ga[rapp[k]] += rgpu[k]; pa[rapp[k]] += rproc[k]; ca[rapp[k]] += rcell[k]   # who made that load
         if (rtop[k] != "") bg[rtop[k]]++
+        if (rupd[k] != "") { u++; ua[rupd[k]]++ }
     }
     b = top_key(bg); bbest = b == "" ? 0 : bg[b]
+    # The first 5 minutes after the phone starts: Android starts its apps and services at once.
+    if (boot_ts && ts - boot_ts <= 300) { KIND = "boot"; return tr("HP baru dinyalakan", "Phone just started") }
     if (fast * 2 >= m) { KIND = "fast"; return tr("Cas cepat", "Fast charging") }
+    if (u * 2 >= m) { KIND = "update"; return tr("Pembaruan aplikasi: ", "App updates: ") label(top_key(ua)) }
     if (g / m >= 50) { KIND = "gpu"; return tr("Grafis berat: ", "Heavy graphics: ") label(top_key(ga)) }
     if (c / m >= 100) { KIND = "modem"; return tr("Modem (data seluler): ", "Modem (cellular data): ") label(top_key(ca)) }
-    if (p / m >= 600) { KIND = "cpu"; return tr("Aplikasi berat: ", "Heavy app: ") label(top_key(pa)) }
+    if (p / m >= 600) {
+        a = top_key(pa)
+        if (a != "screen_off") { KIND = "cpu"; return tr("Aplikasi berat: ", "Heavy app: ") label(a) }
+        # The processor worked with the screen off: name the background process when one stood out.
+        KIND = b != "" ? "bg" : "off"
+        return b != "" ? tr("Latar belakang: ", "Background: ") label(b) : tr("Layar mati (proses latar belakang)", "Screen off (background processes)")
+    }
     if (bbest * 2 >= m) { KIND = "bg"; return tr("Latar belakang: ", "Background: ") label(b) }
     if (kk / m >= 100) { KIND = "kernel"; return tr("Proses kernel", "Kernel processes") }
     # Nothing heavy in the window: what the phone does right now.
@@ -137,8 +223,10 @@ function top_key(arr,   x, best, key) {
 # What helps against one kind of heat cause (empty when nothing simple does).
 function tip(kind) {
     if (kind == "fast") return tr("Panas dari pengisian cepat, wajar saat HyperCharge. Lepas charger atau pakai cas biasa bila terlalu panas.", "Heat from fast charging, normal with HyperCharge. Unplug or charge normally if it gets too hot.")
+    if (kind == "boot") return tr("Wajar beberapa menit setelah HP dinyalakan: Android memulai aplikasi dan layanan sekaligus.", "Normal for a few minutes after the phone starts: Android starts apps and services at once.")
+    if (kind == "update") return tr("Wajar sesaat saat aplikasi diunduh dan dipasang. Atur pembaruan otomatis Play Store hanya lewat Wi-Fi, atau perbarui saat HP tidak dipakai.", "Normal for a while when apps download and install. Set Play Store auto-updates to Wi-Fi only, or update when the phone is not in use.")
     if (kind == "charge") return tr("Panas dari pengisian.", "Heat from charging.")
-    if (kind == "gpu") return tr("Turunkan grafis atau FPS di game itu.", "Lower that game's graphics or FPS.")
+    if (kind == "gpu") return tr("GPU bekerja keras (game, video, atau animasi saat scroll terus-menerus): turunkan grafis/FPS atau refresh rate, atau beri jeda sebentar.", "The GPU works hard (games, video, or animations while scrolling non-stop): lower graphics/FPS or the refresh rate, or take a short break.")
     if (kind == "modem") return tr("Pakai Wi-Fi atau 4G: modem 5G termasuk bagian terpanas.", "Use Wi-Fi or 4G: the 5G modem is among the hottest parts.")
     if (kind == "cpu") return tr("Prosesor bekerja keras: mode Hemat, atau tutup aplikasi itu.", "The processor works hard: Power saver mode, or close that app.")
     if (kind == "bg") return tr("Proses itu bekerja di belakang layar: tutup atau batasi aplikasinya.", "That process works in the background: close or restrict its app.")
@@ -147,10 +235,11 @@ function tip(kind) {
     return ""
 }
 
+function csvq(t) { gsub(/"/, "\"\"", t); return "\"" t "\"" }   # app names may hold commas or quotes
 function csv_row(   i, g, line) {
-    line = local_date(ts) " " local_clock(ts) "," label(app) "," (app == "screen_off" ? tr("mati", "off") : tr("nyala", "on")) "," \
+    line = local_date(ts) " " local_clock(ts) "," csvq(label(app)) "," (app == "screen_off" ? tr("mati", "off") : tr("nyala", "on")) "," \
            (chg ? tr("ya", "yes") : tr("tidak", "no")) "," cur "," (cpu >= 0 ? cpu / 10 : "") "," (kern >= 0 ? kern / 10 : "") "," \
-           (gpu >= 0 ? gpu : "") ",\"" top_text(top) "\"," net_kbps("wifi") "," net_kbps("cell")
+           (gpu >= 0 ? gpu : "") "," csvq(top_text(top)) "," net_kbps("wifi") "," net_kbps("cell") "," (capb >= 0 ? capb "/" capl : "") "," (ld >= 0 ? ld / 10 : "") "," (lc >= 0 ? lc / 10 : "")
     for (i = 1; i <= ng; i++) { g = GROUPS[i]; line = line "," ((g in gmax) ? deg(gmax[g]) : "") }
     print line ",\"" zl "\""
 }
@@ -158,8 +247,9 @@ function csv_row(   i, g, line) {
 function detail_row(   i, g, s) {
     s = ""
     for (i = 1; i <= ng; i++) { g = GROUPS[i]; if (g in gmax) s = s (s == "" ? "" : " · ") group_name(g) " " deg(gmax[g]) }
-    printf tr("%s %s  %s | %s | CPU %s | GPU %s | %s | teratas: %s\n", "%s %s  %s | %s | CPU %s | GPU %s | %s | top: %s\n"), local_date(ts), local_clock(ts), s, label(app), \
-        (cpu >= 0 ? sprintf("%.1f%%", cpu / 10) : "-"), (gpu >= 0 ? gpu "%" : "-"), (chg ? tr("cas ", "charging ") cur " mA" : tr("tidak dicas", "not charging")), top_text(top)
+    printf tr("%s %s  %s | %s | CPU %s | GPU %s | %s%s | teratas: %s\n", "%s %s  %s | %s | CPU %s | GPU %s | %s%s | top: %s\n"), local_date(ts), local_clock(ts), s, label(app), \
+        (cpu >= 0 ? sprintf("%.1f%%", cpu / 10) : "-"), (gpu >= 0 ? gpu "%" : "-"), (chg ? tr("cas ", "charging ") cur " mA" : tr("tidak dicas", "not charging")), \
+        ((capb >= 0 && (capb < 100 || capl < 100)) ? tr(" | batas CPU ", " | CPU cap ") capb "/" capl "%" : ""), top_text(top)
 }
 
 # Clock time, with the day ("17/10 21:05") when the samples cover a day or more.
@@ -174,7 +264,7 @@ function rank(arr, out,   k, n, i, j, t) {
     return n
 }
 
-function summary_text(   s, i, g, nc, order, na, apps, nk, kord, line, nm, mord) {
+function summary_text(   s, i, g, nc, order, na, apps, nk, kord, line, nm, mord, ns, j, big) {
     s = tr("Cogan Smart · Thermal — ringkasan ", "Cogan Smart · Thermal — summary ") span(secs)
     if (n == 0) return s tr("\nBelum ada data pada rentang ini. Modul mencatat tiap beberapa detik setelah HP menyala.\n", "\nNo data in this range yet. The module records at the configured interval after boot.\n")
     s = s " (" stamp(first) "–" stamp(lastts) (lastts - first < 86400 ? ", " local_date(lastts) : "") ") · " n tr(" sampel\n\n", " samples\n\n")
@@ -192,6 +282,13 @@ function summary_text(   s, i, g, nc, order, na, apps, nk, kord, line, nm, mord)
         s = s tr("  ➜ Kesimpulan: paling sering panas karena ", "  ➜ Most frequent inferred heat cause: ") order[1] ".\n"
         if (tip(ckind[order[1]]) != "") s = s tr("  ➜ Saran: ", "  ➜ Tip: ") tip(ckind[order[1]]) "\n"
     }
+    if (sp_n) {
+        ns = spikes_pick()
+        s = s sprintf(tr("\n📈 Lonjakan suhu (Badan HP naik ≥ 2 °C dalam 5 menit): %d kali\n", "\n📈 Temperature rises (phone body up ≥ 2 °C within 5 minutes): %d\n"), sp_n)
+        for (i = 1; i <= ns; i++) { j = SPK[i]; s = s "  " stamp(sp_start[j]) "–" stamp(sp_end[j]) " · " deg(sp_from[j]) " → " deg(sp_to[j]) " °C (+" deg(sp_to[j] - sp_from[j]) ") · " sp_cause[j] "\n" }
+        big = SPK[1]; for (i = 2; i <= ns; i++) if (sp_to[SPK[i]] - sp_from[SPK[i]] > sp_to[big] - sp_from[big]) big = SPK[i]
+        if (tip(sp_kind[big]) != "") s = s tr("  ➜ Saran: ", "  ➜ Tip: ") tip(sp_kind[big]) "\n"
+    }
     for (a in appn) appavg[a] = appn[a]
     na = rank(appavg, apps)
     s = s tr("\n📱 Per aplikasi (waktu · Badan HP rata-rata · tertinggi):\n", "\n📱 By app (time · phone body average · peak):\n")
@@ -207,6 +304,18 @@ function summary_text(   s, i, g, nc, order, na, apps, nk, kord, line, nm, mord)
             deg(mode_peak[mord[i]]), int(mode_hot[mord[i]] * 100 / mode_n[mord[i]] + 0.5), int(mode_n[mord[i]] * 100 / n + 0.5))
     }
     s = s tr("\nCPU rata-rata ", "\nAverage CPU ") (cpun ? sprintf("%.0f%%", cpusum / cpun / 10) : "-") tr(" · proses kernel ", " · kernel processes ") (kernn ? sprintf("%.1f%%", kernsum / kernn / 10) : "-") "\n"
+    if (loadn) s = s sprintf(tr("⚙️ Beban Cogan Smart (pencatat + pengendali): %.1f%% CPU", "⚙️ Cogan Smart load (recorder + controller): %.1f%% CPU"), loadsum / loadn / 10) \
+        (ctln ? sprintf(tr(" (pengendali %.1f%%)", " (controller %.1f%%)"), ctlsum / ctln / 10) : "") "\n"
+    if (capn) s = s cap_text() "\n"
+    if (stuck_list() != "") s = s tr("Sensor macet, tidak dihitung: ", "Stuck sensors, left out: ") stuck_list() "\n"
+    return s
+}
+
+# How much Cogan Smart · Power lowered the CPU in the samples it was running (column 14).
+function cap_text(   s) {
+    s = tr("🧊 CPU diturunkan karena panas: ", "🧊 CPU lowered for heat: ") int(capheat * 100 / capn + 0.5) tr("% waktu", "% of samples")
+    if (capheat) s = s tr(" (terendah CPU besar ", " (lowest big CPU ") capminb tr("%, kecil ", "%, little ") capminl "%)"
+    if (capmode) s = s tr(" · batas mode Hemat ", " · Power saver cap ") int(capmode * 100 / capn + 0.5) tr("% waktu", "% of samples")
     return s
 }
 
@@ -222,7 +331,7 @@ function json_list(arr, total, limit, kind,   ord, nn, i, s, k) {
     return "[" s "]"
 }
 
-function json_summary(   s, i, g, step, b, j, mx, sep) {
+function json_summary(   s, i, g, step, b, j, mx, sep, ns) {
     s = sprintf("{\"samples\":%d,\"secs\":%d,\"hot\":%d,\"hot_pct\":%d", n, secs, HOT, n ? int(hot * 100 / n + 0.5) : 0)
     if (n) {
         s = s sprintf(",\"from\":\"%s\",\"to\":\"%s\",\"peak\":{\"t\":%d,\"group\":\"%s\",\"clock\":\"%s\",\"app\":\"%s\",\"cpu\":%d,\"gpu\":%d,\"charging\":%d,\"current\":%d}", \
@@ -233,28 +342,43 @@ function json_summary(   s, i, g, step, b, j, mx, sep) {
         s = s ",\"apps\":" json_list(appn, n, 8, "app") ",\"kernels\":" json_list(kern_n, n, 4, "kernel")
         s = s ",\"modes\":" (mn ? json_list(mode_n, n, 4, "mode") : "[]")
         s = s sprintf(",\"cpu_avg\":%d,\"kernel_avg\":%d", cpun ? cpusum / cpun : -1, kernn ? kernsum / kernn : -1)
+        s = s sprintf(",\"cap\":{\"samples\":%d,\"heat_pct\":%d,\"mode_pct\":%d,\"min_big\":%d,\"min_little\":%d}", capn, \
+            capn ? int(capheat * 100 / capn + 0.5) : 0, capn ? int(capmode * 100 / capn + 0.5) : 0, capheat ? capminb : 100, capheat ? capminl : 100)
+        s = s ",\"stuck\":\"" jesc(stuck_list()) "\""
+        s = s sprintf(",\"load\":%d,\"load_ctl\":%d,\"spike_count\":%d,\"spikes\":[", loadn ? int(loadsum / loadn + 0.5) : -1, ctln ? int(ctlsum / ctln + 0.5) : -1, sp_n)
+        ns = sp_n ? spikes_pick() : 0
+        for (i = 1; i <= ns; i++) { j = SPK[i]; s = s (i > 1 ? "," : "") sprintf("{\"from\":\"%s\",\"to\":\"%s\",\"t0\":%d,\"t1\":%d,\"cause\":\"%s\",\"kind\":\"%s\",\"tip\":\"%s\"}", stamp(sp_start[j]), stamp(sp_end[j]), sp_from[j], sp_to[j], jesc(sp_cause[j]), sp_kind[j], jesc(tip(sp_kind[j]))) }
+        s = s "]"
         step = int((n + 119) / 120); s = s ",\"series\":["; sep = ""
         for (b = 1; b <= n; b += step) {
-            mx = ser_v[b]; for (j = b; j < b + step && j <= n; j++) if (ser_v[j] > mx) mx = ser_v[j]
-            s = s sep sprintf("[%d,%d]", ser_ts[b], mx); sep = ","
+            # The average of each slice: a calm trend line; the peak tile keeps the highest reading.
+            mx = 0; for (j = b; j < b + step && j <= n; j++) mx += ser_v[j]
+            s = s sep sprintf("[%d,%d]", ser_ts[b], int(mx / (j - b) + 0.5)); sep = ","
         }
         s = s "]"
     }
     return s ",\"text\":\"" jesc_text(summary_text()) "\"}"
 }
+function pkgs_json(   p, s, c) {
+    s = ""; c = 0
+    for (p in pk) if (c < 300 && p ~ /^[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z0-9_]+)+$/ && label(p) == p) { s = s (c ? "," : "") "\"" p "\""; c++ }
+    return "[" s "]"
+}
 function jesc_text(t) { t = jesc(t); gsub(/\n/, "\\n", t); gsub(/\t/, " ", t); return t }
 
-function json_now(   f, zl2, m2, z2, kv2, i, s, sep, gm, g, mainv, bodyv, bodyf, age) {
+function json_now(   f, zl2, m2, z2, kv2, i, s, sep, gm, g, mainv, bodyv, bodyf, age, stk, bdn) {
     split(last, f, "\t")
     # A live read with no usable zones must never resurrect a historical temperature.
     zl2 = fresh
     m2 = split(zl2, z2, ","); s = ""; sep = ""
     for (i = 1; i <= m2; i++) {
         if (split(z2[i], kv2, "=") != 2) continue
-        g = group(kv2[1])
-        if (!(g in gm) || kv2[2] + 0 > gm[g]) gm[g] = kv2[2] + 0
-        s = s sep sprintf("{\"name\":\"%s\",\"group\":\"%s\",\"id\":\"%s\",\"t\":%d}", jesc(kv2[1]), group_name(g), g, kv2[2]); sep = ","
+        g = group(kv2[1]); stk = index("," SKIP ",", "," kv2[1] ",") > 0   # stuck: listed, not in its group
+        if (!stk && (!(g in gm) || kv2[2] + 0 > gm[g])) gm[g] = kv2[2] + 0
+        if (kv2[1] == "hyperos_board") bdn = kv2[2] + 0
+        s = s sep sprintf("{\"name\":\"%s\",\"group\":\"%s\",\"id\":\"%s\",\"t\":%d,\"stuck\":%d}", jesc(kv2[1]), group_name(g), g, kv2[2], stk); sep = ","
     }
+    if (bdn != "") gm["skin"] = bdn
     mainv = main_temp(zl2)
     bodyv = -9999; bodyf = ""
     if ("skin" in gm) { bodyv = gm["skin"]; bodyf = "skin" } else if ("bat" in gm) { bodyv = gm["bat"]; bodyf = "battery" }
@@ -273,7 +397,15 @@ function json_now(   f, zl2, m2, z2, kv2, i, s, sep, gm, g, mainv, bodyv, bodyf,
 END {
     if (done) exit
     if (mode == "now") json_now()
-    else if (mode == "latest") { if (n) printf "%d\t%d\t%d\t%d\t%s\t%s\n", ts, main, bat, chg, label(app), cause() }
+    else if (mode == "latest") {
+        if (n) printf "%d\t%d\t%d\t%d\t%s\t%s\n", ts, main, bat, chg, label(app), cause()
+        if (STUCKFILE != "") {
+            printf "" > STUCKFILE
+            for (k in zrun) if (zrun[k] >= 30 && zhi[k] - zlo[k] >= 50) print k > STUCKFILE
+            close(STUCKFILE)
+        }
+    }
+    else if (mode == "pkgs") print pkgs_json()
     else if (mode == "json") print json_summary()
     else if (mode == "text") printf "%s", summary_text()
 }

@@ -17,7 +17,9 @@
 MODDIR=${0%/*}; [ "$MODDIR" = "$0" ] && MODDIR=.   # started as "sh controller.sh"
 . "$MODDIR/common.sh"
 
-state() { cat "$CP_RUN/$1" 2>/dev/null || echo "$2"; }
+# state VAR NAME DEFAULT: a value kept in $CP_RUN between checks into VAR (DEFAULT when missing).
+# Shell builtins only: the controller runs every 10 seconds, and each process it starts costs CPU.
+state() { if [ -f "$CP_RUN/$2" ]; then read_into "$1" "$CP_RUN/$2"; else eval "$1=\$3"; fi; }
 
 # Big and little core caps (%) of a step level, as LC_BIG and LC_LITTLE. Owner 2026-10-24, "as smooth
 # as possible": Kernel Default and Performa lower the big cores (X4 on rothko) 10 % per step down to
@@ -39,12 +41,11 @@ level_caps() {
 step() {
   lock_take "$CP_RUN/step.lock" || return 1
   : > "$CP_RUN/apply.tsv.tmp"
-  step_request=$(cat "$CP_RUN/apply.request" 2>/dev/null)
-  bridge_heartbeat power "$(module_code)"
-  now=$(date +%s)
+  read_into step_request "$CP_RUN/apply.request"
+  heartbeat power
+  now=$(date +%s); CB_NOW=$now
   read_temps; main=$MAIN_T; body=$BODY_T
-  set -- $(read_battery)
-  level_pct=$1; status=$2; btemp=$3; current=$4
+  battery_now; level_pct=$level; btemp=$temp   # status and current as they are
   # Without a phone body sensor, the battery is the closest to what a hand feels.
   [ "$body" -gt -9999 ] || { [ "$btemp" -gt -999 ] && body=$btemp; }
 
@@ -57,8 +58,9 @@ step() {
   fi
 
   # A new mode starts from full speed.
-  if [ "$(state mode "")" != "$MODE" ]; then
-    [ -n "$(state mode "")" ] && event "Mode: $(mode_label "$MODE")"
+  state st_mode mode ""
+  if [ "$st_mode" != "$MODE" ]; then
+    [ -n "$st_mode" ] && event "Mode: $(mode_label "$MODE")"
     echo "$MODE" > "$CP_RUN/mode"
     log_mode "$MODE"
     rm -f "$CP_RUN/level" "$CP_RUN/cool" "$CP_RUN/hold"
@@ -79,7 +81,7 @@ step() {
     game) limit=$GAME_LIMIT ;;
     *) limit=$TARGET_TEMP ;;
   esac
-  step_level=$(state level 0); cool=$(state cool 0); hold=$(state hold 0); prev=$(state prev "$body")
+  state step_level level 0; state cool cool 0; state hold hold 0; state prev prev "$body"
   old_level=$step_level
   native_cooling=0; native_cpu_cooling && native_cooling=1
   [ "$hold" -gt 0 ] && hold=$((hold - 1))
@@ -121,7 +123,7 @@ step() {
 charge_step() {
   paused_for_heat=0
   [ -f "$CP_RUN/detecting" ] && return 0   # the WebUI is testing switches right now
-  was=$(state charge_off "")
+  state was charge_off ""
   reasons=""
   if [ "$CHARGE_CTRL" = 1 ] && [ "$level_pct" -ge 0 ]; then
     case " $was " in
@@ -185,12 +187,24 @@ charge_step() {
 
 mode_label() { case "$1" in hemat) echo Hemat ;; game) echo Performa ;; *) echo 'Kernel Default' ;; esac; }
 
-jstr() { printf '%s' "$1" | sed 's/[\\"]//g'; }
+# jstr VAR TEXT: TEXT without backslashes and double quotes into VAR (safe inside a JSON string).
+jstr() {
+  js_in=$2; js_out=""
+  while :; do
+    case "$js_in" in
+      *[\\\"]*) js_head=${js_in%%[\\\"]*}; js_out=$js_out$js_head; js_in=${js_in#"$js_head"?} ;;
+      *) break ;;
+    esac
+  done
+  eval "$1=\$js_out\$js_in"
+}
 
 write_state() {
+  state st_off charge_off ""; jstr st_cause "$cause"; jstr st_app "$app"
+  st_boost=0; [ -f "$CP_RUN/uclamp.written" ] && st_boost=1
   printf '{"ts":%d,"mode":"%s","main":%d,"body":%d,"limit":%d,"brake":%d,"busy":%d,"level":%d,"big":%d,"little":%d,"battery":{"level":%d,"status":"%s","temp":%d,"current":%d},"charge_off":"%s","source":"%s","cause":"%s","app":"%s","boost":%d,"force":%d,"native_cooling":%d}\n' \
     "$now" "$MODE" "$main" "$body" "$limit" "$brake" "$busy" "$step_level" "$big" "$little" "$level_pct" "$status" "$btemp" "$current" \
-    "$(state charge_off "")" "$source" "$(jstr "$cause")" "$(jstr "$app")" "$([ -f "$CP_RUN/uclamp.written" ] && echo 1 || echo 0)" "$FORCE" "$native_cooling" \
+    "$st_off" "$source" "$st_cause" "$st_app" "$st_boost" "$FORCE" "$native_cooling" \
     > "$CP_RUN/state.json.tmp" && mv "$CP_RUN/state.json.tmp" "$CP_RUN/state.json"
 }
 
@@ -225,7 +239,8 @@ while [ "$stop" = 0 ]; do
   step
   count=$((count + 1))
   [ "$stop" = 1 ] && break
-  [ "$(cat "$CP_RUN/apply.request" 2>/dev/null)" != "$(cat "$CP_RUN/applied.request" 2>/dev/null)" ] && continue
+  read_into want "$CP_RUN/apply.request"; read_into done_req "$CP_RUN/applied.request"
+  [ "$want" != "$done_req" ] && continue
   if [ $((count % 360)) = 0 ] && [ "$(wc -l < "$EVENTS")" -gt 300 ]; then
     tail -n 200 "$EVENTS" > "$EVENTS.tmp" && mv "$EVENTS.tmp" "$EVENTS"
   fi

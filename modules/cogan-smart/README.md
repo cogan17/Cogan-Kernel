@@ -1,6 +1,6 @@
 # Cogan Smart Kernel (modul)
 
-**Versi terbaru: v2.9.0** (`versionCode` 17): mode mengikuti Badan HP, langkah halus, CPU hanya diturunkan saat prosesor bekerja, penyebab panas per bagian HP dengan saran, rem HyperOS. Catatan perubahan lengkap ada di [`CHANGELOG.md`](CHANGELOG.md).
+**Versi terbaru: v2.9.0** (`versionCode` 17): mode mengikuti Badan HP, langkah halus, CPU hanya diturunkan saat prosesor bekerja, penyebab panas per bagian HP dengan saran, rem HyperOS. v2.9.1 (modul lebih hemat CPU, satu angka Badan HP dari HyperOS, lonjakan suhu, nama aplikasi asli, batas CPU di log, sensor macet) menunggu uji HP. Catatan perubahan lengkap ada di [`CHANGELOG.md`](CHANGELOG.md).
 
 ## ⬇️ Unduh
 
@@ -13,7 +13,9 @@
 - ZIP di Pre-release ([`cogan-smart-v2.9.0`](https://github.com/cogan17/Cogan-Kernel/releases/tag/cogan-smart-v2.9.0), [`cogan-smart-v2.8.2`](https://github.com/cogan17/Cogan-Kernel/releases/tag/cogan-smart-v2.8.2), [`cogan-smart-v2.8.1`](https://github.com/cogan17/Cogan-Kernel/releases/tag/cogan-smart-v2.8.1)) dan di folder `rilis/` adalah file yang sama, byte per byte.
 - Pasang lewat root manager sebagai pembaruan modul, lalu reboot. Setelan dan riwayat tetap dipakai (ID `cogan_smart` sama).
 - Kernel tujuan: **r1** repo ini (ACK 6.1.176). Diuji owner di Xiaomi 14T Pro:
-  - **v2.9.0**: menunggu uji HP. Versi uji sebelum ambang 41 °C (24 Okt 2026): Badan HP terbaca dari `quiet_therm`, tab Daya/Suhu/Modul bekerja, saklar cas `input_suspend` ditemukan;
+  - build uji v2.9.1 pertama (25 Okt 2026, 07.22–11.24 WIB): pencatat dan pengendali memakai rata-rata 4,8% CPU seluruh HP;
+  - build uji v2.9.1 hemat CPU (25 Okt 2026, 12.06–14.49 WIB): beban modul 2,9% (pencatat 1,5%, pengendali 1,4%). Build berikutnya: pengendali hanya membaca sensor CPU/GPU dan Badan HP, CPU diturunkan mulai prosesor 55 °C;
+  - **v2.9.0** (24 Okt 2026): dipakai owner 7 jam (15.38–22.38 WIB) dengan kernel r2 dan r3, mode Kernel Default dan Hemat; CPU penuh hampir sepanjang waktu, panas terbanyak saat HyperCharge. Suhu Badan HP masih terasa tidak konsisten (diperbaiki di v2.9.1);
   - **v2.8.2 dengan r1** (24 Okt 2026): identitas kernel terverifikasi lewat Cogan Bridge ("kernel dibuat untuk HP ini"), mode Kernel Default, pencatat suhu, mengecas cepat 3868 mA, penjaga modul "aman";
   - v2.8.1 dan v2.8.2 dengan kernel arsip r6 (6.1.176, 23 Okt 2026); v2.8.2 juga saat pengisian HyperCharge.
 - Versi baru: taruh ZIP dan catatannya di `rilis/<versi>/`, lalu jalankan tombol **Cogan Smart Release** di tab Actions.
@@ -38,7 +40,7 @@ Tiap tab adalah halaman sendiri, jadi `client.js` menyimpan jawaban baca terakhi
 | 🧠 Kernel Default | `seimbang` | Bawaan. CPU diturunkan bertahap bila Badan HP ≥ `TARGET_TEMP` (41 °C) |
 | 🎮 Performa | `game` | Performa penuh, CPU diturunkan bila Badan HP ≥ `GAME_LIMIT` (44 °C), boost aplikasi di layar |
 
-Sejak v2.9.0 ambang mode dibaca dari suhu **Badan HP** (sensor kulit HP, yang terasa di tangan), bukan prosesor. Prosesor Dimensity HP ini saat santai pun sekitar 50 °C, sehingga ambang 42 °C pada prosesor (v2.8) membatasi CPU hampir sepanjang waktu. Badan HP memakai sensor kulit terpanas, termasuk suhu papan HyperOS (`board_sensor_temp`, dicatat sebagai `hyperos_board`); tanpa sensor Badan HP, suhu baterai yang dipakai. "Panas" di tab Suhu juga berarti Badan HP ≥ 41 °C. Ambang 41/44 °C dipilih owner setelah uji HP (41 °C sudah terasa hangat menuju panas).
+Sejak v2.9.0 ambang mode dibaca dari suhu **Badan HP** (sensor kulit HP, yang terasa di tangan), bukan prosesor. Prosesor Dimensity HP ini saat santai pun sekitar 50 °C, sehingga ambang 42 °C pada prosesor (v2.8) membatasi CPU hampir sepanjang waktu. Badan HP memakai angka badan milik HyperOS sendiri (`board_sensor_temp`, dicatat sebagai `hyperos_board`) bila ada, lalu sensor kulit terpanas, lalu suhu baterai; semua kartu memakai angka yang sama (v2.9.1). "Panas" di tab Suhu juga berarti Badan HP ≥ 41 °C. Ambang 41/44 °C dipilih owner setelah uji HP (41 °C sudah terasa hangat menuju panas).
 
 Langkah halus (Kernel Default dan Performa):
 
@@ -48,7 +50,7 @@ Langkah halus (Kernel Default dan Performa):
 | 1–4 | 90 → 60 % | 100 % |
 | 5–6 | 60 % | 90 → 80 % |
 
-Mulai 1 °C sebelum ambang dengan langkah 1–2 saja; tiap langkah ditunggu tiga kali cek (Badan HP berubah pelan); naik lagi setelah tiga kali cek ≥ 1,5 °C di bawah ambang. CPU hanya diturunkan saat prosesor bekerja (≥ 60 °C): panas dari cas, ruangan atau HP yang santai tidak membuat CPU diturunkan, dan saat prosesor santai batasnya dilepas bertahap. Hemat turun 10 % dari `SAVER_CAP`. Di semua mode ada **rem darurat** bila prosesor ≥ 95 °C. Cogan Bridge ABI 1 memberi satu batas untuk semua inti X4 dan satu untuk A720.
+Mulai 1 °C sebelum ambang dengan langkah 1–2 saja; tiap langkah ditunggu tiga kali cek (Badan HP berubah pelan); naik lagi setelah tiga kali cek ≥ 1,5 °C di bawah ambang. CPU hanya diturunkan saat prosesor bekerja (≥ 55 °C): panas dari cas, ruangan atau HP yang santai tidak membuat CPU diturunkan, dan saat prosesor santai batasnya dilepas bertahap. Hemat turun 10 % dari `SAVER_CAP`. Di semua mode ada **rem darurat** bila prosesor ≥ 95 °C. Cogan Bridge ABI 1 memberi satu batas untuk semua inti X4 dan satu untuk A720.
 
 Jeda cas karena suhu (`CHARGE_THERMAL`) tetap **mati secara bawaan**: HyperCharge dan sistem HP yang mengatur suhu cas. GPU dibaca saja (Kontrol kernel); batas GPU menyusul setelah node-nya terbukti di HP.
 

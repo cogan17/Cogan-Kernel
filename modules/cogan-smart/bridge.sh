@@ -24,9 +24,13 @@ read_node() {
   printf '%s' "${cb_value:-$2}"
 }
 
+# read_into VAR FILE: the first line of FILE into VAR (empty when unreadable). No subshell, no process:
+# the background workers call it dozens of times per check (v2.9.1, owner's log: 4.8% CPU before).
+read_into() { eval "$1=''"; IFS= read -r "$1" 2>/dev/null < "$2" || :; }
+
 # Detect the exported ABI, independently of branding or a spoofed uname.
 # Virtual files may report size zero even when their read callback returns data.
-bridge_available() { [ "$(read_node "$CB_ROOT/abi")" = 1 ] && [ -n "$(read_node "$CB_ROOT/release")" ]; }
+bridge_available() { read_into cb_abi "$CB_ROOT/abi"; read_into cb_rel "$CB_ROOT/release"; [ "$cb_abi" = 1 ] && [ -n "$cb_rel" ]; }
 
 kernel_release() {
   if bridge_available; then cat "$CB_ROOT/release"; return; fi
@@ -101,10 +105,13 @@ bridge_heartbeat() { # power|thermal, versionCode (0 unregisters)
   bridge_available || return 0
   case "$1" in power|thermal) ;; *) return 1 ;; esac
   uint "$2" || return 1
-  (printf '%s\n' "$2" > "$CB_ROOT/${1}_client") 2>/dev/null
+  { printf '%s\n' "$2" > "$CB_ROOT/${1}_client"; } 2>/dev/null
 }
 
 module_code() { sed -n 's/^versionCode=//p' "$MODROOT/module.prop"; }
+# The workers' heartbeat: versionCode read once per start, so a check costs no process for it.
+MODULE_CODE=""
+heartbeat() { [ -n "$MODULE_CODE" ] || MODULE_CODE=$(module_code); bridge_heartbeat "$1" "$MODULE_CODE"; }
 
 cooling_json() {
   for cb_dev in "$CB_SYS"/class/thermal/cooling_device*; do
@@ -125,10 +132,17 @@ cooling_json() {
 }
 
 safe_pid() { # PID_FILE SCRIPT_PATH: check the full script path, not a generic name.
-  cb_pid=$(cat "$1" 2>/dev/null)
+  read_into cb_pid "$1"
   uint "$cb_pid" && [ "$cb_pid" -gt 1 ] || return 1
   kill -0 "$cb_pid" 2>/dev/null || return 1
-  (tr '\0' '\n' < "${CB_PID_PROC:-/proc}/$cb_pid/cmdline") 2>/dev/null | grep -Fqx "$2" || return 1
+  # A worker that keeps running (the controller) checks the same live PID's command line again only
+  # every 30 calls; called in $(...), nothing is remembered and every call checks.
+  cb_safe_n=$((${cb_safe_n:-0} + 1))
+  if [ "${cb_safe_key-}" != "$cb_pid $2" ] || [ "$cb_safe_n" -ge 30 ]; then
+    cb_safe_key=""
+    (tr '\0' '\n' < "${CB_PID_PROC:-/proc}/$cb_pid/cmdline") 2>/dev/null | grep -Fqx "$2" || return 1
+    cb_safe_key="$cb_pid $2"; cb_safe_n=0
+  fi
   printf '%s\n' "$cb_pid"
 }
 
@@ -184,7 +198,7 @@ sensor_snapshot() {
     return
   fi
   cs_sample=$(read_thermal_sensors)
-  SS_MAIN=${cs_sample%%	*}; SS_ZONES=${cs_sample#*	}
+  SS_MAIN=${cs_sample%%	*}; SS_ZONES=${cs_sample#*	}; SS_ZONES=${SS_ZONES%%	*}
   if mkdir -p "$cs_dir"; then
     (umask 077; printf '%s\t%s\t%s\t%s\n' "$SS_TS" "$cs_key" "$SS_MAIN" "$SS_ZONES" > "$cs_dir/sensors.tsv.$$" &&
       mv "$cs_dir/sensors.tsv.$$" "$cs_dir/sensors.tsv") 2>/dev/null || :
@@ -203,18 +217,19 @@ thermal_health() {
     if [ "$cs_name" = INTERVAL ] && uint "$cs_value" && [ "$cs_value" -ge 10 ] && [ "$cs_value" -le 300 ]; then CS_INTERVAL=$cs_value; fi
   done 2>/dev/null < "$cs_data/config"
   cs_limit=$((CS_INTERVAL * 3)); [ "$cs_limit" -ge 90 ] || cs_limit=90
-  cs_last=$(read_node "$cs_data/run/last")
+  cs_now=${CB_NOW:-$(date +%s)}   # a worker that just read the clock passes it in CB_NOW
+  read_into cs_last "$cs_data/run/last"
   if uint "$cs_last" && [ "$cs_last" -gt 0 ]; then
-    CS_TS=$cs_last; CS_AGE=$(($(date +%s) - CS_TS))
+    CS_TS=$cs_last; CS_AGE=$((cs_now - CS_TS))
   fi
-  cs_pid=$(safe_pid "$cs_data/run/sampler.pid" "$cs_mod/thermal/sampler.sh") || cs_pid=0
+  cs_pid=0; safe_pid "$cs_data/run/sampler.pid" "$cs_mod/thermal/sampler.sh" > /dev/null && cs_pid=$cb_pid
   if [ "$CS_INSTALLED" = 1 ] && [ "$cs_pid" -gt 0 ]; then
     CS_RUNNING=1; CS_PID=$cs_pid
-    cs_started=$(read_node "$cs_data/run/started")
+    read_into cs_started "$cs_data/run/started"
     uint "$cs_started" && CS_STARTED=$cs_started
     if [ "$CS_AGE" -ge 0 ] && [ "$CS_AGE" -le "$cs_limit" ] && [ "$CS_TS" -ge "$CS_STARTED" ]; then
       CS_FRESH=1
-    elif [ "$CS_STARTED" -gt 0 ] && [ $(($(date +%s) - CS_STARTED)) -le "$cs_limit" ]; then
+    elif [ "$CS_STARTED" -gt 0 ] && [ $((cs_now - CS_STARTED)) -le "$cs_limit" ]; then
       : # The first sample is still being collected.
     else CS_STALLED=1; fi
   fi
@@ -236,8 +251,8 @@ peer_json() { # module directory, pid file, script
 
 # A PID-owned mkdir lock works with Android sh; no flock dependency or kill -9.
 lock_take() { # directory; caller releases explicitly or through its EXIT trap.
-  mkdir -p "${1%/*}"
-  cb_boot=$(cat /proc/sys/kernel/random/boot_id 2>/dev/null)
+  [ -d "${1%/*}" ] || mkdir -p "${1%/*}"
+  read_into cb_boot /proc/sys/kernel/random/boot_id
   cb_try=0
   while ! mkdir "$1" 2>/dev/null; do
     cb_owner=$(cat "$1/pid" 2>/dev/null)
@@ -264,6 +279,7 @@ lock_take() { # directory; caller releases explicitly or through its EXIT trap.
 }
 
 lock_drop() {
-  [ "$(cat "$1/pid" 2>/dev/null)" = "$$" ] || return 0
+  read_into cb_lock_pid "$1/pid"
+  [ "$cb_lock_pid" = "$$" ] || return 0
   rm -f "$1/pid" "$1/boot_id"; rmdir "$1" 2>/dev/null
 }
