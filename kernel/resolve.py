@@ -41,6 +41,9 @@ BAKASU_CI = ("Baka-SU/BakaSU", "build-manager.yml", {"manager": "Manager-release
 SUSFS = "https://gitlab.com/simonpunk/susfs4ksu"
 SUSFS_BRANCH = "gki-android14-6.1"
 SUSFS_PATCH = "kernel_patches/50_add_susfs_in_gki-android14-6.1.patch"
+# sidex15's SUSFS module (WebUI), the 6th file of a run (owner 2026-10-26: SUSFS has two developers). It has
+# no releases: its "Build and Release" CI zips the module of branch v1.5.2+ on every push.
+SUSFS_SIDEX = ("sidex15/susfs4ksu-module", "build.yml", "v1.5.2+")
 NOMOUNT = "https://github.com/maxsteeel/nomount"
 BBG = "https://github.com/vc-teahouse/Baseband-guard"
 ANYKERNEL = "https://github.com/osm0sis/AnyKernel3"
@@ -221,6 +224,20 @@ def bakasu_main(api=api):
                "Wait for the official BakaSU CI manager build on main (none yet, or its artifact expired).")
 
 
+def susfs_sidex(api=api):
+    """The newest CI build of sidex15's SUSFS module that still has its artifact, or what to wait for."""
+    repo, workflow, branch = SUSFS_SIDEX
+    runs = api(f"repos/{repo}/actions/workflows/{workflow}/runs?branch={branch.replace('+', '%2B')}&status=success&per_page=5")
+    for ci in runs.get("workflow_runs", []):
+        artifacts = api(f"repos/{repo}/actions/runs/{ci['id']}/artifacts?per_page=100")["artifacts"]
+        module = next((a for a in artifacts if a["name"].startswith("release-") and not a["expired"]), None)
+        if module:
+            return {"repo": repo, "run": ci["id"], "url": ci["html_url"], "commit": ci["head_sha"],
+                    "date": ci.get("created_at", ""), "artifact": module["id"], "name": module["name"]}
+    return {"wait": {"id": f"Tunggu sidex15 membangun modul SUSFS lagi (build CI {branch} tidak ada atau artifact-nya kedaluwarsa).",
+                     "en": f"Wait for sidex15 to build the SUSFS module again (no {branch} CI build, or its artifact expired)."}}
+
+
 def needed_hooks(susfs_patch_text):
     added = "\n".join(line for line in susfs_patch_text.splitlines() if line.startswith("+"))
     return [name for name in HOOKS if re.search(rf"\b{name}\b", added)]
@@ -278,6 +295,7 @@ def resolve(root, sublevel, work, unicode=False):
                    for tag, sha, sub in pick_ack(ack_releases(ls_remote(ACK, "refs/tags/android14-6.1-*")), sublevel)]
     susfs = ls_remote(SUSFS, f"refs/heads/{SUSFS_BRANCH}")[f"refs/heads/{SUSFS_BRANCH}"]
     snap["susfs"] = {"repo": SUSFS, "branch": SUSFS_BRANCH, "commit": susfs}
+    snap["susfs_sidex"] = susfs_sidex()
     repo = str(work)
     run("git", "init", "-q", repo)
     run("git", "-C", repo, "config", "gc.auto", "0")

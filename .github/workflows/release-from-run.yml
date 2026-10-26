@@ -75,7 +75,7 @@ jobs:
             --jq '.artifacts[] | select(.expired == false) | [.id, .name, (.digest // "")] | @tsv' > artifacts.tsv
           while IFS=$'\t' read -r id name digest; do
             case "$name" in
-              [1-5]-*) gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$id/zip" > "files/$name"
+              [1-6]-*) gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$id/zip" > "files/$name"
                        # An unarchived artifact may still arrive wrapped in a ZIP that holds only itself.
                        if [ "sha256:$(sha256sum "files/$name" | cut -d' ' -f1)" != "$digest" ] \
                           && [ "$(unzip -Z1 "files/$name" 2>/dev/null)" = "$name" ]; then

@@ -17,7 +17,7 @@ SNAP = {"root": "KSUN", "ack": [{"tag": "android14-6.1-2025-09_r36", "commit": "
         "susfs": {"repo": r.SUSFS, "branch": r.SUSFS_BRANCH, "commit": SUSFS_OLD},
         "root_source": {"repo": r.KSUN_FORK, "branch": "dev-susfs", "commit": A, "base": M, "ksu_version": 33405},
         "nomount": {"tag": "v2.2.0"}, "bbg": {"commit": "f" * 40}, "anykernel": {"commit": "9" * 40, "arm64_tools": "8" * 40},
-        "neutron": {"tag": "24102026"}}
+        "neutron": {"tag": "24102026"}, "susfs_sidex": {"commit": "5" * 40}}
 
 
 def commit(sha, date, title):
@@ -26,7 +26,7 @@ def commit(sha, date, title):
 
 class FakeNet:
     def __init__(self, *, runs=True, ack="android14-6.1-2026-10_r2", susfs=SUSFS_NEW, nomount="v2.3.0",
-                 bakasu=("SUSFS diblokir di BakaSU / SUSFS blocked in BakaSU", None), manager=True):
+                 bakasu=("SUSFS diblokir di BakaSU / SUSFS blocked in BakaSU", None), manager=True, sidex="6" * 40):
         self.runs, self.ack, self.susfs, self.nomount, self.bakasu, self.manager = runs, ack, susfs, nomount, bakasu, manager
         self.apis = {
             f"repos/{REPO}/actions/workflows/build-kernel.yml/runs?branch=main&status=completed&per_page=30":
@@ -57,6 +57,13 @@ class FakeNet:
             "repos/osm0sis/AnyKernel3/commits/" + "9" * 40: commit("9" * 40, "2026-09-01T00:00:00Z", "ak3"),
             "repos/Neutron-Toolchains/clang-build-catalogue/releases/latest":
                 {"tag_name": "24102026", "published_at": "2026-10-24T00:00:00Z", "html_url": "https://neutron"},
+            "repos/sidex15/susfs4ksu-module/actions/workflows/build.yml/runs?branch=v1.5.2%2B&status=success&per_page=5":
+                {"workflow_runs": [{"id": 717, "html_url": "https://sidex/717", "head_sha": sidex,
+                                    "created_at": "2026-10-17T05:03:21Z"}]},
+            "repos/sidex15/susfs4ksu-module/actions/runs/717/artifacts?per_page=100":
+                {"artifacts": [{"name": "release-1.5.2+_6666666", "id": 9, "expired": False}]},
+            "repos/sidex15/susfs4ksu-module/compare/" + "5" * 40 + "..." + "6" * 40: {"commits": [
+                commit("6" * 40, "2026-10-17T05:03:21Z", "scripts: customize: Implement hot-install")]},
             "repos/WildKernels/kernel_patches/commits?path=common/unicode_bypass_fix_6.1%2B.patch&per_page=5":
                 [commit("u" * 40, "2026-10-10T00:00:00Z", "unicode fix")],
         }
@@ -121,10 +128,14 @@ class UpdatesTest(unittest.TestCase):
         self.assertEqual(builds["KSUN"]["run"], 6)
         self.assertNotIn("BSU", builds)                                    # its snapshot only waited
         statuses = {k: e["status"] for k, e in found.items()}
-        self.assertEqual(statuses, {"ack": "new", "susfs": "new", "ksun": "same", "bakasu": "unknown", "nomount": "new",
+        self.assertEqual(statuses, {"ack": "new", "susfs": "new", "sidex": "new", "ksun": "same", "bakasu": "unknown", "nomount": "new",
                                     "bbg": "same", "anykernel": "same", "neutron": "same", "unicode": "off"})
-        self.assertIn("🆕 **Ada pembaruan: ACK android14-6.1, SUSFS (simonpunk), NoMount.** Silakan jalankan **Cogan Kernel Builder**", text)
-        self.assertIn("🆕 **Updates: ACK android14-6.1, SUSFS (simonpunk), NoMount.** Run **Cogan Kernel Builder**", text)
+        self.assertIn("🆕 **Ada pembaruan: ACK android14-6.1, SUSFS (simonpunk), SUSFS modul (sidex15), NoMount.** "
+                      "Silakan jalankan **Cogan Kernel Builder**", text)
+        self.assertIn("🆕 **Updates: ACK android14-6.1, SUSFS (simonpunk), SUSFS modul (sidex15), NoMount.** Run **Cogan Kernel Builder**", text)
+        self.assertIn("CI: release-1.5.2+_6666666 `666666666666` (17 Okt 2026 12.03 WIB)", text)
+        self.assertIn("Tanpa rilis: Builder mengambil build CI terbarunya (cabang v1.5.2+).", text)
+        self.assertIn("scripts: customize: Implement hot-install", text)
         self.assertIn("Rilis ACK baru: `android14-6.1-2026-10_r2`", text)
         self.assertIn("| `android14-6.1-2026-09_r4` | Stabil: `android14-6.1-2026-10_r2` (6.1.180, 22 Okt 2026 12.25 WIB) |", text)
         self.assertIn("CI: v2.3.1 `27e0a0e42745` (24 Okt 2026 18.44 WIB)", text)   # +08:00 → WIB
@@ -147,7 +158,7 @@ class UpdatesTest(unittest.TestCase):
         self.assertNotIn("![shot]", text)                                     # release notes without images
 
     def test_all_the_same_and_bakasu_blocked(self):
-        _, found, text = self.run_check(ack="android14-6.1-2026-09_r4", susfs=SUSFS_OLD, nomount="v2.2.0",
+        _, found, text = self.run_check(ack="android14-6.1-2026-09_r4", susfs=SUSFS_OLD, nomount="v2.2.0", sidex="5" * 40,
                                         bakasu=("SUSFS diblokir di BakaSU / SUSFS blocked in BakaSU", "`my_setprocattr` missing"))
         self.assertIn("✅ **Semua komponen sama dengan build terakhir.** Belum perlu build.", text)
         self.assertIn("✅ **Every component equals the last build.** No build needed yet.", text)

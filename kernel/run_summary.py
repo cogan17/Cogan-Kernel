@@ -31,8 +31,8 @@ TEXT = {
            "attest": "❌ Tanda tangan ZIP gagal: jangan terbitkan run ini.",
            "published": "Terbit: [{tag}]({url})", "unpublished": "❌ Gagal terbit: lihat job Terbit.",
            "telegram": "**📣 Teks Telegram** (salin lewat tombol di pojok kanan atas kotak)",
-           "susfs": "**Modul SUSFS** (simonpunk, commit SUSFS yang sama dengan kernel)",
-           "susfs_fail": "❌ Modul SUSFS gagal dibangun: lihat job Modul SUSFS. Run ini tidak bisa diterbitkan."},
+           "susfs": "**Modul SUSFS** (5 simonpunk, 6 sidex15 dengan WebUI; pasang salah satu)",
+           "susfs_fail": "❌ Modul SUSFS gagal dibuat atau diambil: lihat job Modul SUSFS. Run ini tidak bisa diterbitkan."},
     "en": {"flag": "🇬🇧 English", "build": "Build", "result": "Result", "detail": "Details",
            "ok": "✅ Built", "fail": "❌ Failed", "wait": "⏳ Not built",
            "count": "**{ok} built · {fail} failed · {wait} not built**",
@@ -43,8 +43,8 @@ TEXT = {
            "attest": "❌ Signing the ZIP failed: do not publish this run.",
            "published": "Published: [{tag}]({url})", "unpublished": "❌ Publishing failed: see the publish job.",
            "telegram": "**📣 Telegram post** (copy with the button at the top right of the box)",
-           "susfs": "**SUSFS module** (simonpunk, the kernel's own SUSFS commit)",
-           "susfs_fail": "❌ The SUSFS module failed to build: see the SUSFS module job. This run cannot be published."},
+           "susfs": "**SUSFS modules** (5 simonpunk, 6 sidex15 with WebUI; install one)",
+           "susfs_fail": "❌ A SUSFS module could not be built or fetched: see the SUSFS modules job. This run cannot be published."},
 }
 
 

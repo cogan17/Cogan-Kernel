@@ -53,7 +53,7 @@ class SusfsModuleTest(unittest.TestCase):
     def test_module_from_the_commit_with_the_compiled_tool(self):
         result = self.build()
         self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
-        name = f"5-SUSFS-MODULE_v2.3.0_{self.commit[:8]}.zip"
+        name = f"5-SUSFS-MODULE-SIMONPUNK_v2.3.0_{self.commit[:8]}.zip"
         with zipfile.ZipFile(self.base / "out" / name) as archive:
             names = set(archive.namelist())
             self.assertTrue({"module.prop", "customize.sh", "META-INF/com/google/android/update-binary",

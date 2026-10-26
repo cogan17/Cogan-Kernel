@@ -36,7 +36,9 @@ Copy the result to a **PC or USB drive**, not only the phone. Also keep the **st
 ## 3. After it boots
 
 1. Install the root manager app from the same release package (**KernelSU Next** or **BakaSU**, matching the kernel ZIP), then the **NoMount** metamodule.
-   Releases since 26 Oct 2026 also hold the **SUSFS module** (`5-SUSFS-MODULE_…zip`, simonpunk's own module from the kernel's SUSFS commit, with the `ksu_susfs` tool). Install it in the manager to configure SUSFS.
+   Releases since 26 Oct 2026 also hold two **SUSFS modules**; install **only one** in the manager to configure SUSFS (both install the `ksu_susfs` tool):
+   - `5-SUSFS-MODULE-SIMONPUNK_…zip`: simonpunk's module from the kernel's own SUSFS commit;
+   - `6-SUSFS-MODULE-SIDEX15_…zip`: sidex15's module with WebUI (its newest CI build).
 2. *Optional:* the **[Cogan Smart Kernel](https://github.com/cogan17/Cogan-Kernel/blob/main/modules/cogan-smart/README.md)** module. Its development is parked (bug fixes only); the kernel runs normally without it. If you install it, reboot once, then check the module WebUI: **"Identitas asli · terverifikasi"** (real identity, verified) and **"✓ kernel dibuat untuk HP ini"** (kernel built for this phone).
 
 > 💡 The kernel version in Settings may look different (e.g. `6.1.170`). That is SUSFS spoofing `uname`. The Cogan Smart module reads the real identity through Cogan Bridge.

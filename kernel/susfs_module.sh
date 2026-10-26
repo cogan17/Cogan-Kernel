@@ -8,7 +8,8 @@
 # Usage: susfs_module.sh SUSFS_DIR OUT
 #   SUSFS_DIR  a checkout of simonpunk/susfs4ksu at the snapshot's commit
 #   NDK_BUILD  ndk-build to use (default: the runner's newest NDK, else ndk-build on PATH)
-# Writes OUT/5-SUSFS-MODULE_<version>_<commit8>.zip and OUT/susfs-<commit8>.env.
+# Writes OUT/5-SUSFS-MODULE-SIMONPUNK_<version>_<commit8>.zip and OUT/susfs-<commit8>.env. sidex15's module
+# (with WebUI) is the 6th file (kernel/susfs_sidex.py); a phone needs only one of them.
 set -euo pipefail
 
 src="$(realpath "$1")"
@@ -36,7 +37,7 @@ PY
 mkdir -p "$work/ksu_module_susfs/tools"
 cp "$tool" "$work/ksu_module_susfs/tools/ksu_susfs_arm64"
 
-name="5-SUSFS-MODULE_${version}_${commit:0:8}.zip"
+name="5-SUSFS-MODULE-SIMONPUNK_${version}_${commit:0:8}.zip"
 (cd "$work/ksu_module_susfs" && zip -qr9 "$out/$name" -- *)
 python3 - "$out/$name" <<'PY'
 import sys, zipfile
