@@ -43,6 +43,17 @@ class TelegramTest(unittest.TestCase):
         self.assertEqual(tg.whats_new(R1, prev, "en"), ["Same components as v26.10.23-r1"])
         self.assertEqual(tg.whats_new(R1, None, "id"), ["Rilis pertama varian ini"])
 
+    def test_previous_combined_release_uses_each_roots_own_components(self):
+        bakasu = {**R1, "ROOT_NAME": "BakaSU", "ROOT_TAG": "main", "ROOT_COMMIT": "b" * 40,
+                  "SUSFS_COMMIT": "c" * 40}
+        body = "# Combined release\n\n" + "\n".join(rn.notes(env, [], "https://run", "cogan17/Cogan-Kernel")
+                                                        for env in (R1, bakasu))
+        releases = [{"tag_name": R1["RELEASE"], "target_commitish": "e" * 40, "body": body}]
+        for env in (R1, bakasu):
+            previous = tg.previous(releases, {**env, "RELEASE": R2["RELEASE"]})
+            self.assertEqual(previous["root"][1], env["ROOT_COMMIT"][:12])
+            self.assertEqual(previous["susfs"][1], env["SUSFS_COMMIT"][:12])
+
     def test_only_kernel_fixes_become_fixes(self):
         self.assertEqual(tg.fixes(["fix(kernel): alat AnyKernel3 arm64 untuk rothko (#5)\n\nbody",
                                    "fix(builder): semua tidak lagi kena HTTP 429 (#21)",

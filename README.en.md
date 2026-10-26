@@ -86,6 +86,8 @@ The **Cek pembaruan** (check for updates) button is the only check, and it build
 
 Unicode fix (optional) passes the build + KMI gate on 157, 162, 172 and 176, and applies cleanly on 138 and 145 ([CI](https://github.com/cogan17/Cogan-Kernel/actions/runs/40048269498)). If WildKernel's patch does not fit yet, the build stops: untick Unicode fix to build anyway.
 
+To publish an existing build, run **Rilis dari run** with the green Builder run ID. A run containing KernelSU Next and BakaSU becomes **one release** with both kernel ZIPs and their matching manager APKs, without rebuilding. Tick **diuji di HP** only if the owner tested every variant in that run on the phone.
+
 </details>
 
 <details>

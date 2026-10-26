@@ -1,10 +1,14 @@
 """Execute the release workflow's shell blocks offline with a fake GitHub CLI."""
 import json
+import hashlib
+import io
 import os
+import shutil
 import subprocess
 import tempfile
 import textwrap
 import unittest
+import zipfile
 from pathlib import Path
 
 WORKFLOW = Path(__file__).resolve().parents[1] / ".github/workflows/release-from-run.yml"
@@ -25,10 +29,15 @@ class ReleaseWorkflowTests(unittest.TestCase):
         for name in ("bin", "info", "files", "kernel"):
             (self.root / name).mkdir()
         (self.root / "run.json").write_text(json.dumps({"head_sha": SOURCE_SHA}))
-        (self.root / "info/build.env").write_text("RELEASE=v26.10.24-r2\nRELEASE_NAME=Cogan r2\n")
+        (self.root / "info/release.env").write_text("RELEASE=v26.10.24-r2\nRELEASE_NAME=Cogan r2\n")
+        build = self.root / "info/build-info-KSUN-176"
+        build.mkdir()
+        (build / "build.env").write_text("ROOT_NAME=KernelSU Next\nLINUX_VERSION=6.1.176\n")
         (self.root / "files/1-KERNEL_fixture.zip").write_text("kernel fixture")
-        for name in ("release_notes.py", "telegram.py"):
-            (self.root / "kernel" / name).write_text('print("notes fixture")\n')
+        (self.root / "notes.md").write_text("notes fixture\n")
+        for name in ("release_notes.py", "release_from_run.py"):
+            shutil.copyfile(WORKFLOW.parents[2] / "kernel" / name, self.root / "kernel" / name)
+        (self.root / "kernel/telegram.py").write_text('print("notes fixture")\n')
         gh = self.root / "bin/gh"
         gh.write_text('''#!/bin/bash
 if [[ "$1 $2" == "release view" ]]; then
@@ -45,6 +54,10 @@ elif [[ "$1 $2" == "api repos/cogan17/Cogan-Kernel/contents/.github?ref=$SOURCE_
   echo "$WORKFLOWS_AT_SOURCE"
 elif [[ "$1 $2" == "api repos/cogan17/Cogan-Kernel/contents/.github?ref=$GITHUB_SHA" ]]; then
   echo "$WORKFLOWS_AT_MAIN"
+elif [[ "$1 $2" == "api --paginate" ]]; then
+  cat fixtures.tsv
+elif [[ "$1" == api && "$2" =~ /actions/artifacts/([0-9]+)/zip$ ]]; then
+  cat "artifacts/${BASH_REMATCH[1]}"
 else
   echo "Unexpected request: $*" >&2
   exit 2
@@ -66,6 +79,152 @@ fi
     def summary(self):
         path = self.root / "summary.md"
         return path.read_text() if path.exists() else ""
+
+    @staticmethod
+    def zip_bytes(entries):
+        stream = io.BytesIO()
+        with zipfile.ZipFile(stream, "w") as archive:
+            for name, data in entries.items():
+                archive.writestr(name, data)
+        return stream.getvalue()
+
+    def artifacts(self, roots=("KSUN", "BSU"), wrapped=False):
+        """The failed run's shape: two kernels/managers, separate metadata, duplicate NoMount."""
+        shutil.rmtree(self.root / "info")
+        shutil.rmtree(self.root / "files")
+        self.payloads = []
+        self.builds = {}
+        for root in roots:
+            slug, name = ("KernelSU-Next", "KernelSU Next") if root == "KSUN" else ("BakaSU", "BakaSU")
+            kernel = f"1-KERNEL_Cogan-Rothko-ACK-6.1.176_{slug}+SuSFS_v26.10.24-r2.zip"
+            content = self.zip_bytes({"Image": f"kernel for {root}"})
+            env = dict(RELEASE="v26.10.24-r2", RELEASE_NAME="Cogan-Rothko-ACK v26.10.24-r2",
+                       LINUX_VERSION="6.1.176", ACK_TAG="android14-6.1-2026-09_r5", ROOT_NAME=name,
+                       ROOT_TAG="main", ROOT_COMMIT=("a" if root == "KSUN" else "b") * 40,
+                       KSU_VERSION="33405" if root == "KSUN" else "35222", SUSFS_VERSION="v2.3.0",
+                       SUSFS_COMMIT="27e0a0e4" + "0" * 32, NOMOUNT="v2.2.0", NEUTRON="24102026",
+                       FEATURES="SUSFS, NoMount", KMI_COMPAT="KMI Xiaomi 14T Pro (rothko): OK; CRC differs 0",
+                       ZIP=kernel, ZIP_SHA256=hashlib.sha256(content).hexdigest())
+            self.builds[root] = env
+            self.payloads += [(kernel, content), (f"2-MANAGER_{slug}_fixture.apk", f"manager {root}".encode()),
+                              (f"3-MANAGER-SPOOFED_{slug}_fixture.apk", f"spoofed {root}".encode()),
+                              ("4-NOMOUNT-MODULE_v2.2.0.zip", b"shared NoMount")]
+        self.payloads += [("5-SUSFS-MODULE-SIMONPUNK_v2.3.0_27e0a0e4.zip", b"simonpunk"),
+                          ("6-SUSFS-MODULE-SIDEX15_v1.5.2-CI-fixture.zip", b"sidex15")]
+        self.wrapped = wrapped
+
+    def write_artifacts(self):
+        storage = self.root / "artifacts"
+        storage.mkdir(exist_ok=True)
+        payloads = self.payloads + [(f"build-info-{root}-176", self.zip_bytes({"build.env":
+                    "".join(f"{key}={value}\n" for key, value in env.items())})) for root, env in self.builds.items()]
+        rows = []
+        for id_, (name, data) in enumerate(payloads, 1):
+            digest = "sha256:" + hashlib.sha256(data).hexdigest()
+            if self.wrapped and name[:2] in ("1-", "2-", "3-", "4-", "5-", "6-"):
+                data = self.zip_bytes({name: data})
+            (storage / str(id_)).write_bytes(data)
+            rows.append(f"{id_}\t{name}\t{digest}\n")
+        (self.root / "fixtures.tsv").write_text("".join(rows))
+
+    def download(self, **env):
+        self.write_artifacts()
+        return self.run_step("Unduh file / download the files", **env)
+
+    def test_both_root_managers_publish_together_without_mixing_metadata(self):
+        self.artifacts()
+        result = self.download(TESTED="false")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        notes = (self.root / "notes.md").read_text()
+        for root, env in self.builds.items():
+            metadata = self.root / f"info/build-info-{root}-176/build.env"
+            self.assertIn(f"ROOT_NAME={env['ROOT_NAME']}\n", metadata.read_text())
+            section = notes.split(f"## {env['ROOT_NAME']} · 6.1.176\n", 1)[1].split("\n## ", 1)[0]
+            other = "BakaSU" if root == "KSUN" else "KernelSU-Next"
+            self.assertIn(env["ZIP"], section)
+            self.assertNotIn(f"2-MANAGER_{other}_", section)
+            self.assertIn("**belum diuji di HP**", section)
+            self.assertIn("**not tested on the phone yet**", section)
+        result = self.run_step("Terbitkan / publish", TESTED="false")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        args = (self.root / "called.txt").read_text().splitlines()
+        self.assertEqual(args.count("create"), 1)
+        for env in self.builds.values():
+            self.assertIn(f"files/{env['ZIP']}", args)
+            self.assertIn(env["ZIP"], (self.root / "files/checksums.txt").read_text())
+        self.assertEqual(args.count("files/4-NOMOUNT-MODULE_v2.2.0.zip"), 1)
+        self.assertIn("KernelSU Next", self.summary())
+        self.assertIn("BakaSU", self.summary())
+
+    def test_single_root_and_wrapped_artifacts_still_work(self):
+        self.artifacts(roots=("KSUN",), wrapped=True)
+        result = self.download()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        kernel = self.root / "files" / self.builds["KSUN"]["ZIP"]
+        with zipfile.ZipFile(kernel) as archive:
+            self.assertEqual(archive.namelist(), ["Image"])
+        self.assertIn("**Diuji owner", (self.root / "notes.md").read_text())
+        result = self.run_step("Terbitkan / publish")
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_second_root_must_pass_kmi(self):
+        self.artifacts()
+        self.builds["BSU"]["KMI_COMPAT"] = "KMI Xiaomi 14T Pro (rothko): FAILED"
+        result = self.download()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("KMI gate did not pass", result.stderr)
+        self.assertFalse((self.root / "info/release.env").exists())
+        self.assertFalse((self.root / "called.txt").exists())
+
+    def test_both_roots_must_belong_to_the_same_release(self):
+        self.artifacts()
+        self.builds["BSU"]["RELEASE"] = "v26.10.24-r3"
+        result = self.download()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("RELEASE berbeda", result.stderr)
+
+    def test_kernel_must_match_its_build_digest(self):
+        self.artifacts()
+        self.builds["KSUN"]["ZIP_SHA256"] = "0" * 64
+        result = self.download()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("SHA256 berbeda dari build", result.stderr)
+
+    def test_missing_manager_stops_the_release(self):
+        self.artifacts()
+        self.payloads = [(name, data) for name, data in self.payloads if not name.startswith("2-MANAGER_BakaSU_")]
+        result = self.download()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("exactly one manager APK", result.stderr)
+
+    def test_missing_susfs_module_stops_the_release(self):
+        self.artifacts()
+        self.payloads = [(name, data) for name, data in self.payloads if not name.startswith("6-")]
+        result = self.download()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("missing NoMount/SUSFS modules", result.stderr)
+
+    def test_missing_kernel_stops_the_release(self):
+        self.artifacts()
+        self.payloads = [(name, data) for name, data in self.payloads if name != self.builds["BSU"]["ZIP"]]
+        result = self.download()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("missing kernel ZIP", result.stderr)
+
+    def test_same_named_shared_files_with_different_digests_are_rejected(self):
+        self.artifacts()
+        self.payloads.append(("4-NOMOUNT-MODULE_v2.2.0.zip", b"different module"))
+        result = self.download()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("same artifact name, different contents", result.stdout)
+
+    def test_artifact_download_digest_is_still_checked(self):
+        self.artifacts()
+        self.write_artifacts()
+        (self.root / "artifacts/1").write_bytes(b"wrong download")
+        result = self.run_step("Unduh file / download the files")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("SHA256 berbeda dari artifact", result.stdout)
 
     def test_same_workflows_tag_the_build_commit(self):
         result = self.run_step("Terbitkan / publish")

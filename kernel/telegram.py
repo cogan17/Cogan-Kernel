@@ -60,9 +60,12 @@ def previous(releases, env):
             continue
         if release["tag_name"] == env.get("RELEASE"):
             continue
-        parsed = parse_release(release.get("body") or "")
-        if parsed.get("root", ("",))[0].startswith(env.get("ROOT_NAME", "?")):
-            return {"tag": release["tag_name"], "sha": release.get("target_commitish", ""), **parsed}
+        # A Release From Run can contain both root managers, each under its own ## heading.
+        # Read the matching section so BakaSU never inherits KernelSU Next's component versions.
+        for section in re.split(r"(?=^## )", release.get("body") or "", flags=re.MULTILINE):
+            parsed = parse_release(section)
+            if parsed.get("root", ("",))[0].startswith(env.get("ROOT_NAME", "?")):
+                return {"tag": release["tag_name"], "sha": release.get("target_commitish", ""), **parsed}
     return None
 
 

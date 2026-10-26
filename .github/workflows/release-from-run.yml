@@ -1,15 +1,16 @@
 name: Rilis dari run
 
 # Publishes one green Cogan Kernel Builder run of main as a release (like WildKernel's Release From
-# Run). The only way to the "diuji di HP" label: tick it only for a build the owner tested on the
-# phone. Every version keeps its own release; an existing tag stops the run. Artifacts last 90 days.
+# Run), including both root managers together. Keep each build's metadata separate and check every
+# KMI gate and kernel digest. Tick "diuji di HP" only if the owner tested every included variant.
+# Every version keeps its own release; an existing tag stops the run. Artifacts last 90 days.
 # GITHUB_TOKEN only; the tag rule in Terbitkan avoids the 403 on builds with other workflow files.
 
 on:
   workflow_dispatch:
     inputs:
       run_id:
-        description: "ID run Cogan Kernel Builder yang hijau / green builder run ID"
+        description: "ID run Builder yang hijau, satu atau kedua root manager / green builder run ID (one or both root managers)"
         required: true
         type: string
       release_type:
@@ -20,7 +21,7 @@ on:
           - "Pre-Release"
           - "Release"
       diuji_di_hp:
-        description: "Kernel ini sudah diuji owner di HP / tested by the owner on the phone"
+        description: "Semua varian kernel di run ini sudah diuji owner di HP / all variants tested by the owner on the phone"
         type: boolean
         default: false
       catatan:
@@ -73,33 +74,37 @@ jobs:
           # (gh run download would unpack the kernel ZIP itself).
           gh api --paginate "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN/artifacts?per_page=100" \
             --jq '.artifacts[] | select(.expired == false) | [.id, .name, (.digest // "")] | @tsv' > artifacts.tsv
+          declare -A downloaded=()
           while IFS=$'\t' read -r id name digest; do
             case "$name" in
-              [1-6]-*) gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$id/zip" > "files/$name"
+              [1-6]-*) if [ "${downloaded[$name]+yes}" = yes ]; then
+                         [ "${downloaded[$name]}" = "$digest" ] \
+                           || { echo "::error::$name: artifact bernama sama berbeda isi / same artifact name, different contents"; exit 1; }
+                         continue
+                       fi
+                       gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$id/zip" > "files/$name"
                        # An unarchived artifact may still arrive wrapped in a ZIP that holds only itself.
                        if [ "sha256:$(sha256sum "files/$name" | cut -d' ' -f1)" != "$digest" ] \
                           && [ "$(unzip -Z1 "files/$name" 2>/dev/null)" = "$name" ]; then
                          unzip -p "files/$name" "$name" > unwrapped && mv unwrapped "files/$name"
                        fi
                        [ "sha256:$(sha256sum "files/$name" | cut -d' ' -f1)" = "$digest" ] \
-                         || { echo "::error::$name: SHA256 berbeda dari artifact / differs from the artifact"; exit 1; } ;;
+                         || { echo "::error::$name: SHA256 berbeda dari artifact / differs from the artifact"; exit 1; }
+                       downloaded["$name"]="$digest" ;;
               build-info-*) gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$id/zip" > info.zip
-                            unzip -q -o info.zip build.env -d info ;;
+                            unzip -q info.zip build.env -d "info/$name" ;;
             esac
           done < artifacts.tsv
-          [ "$(grep -c $'\tbuild-info-' artifacts.tsv)" -eq 1 ] \
-            || { echo "::error::Run harus berisi tepat satu build / the run must hold exactly one build (artifacts last 90 days)"; exit 1; }
-          [ "$(find files -name '1-KERNEL_*.zip' | wc -l)" -eq 1 ] || { echo "::error::Tidak ada tepat satu ZIP kernel / not exactly one kernel ZIP"; exit 1; }
-          unzip -tq files/1-KERNEL_*.zip
-          grep -q '^KMI_COMPAT=KMI Xiaomi 14T Pro (rothko): OK;' info/build.env \
-            || { echo "::error::Gate KMI build ini tidak lolos / the KMI gate of this build did not pass"; exit 1; }
+          tested=(); [ "$TESTED" = "true" ] && tested=(--tested)
+          python3 -m kernel.release_from_run info files --repo "$GITHUB_REPOSITORY" "${tested[@]}" --note "$NOTE" \
+            --run-url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN" > notes.md
           ls -la files
 
       - name: Terbitkan / publish
         run: |
           set -euo pipefail
-          tag="$(sed -n 's/^RELEASE=//p' info/build.env)"
-          title="$(sed -n 's/^RELEASE_NAME=//p' info/build.env)"
+          tag="$(sed -n 's/^RELEASE=//p' info/release.env)"
+          title="$(sed -n 's/^RELEASE_NAME=//p' info/release.env)"
           if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             echo "::error::Rilis $tag sudah ada; rilis tidak pernah ditimpa / release $tag exists and is never replaced"
             exit 1
@@ -113,8 +118,6 @@ jobs:
           target="$sha"; [ -n "$there" ] && [ "$there" = "$here" ] || target="$GITHUB_SHA"
           (cd files && sha256sum -- * > checksums.txt)
           tested=(); [ "$TESTED" = "true" ] && tested=(--tested)
-          python3 kernel/release_notes.py info/build.env files --repo "$GITHUB_REPOSITORY" "${tested[@]}" --note "$NOTE" \
-            --run-url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN" > notes.md
           mode=(--prerelease); [ "$RELEASE_TYPE" = "Release" ] && mode=(--latest)
           gh release create "$tag" files/* --repo "$GITHUB_REPOSITORY" --target "$target" "${mode[@]}" \
             --title "$title" --notes-file notes.md
@@ -126,9 +129,12 @@ jobs:
             cat notes.md
             echo
             # Ready to copy for Telegram (best effort: the release is already published).
-            python3 kernel/telegram.py info/build.env --repo "$GITHUB_REPOSITORY" --sha "$sha" \
-              --link "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/tag/$tag" "${tested[@]}" --note "$NOTE" \
-              --out telegram --summary || true
+            for build in info/build-info-*/build.env; do
+              echo "### $(sed -n 's/^ROOT_NAME=//p' "$build") · $(sed -n 's/^LINUX_VERSION=//p' "$build")"
+              python3 kernel/telegram.py "$build" --repo "$GITHUB_REPOSITORY" --sha "$sha" \
+                --link "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/tag/$tag" "${tested[@]}" --note "$NOTE" \
+                --out "telegram/$(basename "$(dirname "$build")")" --summary || true
+            done
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Ringkasan bila gagal / summary on failure
