@@ -1,12 +1,13 @@
 # Cogan Smart Kernel (modul)
 
-**Versi terbaru: v2.9.0** (`versionCode` 17): mode mengikuti Badan HP, langkah halus, CPU hanya diturunkan saat prosesor bekerja, penyebab panas per bagian HP dengan saran, rem HyperOS. v2.9.1 (modul lebih hemat CPU, satu angka Badan HP dari HyperOS, lonjakan suhu, nama aplikasi asli, batas CPU di log, sensor macet) menunggu uji HP. Catatan perubahan lengkap ada di [`CHANGELOG.md`](CHANGELOG.md).
+**Versi paket terbaru: v2.9.1** (`versionCode` 18): modul lebih hemat CPU, satu angka Badan HP dari HyperOS, lonjakan suhu, nama aplikasi asli, batas CPU di log, dan penyaringan sensor macet. Dampak optimisasi terakhir pada HP belum diukur. Catatan perubahan lengkap ada di [`CHANGELOG.md`](CHANGELOG.md); status publikasi ada di [Releases](https://github.com/cogan17/Cogan-Kernel/releases).
 
 ## ⬇️ Unduh
 
 | Versi | versionCode | ZIP siap pasang | Catatan | Salinan di repo | SHA256 ZIP |
 |---|---|---|---|---|---|
-| **v2.9.0** (terbaru) | 17 | [Cogan-Smart-Kernel-v2.9.0.zip](https://github.com/cogan17/Cogan-Kernel/releases/download/cogan-smart-v2.9.0/Cogan-Smart-Kernel-v2.9.0.zip) | [What's New](https://github.com/cogan17/Cogan-Kernel/releases/download/cogan-smart-v2.9.0/Cogan-Smart-v2.9.0-Whats-New-and-Fixes.txt) | [`rilis/v2.9.0`](rilis/v2.9.0) | `7d15a729ce184aef8a3f870d5c0837010e22ccf69b910309c7f208b870057522` |
+| **v2.9.1** (paket rilis) | 18 | [Cogan-Smart-Kernel-v2.9.1.zip](rilis/v2.9.1/Cogan-Smart-Kernel-v2.9.1.zip) | [What's New](rilis/v2.9.1/Cogan-Smart-v2.9.1-Whats-New-and-Fixes.txt) | [`rilis/v2.9.1`](rilis/v2.9.1) | `64631a42c9133c2d91568ceb88c9582f5c5a95b1b6535c64cb27551fb502e29c` |
+| v2.9.0 | 17 | [Cogan-Smart-Kernel-v2.9.0.zip](https://github.com/cogan17/Cogan-Kernel/releases/download/cogan-smart-v2.9.0/Cogan-Smart-Kernel-v2.9.0.zip) | [What's New](https://github.com/cogan17/Cogan-Kernel/releases/download/cogan-smart-v2.9.0/Cogan-Smart-v2.9.0-Whats-New-and-Fixes.txt) | [`rilis/v2.9.0`](rilis/v2.9.0) | `7d15a729ce184aef8a3f870d5c0837010e22ccf69b910309c7f208b870057522` |
 | v2.8.2 | 16 | [Cogan-Smart-Kernel-v2.8.2.zip](https://github.com/cogan17/Cogan-Kernel/releases/download/cogan-smart-v2.8.2/Cogan-Smart-Kernel-v2.8.2.zip) | [What's New](https://github.com/cogan17/Cogan-Kernel/releases/download/cogan-smart-v2.8.2/Cogan-Smart-v2.8.2-Whats-New-and-Fixes.txt) | [`rilis/v2.8.2`](rilis/v2.8.2) | `73f6d9c9a167d1528057ff84c65d6db371a5cde63e1435ca6e5e4f14bfc367d5` |
 | v2.8.1 | 15 | [Cogan-Smart-Kernel-v2.8.1.zip](https://github.com/cogan17/Cogan-Kernel/releases/download/cogan-smart-v2.8.1/Cogan-Smart-Kernel-v2.8.1.zip) | [What's New](https://github.com/cogan17/Cogan-Kernel/releases/download/cogan-smart-v2.8.1/Cogan-Smart-v2.8.1-Whats-New-and-Fixes.txt) | [`rilis/v2.8.1`](rilis/v2.8.1) | `441e0780d77480f6642a84f5478ce61d659110a640ca6b025f51d2c718ce594f` |
 
@@ -18,7 +19,7 @@
   - **v2.9.0** (24 Okt 2026): dipakai owner 7 jam (15.38–22.38 WIB) dengan kernel r2 dan r3, mode Kernel Default dan Hemat; CPU penuh hampir sepanjang waktu, panas terbanyak saat HyperCharge. Suhu Badan HP masih terasa tidak konsisten (diperbaiki di v2.9.1);
   - **v2.8.2 dengan r1** (24 Okt 2026): identitas kernel terverifikasi lewat Cogan Bridge ("kernel dibuat untuk HP ini"), mode Kernel Default, pencatat suhu, mengecas cepat 3868 mA, penjaga modul "aman";
   - v2.8.1 dan v2.8.2 dengan kernel arsip r6 (6.1.176, 23 Okt 2026); v2.8.2 juga saat pengisian HyperCharge.
-- Versi baru: taruh ZIP dan catatannya di `rilis/<versi>/`, lalu jalankan tombol **Cogan Smart Release** di tab Actions.
+- Versi baru: taruh ZIP dan catatannya di `rilis/<versi>/`, lalu jalankan tombol **Cogan Smart Release** di tab Actions. Kolom versi diisi **`v2.9.1`**, tanpa awalan nama tag `cogan-smart-` atau revisi kernel `r4`.
 
 Satu modul KernelSU / KernelSU Next / BakaSU / Magisk yang menggabungkan **Cogan Power Mode v1.2** dan **Cogan Thermal Monitor v1.3** (issue #21, fondasi Smart Kernel). Kode kedua bagian tetap sama; yang berubah hanya cara keduanya dipasang dan saling menemukan.
 
