@@ -12,7 +12,8 @@ REPO = "cogan17/Cogan-Kernel"
 A, D, M = "a" * 40, "d" * 40, "m" * 40
 SUSFS_OLD, SUSFS_NEW = "c27ebe93c68e953c248b11bb747ef220ea648373", "27e0a0e42745991ba09d6f96a97bf4b83f41a012"
 BAKA_REL, BAKA_MAIN = "b" * 40, "e" * 40
-SNAP = {"root": "KSUN", "ack": [{"tag": "android14-6.1-2026-09_r4", "commit": "1" * 40, "sublevel": 176}],
+SNAP = {"root": "KSUN", "ack": [{"tag": "android14-6.1-2025-09_r36", "commit": "4" * 40, "sublevel": 145},
+                                {"tag": "android14-6.1-2026-09_r4", "commit": "1" * 40, "sublevel": 176}],
         "susfs": {"repo": r.SUSFS, "branch": r.SUSFS_BRANCH, "commit": SUSFS_OLD},
         "root_source": {"repo": r.KSUN_FORK, "branch": "dev-susfs", "commit": A, "base": M, "ksu_version": 33405},
         "nomount": {"tag": "v2.2.0"}, "bbg": {"commit": "f" * 40}, "anykernel": {"commit": "9" * 40, "arm64_tools": "8" * 40},
@@ -125,8 +126,9 @@ class UpdatesTest(unittest.TestCase):
         self.assertIn("🆕 **Ada pembaruan: ACK android14-6.1, SUSFS (simonpunk), NoMount.** Silakan jalankan **Cogan Kernel Builder**", text)
         self.assertIn("🆕 **Updates: ACK android14-6.1, SUSFS (simonpunk), NoMount.** Run **Cogan Kernel Builder**", text)
         self.assertIn("Rilis ACK baru: `android14-6.1-2026-10_r2`", text)
-        self.assertIn("Stabil: `android14-6.1-2026-10_r2` (6.1.180) (22 Okt 2026 12.25 WIB)", text)
+        self.assertIn("| `android14-6.1-2026-09_r4` | Stabil: `android14-6.1-2026-10_r2` (6.1.180, 22 Okt 2026 12.25 WIB) |", text)
         self.assertIn("CI: v2.3.1 `27e0a0e42745` (24 Okt 2026 18.44 WIB)", text)   # +08:00 → WIB
+        self.assertIn("CI: dev-susfs `aaaaaaaaaaaa` (33410, 25 Okt 2026 09.00 WIB)", text)
         # What is new and what was fixed, newest first, in their developers' words.
         susfs = text[text.index("**SUSFS (simonpunk)**"):text.index("**KernelSU Next**")]
         self.assertLess(susfs.index("🔧 Perbaikan"), susfs.index("Fix crash in sus_path"))
