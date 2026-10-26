@@ -16,6 +16,18 @@ Indonesia:
     - pencatat: dari ±94 menjadi ±12 proses per sampel;
     - pengendali: dari 62 menjadi 15 proses per putaran (jalur kernel stok; dengan Cogan Bridge lebih sedikit lagi).
   - Angka di HP belum diukur. Perilaku pengendali tidak berubah.
+- Pengendali lebih hemat lagi (owner 26 Okt). Log 3 jam dengan build hemat CPU (25 Okt, 12.06–14.49 WIB):
+  beban modul turun dari 4,8% menjadi 2,9% CPU HP (pencatat 1,5%, pengendali 1,4%).
+  - Kini pengendali hanya membaca sensor CPU/GPU dan angka Badan HP (HyperOS, atau sensor kulit), bukan
+    ±60 sensor, dan tanpa `awk` tiap 10 detik.
+  - Daftar sensornya dicari sekali saat mulai dan tiap jam, dengan pengelompokan yang sama seperti tab Suhu.
+  - Di HP tiruan berbentuk rothko: file sensor yang dibuka per putaran dari 100 menjadi ±26.
+  - Angkanya sama dengan tab Suhu (diuji).
+- CPU kini juga diturunkan saat prosesor bekerja mulai 55 °C, sebelumnya 60 °C (owner 26 Okt). Saat
+  scroll Instagram (log 3 jam, 14.16–14.37 WIB) prosesor rata-rata 56 °C dan Badan HP 42–43,9 °C,
+  tetapi CPU hanya diturunkan di 4 dari 107 sampel. Dengan 55 °C, syarat itu terpenuhi di ±69% sampel
+  Instagram tersebut (dihitung dari log, belum diukur di HP). Langkahnya tetap halus: mulai 1 °C sebelum
+  ambang, CPU besar 90% lalu 80%. Ambang 41 °C tidak berubah.
 - Penyebab baru "HP baru dinyalakan" untuk 5 menit pertama setelah HP menyala. Owner 25 Okt: memasang
   v2.9.1 lalu restart, Badan HP naik 37,3 → 43,0 °C, dan laporan menulis "Aplikasi berat: Layar
   utama". Pencatat menandai sampel pertama setelah restart (penghitung CPU mulai lagi).
@@ -71,6 +83,18 @@ English:
     - recorder: about 94 → 12 processes per sample;
     - controller: 62 → 15 per round (stock kernel path; fewer with Cogan Bridge).
   - Not measured on the phone yet. The controller behaves the same.
+- A lighter controller again (owner 26 Oct). The 3-hour log with the lighter build (25 Oct, 12:06–14:49
+  WIB): the module's load went from 4.8% to 2.9% of the phone's CPU (recorder 1.5%, controller 1.4%).
+  - The controller now reads only the CPU/GPU sensors and the phone body number (HyperOS's, or the skin
+    sensors) instead of about 60 sensors, and runs no `awk` every 10 seconds.
+  - Which sensors those are is found at start and every hour, grouped as in the Temperature tab.
+  - On a rothko-shaped fake phone: sensor files opened per round went from 100 to about 26.
+  - The numbers equal the Temperature tab's (tested).
+- The CPU is now also lowered while the processor works from 55 °C, before 60 °C (owner 26 Oct). Scrolling
+  Instagram (3-hour log, 14:16–14:37 WIB) kept the processor at 56 °C on average and the phone body at
+  42–43.9 °C, yet the CPU was lowered in only 4 of 107 samples. With 55 °C the rule holds in about 69% of
+  those Instagram samples (computed from the log, not measured on the phone). The steps stay gentle: from
+  1 °C before the threshold, big CPU 90% then 80%. The 41 °C threshold is unchanged.
 - New cause "Phone just started" for the first 5 minutes after the phone starts. Owner 25 Oct:
   installing v2.9.1 and restarting took the body from 37.3 to 43.0 °C, and the report said "Heavy app:
   Home screen". The recorder marks the first sample after a restart (the CPU counters start again).

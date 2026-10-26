@@ -226,11 +226,35 @@ class PowerModeTests(unittest.TestCase):
         self.assertEqual([self.phone.step()["level"] for _ in range(6)], [0] * 6)
         self.phone.set_temp(66.0)                                         # the processor works: steps
         self.assertEqual([self.phone.step()["level"] for _ in range(5)], [1, 1, 1, 2, 2])
-        self.phone.set_temp(55.0)                                         # idle again: speed comes back
+        self.phone.set_temp(52.0)                                         # idle again: speed comes back
         levels = [self.phone.step()["level"] for _ in range(6)]
         self.assertEqual(levels, [2, 2, 1, 1, 1, 0])
         state = self.phone.step()
         self.assertEqual((state["busy"], state["big"], state["little"]), (0, 100, 100))
+        # Owner 26 Okt 2026: scrolling Instagram kept the processor at 56 °C with the body at 42-44 °C, and the
+        # CPU was hardly lowered under the old 60 °C rule. From 55 °C the processor counts as working.
+        self.phone.set_temp(56.0)
+        self.assertEqual([self.phone.step()["level"] for _ in range(2)], [1, 1])
+        self.assertEqual(self.phone.step()["busy"], 1)
+
+    def test_controller_reads_the_same_numbers_as_the_tabs(self):
+        # v2.9.1 (owner 26 Okt 2026): the controller reads only the CPU/GPU sensors and the phone body, with shell
+        # builtins; the numbers stay those of the shared decoder the tabs use.
+        self.phone.set_temp(50.0)
+        self.phone.set_body(39.5)
+        extra = {"wifi-adie-0": "90000", "cpu-little-core0": "61", "broken": "abc", "soc-top1": "0",
+                 "mtk-master-charger": "50000", "quiet_therm": "40100"}
+        for index, (kind, temp) in enumerate(extra.items(), start=10):
+            write(self.phone.sys / f"class/thermal/thermal_zone{index}/type", kind + "\n")
+            write(self.phone.sys / f"class/thermal/thermal_zone{index}/temp", temp + "\n")
+        state = self.phone.step()
+        self.assertEqual((state["main"], state["body"]), (610, 401))   # a CPU sensor in degrees; the hottest skin sensor
+        status = self.phone.report("status")
+        self.assertEqual((status["main"], status["body"]), (610, 401))
+        write(self.phone.sys / "class/thermal/thermal_message/board_sensor_temp", "38700\n")
+        self.assertEqual(self.phone.step()["body"], 387)                # HyperOS's own number comes first
+        (self.phone.monitor / "run/sensors.tsv").unlink()              # the 2-second sensor snapshot
+        self.assertEqual(self.phone.report("status")["body"], 387)
 
     def test_processor_brake_in_every_mode(self):
         self.phone.set_body(36.0)

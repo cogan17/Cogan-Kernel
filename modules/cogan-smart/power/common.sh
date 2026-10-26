@@ -37,8 +37,10 @@ FORCE=0               # 1 = reapply supported controls on every check
 AUTOSTART=1
 CTRL_VER=3             # 3 = phone body thresholds of 24 Oct 2026; older configs keep their other settings
 CPU_BRAKE=95           # every mode: emergency brake when the processor reaches this (°C), not a setting
-CPU_WORK=60            # the CPU is lowered only while the processor works this hot (°C): an idle CPU, or heat
-                       # from charging or the room, is not what a lower CPU cap cools (owner 2026-10-24)
+CPU_WORK=55            # the CPU is lowered only while the processor works this hot (°C): an idle CPU, or heat
+                       # from charging or the room, is not what a lower CPU cap cools (owner 2026-10-24).
+                       # 55 since owner 26 Okt 2026 (was 60): scrolling Instagram kept the processor at 56 °C
+                       # and the phone body at 42-44 °C, and the CPU was lowered in only 4 of 107 samples.
 . "$MODROOT/bridge.sh"
 
 defaults() {
@@ -99,13 +101,48 @@ event() {   # one line in the WebUI's activity log
 
 deg() { echo "$(($1 / 10)).$(( ($1 < 0 ? -$1 : $1) % 10 ))"; }
 
-# One sensor read for the controller, in tenths of °C: MAIN_T, the hottest CPU/GPU sensor, and
-# BODY_T, the phone body (skin) sensor, or -9999 when the phone has none.
+# One sensor read for the controller, in tenths of °C: MAIN_T, the hottest CPU/GPU sensor, and BODY_T,
+# the phone body (HyperOS's own board number, else the hottest skin sensor), or -9999 when there is none.
+# The same numbers as the shared decoder (sensors.awk), but only these sensors are read, with shell
+# builtins; which zones they are is found once per start and every hour (owner 26 Okt 2026: the
+# controller still used 1.4% of the phone's CPU reading all ~60 sensors every 10 seconds).
 read_temps() {
-  rt_sample=$(read_thermal_sensors)
-  MAIN_T=${rt_sample%%	*}; BODY_T=${rt_sample##*	}
-  case "$MAIN_T" in ''|*[!0-9-]*) MAIN_T=-9999 ;; esac
-  case "$BODY_T" in ''|*[!0-9-]*) BODY_T=-9999 ;; esac
+  TZ_CHECKS=$((${TZ_CHECKS:-0} + 1))
+  [ "${TZ_READY-}" = 1 ] && [ "$TZ_CHECKS" -le 360 ] || temp_zones
+  MAIN_T=-9999; BODY_T=-9999
+  for tz in $TZ_MAIN; do zone_temp "$tz/temp" && [ "$ZT" -gt "$MAIN_T" ] && MAIN_T=$ZT; done
+  if zone_temp "$CB_SYS/class/thermal/thermal_message/board_sensor_temp"; then BODY_T=$ZT
+  else
+    for tz in $TZ_SKIN; do zone_temp "$tz/temp" && [ "$ZT" -gt "$BODY_T" ] && BODY_T=$ZT; done
+  fi
+  return 0
+}
+
+# The zones read_temps needs, grouped by the shared decoder: TZ_MAIN (CPU and GPU; all zones when there
+# is none) and TZ_SKIN.
+temp_zones() {
+  TZ_MAIN=""; TZ_SKIN=""; TZ_OTHER=""; TZ_CHECKS=1; TZ_READY=1
+  for tz_line in $(for tz in "$CB_SYS"/class/thermal/thermal_zone*; do
+                     [ -r "$tz/temp" ] || continue
+                     tz_type=""; IFS= read -r tz_type 2>/dev/null < "$tz/type" || :
+                     printf '%s %s\n' "$tz" "$tz_type"
+                   done | awk -f "$MODROOT/thermal/thermal.awk" -f "$MODROOT/power/zones.awk"); do
+    case "$tz_line" in
+      main:*) TZ_MAIN="$TZ_MAIN ${tz_line#main:}" ;;
+      skin:*) TZ_SKIN="$TZ_SKIN ${tz_line#skin:}" ;;
+      *) TZ_OTHER="$TZ_OTHER ${tz_line#*:}" ;;
+    esac
+  done
+  [ -n "$TZ_MAIN" ] || TZ_MAIN="$TZ_SKIN $TZ_OTHER"
+}
+
+# zone_temp FILE: a temperature node read like the shared decoder does (millidegrees or degrees), in
+# tenths of °C in ZT; fails for an unreadable, non-numeric, zero or impossible value.
+zone_temp() {
+  ZT=""; IFS= read -r ZT 2>/dev/null < "$1" || :
+  case "$ZT" in ''|-|*[!0-9-]*|?*-*|0[0-9]*|-0*) return 1 ;; esac
+  if [ "$ZT" -ge 1000 ] || [ "$ZT" -le -1000 ]; then ZT=$((ZT / 100)); else ZT=$((ZT * 10)); fi
+  [ "$ZT" -ne 0 ] && [ "$ZT" -ge -400 ] && [ "$ZT" -le 1500 ]
 }
 
 # Battery: sets level, status (charging, full, discharging or idle), temp (tenths of °C) and current
