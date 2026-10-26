@@ -33,5 +33,6 @@ jobs:
       - name: Cek pembaruan / check for updates
         run: |
           set -euo pipefail
-          python3 kernel/updates.py --repo "$GITHUB_REPOSITORY" --out updates.md > /dev/null
+          # The same text in the log too: readable when the summary page does not load.
+          python3 kernel/updates.py --repo "$GITHUB_REPOSITORY" --out updates.md
           cat updates.md >> "$GITHUB_STEP_SUMMARY"
