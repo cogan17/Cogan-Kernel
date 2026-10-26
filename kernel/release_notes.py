@@ -64,7 +64,7 @@ def notes(env, files, run_url, repo, tested=False, note="", changelog=""):
     return "\n".join(lines) + "\n"
 
 
-def compact_notes(builds, run_url, repo, tested=False, note="", artifact_run=False):
+def compact_notes(builds, run_url, repo, tested=False, note="", artifact_run=False, note_en=""):
     """README-style release: short download table, with all longer sections collapsed.
 
     builds contains (build.env, matching file names, measured changelog Markdown) per variant.
@@ -91,8 +91,9 @@ def compact_notes(builds, run_url, repo, tested=False, note="", artifact_run=Fal
         lines.append(f"| **{root}** · {build['LINUX_VERSION']} | {download(build['ZIP'], 'ZIP')} | {' · '.join(managers)} |")
     lines += ["", "Cadangkan `boot` sebelum flash / Back up `boot` before flashing.", "",
               "<details>", "<summary>✨ <b>What's New & Fixes</b></summary>", ""]
-    if note.strip():
-        lines += ["> [!NOTE]", *[f"> {line}" for line in note.replace("\\n", "\n").strip().splitlines()], ""]
+    for label, text in (("🇮🇩 Catatan", note), ("🇬🇧 Note", note_en)):
+        if text.strip():
+            lines += [f"**{label}**", "", *[f"> {line}" for line in text.replace("\\n", "\n").strip().splitlines()], ""]
     for build, _, changelog in builds:
         lines += [f"#### {build['ROOT_NAME']} · {build['LINUX_VERSION']}", ""]
         lines += changelog.splitlines()[1:] if changelog else ["Lihat catatan build / See build notes."]

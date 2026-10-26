@@ -78,7 +78,8 @@ fi
                         SOURCE_SHA=SOURCE_SHA, GITHUB_SHA=MAIN_SHA,
                         WORKFLOWS_AT_SOURCE="tree1", WORKFLOWS_AT_MAIN="tree1",
                         GITHUB_STEP_SUMMARY=str(self.root / "summary.md"),
-                        RELEASE_TYPE="Pre-Release", TESTED="true", NOTE="Tested on my device.", TEXT_ONLY="false")
+                        RELEASE_TYPE="Pre-Release", TESTED="true", NOTE="Diuji di perangkat saya.",
+                        NOTE_EN="Tested on my device.", TEXT_ONLY="false")
 
     def run_step(self, name, **env):
         return subprocess.run(["bash", "-euo", "pipefail", "-c", script(name)], cwd=self.root,
@@ -176,7 +177,7 @@ fi
         (self.root / "releases.json").write_text(json.dumps([{"tag_name": "v26.10.23-r1", "target_commitish": "e" * 40,
                                                              "body": "\n".join(bodies)}]))
         (self.root / "compare.json").write_text(json.dumps({"commits": [
-            {"commit": {"message": "fix(kernel): perbaikan ZIP ARM64 (#1)"}},
+            {"commit": {"message": "fix(kernel): perbaikan ZIP ARM64 (#1)\n\nRelease-Fix-EN: Fix the ARM64 ZIP package"}},
             {"commit": {"message": "fix(module): unrelated"}}]}))
         result = self.download(TESTED="false")
         self.assertEqual(result.returncode, 0, result.stderr)
@@ -185,10 +186,15 @@ fi
         for root in self.builds:
             for lang in ("id", "en"):
                 post = (self.root / f"telegram/build-info-{root}-176/{lang}.txt").read_text()
-                self.assertIn("perbaikan ZIP ARM64", post)
+                self.assertIn("perbaikan ZIP ARM64" if lang == "id" else "Fix the ARM64 ZIP package", post)
+                if lang == "en":
+                    self.assertNotIn("perbaikan ZIP ARM64", post)
+                    self.assertIn("Tested on my device.", post)
+                    self.assertNotIn("Diuji di perangkat saya.", post)
                 self.assertIn("android14-6.1-2026-09_r4 → android14-6.1-2026-09_r5", post)
                 self.assertNotIn("unrelated", post)
         self.assertIn("perbaikan ZIP ARM64", notes)
+        self.assertIn("Fix the ARM64 ZIP package", notes)
         self.assertIn(f"<!-- cogan-build-sha: {SOURCE_SHA} -->", notes)
         result = self.run_step("Catatan dan teks Telegram / notes and Telegram text")
         self.assertEqual(result.returncode, 0, result.stderr)

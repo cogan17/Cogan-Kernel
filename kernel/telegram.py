@@ -3,9 +3,9 @@
 
 What's new is measured, not written by hand: this build (build.env) against the previous release of
 the same root manager (kernel, root, SUSFS, NoMount, features). Fixes are the fix(kernel...) commits
-since that release; the owner's note at publishing time is added as it is.
+since that release. Each language uses its own fix descriptions and owner note.
 
-Usage: telegram.py BUILD_ENV --repo OWNER/REPO --sha COMMIT --link URL [--tested] [--note TEXT]
+Usage: telegram.py BUILD_ENV --repo OWNER/REPO --sha COMMIT --link URL [--tested] [--note TEXT] [--note-en TEXT]
                    --out DIR [--summary]
 Writes DIR/id.txt and DIR/en.txt; --summary also prints both as a summary section, each in a code
 block (GitHub puts a copy button at its top right).
@@ -18,6 +18,17 @@ import sys
 from pathlib import Path
 
 RELEASE_TAG = re.compile(r"^v\d{2}\.\d{2}\.\d{2}-r\d+$")  # this repository's kernels (not arsip-, cogan-smart-)
+# Reviewed translations of historical subjects. New commits can supply Release-Fix-ID/EN trailers.
+FIX_EN = {
+    "BakaSU main cukup punya artifact manager, tidak menunggu Telegram":
+        "Use BakaSU main when manager artifacts are available, without waiting for Telegram upload",
+    "SUSFS terbaru terpasang di ACK 6.1.138 dan 6.1.145":
+        "Apply the latest SUSFS patch to ACK 6.1.138 and 6.1.145",
+    "alat AnyKernel3 arm64 untuk rothko; Rilis dari run tidak membongkar ZIP kernel":
+        "Use ARM64 AnyKernel3 tools for rothko and preserve the kernel ZIP in Release From Run",
+    "ccache di ~/.ccache supaya cache tersimpan":
+        "Store ccache in ~/.ccache so the build cache is saved",
+}
 WORDS = {
     "id": {"new": "✨ Baru", "fixes": "🔧 Perbaikan", "note": "📝 Catatan", "features": "🧩 Fitur",
            "same": "Komponen sama dengan {prev}", "first": "Rilis pertama varian ini",
@@ -25,6 +36,7 @@ WORDS = {
            "no_fixes": "Tidak ada commit perbaikan kernel tambahan yang tercatat pada rentang ini",
            "first_fixes": "Belum ada rilis pembanding untuk varian ini",
            "unknown_fixes": "Daftar commit perbaikan belum dapat dibaca",
+           "untranslated_fix": "Perbaikan kernel tercatat dalam riwayat sumber",
            "kernel": "Kernel ACK {old} → {new}", "root": "{name} `{old}` → `{new}`", "susfs": "SUSFS {old} → {new}",
            "ack": "Rilis ACK {old} → {new}", "unicode": "Unicode fix WildKernel `{old}` → `{new}`",
            "neutron": "Neutron clang {old} → {new}",
@@ -36,6 +48,7 @@ WORDS = {
            "no_fixes": "No additional kernel fix commits recorded in this range",
            "first_fixes": "No earlier release of this variant to compare with",
            "unknown_fixes": "The fix commit list could not be read",
+           "untranslated_fix": "Kernel fix recorded in the source history; English description not supplied",
            "kernel": "ACK kernel {old} → {new}", "root": "{name} `{old}` → `{new}`", "susfs": "SUSFS {old} → {new}",
            "ack": "ACK release {old} → {new}", "unicode": "WildKernel Unicode fix `{old}` → `{new}`",
            "neutron": "Neutron clang {old} → {new}",
@@ -87,14 +100,23 @@ def previous(releases, env):
     return None
 
 
-def fixes(commits):
-    """fix(kernel...) commit titles, without the prefix and the PR number."""
+def fixes(commits, lang="id"):
+    """Localized fix descriptions; never pass an unlabelled source subject to English output."""
     found = []
-    for message in commits:
+    for commit in commits:
+        message = commit["commit"]["message"] if isinstance(commit, dict) else commit
         title = message.splitlines()[0] if message else ""
         match = re.match(r"fix\(kernel[^)]*\):\s*(.+?)(?:\s*\(#\d+\))?$", title)
         if match:
-            found.append(match[1])
+            localized = re.search(rf"^Release-Fix-{lang.upper()}:[ \t]*(.+)$", message, re.MULTILINE)
+            text = localized[1].strip() if localized else match[1] if lang == "id" else FIX_EN.get(match[1])
+            if not text:
+                text = WORDS[lang]["untranslated_fix"]
+                if isinstance(commit, dict) and re.fullmatch(r"[0-9a-f]{40}", commit.get("sha", "")):
+                    sha = commit["sha"]
+                    url = commit.get("html_url")
+                    text += f" ([{sha[:12]}]({url}))" if url else f" (`{sha[:12]}`)"
+            found.append(text)
     return found
 
 
@@ -129,8 +151,13 @@ def whats_new(env, prev, lang, history_available=True):
 
 
 def fix_items(lang, prev, fix_titles, history_available=True, fixes_available=True):
-    if fix_titles:
-        return list(fix_titles)
+    if isinstance(fix_titles, dict):
+        if fix_titles.get(lang):
+            return list(fix_titles[lang])
+        if any(fix_titles.values()):
+            return [WORDS[lang]["untranslated_fix"]]
+    elif fix_titles:
+        return fixes([f"fix(kernel): {title}" for title in fix_titles], lang)
     key = "unknown_fixes" if not history_available or not fixes_available else "no_fixes" if prev else "first_fixes"
     return [WORDS[lang][key]]
 
@@ -152,7 +179,7 @@ def changelog_section(env, repo, prev=None, fix_titles=(), history_available=Tru
 
 
 def post(env, lang, prev=None, fix_titles=(), link="", tested=False, note="", history_available=True,
-         fixes_available=True, source_sha=""):
+         fixes_available=True, source_sha="", note_en=""):
     w = WORDS[lang]
     lines = ["🧠 Cogan Kernel · Xiaomi 14T Pro (rothko)",
              f"📦 {env.get('RELEASE', '')} · ACK {env.get('LINUX_VERSION', '')} · {env.get('ROOT_NAME', '')} + SUSFS "
@@ -161,8 +188,9 @@ def post(env, lang, prev=None, fix_titles=(), link="", tested=False, note="", hi
         lines += ["", "📌 " + w["baseline"].format(prev=prev["tag"])]
     lines += ["", w["new"], *[f"• {item}" for item in whats_new(env, prev, lang, history_available)],
               "", w["fixes"], *[f"• {title}" for title in fix_items(lang, prev, fix_titles, history_available, fixes_available)]]
-    if note.strip():
-        lines += ["", w["note"], *note.replace("\\n", "\n").strip().splitlines()]
+    localized_note = note if lang == "id" else note_en
+    if localized_note.strip():
+        lines += ["", w["note"], *localized_note.replace("\\n", "\n").strip().splitlines()]
     lines += ["", f"{w['features']}: {env.get('FEATURES', '')}", w["tested"] if tested else w["untested"]]
     if link:
         lines.append(f"{w['download']}: {link}")
@@ -199,11 +227,11 @@ def changes(env, repo, sha="", api=gh):
     releases = api(f"repos/{repo}/releases?per_page=50")
     available = isinstance(releases, list)
     prev = previous(releases if available else [], env)
-    titles, compared = [], False
+    titles, compared = {}, False
     if prev and re.fullmatch(r"[0-9a-f]{40}", prev["sha"]) and re.fullmatch(r"[0-9a-f]{40}", sha):
         comparison = api(f"repos/{repo}/compare/{prev['sha']}...{sha}")
         if isinstance(comparison, dict) and isinstance(comparison.get("commits"), list) and comparison.get("status") != "behind":
-            titles = fixes(commit["commit"]["message"] for commit in comparison["commits"])
+            titles = {lang: fixes(comparison["commits"], lang) for lang in ("id", "en")}
             compared = True
     return {"prev": prev, "fix_titles": titles, "history_available": available,
             "fixes_available": compared or (available and prev is None), "source_sha": sha}
@@ -217,13 +245,15 @@ def main(argv=None, api=gh):
     parser.add_argument("--link", default="")
     parser.add_argument("--tested", action="store_true")
     parser.add_argument("--note", default="")
+    parser.add_argument("--note-en", default="")
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--summary", action="store_true", help="also print a bilingual summary section")
     args = parser.parse_args(argv)
     env = read_env(args.build_env)
     measured = changes(env, args.repo, args.sha, api)
     args.out.mkdir(parents=True, exist_ok=True)
-    posts = {lang: post(env, lang, link=args.link, tested=args.tested, note=args.note, **measured) for lang in ("id", "en")}
+    posts = {lang: post(env, lang, link=args.link, tested=args.tested, note=args.note, note_en=args.note_en,
+                        **measured) for lang in ("id", "en")}
     for lang, text in posts.items():
         (args.out / f"{lang}.txt").write_text(text)
     if args.summary:
