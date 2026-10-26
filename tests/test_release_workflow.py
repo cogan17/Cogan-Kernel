@@ -10,6 +10,7 @@ import textwrap
 import unittest
 import zipfile
 from pathlib import Path
+from urllib.parse import unquote
 
 from kernel import release_notes as rn
 
@@ -146,12 +147,13 @@ fi
         for root, env in self.builds.items():
             metadata = self.root / f"info/build-info-{root}-176/build.env"
             self.assertIn(f"ROOT_NAME={env['ROOT_NAME']}\n", metadata.read_text())
-            section = notes.split(f"## {env['ROOT_NAME']} · 6.1.176\n", 1)[1].split("\n## ", 1)[0]
+            label = "KSUN" if root == "KSUN" else "BakaSU"
+            row = unquote(next(line for line in notes.splitlines() if line.startswith(f"| **{label}**")))
             other = "BakaSU" if root == "KSUN" else "KernelSU-Next"
-            self.assertIn(env["ZIP"], section)
-            self.assertNotIn(f"2-MANAGER_{other}_", section)
-            self.assertIn("**belum diuji di HP**", section)
-            self.assertIn("**not tested on the phone yet**", section)
+            self.assertIn(env["ZIP"], row)
+            self.assertNotIn(f"2-MANAGER_{other}_", row)
+        self.assertIn("**belum diuji di HP**", notes)
+        self.assertIn("**not tested on the phone yet**", notes)
         result = self.run_step("Terbitkan / publish", TESTED="false")
         self.assertEqual(result.returncode, 0, result.stderr)
         args = (self.root / "called.txt").read_text().splitlines()
@@ -179,7 +181,7 @@ fi
         result = self.download(TESTED="false")
         self.assertEqual(result.returncode, 0, result.stderr)
         notes = (self.root / "notes.md").read_text()
-        self.assertEqual(notes.count("### What's New & Fixes"), 2)
+        self.assertIn("<summary>✨ <b>What's New & Fixes</b></summary>", notes)
         for root in self.builds:
             for lang in ("id", "en"):
                 post = (self.root / f"telegram/build-info-{root}-176/{lang}.txt").read_text()
@@ -192,7 +194,7 @@ fi
         self.assertEqual(result.returncode, 0, result.stderr)
         summary = self.summary()
         self.assertEqual(summary.count("```text"), 4)
-        self.assertLess(summary.index("```text"), summary.index("Catatan rilis lengkap"))
+        self.assertLess(summary.index("```text"), summary.index("Catatan rilis / Release notes"))
 
     def test_text_only_can_prepare_existing_release_without_publishing(self):
         self.artifacts()
@@ -214,6 +216,7 @@ fi
         post = (self.root / "telegram/build-info-KSUN-176/id.txt").read_text()
         self.assertIn("https://github.com/cogan17/Cogan-Kernel/actions/runs/40046361218", post)
         self.assertNotIn("/releases/tag/", post)
+        self.assertNotIn("/releases/download/", (self.root / "notes.md").read_text())
 
     def test_single_root_and_wrapped_artifacts_still_work(self):
         self.artifacts(roots=("KSUN",), wrapped=True)
@@ -222,7 +225,7 @@ fi
         kernel = self.root / "files" / self.builds["KSUN"]["ZIP"]
         with zipfile.ZipFile(kernel) as archive:
             self.assertEqual(archive.namelist(), ["Image"])
-        self.assertIn("**Diuji owner", (self.root / "notes.md").read_text())
+        self.assertIn("**Diuji di HP / Tested on the phone**", (self.root / "notes.md").read_text())
         result = self.run_step("Terbitkan / publish")
         self.assertEqual(result.returncode, 0, result.stderr)
 

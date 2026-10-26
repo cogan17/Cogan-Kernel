@@ -6,7 +6,7 @@ import sys
 import zipfile
 from pathlib import Path
 
-from kernel.release_notes import notes, read_env
+from kernel.release_notes import compact_notes, read_env
 from kernel import telegram as tg
 
 ROOTS = {"KernelSU Next": "KernelSU-Next", "BakaSU": "BakaSU"}
@@ -86,27 +86,24 @@ def prepare(info, files, run_url, repo, tested=False, note="", sha="", api=tg.gh
         if not isinstance(releases, list) or not any(release.get("tag_name") == metadata["RELEASE"]
                                                    and not release.get("draft") for release in releases):
             link = run_url
-    sections = [] if len(builds) == 1 else [f"# {metadata['RELEASE_NAME']} — Xiaomi 14T Pro (rothko)", "",
-                "🇮🇩 Pilih **satu varian kernel** dan APK manager yang sesuai. Semua varian tersedia dalam rilis ini.",
-                "", "🇬🇧 Choose **one kernel variant** and its matching manager APK. All variants are in this release.", ""]
+    sections = []
     summaries = []
     for folder, (env, own) in zip(folders, builds):
         measured = tg.changes(env, repo, sha, history)
         changelog = tg.changelog_section(env, repo, **measured)
-        section = notes(env, own, run_url, repo, tested, note, changelog).splitlines()
-        if len(builds) > 1:
-            section[0] = f"## {env['ROOT_NAME']} · {env['LINUX_VERSION']}"
-        sections += section + [""]
+        sections.append((env, own, changelog))
         if telegram is not None:
             out = telegram / folder.name
             out.mkdir(parents=True, exist_ok=True)
             posts = {lang: tg.post(env, lang, link=link, tested=tested, note=note, **measured) for lang in ("id", "en")}
             for lang, text in posts.items():
                 (out / f"{lang}.txt").write_text(text)
-            summaries += [f"### {env['ROOT_NAME']} · {env['LINUX_VERSION']}", "", tg.summary_section(posts)]
+            summaries += ["<details>",
+                          f"<summary>📣 <b>{env['ROOT_NAME']} · {env['LINUX_VERSION']} — Telegram (ID/EN)</b></summary>",
+                          "", tg.summary_section(posts), "</details>", ""]
     if telegram is not None:
         (telegram / "summary.md").write_text("\n".join(summaries))
-    return metadata, "\n".join(sections)
+    return metadata, compact_notes(sections, run_url, repo, tested, note, artifact_run=link == run_url)
 
 
 def main(argv=None):

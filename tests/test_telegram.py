@@ -48,11 +48,18 @@ class TelegramTest(unittest.TestCase):
                   "SUSFS_COMMIT": "c" * 40}
         body = "# Combined release\n\n" + "\n".join(rn.notes(env, [], "https://run", "cogan17/Cogan-Kernel")
                                                         for env in (R1, bakasu))
-        releases = [{"tag_name": R1["RELEASE"], "target_commitish": "e" * 40, "body": body}]
-        for env in (R1, bakasu):
-            previous = tg.previous(releases, {**env, "RELEASE": R2["RELEASE"]})
-            self.assertEqual(previous["root"][1], env["ROOT_COMMIT"][:12])
-            self.assertEqual(previous["susfs"][1], env["SUSFS_COMMIT"][:12])
+        compact = rn.compact_notes([(env, [], tg.changelog_section(env, "r/r", source_sha="d" * 40))
+                                    for env in ({**R1, "ZIP": "1-KERNEL_KSUN.zip"}, {**bakasu, "ZIP": "1-KERNEL_BSU.zip"})],
+                                   "https://run", "r/r")
+        for layout, text in (("old", body), ("compact", compact)):
+            with self.subTest(layout=layout):
+                releases = [{"tag_name": R1["RELEASE"], "target_commitish": "e" * 40, "body": text}]
+                for env in (R1, bakasu):
+                    previous = tg.previous(releases, {**env, "RELEASE": R2["RELEASE"]})
+                    self.assertEqual(previous["root"][1], env["ROOT_COMMIT"][:12])
+                    self.assertEqual(previous["susfs"][1], env["SUSFS_COMMIT"][:12])
+                    if layout == "compact":
+                        self.assertEqual(previous["sha"], "d" * 40)
 
     def test_only_kernel_fixes_become_fixes(self):
         self.assertEqual(tg.fixes(["fix(kernel): alat AnyKernel3 arm64 untuk rothko (#5)\n\nbody",
