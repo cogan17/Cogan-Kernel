@@ -43,14 +43,14 @@ jobs:
           fi
           [[ -z "$run" || "$run" =~ ^[0-9]+$ ]] || { echo "::error::run_id: angka / a number"; exit 1; }
           echo "id=$run" >> "$GITHUB_OUTPUT"
-      - uses: actions/download-artifact@v8.0.2
+      # gh keeps every build-info-* in a folder of its own, also when the run has only one build
+      # (download-artifact puts a lone match straight into info/, and the build was not recorded).
+      - name: Info build / build info
         if: steps.run.outputs.id != ''
         continue-on-error: true
-        with:
-          pattern: build-info-*
-          path: info
-          run-id: ${{ steps.run.outputs.id }}
-          github-token: ${{ github.token }}
+        env:
+          RUN: ${{ steps.run.outputs.id }}
+        run: gh run download "$RUN" --repo "$GITHUB_REPOSITORY" --pattern 'build-info-*' --dir info
       - uses: actions/download-artifact@v8.0.2
         if: steps.run.outputs.id != ''
         continue-on-error: true
