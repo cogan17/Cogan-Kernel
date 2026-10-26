@@ -168,7 +168,7 @@ fi
         self.assertIn("KernelSU Next", self.summary())
         self.assertIn("BakaSU", self.summary())
 
-    def test_whats_new_and_fixes_are_in_the_release_and_four_copyable_posts(self):
+    def test_whats_new_and_fixes_are_in_the_release_and_one_copyable_post_per_language(self):
         self.artifacts()
         bodies = []
         for env in self.builds.values():
@@ -183,23 +183,26 @@ fi
         self.assertEqual(result.returncode, 0, result.stderr)
         notes = (self.root / "notes.md").read_text()
         self.assertIn("<summary>✨ <b>What's New & Fixes</b></summary>", notes)
-        for root in self.builds:
-            for lang in ("id", "en"):
-                post = (self.root / f"telegram/build-info-{root}-176/{lang}.txt").read_text()
-                self.assertIn("perbaikan ZIP ARM64" if lang == "id" else "Fix the ARM64 ZIP package", post)
-                if lang == "en":
-                    self.assertNotIn("perbaikan ZIP ARM64", post)
-                    self.assertIn("Tested on my device.", post)
-                    self.assertNotIn("Diuji di perangkat saya.", post)
-                self.assertIn("android14-6.1-2026-09_r4 → android14-6.1-2026-09_r5", post)
-                self.assertNotIn("unrelated", post)
+        self.assertEqual(sorted(path.name for path in (self.root / "telegram").iterdir()), ["en.txt", "id.txt", "summary.md"])
+        for lang in ("id", "en"):  # one post for the release, both root managers in it, each change once
+            post = (self.root / f"telegram/{lang}.txt").read_text()
+            self.assertIn("BakaSU & KernelSU Next + SUSFS v2.3.0", post)
+            self.assertEqual(post.count("perbaikan ZIP ARM64" if lang == "id" else "Fix the ARM64 ZIP package"), 1)
+            self.assertEqual(post.count("android14-6.1-2026-09_r4 → android14-6.1-2026-09_r5"), 1)
+            self.assertIn("KernelSU Next `cccccccccccc` → `aaaaaaaaaaaa`", post)
+            self.assertIn("BakaSU `cccccccccccc` → `bbbbbbbbbbbb`", post)
+            if lang == "en":
+                self.assertNotIn("perbaikan ZIP ARM64", post)
+                self.assertIn("Tested on my device.", post)
+                self.assertNotIn("Diuji di perangkat saya.", post)
+            self.assertNotIn("unrelated", post)
         self.assertIn("perbaikan ZIP ARM64", notes)
         self.assertIn("Fix the ARM64 ZIP package", notes)
         self.assertIn(f"<!-- cogan-build-sha: {SOURCE_SHA} -->", notes)
         result = self.run_step("Catatan dan teks Telegram / notes and Telegram text")
         self.assertEqual(result.returncode, 0, result.stderr)
         summary = self.summary()
-        self.assertEqual(summary.count("```text"), 4)
+        self.assertEqual(summary.count("```text"), 2)
         self.assertLess(summary.index("```text"), summary.index("Catatan rilis / Release notes"))
 
     def test_text_only_can_prepare_existing_release_without_publishing(self):
@@ -219,7 +222,7 @@ fi
         self.artifacts(roots=("KSUN",))
         result = self.download(TEXT_ONLY="true")
         self.assertEqual(result.returncode, 0, result.stderr)
-        post = (self.root / "telegram/build-info-KSUN-176/id.txt").read_text()
+        post = (self.root / "telegram/id.txt").read_text()
         self.assertIn("https://github.com/cogan17/Cogan-Kernel/actions/runs/40046361218", post)
         self.assertNotIn("/releases/tag/", post)
         self.assertNotIn("/releases/download/", (self.root / "notes.md").read_text())

@@ -88,7 +88,7 @@ Unicode fix (opsional) lolos build + gate KMI di 157, 162, 172 dan 176, dan terp
 
 Untuk menerbitkan build yang sudah selesai, jalankan **Rilis dari run** dengan ID run Builder yang hijau. Run yang berisi KernelSU Next dan BakaSU diterbitkan menjadi **satu rilis** dengan kedua ZIP kernel dan APK manager masing-masing, tanpa kompilasi ulang. Centang **diuji di HP** hanya bila semua varian dalam run itu sudah diuji owner.
 
-Catatan rilis memuat **What's New & Fixes**, dibandingkan dengan rilis sebelumnya dari root manager yang sama. Di halaman **Summary** run, **Teks Telegram siap salin** tersedia untuk tiap varian dalam Bahasa Indonesia dan English, masing-masing dalam kotak kode dengan tombol salin. Centang **teks_saja** bila hanya ingin membuat catatan dan teks Telegram, termasuk untuk versi yang sudah terbit; mode ini tidak menerbitkan atau mengubah rilis.
+Catatan rilis memuat **What's New & Fixes**, dibandingkan dengan rilis sebelumnya dari root manager yang sama. Di halaman **Summary** run, **satu Teks Telegram siap salin** tersedia untuk seluruh rilis (KernelSU Next dan BakaSU dalam satu teks) dalam Bahasa Indonesia dan English, masing-masing dalam kotak kode dengan tombol salin. Centang **teks_saja** bila hanya ingin membuat catatan dan teks Telegram, termasuk untuk versi yang sudah terbit; mode ini tidak menerbitkan atau mengubah rilis.
 
 </details>
 

@@ -86,24 +86,20 @@ def prepare(info, files, run_url, repo, tested=False, note="", sha="", api=tg.gh
         if not isinstance(releases, list) or not any(release.get("tag_name") == metadata["RELEASE"]
                                                    and not release.get("draft") for release in releases):
             link = run_url
-    sections = []
-    summaries = []
-    for folder, (env, own) in zip(folders, builds):
-        measured = tg.changes(env, repo, sha, history)
-        changelog = tg.changelog_section(env, repo, **measured)
-        sections.append((env, own, changelog))
-        if telegram is not None:
-            out = telegram / folder.name
-            out.mkdir(parents=True, exist_ok=True)
-            posts = {lang: tg.post(env, lang, link=link, tested=tested, note=note, note_en=note_en,
-                                  **measured) for lang in ("id", "en")}
-            for lang, text in posts.items():
-                (out / f"{lang}.txt").write_text(text)
-            summaries += ["<details>",
-                          f"<summary>📣 <b>{env['ROOT_NAME']} · {env['LINUX_VERSION']} — Telegram (ID/EN)</b></summary>",
-                          "", tg.summary_section(posts), "</details>", ""]
+    sections, measured = [], []
+    for env, own in builds:
+        measured.append((env, tg.changes(env, repo, sha, history)))
+        sections.append((env, own, tg.changelog_section(env, repo, **measured[-1][1])))
     if telegram is not None:
-        (telegram / "summary.md").write_text("\n".join(summaries))
+        # One release, one post to copy: every root manager of the run in the same text (owner 2026-10-26).
+        telegram.mkdir(parents=True, exist_ok=True)
+        posts = {lang: tg.release_post(measured, lang, link=link, tested=tested, note=note, note_en=note_en)
+                 for lang in ("id", "en")}
+        for lang, text in posts.items():
+            (telegram / f"{lang}.txt").write_text(text)
+        title = " & ".join(dict.fromkeys(env["ROOT_NAME"] for env, _ in builds))
+        versions = " / ".join(dict.fromkeys(env["LINUX_VERSION"] for env, _ in builds))
+        (telegram / "summary.md").write_text(f"**{title} · {versions}**\n\n" + tg.summary_section(posts))
     return metadata, compact_notes(sections, run_url, repo, tested, note, artifact_run=link == run_url, note_en=note_en)
 
 
