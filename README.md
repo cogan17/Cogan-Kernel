@@ -69,9 +69,9 @@
 <details>
 <summary>🧩 <b>Sublevel yang didukung</b></summary>
 
-Builder memakai rilis ACK resmi `android14-6.1` sejak kernel bawaan HP; `lts` = yang terbaru. Tombol workflow **Cek sublevel baru** mencatat hasil build terakhir di tabel ini (✅ lolos build dan gate KMI, ⏳ menunggu pembaruan hulu), lalu membangun rilis ACK baru dengan semua fitur bila ada.
+Builder memakai rilis ACK resmi `android14-6.1` sejak kernel bawaan HP; `lts` = yang terbaru. Tombol workflow **Catat sublevel** mencatat hasil build terakhir di tabel ini (✅ lolos build dan gate KMI, ⏳ menunggu pembaruan hulu); ia tidak mengecek dan tidak membangun.
 
-Tombol **Cek pembaruan** hanya mengecek, tidak membangun: versi terbaru setiap komponen (ACK, KernelSU Next, BakaSU, SUSFS, NoMount, Baseband Guard, AnyKernel3, Neutron clang, Unicode fix) dibandingkan dengan build terakhir, dengan tanggal rilis stabil dan CI, yang baru dan perbaikannya, dan siapa yang ditunggu bila belum bisa dibangun. Bila ada yang baru, ringkasannya menyarankan menjalankan Builder.
+Tombol **Cek pembaruan** satu-satunya yang mengecek, dan tidak membangun: versi terbaru setiap komponen (ACK, KernelSU Next, BakaSU, SUSFS simonpunk dan modul SUSFS sidex15, NoMount, Baseband Guard, AnyKernel3, Neutron clang, Unicode fix) dibandingkan dengan build terakhir, dengan tanggal rilis stabil dan CI, yang baru dan perbaikannya, dan siapa yang ditunggu bila belum bisa dibangun. Bila ada yang baru, ringkasannya menyarankan menjalankan Builder.
 
 <!-- sublevel:start -->
 | Sublevel | Rilis ACK | Status |

@@ -1,17 +1,16 @@
 #!/usr/bin/env python3
-"""Supported ACK sublevels: check for a new one, record build results, write the README table.
+"""Supported ACK sublevels: record build results, write the README table.
 
 kernel/sublevels.json is a record of what the Cogan Kernel Builder proved, not a lock: no build
 reads it. Per sublevel: the ACK release tag, and per root manager (KSUN, BSU) the result of the
 newest run that built it (ok, gagal, tunggu with whom to wait for). "pendahulu" marks sublevels
 proven only in the predecessor repository. The README row follows the newest result here: built,
 waiting for an upstream update, or (nothing built here yet) proven in the predecessor; a sublevel
-that failed here is not listed. The check, started by hand (owner 2026-10-24: no schedule), builds an
-ACK release whose tag has not been tried yet, with every feature.
+that failed here is not listed. Recording is started by hand (workflow Catat sublevel); newest
+versions, new ACK releases too, are checked by Cek pembaruan (kernel/updates.py), which builds
+nothing (owner 2026-10-26: one check, not two).
 
-Usage: sublevels.py check  [--github-output FILE]
-       sublevels.py mark   --tag TAG --sublevel N --date YYYY-MM-DD
-       sublevels.py record --info DIR --snapshots DIR --run RUN_ID
+Usage: sublevels.py record --info DIR --snapshots DIR --run RUN_ID
        sublevels.py readme
 """
 import argparse
@@ -39,38 +38,6 @@ def load(path=RECORD):
 def save(record, path=RECORD):
     ordered = {key: record[key] for key in sorted(record, key=int, reverse=True)}
     path.write_text(json.dumps(ordered, indent=1, ensure_ascii=False) + "\n")
-
-
-# ---- check for a new ACK release ------------------------------------------------------------
-
-def is_new(record, tag, sublevel):
-    """True when this ACK release tag has not been tried yet (a result, or a build already started)."""
-    entry = record.get(str(sublevel))
-    if not entry:
-        return True
-    tried = entry.get("dicoba")
-    if isinstance(tried, dict) and tried.get("tag") == tag:
-        return False
-    return entry.get("tag") != tag or not (tried or any(r in entry for r in ROOTS))
-
-
-def mark(record, tag, sublevel, date):
-    """The check started a build of this release: never start it twice. The results of the release
-    proven before stay until the new one's results are recorded (record_run), so the README keeps
-    showing them (owner's first check, 26 Okt 2026: 176 `2026-09_r4`, tested on the phone, had vanished)."""
-    entry = record.setdefault(str(sublevel), {})
-    if entry.get("tag") in (None, tag) and not any(r in entry for r in ROOTS):
-        entry.update({"tag": tag, "dicoba": date})
-    else:
-        entry["dicoba"] = {"tag": tag, "date": date}
-
-
-def newest_ack():
-    sys.path.insert(0, str(HERE))
-    import resolve  # noqa: E402  (network: git ls-remote and one Makefile of googlesource)
-    tag, sha, sublevel = resolve.pick_ack(resolve.ack_releases(resolve.ls_remote(resolve.ACK, "refs/tags/android14-6.1-*")),
-                                          "lts")[0]
-    return tag, sublevel
 
 
 # ---- recording a Builder run ------------------------------------------------------------------
@@ -162,28 +129,12 @@ def write_readmes(record, paths=READMES):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("command", choices=["check", "mark", "record", "readme"])
-    parser.add_argument("--tag")
-    parser.add_argument("--sublevel")
-    parser.add_argument("--date")
-    parser.add_argument("--github-output")
+    parser.add_argument("command", choices=["record", "readme"])
     parser.add_argument("--info", type=Path)
     parser.add_argument("--snapshots", type=Path)
     parser.add_argument("--run")
     args = parser.parse_args(argv)
     record = load()
-    if args.command == "check":
-        tag, sublevel = newest_ack()
-        new = is_new(record, tag, sublevel)
-        print(f"newest ACK: {tag} (6.1.{sublevel}); {'new' if new else 'already tried'}")
-        if args.github_output:
-            with open(args.github_output, "a") as out:
-                out.write(f"tag={tag}\nsublevel={sublevel}\nnew={'true' if new else 'false'}\n")
-        return 0
-    if args.command == "mark":
-        mark(record, args.tag, args.sublevel, args.date)
-        save(record)
-        return 0
     if args.command == "record":
         for sublevel, root, status in record_run(record, args.info, args.run, snapshot_tags(args.snapshots)):
             print(f"6.1.{sublevel} {root}: {status}")

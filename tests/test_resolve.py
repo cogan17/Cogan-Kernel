@@ -175,6 +175,30 @@ class BakasuMainTest(unittest.TestCase):
             self.assertIn("BakaSU di main", caught.exception.id_text)
 
 
+class SusfsSidexTest(unittest.TestCase):
+    # Owner 2026-10-26: SUSFS has two developers; sidex15's module (WebUI) comes from its newest CI build.
+    def test_newest_build_with_its_module_artifact(self):
+        asked = []
+        runs = [{"id": 9, "html_url": "u9", "head_sha": "e" * 40, "created_at": "2026-10-17T05:03:00Z"},
+                {"id": 8, "html_url": "u8", "head_sha": "d" * 40, "created_at": "2026-10-16T05:03:00Z"}]
+
+        def api(path):
+            asked.append(path)
+            if "/runs?" in path:
+                return {"workflow_runs": runs}
+            if "/runs/9/" in path:
+                return {"artifacts": [{"name": "release-1.5.2+_eeeeeee", "id": 31, "expired": True}]}
+            return {"artifacts": [{"name": "release-1.5.2+_ddddddd", "id": 21, "expired": False}]}
+        self.assertEqual(r.susfs_sidex(api), {"repo": "sidex15/susfs4ksu-module", "run": 8, "url": "u8", "commit": "d" * 40,
+                                              "date": "2026-10-16T05:03:00Z", "artifact": 21, "name": "release-1.5.2+_ddddddd"})
+        self.assertIn("build.yml/runs?branch=v1.5.2%2B&status=success&per_page=5", asked[0])
+
+    def test_no_build_means_wait(self):
+        found = r.susfs_sidex(lambda path: {"workflow_runs": []})
+        self.assertIn("Tunggu sidex15", found["wait"]["id"])
+        self.assertIn("Wait for sidex15", found["wait"]["en"])
+
+
 class UnicodeFixTest(unittest.TestCase):
     def test_newest_wildkernel_patch(self):
         asked = []

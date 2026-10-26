@@ -1,30 +1,29 @@
-name: Cek sublevel baru
+name: Catat sublevel
 
-# Owner 24 Okt 2026: hanya manual (tombol Run workflow), tanpa jadwal atau pemicu otomatis, supaya
-# hemat run. Satu tombol:
-# 1. catat: hasil run Cogan Kernel Builder (run_id, atau run terakhir dari main yang sudah selesai)
-#    masuk kernel/sublevels.json dan tabel README (ID/EN), langsung di main. Catatan, bukan kunci.
-# 2. cek (tanpa run_id): rilis ACK terbaru yang tag-nya belum pernah dicoba dijalankan di
-#    Cogan Kernel Builder (CI, KernelSU Next & BakaSU, semua centang termasuk Unicode Fix).
+# Owner 26 Okt 2026: dua cek dipisah perannya. Mengecek versi terbaru (termasuk rilis ACK baru) hanya
+# di **Cek pembaruan**; workflow ini hanya mencatat. Tombol manual, tanpa jadwal atau pemicu otomatis:
+# hasil run Cogan Kernel Builder (run_id, atau run terakhir dari main yang sudah selesai) masuk
+# kernel/sublevels.json dan tabel README (ID/EN), langsung di main. Catatan, bukan kunci. Workflow ini
+# tidak memulai build apa pun.
 
 on:
   workflow_dispatch:
     inputs:
       run_id:
-        description: "Kosong = catat run Builder terakhir, lalu cek sublevel baru; isi ID run Builder = catat run itu saja / empty = record the latest Builder run, then check; a Builder run ID = record that run only"
+        description: "Kosong = catat run Builder terakhir dari main; isi ID run Builder = catat run itu / empty = record the latest Builder run from main; a Builder run ID = record that run"
         type: string
         default: ""
 
 concurrency:
-  group: cek-sublevel
+  group: catat-sublevel
   cancel-in-progress: false
 
 jobs:
-  cek:
-    name: Catat dan cek / record and check
+  catat:
+    name: Catat / record
     runs-on: ubuntu-latest
     permissions:
-      actions: write   # reads the Builder's artifacts and starts it
+      actions: read    # the Builder's artifacts
       contents: write  # kernel/sublevels.json and the README tables on main
     env:
       GH_TOKEN: ${{ github.token }}
@@ -72,29 +71,11 @@ jobs:
           # Artifacts last 90 days: an older run has nothing left to record.
           compgen -G "info/build-info-*" > /dev/null && echo "found=true" >> "$GITHUB_OUTPUT" || echo "found=false" >> "$GITHUB_OUTPUT"
           python3 kernel/sublevels.py record --info info --snapshots snapshots --run "$RUN" | tee recorded.txt
-      - name: Cek / check
-        id: cek
-        if: inputs.run_id == ''
-        run: python3 kernel/sublevels.py check --github-output "$GITHUB_OUTPUT"
-      - name: Bangun dengan semua fitur / build with every feature
-        id: bangun
-        if: steps.cek.outputs.new == 'true'
-        env:
-          SUBLEVEL: ${{ steps.cek.outputs.sublevel }}
-          TAG: ${{ steps.cek.outputs.tag }}
-        run: |
-          set -euo pipefail
-          gh workflow run build-kernel.yml --repo "$GITHUB_REPOSITORY" --ref main -f release_type=CI \
-            -f kernel_sublevel="$SUBLEVEL" -f root_flavor="KernelSU Next & BakaSU" \
-            -f use_nomount=true -f use_bbg=true -f use_net=true -f use_unicode=true
-          # Tried once: the next check does not start the same release again.
-          python3 kernel/sublevels.py mark --tag "$TAG" --sublevel "$SUBLEVEL" --date "$(TZ=Asia/Jakarta date +%F)"
       - name: Simpan ke main / save to main
         id: simpan
-        if: steps.catat.outcome == 'success' || steps.bangun.outcome == 'success'
+        if: steps.catat.outcome == 'success'
         env:
           RUN: ${{ steps.run.outputs.id }}
-          NEW_TAG: ${{ steps.bangun.outcome == 'success' && steps.cek.outputs.tag || '' }}
         run: |
           set -euo pipefail
           git diff --quiet -- README.md README.en.md && echo "readme=false" >> "$GITHUB_OUTPUT" \
@@ -103,7 +84,7 @@ jobs:
             git config user.name Cogan
             git config user.email 79615344+cogan17@users.noreply.github.com
             git add kernel/sublevels.json README.md README.en.md
-            git commit -q -m "docs(sublevel): ${NEW_TAG:+$NEW_TAG sedang dibangun; }catat hasil Builder${RUN:+ run $RUN}"
+            git commit -q -m "docs(sublevel): catat hasil Builder run $RUN"
             git pull -q --rebase origin main
             git push -q origin HEAD:main
           fi
@@ -114,18 +95,12 @@ jobs:
           RUN_OUTCOME: ${{ steps.run.outcome }}
           CATAT: ${{ steps.catat.outcome }}
           FOUND: ${{ steps.catat.outputs.found }}
-          CEK: ${{ steps.cek.outcome }}
-          NEW: ${{ steps.cek.outputs.new }}
-          TAG: ${{ steps.cek.outputs.tag }}
-          SUBLEVEL: ${{ steps.cek.outputs.sublevel }}
-          BANGUN: ${{ steps.bangun.outcome }}
           SIMPAN: ${{ steps.simpan.outcome }}
           README: ${{ steps.simpan.outputs.readme }}
         run: |
           run_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$RUN"
-          builder="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/workflows/build-kernel.yml"
           {
-            echo "## 🔎 Cek sublevel baru / new sublevel check"
+            echo "## 📝 Catat sublevel / record sublevels"
             echo
             if [ "$RUN_OUTCOME" != "success" ]; then
               echo "- 🇮🇩 ❌ Run Builder tidak bisa ditentukan (run_id harus angka); lihat pesan error di atas."
@@ -146,21 +121,8 @@ jobs:
               echo "- 🇮🇩 ✅ [Run $RUN]($run_url) sudah tercatat; tabel README tetap."
               echo "- 🇬🇧 ✅ [Run $RUN]($run_url) is already recorded; the README table stays."
             fi
-            if [ -n "$RUN_ID" ] || [ "$CEK" = "skipped" ]; then
-              :  # recording only, or stopped before the check (reported above)
-            elif [ "$CEK" != "success" ]; then
-              echo "- 🇮🇩 ❌ Gagal mengecek rilis ACK; lihat pesan error di atas."
-              echo "- 🇬🇧 ❌ Could not check the ACK releases; see the error above."
-            elif [ "$NEW" != "true" ]; then
-              echo "- 🇮🇩 ✅ Tidak ada sublevel baru: rilis ACK terbaru \`$TAG\` (6.1.$SUBLEVEL) sudah pernah dibangun."
-              echo "- 🇬🇧 ✅ No new sublevel: the newest ACK release \`$TAG\` (6.1.$SUBLEVEL) was built before."
-            elif [ "$BANGUN" = "success" ]; then
-              echo "- 🇮🇩 🆕 Rilis ACK baru \`$TAG\` (6.1.$SUBLEVEL): [Cogan Kernel Builder]($builder) dijalankan dengan semua fitur. Setelah selesai, tekan tombol ini lagi untuk mencatatnya di README."
-              echo "- 🇬🇧 🆕 New ACK release \`$TAG\` (6.1.$SUBLEVEL): [Cogan Kernel Builder]($builder) started with every feature. When it finishes, press this button again to record it in the README."
-            else
-              echo "- 🇮🇩 ❌ Rilis ACK baru \`$TAG\` (6.1.$SUBLEVEL) gagal dijalankan di Builder; lihat pesan error di atas."
-              echo "- 🇬🇧 ❌ Could not start the Builder for the new ACK release \`$TAG\` (6.1.$SUBLEVEL); see the error above."
-            fi
+            echo "- 🇮🇩 ℹ️ Versi terbaru (termasuk rilis ACK baru) dicek lewat **Cek pembaruan**; workflow ini tidak memulai build."
+            echo "- 🇬🇧 ℹ️ Newest versions (new ACK releases too) are checked by **Cek pembaruan**; this workflow starts no build."
             if [ "$SIMPAN" = "failure" ]; then
               echo "- 🇮🇩 ❌ Catatan gagal disimpan ke main; lihat pesan error di atas."
               echo "- 🇬🇧 ❌ Could not save the record to main; see the error above."

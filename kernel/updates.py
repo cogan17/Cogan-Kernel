@@ -12,6 +12,9 @@ The last build is the newest Cogan Kernel Builder run on main that built a kerne
 manager (its snapshot artifact, kept 90 days). Upstream text (commit titles, release notes) is shown
 as its authors wrote it.
 
+SUSFS has two developers (owner 2026-10-26): simonpunk (kernel patch and module, file 5) and sidex15
+(module with WebUI, file 6, CI builds only); both are checked.
+
 Usage: updates.py --repo OWNER/REPO [--out FILE]   (GH_TOKEN for the GitHub API)
 """
 import argparse
@@ -290,6 +293,23 @@ def check_susfs(net, builds):
                 changes=changes, status="unknown" if not base else "same" if base == head else "new", log=True)
 
 
+def check_sidex(net, builds):
+    """sidex15's SUSFS module (WebUI), the 6th file: no releases, the Builder takes its newest CI build."""
+    base = base_of(builds, "susfs_sidex", "commit")
+    repo = r.SUSFS_SIDEX[0]
+    newest = r.susfs_sidex(net.api)
+    lines = [{"id": "Tanpa rilis: Builder mengambil build CI terbarunya (cabang v1.5.2+).",
+              "en": "No releases: the Builder takes its newest CI build (branch v1.5.2+)."}]
+    if "wait" in newest:
+        return item("sidex", "SUSFS modul (sidex15)", base={"label": f"`{short(base)}`"} if base else None,
+                    status="wait", wait=newest["wait"], lines=lines)
+    head = newest["commit"]
+    ci = {"label": f"{newest['name']} `{short(head)}`", "date": newest.get("date", ""), "sha": head, "url": newest["url"]}
+    return item("sidex", "SUSFS modul (sidex15)", base={"label": f"`{short(base)}`"} if base else None, ci=ci,
+                changes=github_changes(net, repo, base, head), lines=lines,
+                status="unknown" if not base else "same" if base == head else "new", log=True)
+
+
 def check_ksun(net, builds):
     snap = builds.get("KSUN", {}).get("snap", {})
     base = snap.get("root_source", {})
@@ -375,7 +395,7 @@ def check_nomount(net, builds):
     top = github_commit(net, repo, head)
     after = github_changes(net, repo, tag, head)   # on the main branch after the newest release
     lines = ([{"id": f"{len(after)} commit di main sesudah {tag} (belum dirilis; Builder memakai rilis)",
-               "en": f"{len(after)} commits on main after {tag} (not released; the Builder takes the release)"}] if after else [])
+               "en": f"{len(after)} commit(s) on main after {tag} (not released; the Builder takes the release)"}] if after else [])
     return item("nomount", "NoMount", base={"label": base} if base else None,
                 stable={"label": tag, "date": release["date"], "url": release["url"]},
                 ci={"label": f"main `{short(head)}`", "date": top["date"], "sha": head},
@@ -443,12 +463,13 @@ def gather(net, repo):
     found = []
     susfs_head = None
     checks = [("ack", lambda: check_ack(net, clean)), ("susfs", lambda: check_susfs(net, clean)),
-              ("ksun", lambda: check_ksun(net, clean)), ("bakasu", lambda: check_bakasu(net, clean, susfs_head)),
+              ("sidex", lambda: check_sidex(net, clean)), ("ksun", lambda: check_ksun(net, clean)), ("bakasu", lambda: check_bakasu(net, clean, susfs_head)),
               ("nomount", lambda: check_nomount(net, clean)),
               ("bbg", lambda: check_branch(net, clean, "bbg", "Baseband Guard", r.BBG)),
               ("anykernel", lambda: check_anykernel(net, clean)),
               ("neutron", lambda: check_neutron(net, clean)), ("unicode", lambda: check_unicode(net, clean))]
-    names = {"ack": "ACK android14-6.1", "susfs": "SUSFS (simonpunk)", "ksun": "KernelSU Next", "bakasu": "BakaSU",
+    names = {"ack": "ACK android14-6.1", "susfs": "SUSFS (simonpunk)", "sidex": "SUSFS modul (sidex15)",
+             "ksun": "KernelSU Next", "bakasu": "BakaSU",
              "nomount": "NoMount", "bbg": "Baseband Guard", "anykernel": "AnyKernel3", "neutron": "Neutron clang",
              "unicode": "Unicode fix (WildKernel)"}
     for key, check in checks:
