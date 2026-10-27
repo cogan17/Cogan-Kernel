@@ -417,16 +417,14 @@ jobs:
     if: always()
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write  # permanent Markdown build records on main; no logs or binaries
       actions: read   # the run's build-info artifacts through gh
     steps:
       - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
           sparse-checkout: |
-            kernel/run_summary.py
-            kernel/telegram.py
-          sparse-checkout-cone-mode: false
+            kernel
       # gh keeps every build-info-* in a folder of its own, also when the run has only one build:
       # download-artifact puts a lone match straight into info/ (run 10: no Telegram text, no result).
       - name: Info build / build info
@@ -470,3 +468,15 @@ jobs:
           python3 kernel/run_summary.py --matrix "$MATRIX" --info info --snapshots snapshots --repo "$GITHUB_REPOSITORY" \
             --resolve "$RESOLVE" --attest "$ATTEST" --release "$RELEASE" --telegram telegram \
             --susfs susfs --susfs-result "$SUSFS" >> "$GITHUB_STEP_SUMMARY"
+      - name: Simpan riwayat build / save build history
+        if: always() && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if python3 kernel/build_history.py --repo "$GITHUB_REPOSITORY" --run "$GITHUB_RUN_ID" --info info --snapshots snapshots; then
+            echo "✅ Riwayat build tersimpan di [kernel/history]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/tree/main/kernel/history) / Build history saved; deleting Actions logs or runs does not remove it." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "❌ Riwayat build gagal disimpan; lihat langkah merah ini / Build history could not be saved; see this failed step." >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi

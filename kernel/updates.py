@@ -8,9 +8,10 @@ last build (commit titles, or the release notes), and whether it can be built no
 newest SUSFS and the KernelSU Next CI manager are checked the way kernel/resolve.py checks them, so the
 summary also says whom to wait for (e.g. "SUSFS blocked in BakaSU", Baka-SU/BakaSU#214).
 
-The last build is the newest Cogan Kernel Builder run on main that built a kernel of that root
-manager (its snapshot artifact, kept 90 days). Upstream text (commit titles, release notes) is shown
-as its authors wrote it.
+The last build is the newest successful Cogan Kernel Builder result on main for that root manager.
+Its permanent Markdown record in kernel/history survives deletion of Actions logs, artifacts and
+runs. Snapshot artifacts remain a fallback for builds made before permanent recording was added.
+Upstream text (commit titles, release notes) is shown as its authors wrote it.
 
 SUSFS has two developers (owner 2026-10-26): simonpunk (kernel patch and module, file 5) and sidex15
 (module with WebUI, file 6, CI builds only); both are checked.
@@ -29,9 +30,11 @@ from pathlib import Path
 
 if __package__:  # imported as kernel.updates (tests): the same resolve module as the caller
     from . import resolve as r
+    from . import build_history as history
 else:            # run as kernel/updates.py
     sys.path.insert(0, str(Path(__file__).resolve().parent))
     import resolve as r  # noqa: E402  (the Builder's own version finder)
+    import build_history as history
 
 WIB = timezone(timedelta(hours=7))
 GITLAB = "https://gitlab.com/api/v4/projects/simonpunk%2Fsusfs4ksu"
@@ -45,12 +48,13 @@ T = {
     "id": {
         "flag": "🇮🇩 Bahasa Indonesia", "title": "Cek pembaruan", "component": "Komponen", "last": "Build terakhir",
         "newest": "Terbaru", "status": "Status", "same": "✅ sama", "new": "🆕 ada yang baru", "wait": "⏳ tunggu",
-        "unknown": "ℹ️ belum pernah dibangun", "error": "⚠️ tidak bisa dicek", "off": "➖ tidak dipakai",
+        "unknown": "ℹ️ riwayat tidak tersedia", "error": "⚠️ tidak bisa dicek", "off": "➖ tidak dipakai",
         "stable": "Stabil", "ci": "CI", "newer_ci": "CI lebih baru dari rilis stabil", "newer_stable": "rilis stabil paling baru",
         "build": "🆕 **Ada pembaruan: {names}.** Silakan jalankan **Cogan Kernel Builder** (Release Type CI dulu untuk bukti build).",
         "nothing": "✅ **Semua komponen sama dengan build terakhir.** Belum perlu build.",
         "waits": "⏳ **Belum bisa dibangun:**",
-        "lastrun": "Build terakhir: {roots}.", "norun": "Belum ada run Builder dengan kernel dalam 90 hari terakhir.",
+        "lastrun": "Build terakhir: {roots}.", "norun": "Riwayat build belum tersedia; log atau artifact mungkin sudah dihapus atau kedaluwarsa.",
+        "partial": "⚠️ Sebagian komponen belum dapat dibandingkan; periksa status di tabel.",
         "changes": "Yang baru dan perbaikan sejak build terakhir", "fixes": "🔧 Perbaikan", "news": "✨ Baru",
         "more": "… dan {n} commit lain", "notes": "Catatan rilis {tag}", "none": "tidak ada commit baru",
         "only": "Hanya cek: tidak ada yang dibangun atau diterbitkan. Teks commit dan catatan rilis ditulis apa adanya oleh pengembangnya.",
@@ -61,12 +65,13 @@ T = {
     "en": {
         "flag": "🇬🇧 English", "title": "Check for updates", "component": "Component", "last": "Last build",
         "newest": "Newest", "status": "Status", "same": "✅ same", "new": "🆕 newer", "wait": "⏳ waiting",
-        "unknown": "ℹ️ never built", "error": "⚠️ could not check", "off": "➖ not used",
+        "unknown": "ℹ️ history unavailable", "error": "⚠️ could not check", "off": "➖ not used",
         "stable": "Stable", "ci": "CI", "newer_ci": "CI is newer than the stable release", "newer_stable": "the stable release is the newest",
         "build": "🆕 **Updates: {names}.** Run **Cogan Kernel Builder** (Release Type CI first, as build proof).",
         "nothing": "✅ **Every component equals the last build.** No build needed yet.",
         "waits": "⏳ **Cannot be built yet:**",
-        "lastrun": "Last build: {roots}.", "norun": "No Builder run with a kernel in the last 90 days.",
+        "lastrun": "Last build: {roots}.", "norun": "Build history is unavailable; logs or artifacts may have been deleted or expired.",
+        "partial": "⚠️ Some components could not be compared; check their status in the table.",
         "changes": "New and fixed since the last build", "fixes": "🔧 Fixes", "news": "✨ New",
         "more": "… and {n} more commits", "notes": "Release notes {tag}", "none": "no new commits",
         "only": "Check only: nothing is built or published. Commit titles and release notes are shown as their developers wrote them.",
@@ -133,6 +138,9 @@ def split_changes(commits):
 # ---- network (one object, so the tests can replace it) -----------------------------------------
 
 class Net:
+    def history(self):
+        return history.load()
+
     def api(self, path):
         return r.api(path)
 
@@ -185,29 +193,65 @@ class Net:
 # ---- the last build ----------------------------------------------------------------------------
 
 def last_builds(net, repo, runs=30):
-    """{root: {"run", "url", "date", "snap"}} of the newest Builder run on main that built a kernel of
-    that root manager, from its snapshot artifact (kept 90 days)."""
-    found = {}
-    listed = net.api(f"repos/{repo}/actions/workflows/build-kernel.yml/runs?branch=main&status=completed&per_page={runs}")
+    """Permanent Markdown records first; a newer legacy run can still supply its snapshot artifact."""
+    found, problems = {}, []
+    try:
+        found = history.latest(net.history(), repo)
+    except Exception as exc:  # one damaged record must not silently mean "never built"
+        problems.append(str(exc))
+    try:
+        listed = net.api(f"repos/{repo}/actions/workflows/build-kernel.yml/runs?branch=main&status=completed&per_page={runs}")
+    except Exception as exc:
+        if found:
+            return {**found, "error": str(exc)}
+        raise
     for run in listed.get("workflow_runs", []):
-        artifacts = [a for a in net.api(f"repos/{repo}/actions/runs/{run['id']}/artifacts?per_page=100")["artifacts"]
-                     if not a.get("expired")]
-        kernels = [a["name"] for a in artifacts if a["name"].startswith("1-KERNEL_")]
-        snapshot = next((a for a in artifacts if a["name"].startswith("snapshots-")), None)
-        if not kernels or snapshot is None:
+        if {"KSUN", "BSU"} <= found.keys() and all(v["run_id"] >= run["id"] for v in found.values()):
+            break  # already recorded; no dependency on retained artifacts
+        try:
+            candidates = legacy_builds(net, repo, run)
+        except Exception as exc:  # keep the permanent baseline if a legacy artifact is gone
+            problems.append(str(exc))
             continue
-        with tempfile.TemporaryDirectory(prefix="updates-run-") as work:
-            net.download(repo, snapshot["id"], Path(work) / "snap.zip")
-            with zipfile.ZipFile(Path(work) / "snap.zip") as archive:
-                snaps = [json.loads(archive.read(name)) for name in archive.namelist() if name.endswith(".json")]
-        for snap in snaps:
-            root = snap.get("root")
-            tag = "KernelSU-Next" if root == "KSUN" else "BakaSU"
-            if root in found or "wait" in snap or not any(tag in name for name in kernels):
-                continue
-            found[root] = {"run": run["run_number"], "url": run["html_url"], "date": run.get("created_at", ""), "snap": snap}
-        if {"KSUN", "BSU"} <= found.keys():
+        for root, value in candidates.items():
+            if root not in found or value["run_id"] > found[root]["run_id"]:
+                found[root] = value
+    if problems:
+        found["error"] = "; ".join(problems)[:300]
+    return found
+
+
+def legacy_builds(net, repo, run):
+    found = {}
+    # Paginate: a large sublevel matrix can have more than 100 artifacts.
+    artifacts = []
+    page = 1
+    while True:
+        suffix = "" if page == 1 else f"&page={page}"
+        batch = net.api(f"repos/{repo}/actions/runs/{run['id']}/artifacts?per_page=100{suffix}")["artifacts"]
+        artifacts.extend(a for a in batch if not a.get("expired"))
+        if len(batch) < 100:
             break
+        page += 1
+    kernels = [a["name"] for a in artifacts if a["name"].startswith("1-KERNEL_")]
+    snapshot = next((a for a in artifacts if a["name"].startswith("snapshots-")), None)
+    if not kernels or snapshot is None:
+        return found
+    with tempfile.TemporaryDirectory(prefix="updates-run-") as work:
+        net.download(repo, snapshot["id"], Path(work) / "snap.zip")
+        with zipfile.ZipFile(Path(work) / "snap.zip") as archive:
+            snaps = [json.loads(archive.read(name)) for name in archive.namelist() if name.endswith(".json")]
+    for snap in snaps:
+        root = snap.get("root")
+        if root not in ("KSUN", "BSU") or "wait" in snap:
+            continue
+        tag = "KernelSU-Next" if root == "KSUN" else "BakaSU"
+        built = [a for a in snap.get("ack", []) if any(f"6.1.{a['sublevel']}_{tag}+" in name for name in kernels)]
+        if not built:
+            continue
+        snap = {**snap, "ack": built}
+        found[root] = {"run": run["run_number"], "run_id": run["id"], "url": run["html_url"],
+                       "date": run.get("created_at", ""), "snap": snap}
     return found
 
 
@@ -444,8 +488,8 @@ def check_unicode(net, builds):
     ci = ({"label": f"`{short(newest['sha'])}`", "date": newest["commit"]["committer"]["date"], "sha": newest["sha"]}
           if newest else None)
     if not base:
-        return item("unicode", "Unicode fix (WildKernel)", ci=ci, status="off",
-                    lines=[{"id": T["id"]["unicode_off"], "en": T["en"]["unicode_off"]}])
+        return item("unicode", "Unicode fix (WildKernel)", ci=ci, status="off" if builds else "unknown",
+                    lines=[{"id": T["id"]["unicode_off"], "en": T["en"]["unicode_off"]}] if builds else [])
     # The Builder takes the branch head; only commits that touch the patch change the kernel.
     since = github_changes(net, repo, base, net.ls_remote(r.UNICODE_FIX, "refs/heads/main")["refs/heads/main"])
     changed = [c for c in since if newest and c["sha"] in {t["sha"] for t in touched}]
@@ -539,15 +583,18 @@ def summary(builds, found):
         t = T[lang]
         out += [f"<details{' open' if lang == 'id' else ''}><summary>{t['flag']}</summary>", ""]
         if roots:
-            out.append(t["build"].format(names=", ".join(news)) if news else t["nothing"])
+            out.append(t["build"].format(names=", ".join(news)) if news else
+                       t["partial"] if any(e["status"] in ("unknown", "error") for e in found) else t["nothing"])
         if waits:
             out += ["", t["waits"], *[f"- {e['name']}: {e['wait'][lang]}" for e in waits]]
         if roots:
-            runs = ", ".join(f"{'KernelSU Next' if k == 'KSUN' else 'BakaSU'} [run #{v['run']}]({v['url']}) ({when(v['date'], lang)})"
+            runs = ", ".join(f"{'KernelSU Next' if k == 'KSUN' else 'BakaSU'} [run #{v['run']}]({v.get('record_url', v['url'])}) ({when(v['date'], lang)})"
                              for k, v in sorted(roots.items(), key=lambda kv: kv[0] != "KSUN"))
             out += ["", t["lastrun"].format(roots=runs)]
         else:
-            out += [t["norun"] + (f" ({builds['error']})" if builds.get("error") else "")]
+            out += [t["norun"]]
+        if builds.get("error"):
+            out += ["", f"⚠️ {builds['error']}"]
         out += ["", f"| {t['component']} | {t['last']} | {t['newest']} | {t['status']} |", "|---|---|---|---|"]
         for entry in found:
             base = (entry.get("base") or {}).get("label", "-")
