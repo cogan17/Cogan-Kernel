@@ -2,7 +2,8 @@ name: Cek pembaruan
 
 # Owner 26 Okt 2026: "workflow yg bisa Check saja, hanya bisa check". Satu tombol, tanpa jadwal atau
 # pemicu otomatis (hemat run). Versi terbaru setiap komponen (ACK, KernelSU Next, BakaSU, SUSFS,
-# NoMount, Baseband Guard, AnyKernel3, Neutron clang, Unicode fix) dibandingkan dengan build terakhir:
+# NoMount, Baseband Guard, AnyKernel3, Neutron clang, Unicode fix) dibandingkan dengan build terakhir
+# dari dokumen permanen kernel/history/ (artifact snapshot hanya cadangan run lama):
 # versi dan tanggal rilis stabil maupun CI, mana yang lebih baru, yang baru dan perbaikan sejak build
 # terakhir, dan siapa yang ditunggu bila belum bisa dibangun (mis. SUSFS diblokir di BakaSU). Ringkasan
 # dua bahasa (kernel/updates.py). Tidak membangun, tidak menerbitkan, tidak menulis apa pun.
@@ -12,7 +13,7 @@ on:
 
 permissions:
   contents: read
-  actions: read   # the Builder's runs and their snapshot artifacts (the last build)
+  actions: read   # legacy Builder snapshots; the permanent baseline is in kernel/history/
 
 concurrency:
   group: cek-pembaruan

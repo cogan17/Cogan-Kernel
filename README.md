@@ -73,6 +73,8 @@ Builder memakai rilis ACK resmi `android14-6.1` sejak kernel bawaan HP; `lts` = 
 
 Tombol **Cek pembaruan** satu-satunya yang mengecek, dan tidak membangun: versi terbaru setiap komponen (ACK, KernelSU Next, BakaSU, SUSFS simonpunk dan modul SUSFS sidex15, NoMount, Baseband Guard, AnyKernel3, Neutron clang, Unicode fix) dibandingkan dengan build terakhir, dengan tanggal rilis stabil dan CI, yang baru dan perbaikannya, dan siapa yang ditunggu bila belum bisa dibangun. Bila ada yang baru, ringkasannya menyarankan menjalankan Builder.
 
+**[Riwayat build](kernel/history/)** disimpan otomatis oleh Builder dalam dokumen Markdown. **Build terakhir** dan **Status** tetap bisa dibandingkan setelah log, artifact atau run Actions dihapus; **Hapus log run lama** bekerja seperti sebelumnya.
+
 <!-- sublevel:start -->
 | Sublevel | Rilis ACK | Status |
 |---|---|---|

@@ -73,6 +73,8 @@ The builder uses the official ACK `android14-6.1` releases since the phone's sto
 
 The **Cek pembaruan** (check for updates) button is the only check, and it builds nothing: the newest version of every component (ACK, KernelSU Next, BakaSU, simonpunk's SUSFS and sidex15's SUSFS module, NoMount, Baseband Guard, AnyKernel3, Neutron clang, Unicode fix) against the last build, with the dates of the stable and CI versions, what is new and fixed, and whom to wait for when it cannot be built yet. When something is newer, the summary suggests running the Builder.
 
+**[Build history](kernel/history/)** is saved automatically by the Builder as Markdown documents. **Last build** and **Status** remain comparable after Actions logs, artifacts or runs are deleted; **Delete old run logs** works as before.
+
 <!-- sublevel:start -->
 | Sublevel | ACK release | Status |
 |---|---|---|

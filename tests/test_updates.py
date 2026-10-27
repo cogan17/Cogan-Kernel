@@ -7,6 +7,7 @@ import zipfile
 
 from kernel import resolve as r
 from kernel import updates as u
+from kernel import build_history as h
 
 REPO = "cogan17/Cogan-Kernel"
 A, D, M = "a" * 40, "d" * 40, "m" * 40
@@ -25,6 +26,9 @@ def commit(sha, date, title):
 
 
 class FakeNet:
+    def history(self):
+        return []
+
     def __init__(self, *, runs=True, ack="android14-6.1-2026-10_r2", susfs=SUSFS_NEW, nomount="v2.3.0",
                  bakasu=("SUSFS diblokir di BakaSU / SUSFS blocked in BakaSU", None), manager=True, sidex="6" * 40):
         self.runs, self.ack, self.susfs, self.nomount, self.bakasu, self.manager = runs, ack, susfs, nomount, bakasu, manager
@@ -175,9 +179,58 @@ class UpdatesTest(unittest.TestCase):
     def test_without_a_last_build_the_newest_versions_still_show(self):
         builds, found, text = self.run_check(runs=False)
         self.assertEqual(builds, {})
-        self.assertIn("Belum ada run Builder dengan kernel dalam 90 hari terakhir.", text)
+        self.assertIn("Riwayat build belum tersedia; log atau artifact mungkin sudah dihapus atau kedaluwarsa.", text)
+        self.assertNotIn("belum pernah dibangun", text)
         self.assertNotIn("Ada pembaruan", text)
         self.assertEqual(found["susfs"]["status"], "unknown")
+
+    def saved_build(self, run_id=11, root="KSUN"):
+        return {"schema": 1, "id": run_id, "attempt": 1, "number": 6, "date": "2026-10-24T01:00:00Z",
+                "url": f"https://run/{run_id}", "branch": "main", "sha": A,
+                "builds": [{"root": root, "sublevel": 176, "status": "ok", "snap": {**SNAP, "root": root}, "env": {}}]}
+
+    def test_deleted_runs_and_artifacts_do_not_remove_last_build_or_status(self):
+        net = FakeNet(runs=False)
+        # Nothing remains in Actions. Only the Markdown record supplies the baseline.
+        net.history = lambda: [h.parse(h.markdown(self.saved_build()))]
+        builds, found = u.gather(net, REPO)
+        entries = {e["key"]: e for e in found}
+        self.assertEqual(builds["KSUN"]["run_id"], 11)
+        self.assertEqual(entries["ksun"]["status"], "same")
+        self.assertEqual(entries["susfs"]["status"], "new")
+        self.assertEqual(entries["nomount"]["base"]["label"], "v2.2.0")
+        text = u.summary(builds, found)
+        self.assertIn("kernel/history/run-11-1.md", text)
+        self.assertNotIn("Riwayat build belum tersedia", text)
+        self.assertNotIn("belum pernah dibangun", text)
+
+    def test_actions_outage_does_not_hide_permanent_history(self):
+        net = FakeNet(runs=False)
+        net.history = lambda: [self.saved_build()]
+        del net.apis[f"repos/{REPO}/actions/workflows/build-kernel.yml/runs?branch=main&status=completed&per_page=30"]
+        builds = u.last_builds(net, REPO)
+        self.assertEqual(builds["KSUN"]["run_id"], 11)
+        self.assertIn("error", builds)
+
+    def test_newer_live_build_can_replace_older_saved_build(self):
+        net = FakeNet()
+        net.history = lambda: [self.saved_build(10)]
+        builds = u.last_builds(net, REPO)
+        self.assertEqual(builds["KSUN"]["run_id"], 11)
+        self.assertEqual([a["sublevel"] for a in builds["KSUN"]["snap"]["ack"]], [176])
+
+    def test_already_saved_run_needs_no_artifacts(self):
+        net = FakeNet()
+        net.history = lambda: [self.saved_build(), self.saved_build(root="BSU")]
+        del net.apis[f"repos/{REPO}/actions/runs/11/artifacts?per_page=100"]
+        builds = u.last_builds(net, REPO)
+        self.assertEqual(set(builds), {"KSUN", "BSU"})
+
+    def test_missing_component_history_does_not_claim_everything_is_the_same(self):
+        build = {"KSUN": {"run": 1, "url": "https://run/1", "date": ""}}
+        text = u.summary(build, [u.item("ack", "ACK", status="unknown")])
+        self.assertIn("Sebagian komponen belum dapat dibandingkan", text)
+        self.assertNotIn("Semua komponen sama", text)
 
     def test_one_source_down_does_not_hide_the_others(self):
         net = FakeNet()
