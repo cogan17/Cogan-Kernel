@@ -1,6 +1,6 @@
 # Checkpoint — 28 Okt 2026 (WIB)
 
-v2.10.5 sudah di `main` (PR #70) dan bagian DRAM-nya terkonfirmasi di HP. Uji HP yang sama menunjukkan hook init ZRAM v2.10.4 tidak pernah berjalan; perbaikannya v2.10.6 (lihat bagian v2.10.6). Sesi berikutnya baca `CLAUDE.md`, file ini dan `CHECKPOINT.md`, lalu tunggu instruksi owner. Jangan otomatis menguji HP, menjalankan build atau menerbitkan rilis.
+v2.10.5 (DRAM) dan v2.10.6 (hook init berjalan) sudah di `main` dan terkonfirmasi di HP. v2.10.7 memperbaiki tulisan lz4 vendor yang menimpa pilihan ZRAM (lihat bagian v2.10.7). Sesi berikutnya baca `CLAUDE.md`, file ini dan `CHECKPOINT.md`, lalu tunggu instruksi owner. Jangan otomatis menguji HP, menjalankan build atau menerbitkan rilis.
 
 ## Sudah selesai
 
@@ -8,6 +8,14 @@ v2.10.5 sudah di `main` (PR #70) dan bagian DRAM-nya terkonfirmasi di HP. Uji HP
 - v2.10.4 menggunakan dukungan `initrc` KernelSU Next/BakaSU pada Cogan r5 untuk memilih kompresor sebelum ZRAM diinisialisasi. Tidak menambah governor DRAM, tidak reset ZRAM dan tidak swapoff.
 - Screenshot HP owner menunjukkan **v2.10.4 terpasang**, `zram0: lz4 · swap aktif`, opsi LZ4 terpilih, status “initrc tersiapkan untuk boot berikutnya”, dan `bw_hwmon` abu-abu. Bacaan LZ4/swap aktif terbukti, tetapi tidak membuktikan modul yang mengganti LZ4. Belum ada bukti hasil ZSTD atau hasil eksekusi hook initrc pada HP.
 - Owner menjalankan pembacaan root `/sys/class/devfreq/*`. Hasilnya: `112b0000.ufshci` → driver `ufshcd-mtk`, governor `simple_ondemand`; `13000000.mali` → driver `mali`, governor `dummy`; **`mtk-dvfsrc-devfreq` → driver `mtk-dvfsrc-devfreq`, governor `userspace`**. Ketiganya menampilkan daftar sama: `dummy apupassive-pe apuconstrain apuuser apupassive userspace powersave performance simple_ondemand`. **Tidak ada `bw_hwmon`.** `available_governors` devfreq dapat bersifat global; daftar UFS/GPU bukan bukti dukungan DRAM. `userspace` adalah governor aktif DRAM, bukan bukti ZRAM gagal. Jangan mengganti ke `simple_ondemand` atau port governor Qualcomm dengan asumsi.
+
+## v2.10.7 — pilihan ZRAM bertahan sampai swap aktif (versionCode 26)
+
+- **v2.10.6 di HP (28 Okt, 22.41 WIB):** `Hook boot ini: zstd post-fs matching`, jadi perbaikan hook v2.10.6 terbukti bekerja. Tetapi `zram0` kembali `lz4`.
+- **Penyebab, terbaca di HP (root):** `/vendor/etc/init/hw/init.mt6989.rc` baris 192 `write /sys/block/zram0/comp_algorithm lz4` di `on post-fs-data` (baris 180), dan baris 1138 `swapon_all /vendor/etc/fstab.enableswap` di `on property:sys.boot_completed=1` (baris 1122). fstab: `/dev/block/zram0 none swap defaults zramsize=100%,swapprio=10`. `mmd.enabled_aconfig=false`. Hanya baris 192 yang menulis `comp_algorithm` di semua folder init.
+- **Perbaikan:** hook juga berjalan pada `property:sys.boot_completed=1`. Menurut kode init AOSP (`import_parser.cpp` `EndFile`, `action_manager.cpp`), import vendor dibaca sesudah `init.rc` (tempat KernelSU menempel aturan modul), dan aksi dengan pemicu sama berjalan sesuai urutan baca. Jadi hook menulis pilihan sesudah lz4 vendor dan tepat sebelum `swapon_all`. Tes Manager memeriksa empat blok dan pemicu terakhirnya.
+- Terukur lokal: tes Manager lolos. [Paket uji](modules/cogan-smart/rilis/v2.10.7/Cogan-Smart-Kernel-v2.10.7.zip) 40 file, 150996 byte, SHA256 `4546ec64b2d06fa32f39be4e789827f2a5f40fa1e5c8f6e87d85277ccec14720` (dua kali dikemas, sama).
+- **Belum diuji di HP dan belum dirilis.** Uji: pasang v2.10.7, reboot, tunggu boot selesai, buka Manager. Harapan: `zram0: zstd` dan `Hook boot ini: zstd boot-completed matching`.
 
 ## v2.10.6 — perbaikan hook init ZRAM (versionCode 25)
 
@@ -31,4 +39,4 @@ v2.10.5 sudah di `main` (PR #70) dan bagian DRAM-nya terkonfirmasi di HP. Uji HP
 
 ## English state summary
 
-v2.10.5 (MediaTek DRAM detection) is on main (PR #70) and its DRAM display is confirmed on the owner's phone. The same phone test showed that the v2.10.4 ZRAM init hook never ran: the rules reached /metadata/vold/ksu/modules.rc and the kernel loaded them, but zram0 stayed lz4 and no hook marker existed. Per the AOSP init source, init's tokenizer has no escapes inside quotes and exec arguments are expanded twice. v2.10.6 (versionCode 25) writes the program as one unquoted init token with every $ as $$$$; tests now model init and fail on v2.10.5. Test ZIP SHA256 `585210b1…9ba7`. Not phone-tested and not released. Wait for the owner's instructions.
+v2.10.5 (DRAM detection) and v2.10.6 (initrc exec fix) are on main and confirmed on the owner's phone: the hook now runs (`zstd post-fs matching`). zram0 still ended up lz4 because rothko's vendor init writes lz4 on post-fs-data and only runs swapon_all on sys.boot_completed=1. v2.10.7 (versionCode 26) also runs the hook on sys.boot_completed=1; module rules are parsed before vendor imports, so it lands between the two. Test ZIP SHA256 `4546ec64…4720`. Not phone-tested and not released. Wait for the owner's instructions.

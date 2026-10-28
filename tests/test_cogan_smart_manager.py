@@ -248,7 +248,9 @@ class ManagerTests(unittest.TestCase):
     def run_init_command(self):
         rc = self.module / "initrc/cogan-zram.rc"
         commands = [init_tokens(l) for l in rc.read_text().splitlines() if l.strip().startswith("exec ")]
-        self.assertEqual(len(commands), 3)
+        self.assertEqual(len(commands), 4)
+        # The last run must sit on the trigger of rothko's swapon_all, after vendor's post-fs-data lz4 write.
+        self.assertIn('\non property:sys.boot_completed=1 && property:ro.product.device=rothko', rc.read_text())
         self.assertIn('property:ro.product.device=rothko', rc.read_text())
         self.assertIn('property:ro.board.platform=mt6989', rc.read_text())
         cmd = commands[-1]
@@ -268,11 +270,11 @@ class ManagerTests(unittest.TestCase):
         self.assertEqual(self.report("set", "default", "heavy", "1")["init_state"], "ready")
         self.run_init_command()
         self.assertEqual((self.zram / "comp_algorithm").read_text(), before)
-        self.assertEqual(self.report("status")["init_seen"], "zstd post-fs pending")
+        self.assertEqual(self.report("status")["init_seen"], "zstd boot-completed pending")
         write(self.zram / "initstate", "0\n")
         self.run_init_command()
         self.assertEqual((self.zram / "comp_algorithm").read_text().strip(), "zstd")
-        self.assertEqual(self.report("status")["init_seen"], "zstd post-fs matching")
+        self.assertEqual(self.report("status")["init_seen"], "zstd boot-completed matching")
         self.assertFalse((self.zram / "reset").exists())
 
     def test_native_init_guards_all_devices_and_identity_and_clears_disabled_boot(self):
@@ -286,7 +288,7 @@ class ManagerTests(unittest.TestCase):
         write(self.sys / "block/zram1/initstate", "0\n")
         self.run_init_command()
         self.assertEqual((self.zram / "comp_algorithm").read_text(), "[lz4] zstd\n")
-        self.assertEqual(self.report("status")["init_seen"], "zstd post-fs unsupported")
+        self.assertEqual(self.report("status")["init_seen"], "zstd boot-completed unsupported")
         marker = self.base / "dev/.cogan_smart_zram_init"
         marker.unlink()
         write(self.sys / "kernel/cogan/device", "other\n")

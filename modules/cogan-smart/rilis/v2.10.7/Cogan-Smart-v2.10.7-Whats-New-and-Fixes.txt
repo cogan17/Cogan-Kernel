@@ -1,0 +1,31 @@
+Cogan Smart Kernel v2.10.7 / versionCode 26 — paket uji / test build
+
+Indonesia
+
+Perbaikan:
+- Pilihan kompresi ZRAM (LZ4/ZSTD) kini bertahan sampai swap diaktifkan. Pada v2.10.6 hook sudah berjalan, tetapi skrip vendor MediaTek (/vendor/etc/init/hw/init.mt6989.rc) menulis ulang lz4 pada post-fs-data, lalu baru menyalakan swap saat boot selesai.
+- Hook kini juga berjalan saat sys.boot_completed=1, sesudah tulisan lz4 vendor dan tepat sebelum swapon_all vendor. Urutan ini mengikuti cara init Android membaca aturan (aturan modul dibaca lebih dulu dari file vendor).
+
+Batas yang tetap berlaku:
+- ZRAM aktif tidak direset, swap tidak dimatikan, ukuran ZRAM, kernel, KMI dan partisi tidak diubah. Tidak perlu flash kernel baru.
+- v2.10.7 belum diuji di HP.
+
+Cara uji:
+1. Pasang sebagai pembaruan modul melalui root manager, lalu reboot.
+2. Tunggu sampai HP selesai boot, buka Manager. Dengan ZSTD tersimpan dan Terapkan saat boot aktif, bagian RAM seharusnya menampilkan zram0: zstd dan "Hook boot ini: zstd boot-completed matching".
+3. Atau di terminal root: cat /sys/block/zram0/comp_algorithm; cat /dev/.cogan_smart_zram_init
+
+English
+
+Fixes:
+- The ZRAM compression choice (LZ4/ZSTD) now survives until swap is enabled. In v2.10.6 the hook already ran, but the MediaTek vendor script (/vendor/etc/init/hw/init.mt6989.rc) rewrote lz4 on post-fs-data and only enabled swap once boot completed.
+- The hook now also runs on sys.boot_completed=1, after the vendor's lz4 write and just before the vendor's swapon_all. This order follows how Android init reads rules (module rules are read before vendor files).
+
+Limits:
+- No live ZRAM reset, swap disabling, ZRAM resize, kernel, KMI or partition changes. No new kernel flash is needed.
+- v2.10.7 has not been phone-tested.
+
+How to test:
+1. Install as a module update through the root manager, then reboot.
+2. Wait until boot completes, then open Manager. With ZSTD saved and Apply at boot enabled, the RAM section should show zram0: zstd and "Hook boot ini: zstd boot-completed matching".
+3. Or in a root terminal: cat /sys/block/zram0/comp_algorithm; cat /dev/.cogan_smart_zram_init

@@ -1,5 +1,21 @@
 # Cogan Smart Kernel
 
+## Pilihan ZRAM bertahan sampai swap aktif / ZRAM choice survives until swap starts — v2.10.7 (paket uji / test build)
+
+Indonesia:
+
+- Uji HP owner pada v2.10.6 (28 Okt, 22.41 WIB): hook kini berjalan (Hook boot ini: zstd post-fs matching), tetapi zram0 kembali lz4. Penyebab terbaca di HP: /vendor/etc/init/hw/init.mt6989.rc menulis lz4 ke zram0 pada on post-fs-data (baris 192) dan baru menjalankan swapon_all pada on property:sys.boot_completed=1 (baris 1138). mmd tidak aktif.
+- Perbaikan: hook juga berjalan pada property:sys.boot_completed=1. Aturan modul dibaca init sebelum file vendor yang di-import, dan aksi dengan pemicu sama berjalan sesuai urutan baca (kode init AOSP), jadi hook menulis pilihan sesudah lz4 vendor dan tepat sebelum swapon_all. Tahap init, early-fs dan post-fs tetap ada.
+- ZRAM aktif tetap tidak direset; hook hanya menulis bila initstate=0 dan algoritme ditawarkan semua perangkat ZRAM.
+- v2.10.7 belum diuji di HP.
+
+English:
+
+- The owner's v2.10.6 phone test (28 Oct, 22.41 WIB): the hook now runs (Hook boot ini: zstd post-fs matching), but zram0 returned to lz4. Cause, read on the phone: /vendor/etc/init/hw/init.mt6989.rc writes lz4 to zram0 on post-fs-data (line 192) and only runs swapon_all on property:sys.boot_completed=1 (line 1138). mmd is off.
+- Fix: the hook also runs on property:sys.boot_completed=1. Init parses the module rules before imported vendor files, and actions with the same trigger run in parse order (AOSP init source), so the hook writes the choice after vendor's lz4 and just before swapon_all. The init, early-fs and post-fs runs remain.
+- Live ZRAM is still never reset; the hook writes only when initstate=0 and every ZRAM device offers the algorithm.
+- v2.10.7 has not been phone-tested.
+
 ## Perbaiki hook init ZRAM / Fix the ZRAM init hook — v2.10.6 (paket uji / test build)
 
 Indonesia:
