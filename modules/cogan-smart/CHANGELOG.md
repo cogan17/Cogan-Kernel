@@ -1,5 +1,23 @@
 # Cogan Smart Kernel
 
+## Hook ZRAM sebelum system_perf_init / ZRAM hook before system_perf_init — v2.10.8 (paket uji / test build)
+
+Indonesia:
+
+- Uji HP owner pada v2.10.7 (28 Okt, 22.52–22.56 WIB): Hook boot ini: zstd boot-completed pending, zram0 tetap lz4. ZRAM sudah aktif sebelum boot selesai, jadi analisis v2.10.7 keliru: swapon_all vendor pada sys.boot_completed=1 bukan yang menyalakan swap.
+- Bukti di HP: dmesg 9,751 dtk KernelSU mencatat exec /system_ext/xbin/system_perf_init; 9,768 dtk zram0 diberi ukuran; 9,776 dtk swap zram0 aktif dengan prioritas -2 (bukan swapprio=10 dari fstab); 9,789 dtk tahap zygote-start. /system_ext/etc/init/init.miui.ext.rc menjalankan start system_perf_init pada on load-bpf-programs ("after load_persist_props_action && before zygote-start"). Tidak ada modul lain yang mengurus ZRAM.
+- Perbaikan: tahap hook terakhir kini on load-bpf-programs, menggantikan sys.boot_completed=1. Menurut init.rc AOSP, load-bpf-programs dipicu tepat sesudah post-fs-data (tempat vendor menulis lz4), dan /system_ext/etc/init dibaca sesudah init.rc tempat aturan modul ditempel, jadi hook berjalan sebelum start system_perf_init.
+- ZRAM aktif tetap tidak direset; hook hanya menulis bila initstate=0 dan algoritme ditawarkan semua perangkat ZRAM.
+- v2.10.8 belum diuji di HP.
+
+English:
+
+- The owner's v2.10.7 phone test (28 Oct, 22.52–22.56 WIB): Hook boot ini: zstd boot-completed pending, zram0 still lz4. ZRAM was active before boot completed, so the v2.10.7 analysis was wrong: the vendor swapon_all on sys.boot_completed=1 does not start swap.
+- Evidence on the phone: dmesg at 9.751 s KernelSU logs exec /system_ext/xbin/system_perf_init; at 9.768 s zram0 gets its size; at 9.776 s zram0 swap starts with priority -2 (not fstab's swapprio=10); at 9.789 s zygote-start. /system_ext/etc/init/init.miui.ext.rc runs start system_perf_init on load-bpf-programs ("after load_persist_props_action && before zygote-start"). No other module handles ZRAM.
+- Fix: the last hook run is now on load-bpf-programs, replacing sys.boot_completed=1. Per AOSP init.rc, load-bpf-programs is triggered right after post-fs-data (where the vendor writes lz4), and /system_ext/etc/init is parsed after init.rc where the module rules are appended, so the hook runs before start system_perf_init.
+- Live ZRAM is still never reset; the hook writes only when initstate=0 and every ZRAM device offers the algorithm.
+- v2.10.8 has not been phone-tested.
+
 ## Pilihan ZRAM bertahan sampai swap aktif / ZRAM choice survives until swap starts — v2.10.7 (paket uji / test build)
 
 Indonesia:
