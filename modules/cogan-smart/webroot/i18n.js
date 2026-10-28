@@ -22,6 +22,7 @@
     ["Ikuti sistem", "Follow system"],
     ["Governor DRAM", "DRAM governor"],
     ["DRAM Sistem", "System DRAM"],
+    ["DRAM MediaTek · {0}: {1}", "MediaTek DRAM · {0}: {1}"],
     ["DRAM MediaTek", "MediaTek DRAM"],
     ["belum terbaca", "unavailable"],
     ["Driver DRAM belum teridentifikasi. Setelan bawaan dipertahankan.", "The DRAM driver has not been identified. System settings are preserved."],

@@ -1,6 +1,6 @@
 # Checkpoint — 28 Okt 2026 (WIB)
 
-Owner meminta pekerjaan fitur berhenti dan keadaan dicatat di sini saja. Owner merasa proses terlalu lama dan layar selalu bertuliskan “sedang bekerja”. **Setelah checkpoint tersimpan, berhenti.** Sesi berikutnya baca `CLAUDE.md`, file ini dan `CHECKPOINT.md`, lalu tunggu instruksi owner. Jangan otomatis melanjutkan, menguji HP, menjalankan build atau menerbitkan rilis.
+Owner meminta draf v2.10.5 dilanjutkan (28 Okt). Paket uji v2.10.5 selesai; lihat bagian v2.10.5. Sesi berikutnya baca `CLAUDE.md`, file ini dan `CHECKPOINT.md`, lalu tunggu instruksi owner. Jangan otomatis menguji HP, menjalankan build atau menerbitkan rilis.
 
 ## Sudah selesai
 
@@ -9,15 +9,16 @@ Owner meminta pekerjaan fitur berhenti dan keadaan dicatat di sini saja. Owner m
 - Screenshot HP owner menunjukkan **v2.10.4 terpasang**, `zram0: lz4 · swap aktif`, opsi LZ4 terpilih, status “initrc tersiapkan untuk boot berikutnya”, dan `bw_hwmon` abu-abu. Bacaan LZ4/swap aktif terbukti, tetapi tidak membuktikan modul yang mengganti LZ4. Belum ada bukti hasil ZSTD atau hasil eksekusi hook initrc pada HP.
 - Owner menjalankan pembacaan root `/sys/class/devfreq/*`. Hasilnya: `112b0000.ufshci` → driver `ufshcd-mtk`, governor `simple_ondemand`; `13000000.mali` → driver `mali`, governor `dummy`; **`mtk-dvfsrc-devfreq` → driver `mtk-dvfsrc-devfreq`, governor `userspace`**. Ketiganya menampilkan daftar sama: `dummy apupassive-pe apuconstrain apuuser apupassive userspace powersave performance simple_ondemand`. **Tidak ada `bw_hwmon`.** `available_governors` devfreq dapat bersifat global; daftar UFS/GPU bukan bukti dukungan DRAM. `userspace` adalah governor aktif DRAM, bukan bukti ZRAM gagal. Jangan mengganti ke `simple_ondemand` atau port governor Qualcomm dengan asumsi.
 
-## Draf v2.10.5 dihentikan, belum selesai
+## v2.10.5 — paket uji deteksi DRAM MediaTek (versionCode 24)
 
-- Simpanan kode kerja berada pada branch remote [`fix/cogan-smart-dram-detection`](https://github.com/cogan17/Cogan-Kernel/tree/fix/cogan-smart-dram-detection), commit `7cbeb4ee3b09a0bcfe62ba47302cfa39c96efee7`, tree `7cd82cde1ed581edf22cbebc2fad5f319d68cb6b`, parent `0386eed3f4952a837a81c36da80a22644083c563`. **Tidak digabung ke main; belum ada PR fitur.** Worktree lokal `/workspace/scratch/0b17408b3d47/Cogan-Kernel-dram` tidak diperlukan untuk mengambil ulang kode.
-- Draf mengenali DRAM melalui tautan driver `mtk-dvfsrc-devfreq`, menampilkan governor aktual, dan membatasi calon target penulisan BW ke driver DRAM sehingga UFS/GPU tidak menjadi sasaran hanya karena daftar governor sama. Dropdown BW disembunyikan bila tak tersedia; pilihan lama tetap bisa dikembalikan ke Sistem. `module.prop` draf v2.10.5/code24, cache WebUI baru, katalog ID/EN, README, CHANGELOG, catatan ID/EN dan tes regresi ikut berubah.
-- **Belum ada ZIP v2.10.5, tes lengkap, Validate, uji HP, build kernel, port `bw_hwmon` MediaTek atau rilis.** Satu perintah tes Manager lokal menghasilkan **21 tes OK** selama pekerjaan berlangsung; sesudah penyuntingan UI/dokumen/versi belum diuji ulang. Jangan klaim tree draf telah tervalidasi. Perubahan ini baru memperbaiki deteksi/antarmuka, tidak membuat `bw_hwmon` berfungsi atau meningkatkan performa.
-- Jika owner kelak meminta lanjut, periksa diff draf terlebih dahulu, lalu validasi dan paketkan hanya sesuai permintaannya. Jika owner meminta checkpoint lagi, berhenti sesuai `CLAUDE.md`.
+- Draf dari branch `fix/cogan-smart-dram-detection` diperiksa dan diselesaikan. DRAM dikenali dari ikatan driver `mtk-dvfsrc-devfreq`; Manager menampilkan governor aktual; UFS/GPU tidak lagi menjadi target BW walau daftar governor-nya sama; dropdown BW disembunyikan bila tidak ada pilihan yang bisa dipakai, kecuali untuk mengembalikan pilihan lama ke DRAM Sistem.
+- Tambahan saat penyelesaian: teks DRAM di mode English kini diterjemahkan penuh (termasuk "belum terbaca" → "unavailable").
+- Terukur lokal: 252 tes Python dan cek WebUI lolos; `sh -n` lolos. [Paket uji](modules/cogan-smart/rilis/v2.10.5/Cogan-Smart-Kernel-v2.10.5.zip) 40 file, 149444 byte, dapat dibuat ulang dengan SHA256 `a148ff25d146b7cb162622b1eb5c8c5c45609a4d75ed26ff70c918539336966d` (cara kemas dibuktikan dengan membuat ulang ZIP v2.10.4: SHA256 sama).
+- **Belum ada uji HP v2.10.5 dan belum ada GitHub Release** (rilis publik terakhir v2.9.1). Ini perbaikan deteksi dan tampilan; tidak menambah `bw_hwmon`, tidak mengganti governor DRAM dan tidak butuh kernel baru.
+- Uji HP berikutnya (keputusan owner): pasang ZIP sebagai pembaruan modul, reboot, buka Manager. Bagian DRAM seharusnya menampilkan `DRAM MediaTek · mtk-dvfsrc-devfreq: userspace` tanpa dropdown BW.
 
 [Checkpoint sebelumnya](https://github.com/cogan17/Cogan-Kernel/blob/f8312e007c6cca8829aec01bc3d251334e467135/checkpoint.md) memuat riwayat v2.10.0–v2.10.3, pemindai aplikasi dan rilis v2.9.1. Gunakan identitas git Cogan, PR ke main, catatan ID/EN dan hemat Actions sesuai `CLAUDE.md`.
 
 ## English state summary
 
-The owner stopped all feature work. v2.10.4 native ZRAM init integration is on main (PR #68, 251 CI tests). The installed module screenshot reads `zram0: lz4` with active swap. The owner's actual devfreq dump identifies the DRAM driver as `mtk-dvfsrc-devfreq` with `userspace`; the same global governor list appears on UFS and GPU, and none offers `bw_hwmon`. An unfinished v2.10.5 detection/UI draft is preserved on the unmerged `fix/cogan-smart-dram-detection` branch at `7cbeb4e`. There is no v2.10.5 ZIP, full validation, phone test or new DRAM driver. Stop and wait for an explicit request.
+v2.10.4 native ZRAM init integration is on main (PR #68). The owner's devfreq dump identifies DRAM as `mtk-dvfsrc-devfreq` with `userspace`; no device offers `bw_hwmon`. v2.10.5 (versionCode 24) finishes the DRAM detection/UI draft: driver-bound DRAM identification, actual governor readback, no UFS/GPU BW targets, hidden BW dropdown when unusable, full English text. 252 local tests and the WebUI check pass; the reproducible test ZIP has SHA256 `a148ff25…966d`. Not phone-tested and not released. Wait for the owner's instructions.
