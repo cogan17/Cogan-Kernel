@@ -1,6 +1,6 @@
 # Checkpoint — 28 Okt 2026 (WIB)
 
-v2.10.5 (DRAM) dan v2.10.6 (hook init berjalan) sudah di `main` dan terkonfirmasi di HP. v2.10.7 keliru menebak tahap swap; v2.10.8 memasang hook tepat sebelum alat Xiaomi `system_perf_init` menyalakan ZRAM (lihat bagian v2.10.8). Sesi berikutnya baca `CLAUDE.md`, file ini dan `CHECKPOINT.md`, lalu tunggu instruksi owner. Jangan otomatis menguji HP, menjalankan build atau menerbitkan rilis.
+v2.10.5 (DRAM) dan v2.10.6 (hook init berjalan) sudah di `main` dan terkonfirmasi di HP. v2.10.7 keliru menebak tahap swap; v2.10.8 memasang hook tepat sebelum alat Xiaomi `system_perf_init` menyalakan ZRAM dan sudah terbukti di HP (lihat bagian v2.10.8). Sesi berikutnya baca `CLAUDE.md`, file ini dan `CHECKPOINT.md`, lalu tunggu instruksi owner. Jangan otomatis menguji HP, menjalankan build atau menerbitkan rilis.
 
 ## Sudah selesai
 
@@ -18,7 +18,7 @@ v2.10.5 (DRAM) dan v2.10.6 (hook init berjalan) sudah di `main` dan terkonfirmas
   - `/proc/swaps`: hanya `/dev/block/zram0`, prioritas -2. Modul lain (AshLooper, tcp_optimiser, dll.) tidak menyentuh ZRAM.
 - **Perbaikan:** tahap hook terakhir menjadi `on load-bpf-programs` (boot-completed dihapus). AOSP `rootdir/init.rc`: `trigger post-fs-data` (520) → `trigger load-bpf-programs` (523) → `trigger zygote-start` (527); `init.cpp` membaca `/system/etc/init/hw/init.rc` sebelum `/system_ext/etc/init`. Jadi hook berjalan sesudah lz4 vendor dan sebelum `start system_perf_init`.
 - Terukur lokal: tes Manager lolos. [Paket uji](modules/cogan-smart/rilis/v2.10.8/Cogan-Smart-Kernel-v2.10.8.zip) 40 file, 151578 byte, SHA256 `552fb6fecb65d60373289601d4ad0ae32d4be775a5fc76354e6ca47f495afbd8` (dua kali dikemas, sama).
-- **Belum diuji di HP dan belum dirilis.** Harapan: `zram0: zstd` dan `Hook boot ini: zstd load-bpf-programs matching`.
+- ✅ **Diuji di HP:** Uji HP owner 28 Okt, 23.23 WIB: `zram0: zstd · swap aktif` dan `Hook boot ini: zstd load-bpf-programs matching`. Pilihan ZSTD kini benar-benar dipakai saat ZRAM dinyalakan. Dampak ke performa/baterai belum diukur. **Belum dirilis**: GitHub Release lewat workflow Cogan Smart Release adalah keputusan owner.
 
 ## v2.10.7 — pilihan ZRAM bertahan sampai swap aktif (versionCode 26)
 
@@ -50,4 +50,4 @@ v2.10.5 (DRAM) dan v2.10.6 (hook init berjalan) sudah di `main` dan terkonfirmas
 
 ## English state summary
 
-v2.10.5 (DRAM detection) and v2.10.6 (initrc exec fix) are on main and confirmed on the phone. On rothko HyperOS the vendor init writes lz4 on post-fs-data and Xiaomi's system_perf_init (started on load-bpf-programs) initializes ZRAM at about 9.7 s with whatever algorithm is set; v2.10.7's boot-completed run was too late. v2.10.8 (versionCode 27) moves the last hook run to load-bpf-programs, which per AOSP init runs after post-fs-data and, because init.rc is parsed before /system_ext/etc/init, before start system_perf_init. Test ZIP SHA256 `552fb6fe…fbd8`. Not phone-tested and not released. Wait for the owner's instructions.
+v2.10.5 (DRAM detection) and v2.10.6 (initrc exec fix) are on main and confirmed on the phone. On rothko HyperOS the vendor init writes lz4 on post-fs-data and Xiaomi's system_perf_init (started on load-bpf-programs) initializes ZRAM at about 9.7 s with whatever algorithm is set; v2.10.7's boot-completed run was too late. v2.10.8 (versionCode 27) moves the last hook run to load-bpf-programs, which per AOSP init runs after post-fs-data and, because init.rc is parsed before /system_ext/etc/init, before start system_perf_init. Test ZIP SHA256 `552fb6fe…fbd8`. Phone-tested by the owner on 28 Oct, 23.23 WIB: zram0 runs zstd with active swap and the hook reports `zstd load-bpf-programs matching`. Not released. Wait for the owner's instructions.
