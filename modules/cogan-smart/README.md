@@ -2,12 +2,13 @@
 
 **Versi paket terbaru: v2.9.1** (`versionCode` 18): modul lebih hemat CPU, satu angka Badan HP dari HyperOS, lonjakan suhu, nama aplikasi asli, batas CPU di log, dan penyaringan sensor macet. Dampak optimisasi terakhir pada HP belum diukur. Catatan perubahan lengkap ada di [`CHANGELOG.md`](CHANGELOG.md); status publikasi ada di [Releases](https://github.com/cogan17/Cogan-Kernel/releases).
 
-**Versi pengembangan: v2.10.2** (versionCode 21), tab sejajar dan perbaikan pemindai aplikasi Manager. Paket pembaruan belum diuji pada HP; rilis v2.9.1 tetap tersedia.
+**Versi pengembangan: v2.10.3** (versionCode 22), kontrol ZRAM/DRAM terpisah dan status penerapan RAM yang sesuai bacaan. Paket pembaruan belum diuji pada HP; rilis v2.9.1 tetap tersedia.
 
 ## ⬇️ Unduh
 
 | Versi | versionCode | ZIP siap pasang | Catatan | Salinan di repo | SHA256 ZIP |
 |---|---|---|---|---|---|
+| **v2.10.3** (paket uji perbaikan RAM) | 22 | [Paket pembaruan](rilis/v2.10.3/Cogan-Smart-Kernel-v2.10.3.zip) | [What's New](rilis/v2.10.3/Cogan-Smart-v2.10.3-Whats-New-and-Fixes.txt) | [rilis/v2.10.3](rilis/v2.10.3) | `d8198a30e3a059318b8049d2f54451aff3fb518f3ff1a7f8e5274af750daa45e` |
 | **v2.10.2** (paket uji tab sejajar) | 21 | [Paket pembaruan](rilis/v2.10.2/Cogan-Smart-Kernel-v2.10.2.zip) | [What's New](rilis/v2.10.2/Cogan-Smart-v2.10.2-Whats-New-and-Fixes.txt) | [rilis/v2.10.2](rilis/v2.10.2) | `27286981665a4998fefeb2e88a1a2f84d5c3766ed6b0a1c3e19ea6dfde224e3c` |
 | **v2.10.1** (paket uji perbaikan pemindai) | 20 | [Paket pembaruan](rilis/v2.10.1/Cogan-Smart-Kernel-v2.10.1.zip) | [What's New](rilis/v2.10.1/Cogan-Smart-v2.10.1-Whats-New-and-Fixes.txt) | [rilis/v2.10.1](rilis/v2.10.1) | `42281ceab4fac3704f778955d93cdb59e73213ef77ed8e3990a0248de1008de4` |
 | v2.10.0 (paket uji; pemindai aplikasi bermasalah) | 19 | [Paket uji](rilis/v2.10.0/Cogan-Smart-Kernel-v2.10.0.zip) | [What's New](rilis/v2.10.0/Cogan-Smart-v2.10.0-Whats-New-and-Fixes.txt) | [rilis/v2.10.0](rilis/v2.10.0) | `981caad71dfb458c39e0d8283cf37c895caf9990ce3936a4b4c15c55da8d955e` |
@@ -39,11 +40,12 @@ Satu modul KernelSU / KernelSU Next / BakaSU / Magisk yang menggabungkan **Cogan
 WebUI punya empat tab: **⚡ Daya**, **🌡️ Suhu**, **🛠️ Manager** dan **🧩 Modul**, plus halaman **ℹ️ Tentang & kredit** (`about.html`, bahasa Indonesia dengan pilihan English) dari tautan di bawah tiap tab. Dua tema bergaya Material You di `webroot/theme.css`: **Terang hangat** dan **Gelap OLED** (hitam murni); bawaannya mengikuti mode gelap HP, pilihan tetap disimpan dari halaman Tentang. Setiap kartu bisa dilipat; posisi buka/tutup diingat per tab. Navigasi memakai susunan ikon di atas dan judul satu baris di bawah dengan tinggi yang sama pada semua halaman; font besar dapat menggulir navigasi ke samping.
 Tiap tab adalah halaman sendiri, jadi `client.js` menyimpan jawaban baca terakhir (dan identitas kernel/HP) di `localStorage` WebView: pindah tab langsung menampilkan nilai terakhir (angka redup, ↻ di pojok) sampai bacaan baru datang. Tab Modul memakai hasil pindaian yang berumur < 2 menit apa adanya; Pindai ulang untuk memperbarui.
 
-## 🛠️ Manager (v2.10.2, pengembangan)
+## 🛠️ Manager (v2.10.3, pengembangan)
 
 - **Prosesor:** Kernel Default, sugov_ext atau schedutil. Pilihan hanya aktif bila tersedia pada semua policy. Tulisan nilai aktif menampilkan governor yang benar-benar terbaca.
-- **RAM:** Snappy & Daily Driver (bw_hwmon + LZ4) dan Heavy Multitasker / Space Saver (bw_hwmon + ZSTD). Kompresor harus tersedia pada semua perangkat ZRAM. bw_hwmon hanya diterapkan pada driver memori yang menawarkannya; bila tidak ada, governor memori bawaan dipertahankan dan UI menjelaskannya.
-- **ZRAM aktif tidak di-reset atau dimatikan.** Kompresor berbeda tetap berstatus belum diterapkan. Opsi boot mencoba memilihnya lewat post-fs-data sebelum ZRAM diinisialisasi. Bila Android sudah mengaktifkannya, pilihan tetap tertunda; restart tidak dijanjikan selalu mengganti kompresor.
+- **Kompresi ZRAM:** Snappy & Daily Driver (LZ4) atau Heavy Multitasker / Space Saver (ZSTD), hanya bila ditawarkan semua perangkat ZRAM. Pilihan terpisah dari governor DRAM. Bacaan algoritme yang sesuai pilihan bisa sudah menjadi bawaan; status swap aktif ditampilkan terpisah dari /proc/swaps.
+- **Governor DRAM:** DRAM Sistem atau bw_hwmon bila tersedia pada driver. Permintaan bw_hwmon yang tidak tersedia ditolak, bukan dianggap profil berhasil sebagian. Pada SS owner bw_hwmon tidak tersedia: gunakan DRAM Sistem. Konfigurasi lama tanpa BW mengikuti pilihan sistem dan melepas kepemilikan devfreq lama ketika diterapkan.
+- **ZRAM aktif tidak di-reset atau dimatikan.** Kompresor berbeda tetap berstatus belum diterapkan. Opsi boot mencoba memilihnya lewat post-fs-data sebelum ZRAM diinisialisasi. Bila Android sudah mengaktifkannya, pilihan tetap tertunda; restart tidak dijanjikan selalu mengganti kompresor. Setelah satu percobaan boot yang tidak berhasil, UI menyebut keterbatasan init/kernel. Ikuti algoritme aktif; jangan mengulang restart dengan harapan menambahkan driver yang tidak tersedia.
 - **Integrasi:** penulisan CPU/RAM memerlukan rothko, platform mt6989 serta identitas Cogan Bridge/device tree yang cocok. Batas CPU, cas dan termal dari Daya/HyperOS tetap berlaku. Tidak menambahkan loop pengendali.
 - **Kontrol Daya/Suhu:** Simpan, Terapkan, Reset dan Mulai/Hentikan dipindah dari kedua tab ke Manager; Hapus riwayat juga di sini. Formulir tetap di tab semula. Perubahan kolom disimpan sebagai draf lokal sampai diterapkan dari Manager; Simpan log tetap di tab Suhu.
 - **Aplikasi:** pindai manual aplikasi user pada pengguna Android aktif. Saran hanya untuk bukti penggunaan terakhir ≥ 7 hari, tanggal pemasangan cukup lama, dan proses tidak sedang berjalan. Waktu aktivitas komponen/foreground service ikut dihitung; data hilang bukan bukti tidak dipakai. Tinjau aplikasi membuka info aplikasi Android untuk memilih uninstall/nonaktifkan, tanpa tindakan massal.
@@ -52,7 +54,7 @@ Tiap tab adalah halaman sendiri, jadi `client.js` menyimpan jawaban baca terakhi
 - **Perlu restart?** Pindah tab dan pindai aplikasi langsung bekerja. Simpan hanya menyimpan pilihan; Terapkan sekarang mencoba governor CPU/bw_hwmon yang didukung saat itu juga. Kompresor ZRAM aktif tetap mengikuti penjelasan di atas. Pemasangan ZIP pembaruan membutuhkan satu reboot.
 - Data Manager: `/data/adb/cogan_smart/manager`; draf UI memakai localStorage WebView.
 
-English: Manager adds supported CPU governors, two RAM profiles, centralized Power/Temperature actions and seven-day app review. Hardware writes require a matching rothko/mt6989 Cogan Bridge. Active ZRAM is never reset; boot application is best effort and actual readbacks are shown. App removal/disable is chosen in Android app info. v2.10.1 rejects incomplete/denied/empty dumps and failed process reads, prefers native Android ps, sets dumpsys deadlines and keeps stage/exit details visible. This update has not been tested on a physical phone.
+English: Manager separates supported ZRAM compression from optional DRAM governors, shows matching/pending/blocked boot results and actual swap activity, and adds supported CPU governors, centralized Power/Temperature actions and seven-day app review. Hardware writes require a matching rothko/mt6989 Cogan Bridge. Active ZRAM is never reset; boot application is best effort and actual readbacks are shown. App removal/disable is chosen in Android app info. v2.10.1 rejects incomplete/denied/empty dumps and failed process reads, prefers native Android ps, sets dumpsys deadlines and keeps stage/exit details visible. This update has not been tested on a physical phone.
 
 ## Mode
 

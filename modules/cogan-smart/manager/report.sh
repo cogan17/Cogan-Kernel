@@ -9,22 +9,24 @@ CM_PROC=${CM_PROC:-${CP_PROC:-/proc}}
 CM_DATA=${CM_DATA:-${CS_ADB:-/data/adb}/cogan_smart/manager}
 CB_SYS=$CM_SYS; CB_PROC=$CM_PROC
 . "$MODROOT/bridge.sh"
-CPU=default; RAM=default; BOOT=0
+CPU=default; RAM=default; BOOT=0; BW=default
 if [ -f "$CM_DATA/config" ]; then
   while IFS='=' read -r k v; do
     case "$k:$v" in CPU:default|CPU:sugov_ext|CPU:schedutil) CPU=$v ;;
-      RAM:default|RAM:snappy|RAM:heavy) RAM=$v ;; BOOT:0|BOOT:1) BOOT=$v ;; esac
+      RAM:default|RAM:snappy|RAM:heavy) RAM=$v ;; BOOT:0|BOOT:1) BOOT=$v ;;
+      BW:default|BW:bw_hwmon) BW=$v ;; esac
   done < "$CM_DATA/config"
 fi
 fail() { printf '{"ok":0,"error":'; json_string "$1"; printf '}\n'; exit 0; }
 valid_settings() {
-  [ $# = 3 ] || return 1
+  [ $# = 3 ] || [ $# = 4 ] || return 1
   case "$1" in default|sugov_ext|schedutil) ;; *) return 1 ;; esac
   case "$2" in default|snappy|heavy) ;; *) return 1 ;; esac
   case "$3" in 0|1) ;; *) return 1 ;; esac
+  [ $# = 3 ] || case "$4" in default|bw_hwmon) ;; *) return 1 ;; esac
 }
 save_config() {
-  (umask 077; printf 'CPU=%s\nRAM=%s\nBOOT=%s\n' "$CPU" "$RAM" "$BOOT" > "$CM_DATA/config.tmp" &&
+  (umask 077; printf 'CPU=%s\nRAM=%s\nBOOT=%s\nBW=%s\n' "$CPU" "$RAM" "$BOOT" "$BW" > "$CM_DATA/config.tmp" &&
     mv "$CM_DATA/config.tmp" "$CM_DATA/config")
 }
 contains() { case " $1 " in *" $2 "*) return 0 ;; *) return 1 ;; esac; }
@@ -47,7 +49,7 @@ boot_session() {
   [ -n "$cm_boot" ] || return 1
   mkdir -p "$CM_DATA/run"
   if [ "$(read_node "$CM_DATA/run/boot")" != "$cm_boot" ]; then
-    rm -f "$CM_DATA/run/owned.tsv" "$CM_DATA/run/restore_pending"
+    rm -f "$CM_DATA/run/owned.tsv" "$CM_DATA/run/restore_pending" "$CM_DATA/run/ram_boot_attempted"
     printf '%s\n' "$cm_boot" > "$CM_DATA/run/boot"
   fi
 }
@@ -114,6 +116,7 @@ validate_hardware() {
       [ -w "$cm_p/scaling_governor" ]; } || fail 'Governor CPU tidak didukung di semua policy.'
   done
   [ "$CPU" = default ] || [ "$cm_n" -gt 0 ] || fail 'Policy CPU tidak ditemukan.'
+  [ "$BW" = default ] || [ -n "$(bw_nodes)" ] || fail 'bw_hwmon tidak tersedia pada driver perangkat ini. Pilih DRAM Sistem.'
   [ "$RAM" = default ] && return
   cm_n=0; cm_algo=$(compressor)
   for cm_z in "$CM_SYS"/block/zram*; do
@@ -129,11 +132,11 @@ apply_controls() {
   validate_hardware
   boot_session || fail 'Identitas boot tidak dapat dibaca.'
   # Restore only nodes no longer selected, preserving the original baseline for other nodes.
-  if [ "$CPU" = default ] || [ "$RAM" = default ]; then
+  if [ "$CPU" = default ] || [ "$RAM" = default ] || [ "$BW" = default ]; then
     cp "$CM_DATA/run/owned.tsv" "$CM_DATA/run/all.tsv" 2>/dev/null || : > "$CM_DATA/run/all.tsv"
-    awk -F '\t' -v c="$CPU" -v r="$RAM" '(c=="default" && $1~/scaling_governor$/) || (r=="default" && $1!~/scaling_governor$/)' "$CM_DATA/run/all.tsv" > "$CM_DATA/run/owned.tsv"
+    awk -F '\t' -v c="$CPU" -v r="$RAM" -v b="$BW" '(c=="default" && $1~/scaling_governor$/) || (r=="default" && $1~/comp_algorithm$/) || (b=="default" && $1~/\/governor$/)' "$CM_DATA/run/all.tsv" > "$CM_DATA/run/owned.tsv"
     restore_nodes || : # An initialized ZRAM compressor can only return at the next boot.
-    awk -F '\t' -v c="$CPU" -v r="$RAM" '!((c=="default" && $1~/scaling_governor$/) || (r=="default" && $1!~/scaling_governor$/))' "$CM_DATA/run/all.tsv" >> "$CM_DATA/run/owned.tsv"
+    awk -F '\t' -v c="$CPU" -v r="$RAM" -v b="$BW" '!((c=="default" && $1~/scaling_governor$/) || (r=="default" && $1~/comp_algorithm$/) || (b=="default" && $1~/\/governor$/))' "$CM_DATA/run/all.tsv" >> "$CM_DATA/run/owned.tsv"
   fi
   if [ "$CPU" != default ]; then
     for cm_p in "$CM_SYS"/devices/system/cpu/cpufreq/policy*; do
@@ -141,11 +144,13 @@ apply_controls() {
       put_node "$cm_p/scaling_governor" "$CPU" || { restore_nodes; fail 'Governor ditolak; periksa nilai terbaca.'; }
     done
   fi
-  if [ "$RAM" != default ]; then
-    cm_algo=$(compressor)
+  if [ "$BW" != default ]; then
     for cm_bw in $(bw_nodes); do
       put_node "$cm_bw" bw_hwmon || { restore_nodes; fail 'bw_hwmon ditolak; periksa nilai terbaca.'; }
     done
+  fi
+  if [ "$RAM" != default ]; then
+    cm_algo=$(compressor)
     for cm_z in "$CM_SYS"/block/zram*; do
       [ -r "$cm_z/comp_algorithm" ] || continue
       [ "$(selected "$cm_z/comp_algorithm")" = "$cm_algo" ] && continue
@@ -155,7 +160,7 @@ apply_controls() {
   fi
 }
 status_json() {
-  printf '{"ok":1,"config":{"cpu":"%s","ram":"%s","boot":%s},"writable":' "$CPU" "$RAM" "$BOOT"
+  printf '{"ok":1,"config":{"cpu":"%s","ram":"%s","boot":%s,"bw":"%s"},"writable":' "$CPU" "$RAM" "$BOOT" "$BW"
   if gate; then printf '1'; else printf '0'; fi
   printf ',"kernel":'; kernel_json; printf ',"device":'; device_json
   printf ',"version":'; json_string "$(sed -n 's/^version=//p' "$MODROOT/module.prop")"
@@ -173,15 +178,47 @@ status_json() {
     printf ',"current":'; json_string "$(selected "$cm_bw")"; printf '}'; cm_sep=,
   done
   printf '],"zram":['; cm_sep=
+  cm_z_count=0; cm_z_diff=0; cm_z_busy=0; cm_z_unsupported=0; cm_algo=$(compressor)
   for cm_z in "$CM_SYS"/block/zram*; do
     [ -r "$cm_z/comp_algorithm" ] || continue
+    cm_z_count=$((cm_z_count + 1))
+    cm_current=$(selected "$cm_z/comp_algorithm")
+    cm_available=$(read_node "$cm_z/comp_algorithm" | tr -d '[]')
+    cm_initialized=$(read_node "$cm_z/initstate" 1)
+    if [ -n "$cm_algo" ] && [ "$cm_current" != "$cm_algo" ]; then
+      cm_z_diff=1
+      [ "$cm_initialized" = 0 ] || cm_z_busy=1
+      contains "$cm_available" "$cm_algo" || cm_z_unsupported=1
+    fi
     printf '%s{"name":' "$cm_sep"; json_string "${cm_z##*/}"
-    printf ',"current":'; json_string "$(selected "$cm_z/comp_algorithm")"
-    printf ',"available":'; json_string "$(read_node "$cm_z/comp_algorithm" | tr -d '[]')"
-    printf ',"initialized":'; json_string "$(read_node "$cm_z/initstate" 1)"
+    printf ',"current":'; json_string "$cm_current"
+    printf ',"available":'; json_string "$cm_available"
+    printf ',"initialized":'; json_string "$cm_initialized"
+    cm_swap=-1
+    if [ -r "$CM_PROC/swaps" ]; then
+      cm_swap=$(awk -v n="${cm_z##*/}" 'NR==1 {valid=($1=="Filename")} NR>1 {p=$1; sub(/^.*\//,"",p); if(p==n) found=1} END {print valid?found+0:-1}' "$CM_PROC/swaps") || cm_swap=-1
+    fi
+    printf ',"swap_active":%d' "$cm_swap"
     printf '}'; cm_sep=,
   done
-  printf '],"restore_pending":%d}\n' "$([ -f "$CM_DATA/run/restore_pending" ] && echo 1 || echo 0)"
+  cm_ram_state=system
+  if [ -n "$cm_algo" ]; then
+    cm_ram_state=matching
+    if [ "$cm_z_count" = 0 ]; then cm_ram_state=unavailable
+    elif [ "$cm_z_unsupported" = 1 ]; then cm_ram_state=unsupported
+    elif [ "$cm_z_diff" = 1 ]; then
+      cm_ram_state=ready
+      if [ "$cm_z_busy" = 1 ]; then
+        cm_ram_state=needs_boot
+        if [ "$BOOT" = 1 ]; then
+          cm_ram_state=pending_boot
+          if [ "$(read_node "$CM_DATA/run/boot")" = "$(read_node "$CM_PROC/sys/kernel/random/boot_id")" ] &&
+             [ "$(read_node "$CM_DATA/run/ram_boot_attempted")" = "$cm_algo" ]; then cm_ram_state=blocked; fi
+        fi
+      fi
+    fi
+  fi
+  printf '],"ram_state":"%s","restore_pending":%d}\n' "$cm_ram_state" "$([ -f "$CM_DATA/run/restore_pending" ] && echo 1 || echo 0)"
 }
 user_id() {
   CM_USER=$(am get-current-user 2>/dev/null)
@@ -237,7 +274,7 @@ case "$1" in
   set|apply)
     cm_cmd=$1; shift
     valid_settings "$@" || fail 'Nilai tidak valid; tidak ada perubahan'
-    CPU=$1; RAM=$2; BOOT=$3
+    CPU=$1; RAM=$2; BOOT=$3; [ $# = 3 ] || BW=$4
     validate_hardware
     if [ "$cm_cmd" = apply ]; then apply_controls; fi
     save_config || fail 'Gagal menyimpan setelan'
@@ -245,7 +282,7 @@ case "$1" in
   reset)
     gate || fail 'Kontrol Manager memerlukan Xiaomi 14T Pro dan Cogan Bridge yang cocok.'
     boot_session || fail 'Identitas boot tidak dapat dibaca.'
-    CPU=default; RAM=default; BOOT=0
+    CPU=default; RAM=default; BOOT=0; BW=default
     save_config || fail 'Gagal menyimpan setelan'
     restore_nodes || :
     [ "$cm_restore_error" = 0 ] || fail 'Sebagian governor belum pulih; periksa kontrol Manager.'
@@ -260,7 +297,10 @@ case "$1" in
       contains "$(read_node "$cm_z/comp_algorithm" | tr -d '[]')" "$cm_algo" || continue
       put_node "$cm_z/comp_algorithm" "$cm_algo" || :
     done ;;
-  boot) [ "$BOOT" = 1 ] || exit 0; apply_controls ;;
+  boot)
+    [ "$BOOT" = 1 ] || exit 0
+    apply_controls
+    [ "$RAM" = default ] || compressor > "$CM_DATA/run/ram_boot_attempted" ;;
   scan) scan_apps ;;
   app)
     user_id

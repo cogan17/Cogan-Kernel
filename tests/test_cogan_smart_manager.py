@@ -98,6 +98,7 @@ class ManagerTests(unittest.TestCase):
         self.assertEqual((self.zram / "comp_algorithm").read_text(), before)
         self.assertFalse((self.zram / "reset").exists())
         self.assertEqual(status["bw_hwmon"], [])
+        self.assertEqual(status["ram_state"], "pending_boot")
         write(self.zram / "initstate", "0\n")
         self.report("early")
         self.assertEqual((self.zram / "comp_algorithm").read_text().strip(), "zstd")
@@ -114,15 +115,59 @@ class ManagerTests(unittest.TestCase):
         for p in (mem, gpu):
             write(p / "available_governors", "bw_hwmon performance\n")
             write(p / "governor", "performance\n")
-        self.report("apply", "default", "snappy", "0")
+        self.report("apply", "default", "snappy", "0", "bw_hwmon")
         self.assertEqual((mem / "governor").read_text().strip(), "bw_hwmon")
         self.assertEqual((gpu / "governor").read_text().strip(), "performance")
         self.report("reset")
         self.assertEqual((mem / "governor").read_text().strip(), "performance")
 
+    def test_ram_and_bandwidth_are_independent_and_missing_bw_is_an_error(self):
+        mem = self.sys / "class/devfreq/memory"
+        write(mem / "available_governors", "bw_hwmon performance\n")
+        write(mem / "governor", "performance\n")
+        s = self.report("apply", "default", "snappy", "0")
+        self.assertEqual((s["config"]["bw"], s["ram_state"]), ("default", "matching"))
+        self.assertEqual((mem / "governor").read_text().strip(), "performance")
+        self.report("apply", "default", "default", "0", "bw_hwmon")
+        self.assertEqual((mem / "governor").read_text().strip(), "bw_hwmon")
+        # Old config has no separate BW key. It must follow the system, restoring old ownership.
+        config = self.data / "config"
+        config.write_text("\n".join(l for l in config.read_text().splitlines() if not l.startswith("BW=")) + "\n")
+        self.assertEqual(self.report("status")["config"]["bw"], "default")
+        self.report("apply", "default", "snappy", "0")
+        self.assertEqual((mem / "governor").read_text().strip(), "performance")
+        write(mem / "available_governors", "performance\n")
+        before = (self.data / "config").read_text()
+        self.assertEqual(self.report("apply", "sugov_ext", "snappy", "0", "bw_hwmon")["ok"], 0)
+        self.assertEqual((self.data / "config").read_text(), before)
+        self.assertEqual(self.governors(), ["schedutil", "schedutil"])
+
+    def test_ram_reports_a_failed_boot_without_claiming_success_or_resetting_zram(self):
+        before = (self.zram / "comp_algorithm").read_text()
+        self.assertEqual(self.report("apply", "default", "heavy", "0")["ram_state"], "needs_boot")
+        self.assertEqual(self.report("set", "default", "heavy", "1")["ram_state"], "pending_boot")
+        self.report("boot")
+        self.assertEqual(self.report("status")["ram_state"], "blocked")
+        self.assertEqual((self.zram / "comp_algorithm").read_text(), before)
+        self.assertFalse((self.zram / "reset").exists())
+        self.assertEqual(self.report("set", "default", "snappy", "1")["ram_state"], "matching")
+        write(self.proc / "sys/kernel/random/boot_id", "new-boot\n")
+        self.assertEqual(self.report("set", "default", "heavy", "1")["ram_state"], "pending_boot")
+
+    def test_ram_status_distinguishes_selected_compression_from_active_swap(self):
+        self.report("set", "default", "snappy", "0")
+        self.assertEqual(self.report("status")["zram"][0]["swap_active"], -1)
+        write(self.proc / "swaps", "Filename Type Size Used Priority\n/dev/block/zram0 partition 1000 10 -2\n")
+        self.assertEqual(self.report("status")["zram"][0]["swap_active"], 1)
+        write(self.proc / "swaps", "Filename Type Size Used Priority\n")
+        self.assertEqual(self.report("status")["zram"][0]["swap_active"], 0)
+        write(self.proc / "swaps", "")
+        self.assertEqual(self.report("status")["zram"][0]["swap_active"], -1)
+
     def test_invalid_settings_cannot_reach_a_shell(self):
         self.assertEqual(self.report("apply", "schedutil;id", "default", "0")["ok"], 0)
         self.assertEqual(self.report("set", "schedutil", "heavy", "2")["ok"], 0)
+        self.assertEqual(self.report("apply", "schedutil", "snappy", "0", "bw_hwmon;id")["ok"], 0)
         self.assertEqual(self.governors(), ["schedutil", "schedutil"])
 
     def app_fixture(self):

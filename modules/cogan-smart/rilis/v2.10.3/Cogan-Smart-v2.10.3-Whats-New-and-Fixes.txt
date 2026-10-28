@@ -1,0 +1,22 @@
+Cogan Smart Kernel v2.10.3 — versionCode 22
+Paket pembaruan uji / Update test build — 28 Okt 2026 (WIB)
+
+## RAM sesuai dukungan perangkat / RAM controls follow device support — v2.10.3 (paket uji / test build)
+
+Indonesia:
+
+- Pisahkan kompresi ZRAM (Snappy LZ4 / Heavy ZSTD) dari governor DRAM (Sistem / bw_hwmon). Pemilihan kompresor tidak lagi diam-diam mengubah devfreq; pilihan bw_hwmon ditolak bila tidak tersedia, sebelum kontrol lain ditulis.
+- Konfigurasi lama tanpa BW mengikuti DRAM Sistem. Governor devfreq yang dahulu tercatat milik Manager dipulihkan melalui jurnal yang sama, tanpa menimpa nilai berbeda dari pengendali lain.
+- RAM menampilkan status pilihan mengikuti sistem, sesuai bacaan, belum diterapkan, menunggu boot, tidak didukung, atau percobaan boot yang belum berhasil. Toast memakai status yang sama; selesai memproses tidak lagi dianggap semua profil telah aktif.
+- Pilihan algoritme yang sama dengan bacaan tidak membuktikan modul menggantinya. Tampilkan status swap dari /proc/swaps secara terpisah; data hilang ditandai belum terbaca.
+- Setelah satu percobaan boot yang belum menghasilkan kompresor pilihan, tampilkan batas integrasi init/kernel, bukan menyuruh restart berulang. ZRAM aktif tidak di-reset, swap tidak dimatikan dan pengaturan DRAM MediaTek tidak ditebak.
+- SS owner membuktikan policy CPU terbaca sugov_ext, zram0 terpilih lz4 dan bw_hwmon tidak tersedia. SS tidak membuktikan bahwa modul mengganti LZ4 atau swap aktif. Gunakan DRAM Sistem pada kondisi tersebut. Paket pembaruan belum diuji di HP.
+
+English:
+
+- Separate ZRAM compression (Snappy LZ4 / Heavy ZSTD) from the DRAM governor (System / bw_hwmon). Selecting compression no longer implicitly changes devfreq; unavailable bw_hwmon requests fail before other controls are written.
+- Old configs without BW follow System DRAM. Restore devfreq nodes previously recorded as Manager-owned through the existing journal, preserving differing values from other controllers.
+- RAM distinguishes system, matching readback, not applied, pending boot, unsupported and unsuccessful boot attempts. The toast uses the same state; processing a request no longer implies that every profile is active.
+- A matching algorithm does not prove that the module changed it. Show swap activity from /proc/swaps separately; missing data remains unknown.
+- After one boot attempt fails to produce the selected compressor, explain the init/kernel integration limit instead of suggesting repeated restarts. Do not reset live ZRAM, disable swap or guess MediaTek DRAM controls.
+- The owner's screenshot shows CPU policies reading sugov_ext, zram0 selecting lz4 and no available bw_hwmon. It does not prove a module-induced LZ4 change or active swap. Use System DRAM in that situation. This update is not phone-tested.
