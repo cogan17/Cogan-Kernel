@@ -1,11 +1,8 @@
 # Checkpoint
 
-Catatan terbaru: **[checkpoint.md](checkpoint.md)** — 28 Okt 2026, 14.46 WIB.
+Catatan terbaru: **[checkpoint.md](checkpoint.md)** — 28 Okt 2026 (WIB).
 
-- Pekerjaan dihentikan atas permintaan owner.
-- Manager dan paket uji v2.10.0–v2.10.3 sudah digabung ke main.
-- Terbaru v2.10.3 (versionCode 22): kontrol ZRAM/DRAM terpisah, status penerapan RAM dan swap; 245 tes CI lolos.
-- Hasil v2.10.3 pada HP belum dikonfirmasi. Tidak ada GitHub Release baru untuk paket uji tersebut.
-- Baca checkpoint.md serta CLAUDE.md, lalu tunggu instruksi owner.
-
-[Checkpoint sebelumnya, 28 Okt 2026 09.21 WIB](https://github.com/cogan17/Cogan-Kernel/blob/25c6fe84e6c3e10e42644c93aaecf45a206b8384/checkpoint.md) tetap tersimpan dalam riwayat git.
+- Pekerjaan fitur dihentikan atas permintaan owner.
+- v2.10.4 sudah di `main` (PR #68); LZ4/swap aktif terbaca di HP, tetapi `bw_hwmon` tidak tersedia pada driver MT6989.
+- Draf v2.10.5 belum selesai tersimpan di branch `fix/cogan-smart-dram-detection` commit `7cbeb4ee3b09a0bcfe62ba47302cfa39c96efee7`; belum ada ZIP, PR fitur atau uji HP.
+- Baca `CLAUDE.md` dan `checkpoint.md`, lalu tunggu instruksi owner.
