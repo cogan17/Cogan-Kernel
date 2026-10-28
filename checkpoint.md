@@ -1,6 +1,6 @@
 # Checkpoint — 28 Okt 2026 (WIB)
 
-v2.10.5 (DRAM) dan v2.10.6 (hook init berjalan) sudah di `main` dan terkonfirmasi di HP. v2.10.7 memperbaiki tulisan lz4 vendor yang menimpa pilihan ZRAM (lihat bagian v2.10.7). Sesi berikutnya baca `CLAUDE.md`, file ini dan `CHECKPOINT.md`, lalu tunggu instruksi owner. Jangan otomatis menguji HP, menjalankan build atau menerbitkan rilis.
+v2.10.5 (DRAM) dan v2.10.6 (hook init berjalan) sudah di `main` dan terkonfirmasi di HP. v2.10.7 keliru menebak tahap swap; v2.10.8 memasang hook tepat sebelum alat Xiaomi `system_perf_init` menyalakan ZRAM (lihat bagian v2.10.8). Sesi berikutnya baca `CLAUDE.md`, file ini dan `CHECKPOINT.md`, lalu tunggu instruksi owner. Jangan otomatis menguji HP, menjalankan build atau menerbitkan rilis.
 
 ## Sudah selesai
 
@@ -8,6 +8,17 @@ v2.10.5 (DRAM) dan v2.10.6 (hook init berjalan) sudah di `main` dan terkonfirmas
 - v2.10.4 menggunakan dukungan `initrc` KernelSU Next/BakaSU pada Cogan r5 untuk memilih kompresor sebelum ZRAM diinisialisasi. Tidak menambah governor DRAM, tidak reset ZRAM dan tidak swapoff.
 - Screenshot HP owner menunjukkan **v2.10.4 terpasang**, `zram0: lz4 · swap aktif`, opsi LZ4 terpilih, status “initrc tersiapkan untuk boot berikutnya”, dan `bw_hwmon` abu-abu. Bacaan LZ4/swap aktif terbukti, tetapi tidak membuktikan modul yang mengganti LZ4. Belum ada bukti hasil ZSTD atau hasil eksekusi hook initrc pada HP.
 - Owner menjalankan pembacaan root `/sys/class/devfreq/*`. Hasilnya: `112b0000.ufshci` → driver `ufshcd-mtk`, governor `simple_ondemand`; `13000000.mali` → driver `mali`, governor `dummy`; **`mtk-dvfsrc-devfreq` → driver `mtk-dvfsrc-devfreq`, governor `userspace`**. Ketiganya menampilkan daftar sama: `dummy apupassive-pe apuconstrain apuuser apupassive userspace powersave performance simple_ondemand`. **Tidak ada `bw_hwmon`.** `available_governors` devfreq dapat bersifat global; daftar UFS/GPU bukan bukti dukungan DRAM. `userspace` adalah governor aktif DRAM, bukan bukti ZRAM gagal. Jangan mengganti ke `simple_ondemand` atau port governor Qualcomm dengan asumsi.
+
+## v2.10.8 — hook ZRAM sebelum system_perf_init (versionCode 27)
+
+- **v2.10.7 di HP (28 Okt, 22.52 WIB):** `Hook boot ini: zstd boot-completed pending`, `zram0: lz4`. Saat boot selesai ZRAM sudah aktif; tahap boot-completed v2.10.7 terlambat.
+- **Bukti di HP (root, 22.53–22.56 WIB):**
+  - dmesg 0,35 dtk `ExtM: Added device: zram0`; 9,751 dtk KernelSU `exec '/system_ext/xbin/system_perf_init'`; 9,768 dtk `zram0: detected capacity change`; 9,776 dtk `Adding 12582908k swap on /dev/block/zram0. Priority:-2`; 9,789 dtk `INIT:zygote-start`. Prioritas -2 berarti bukan `swapon_all` fstab (`swapprio=10`).
+  - `/system_ext/etc/init/init.miui.ext.rc`: `service system_perf_init /system_ext/xbin/system_perf_init` (class main, disabled), dan baris 226–228 `# system_perf_init: after load_persist_props_action && before zygote-start` → `on load-bpf-programs` → `start system_perf_init`. String biner memuat `swapon`, `mkswap`, `/sys/block/zram0/disksize`, `persist.sys.zram.disksize`, tanpa `comp_algorithm`: ia memakai algoritme yang sedang terpasang.
+  - `/proc/swaps`: hanya `/dev/block/zram0`, prioritas -2. Modul lain (AshLooper, tcp_optimiser, dll.) tidak menyentuh ZRAM.
+- **Perbaikan:** tahap hook terakhir menjadi `on load-bpf-programs` (boot-completed dihapus). AOSP `rootdir/init.rc`: `trigger post-fs-data` (520) → `trigger load-bpf-programs` (523) → `trigger zygote-start` (527); `init.cpp` membaca `/system/etc/init/hw/init.rc` sebelum `/system_ext/etc/init`. Jadi hook berjalan sesudah lz4 vendor dan sebelum `start system_perf_init`.
+- Terukur lokal: tes Manager lolos. [Paket uji](modules/cogan-smart/rilis/v2.10.8/Cogan-Smart-Kernel-v2.10.8.zip) 40 file, 151578 byte, SHA256 `552fb6fecb65d60373289601d4ad0ae32d4be775a5fc76354e6ca47f495afbd8` (dua kali dikemas, sama).
+- **Belum diuji di HP dan belum dirilis.** Harapan: `zram0: zstd` dan `Hook boot ini: zstd load-bpf-programs matching`.
 
 ## v2.10.7 — pilihan ZRAM bertahan sampai swap aktif (versionCode 26)
 
@@ -39,4 +50,4 @@ v2.10.5 (DRAM) dan v2.10.6 (hook init berjalan) sudah di `main` dan terkonfirmas
 
 ## English state summary
 
-v2.10.5 (DRAM detection) and v2.10.6 (initrc exec fix) are on main and confirmed on the owner's phone: the hook now runs (`zstd post-fs matching`). zram0 still ended up lz4 because rothko's vendor init writes lz4 on post-fs-data and only runs swapon_all on sys.boot_completed=1. v2.10.7 (versionCode 26) also runs the hook on sys.boot_completed=1; module rules are parsed before vendor imports, so it lands between the two. Test ZIP SHA256 `4546ec64…4720`. Not phone-tested and not released. Wait for the owner's instructions.
+v2.10.5 (DRAM detection) and v2.10.6 (initrc exec fix) are on main and confirmed on the phone. On rothko HyperOS the vendor init writes lz4 on post-fs-data and Xiaomi's system_perf_init (started on load-bpf-programs) initializes ZRAM at about 9.7 s with whatever algorithm is set; v2.10.7's boot-completed run was too late. v2.10.8 (versionCode 27) moves the last hook run to load-bpf-programs, which per AOSP init runs after post-fs-data and, because init.rc is parsed before /system_ext/etc/init, before start system_perf_init. Test ZIP SHA256 `552fb6fe…fbd8`. Not phone-tested and not released. Wait for the owner's instructions.
