@@ -21,7 +21,7 @@
 </p>
 
 > [!WARNING]
-> **Still in testing.** Builds that pass the maintainer's phone test are published as **Pre-release** under [Releases](https://github.com/cogan17/Cogan-Kernel/releases); there is no official release yet. Flash only if you have a `boot` backup and know how to [go back to stock](docs/kembali-ke-stok.en.md).
+> The maintainer/developer is not responsible for bootloops or bricked devices. Device owners are responsible for their own devices! Please back up your data. TWRP is available for the Xiaomi 14T Pro. You can download [TWRP](https://github.com/cogan17/TWRP-14T-PRO).
 
 ---
 
