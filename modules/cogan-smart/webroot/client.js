@@ -21,8 +21,8 @@
   // Last answers, kept so a tab shows its last values at once while it reads fresh ones:
   // each tab is its own page, so without this every switch starts empty.
   const store = {
-    get(key) { try { return JSON.parse(localStorage.getItem('cogan.cache.v2104.' + CoganI18n.language() + '.' + key)); } catch (_) { return null; } },
-    set(key, value) { try { localStorage.setItem('cogan.cache.v2104.' + CoganI18n.language() + '.' + key, JSON.stringify(value)); } catch (_) { /* storage off or full */ } }
+    get(key) { try { return JSON.parse(localStorage.getItem('cogan.cache.v2105.' + CoganI18n.language() + '.' + key)); } catch (_) { return null; } },
+    set(key, value) { try { localStorage.setItem('cogan.cache.v2105.' + CoganI18n.language() + '.' + key, JSON.stringify(value)); } catch (_) { /* storage off or full */ } }
   };
 
   let sequence = 0; // Unique across the Manager's three API clients in the same WebView.

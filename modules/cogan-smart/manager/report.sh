@@ -54,10 +54,16 @@ boot_session() {
     printf '%s\n' "$cm_boot" > "$CM_DATA/run/boot"
   fi
 }
-# Only driver-advertised governors are targets; never change GPU or CPU frequency limits.
-bw_nodes() {
+# available_governors is a global list on devfreq, not proof of a DRAM target.
+# Identify the rothko memory driver first; UFS and GPU must never be RAM targets.
+dram_nodes() {
   for cm_d in "$CM_SYS"/class/devfreq/*; do
-    case "${cm_d##*/}" in *gpu*|*mali*|*kgsl*|*adreno*) continue ;; esac
+    [ "$(readlink -f "$cm_d/device/driver" 2>/dev/null)" = "$CM_SYS/bus/platform/drivers/mtk-dvfsrc-devfreq" ] &&
+      printf '%s\n' "$cm_d"
+  done
+}
+bw_nodes() {
+  for cm_d in $(dram_nodes); do
     contains "$(read_node "$cm_d/available_governors")" bw_hwmon &&
       [ -w "$cm_d/governor" ] && printf '%s\n' "$cm_d/governor"
   done
@@ -171,6 +177,13 @@ status_json() {
     printf '%s{"name":' "$cm_sep"; json_string "${cm_p##*/}"
     printf ',"current":'; json_string "$(selected "$cm_p/scaling_governor")"
     printf ',"available":'; json_string "$(read_node "$cm_p/scaling_available_governors")"
+    printf '}'; cm_sep=,
+  done
+  printf '],"dram":['; cm_sep=
+  for cm_d in $(dram_nodes); do
+    printf '%s{"name":' "$cm_sep"; json_string "${cm_d##*/}"
+    printf ',"driver":"mtk-dvfsrc-devfreq","current":'; json_string "$(selected "$cm_d/governor")"
+    printf ',"available":'; json_string "$(read_node "$cm_d/available_governors")"
     printf '}'; cm_sep=,
   done
   printf '],"bw_hwmon":['; cm_sep=

@@ -1,5 +1,23 @@
 # Cogan Smart Kernel
 
+## Kenali DRAM MediaTek / Identify MediaTek DRAM — v2.10.5 (paket uji / test build)
+
+Indonesia:
+
+- Hasil perintah owner mengidentifikasi DRAM sebagai mtk-dvfsrc-devfreq dengan governor userspace; UFS memakai ufshcd-mtk/simple_ondemand dan GPU mali/dummy. Ketiganya menampilkan daftar governor yang sama tanpa bw_hwmon. userspace adalah bacaan aktual, bukan bukti kegagalan profil ZRAM.
+- Manager mengenali DRAM lewat ikatan device/driver yang tepat, menampilkan driver dan governor terbaca, serta menyembunyikan dropdown BW bila tidak ada pilihan yang dapat dipakai. Pilihan BW lama yang kini tidak tersedia tetap bisa dikembalikan ke DRAM Sistem.
+- Perbaiki sasaran penulisan BW: daftar available_governors devfreq dapat bersifat global. UFS, GPU, dan perangkat lain tidak lagi menjadi target hanya karena nama governor muncul dalam daftar. Validasi, readback dan pemulihan kepemilikan tetap berlaku.
+- Tetap gunakan pengaturan DRAM sistem; tidak mengganti userspace dengan simple_ondemand/performance/powersave, menebak OPP atau mengubah driver/termal. Ini perbaikan deteksi dan antarmuka, bukan port bw_hwmon ke MediaTek atau klaim peningkatan performa.
+- Bukti HP v2.10.4 menunjukkan zram0: lz4 dengan swap aktif. Belum ada bukti ZSTD berhasil atau gagal setelah reboot. Integrasi ZRAM v2.10.4 tetap disertakan; tidak perlu kernel baru untuk perbaikan deteksi ini. v2.10.5 belum diuji di HP.
+
+English:
+
+- The owner's command output identifies DRAM as mtk-dvfsrc-devfreq with the userspace governor; UFS uses ufshcd-mtk/simple_ondemand and the GPU uses mali/dummy. All three show the same governor list without bw_hwmon. userspace is the actual readback, not evidence that the ZRAM profile failed.
+- Identify DRAM through its exact device/driver binding, show its driver and current governor, and hide the BW dropdown when there is no usable choice. A previously saved BW choice that is now unavailable can still be returned to System DRAM.
+- Correct BW write targets: devfreq available_governors can be global. UFS, GPU and other devices are no longer targets merely because a governor appears in that list. Validation, readback and ownership restoration remain in place.
+- Preserve system DRAM settings; do not switch userspace to simple_ondemand/performance/powersave, guess OPPs or modify drivers/thermal controls. This is a detection and UI fix, not a MediaTek bw_hwmon port or a performance improvement claim.
+- The v2.10.4 phone screenshot shows zram0: lz4 with active swap. There is no post-reboot evidence of ZSTD success or failure yet. The v2.10.4 ZRAM integration remains included; this detection fix needs no new kernel. v2.10.5 has not been phone-tested.
+
 ## Integrasi ZRAM sebelum inisialisasi / ZRAM integration before initialization — v2.10.4 (paket uji / test build)
 
 Indonesia:

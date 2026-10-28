@@ -1,0 +1,31 @@
+Cogan Smart Kernel v2.10.5 / versionCode 24 — paket uji / test build
+
+Indonesia
+
+Perbaikan:
+- Kenali DRAM Xiaomi 14T Pro dari ikatan driver mtk-dvfsrc-devfreq, sesuai hasil perintah owner. Tampilkan governor aktual userspace.
+- Jangan jadikan UFS/GPU sasaran RAM hanya karena available_governors menampilkan daftar global yang sama.
+- Sembunyikan dropdown BW bila tidak tersedia. Pilihan lama yang sudah tidak didukung tetap dapat dikembalikan ke DRAM Sistem.
+- Pertahankan kontrol CPU, kompresi ZRAM, integrasi init v2.10.4, pencatat suhu dan pemindai aplikasi yang sudah ada.
+
+Batas yang tetap berlaku:
+- Ini perbaikan deteksi dan tampilan. bw_hwmon belum tersedia pada driver HP owner; tidak ditambahkan driver atau algoritme DRAM baru. userspace dipertahankan, tanpa mengganti ke simple_ondemand/performance/powersave atau menebak OPP/tegangan.
+- Screenshot v2.10.4 menunjukkan lz4 dengan swap aktif. Keberhasilan pergantian ke ZSTD belum dikonfirmasi; pemasangan v2.10.5 tidak menjadi bukti bahwa ZSTD berhasil.
+- Tidak mereset ZRAM aktif, mematikan swap, mengubah ukuran ZRAM, KMI atau partisi. Belum ada hasil uji HP untuk v2.10.5 dan tidak ada klaim peningkatan performa.
+
+Pasang sebagai pembaruan modul melalui root manager, lalu selesaikan reboot pemasangannya. Tidak perlu flash kernel baru untuk deteksi ini. Sesudahnya, Manager seharusnya menampilkan mtk-dvfsrc-devfreq: userspace pada bagian DRAM. Reboot tidak menambahkan bw_hwmon.
+
+English
+
+Fixes:
+- Identify Xiaomi 14T Pro DRAM through the mtk-dvfsrc-devfreq driver binding, matching the owner's command output. Show the actual userspace governor.
+- Do not target UFS/GPU as RAM merely because available_governors exposes the same global list.
+- Hide the BW dropdown when unavailable. Previously saved choices that are no longer supported can still return to System DRAM.
+- Preserve the existing CPU controls, ZRAM compression, v2.10.4 init integration, temperature recorder and app scanner.
+
+Limits:
+- This is a detection and display fix. The owner's driver does not offer bw_hwmon; no new DRAM driver or algorithm is added. Preserve userspace without switching to simple_ondemand/performance/powersave or guessing OPPs/voltages.
+- The v2.10.4 screenshot shows lz4 with active swap. Switching to ZSTD has not been confirmed; installing v2.10.5 is not evidence that ZSTD succeeded.
+- No live ZRAM reset, swap disabling, ZRAM resize, KMI or partition changes. There are no v2.10.5 phone results or performance improvement claims yet.
+
+Install as a module update through the root manager and complete its installation reboot. This detection change needs no new kernel flash. Manager should then show mtk-dvfsrc-devfreq: userspace in the DRAM section. Rebooting does not add bw_hwmon.
