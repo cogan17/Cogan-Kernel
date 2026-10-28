@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Cogan Smart</title>
-<link rel="stylesheet" href="theme.css?v=2.10.1">
-<script src="i18n.js?v=2.10.1"></script>
+<link rel="stylesheet" href="theme.css?v=2.10.2">
+<script src="i18n.js?v=2.10.2"></script>
 <script>try { document.documentElement.dataset.theme = localStorage.getItem('cogan.theme') || ''; } catch (_) { /* storage off: follow the phone */ }</script>
 <style>
   * { box-sizing: border-box; }
@@ -91,9 +91,6 @@
   @media (prefers-reduced-motion: reduce) { details.fold > summary::after { transition: none; } }
   body.stale .big b, body.stale .chip b { opacity: .55; }   /* last known values until the first fresh read */
   body.stale #state::after { content: ' ↻'; }
-  .tabs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin: 0 2px 12px; }
-  .tabs a { flex: 1; min-height: 44px; box-sizing: border-box; padding: 11px 3px; border-radius: 12px; text-align: center; background: var(--chip); color: var(--text); text-decoration: none; font-size: 13px; }
-  .tabs a[aria-current] { background: var(--accent); color: var(--on-accent); font-weight: 600; }
 </style>
 </head>
 <body>
@@ -102,7 +99,7 @@
     <h1>🧠 Cogan Smart</h1>
     <span id="state" class="pill">…</span>
   </header>
-  <nav class="tabs" aria-label="Bagian"><a href="index.html">⚡ Daya</a><a href="thermal.html" aria-current="page">🌡️ Suhu</a><a href="manager.html">🛠️ Manager</a><a href="modules.html">🧩 Modul</a></nav>
+  <nav class="tabs" aria-label="Bagian"><a href="index.html"><span class="tab-icon" aria-hidden="true">⚡</span><span class="tab-label">Daya</span></a><a href="thermal.html" aria-current="page"><span class="tab-icon" aria-hidden="true">🌡️</span><span class="tab-label">Suhu</span></a><a href="manager.html"><span class="tab-icon" aria-hidden="true">🛠️</span><span class="tab-label">Manager</span></a><a href="modules.html"><span class="tab-icon" aria-hidden="true">🧩</span><span class="tab-label">Modul</span></a></nav>
 
   <div id="noksu" class="card hidden">
     Buka halaman ini dari WebUI modul di KernelSU, KernelSU Next atau BakaSU.
@@ -176,7 +173,7 @@
 </main>
 
 <div id="actionStatus" class="feedback hidden" role="status" aria-live="polite"></div>
-<script src="client.js?v=2.10.1"></script>
+<script src="client.js?v=2.10.2"></script>
 <script>
 const confirm = value => window.confirm(CoganI18n.t(value));
 const REPORT = '/data/adb/modules/cogan_smart/thermal/report.sh';

@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Cogan Smart · Tentang</title>
-<link rel="stylesheet" href="theme.css?v=2.10.1">
-<script src="i18n.js?v=2.10.1"></script>
+<link rel="stylesheet" href="theme.css?v=2.10.2">
+<script src="i18n.js?v=2.10.2"></script>
 <script>try { document.documentElement.dataset.theme = localStorage.getItem('cogan.theme') || ''; document.documentElement.lang = localStorage.getItem('cogan.lang') || 'id'; } catch (_) { /* storage off: defaults */ }</script>
 <style>
   * { box-sizing: border-box; }
@@ -39,8 +39,6 @@
   td:first-child { font-weight: 600; white-space: nowrap; padding-right: 10px; }
   code { font-size: 12px; overflow-wrap: anywhere; }
   ul { margin: 4px 0; padding-left: 18px; font-size: 14px; } li { margin: 3px 0; }
-  .tabs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin: 0 2px 12px; }
-  .tabs a { flex: 1; min-height: 44px; padding: 11px 3px; border-radius: 12px; text-align: center; background: var(--chip); color: var(--text); text-decoration: none; font-size: 13px; }
   /* Indonesian first; English when chosen */
   html:not([lang="en"]) [lang="en"], html[lang="en"] [lang="id"] { display: none !important; }
 </style>
@@ -53,7 +51,7 @@
       <button data-lang="id">🇮🇩 ID</button><button data-lang="en">🇬🇧 EN</button>
     </div>
   </header>
-  <nav class="tabs" aria-label="Bagian"><a href="index.html">⚡ Daya</a><a href="thermal.html">🌡️ Suhu</a><a href="manager.html">🛠️ Manager</a><a href="modules.html">🧩 Modul</a></nav>
+  <nav class="tabs" aria-label="Bagian"><a href="index.html"><span class="tab-icon" aria-hidden="true">⚡</span><span class="tab-label">Daya</span></a><a href="thermal.html"><span class="tab-icon" aria-hidden="true">🌡️</span><span class="tab-label">Suhu</span></a><a href="manager.html"><span class="tab-icon" aria-hidden="true">🛠️</span><span class="tab-label">Manager</span></a><a href="modules.html"><span class="tab-icon" aria-hidden="true">🧩</span><span class="tab-label">Modul</span></a></nav>
 
   <section class="card hero">
     <div class="logo">🧠</div>
@@ -118,7 +116,7 @@
   <p class="credit">Maintainer <b>Cogan17</b> &nbsp;·&nbsp; kernel <b>Cogan Rothko</b> &nbsp;·&nbsp; <b>KernelSU Next</b></p>
 </main>
 
-<script src="client.js?v=2.10.1"></script>
+<script src="client.js?v=2.10.2"></script>
 <script>
 const POWER = '/data/adb/modules/cogan_smart/power/report.sh';
 const UI = CoganUI, power = UI.create(POWER), root = document.documentElement;
