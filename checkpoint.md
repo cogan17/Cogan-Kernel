@@ -1,6 +1,6 @@
 # Checkpoint — 28 Okt 2026 (WIB)
 
-Owner meminta draf v2.10.5 dilanjutkan (28 Okt). Paket uji v2.10.5 selesai; lihat bagian v2.10.5. Sesi berikutnya baca `CLAUDE.md`, file ini dan `CHECKPOINT.md`, lalu tunggu instruksi owner. Jangan otomatis menguji HP, menjalankan build atau menerbitkan rilis.
+Owner meminta draf v2.10.5 dilanjutkan (28 Okt). Paket uji v2.10.5 selesai dan sudah di `main` lewat [PR #70](https://github.com/cogan17/Cogan-Kernel/pull/70); lihat bagian v2.10.5. Sesi berikutnya baca `CLAUDE.md`, file ini dan `CHECKPOINT.md`, lalu tunggu instruksi owner. Jangan otomatis menguji HP, menjalankan build atau menerbitkan rilis.
 
 ## Sudah selesai
 
@@ -11,6 +11,7 @@ Owner meminta draf v2.10.5 dilanjutkan (28 Okt). Paket uji v2.10.5 selesai; liha
 
 ## v2.10.5 — paket uji deteksi DRAM MediaTek (versionCode 24)
 
+- **Sudah di `main`:** [PR #70](https://github.com/cogan17/Cogan-Kernel/pull/70), commit `8b1fe721a22aa5ed1d4ec24c98794cad8489a8bd`, digabung 28 Okt sekitar 22.11 WIB. [Validate 40713132298](https://github.com/cogan17/Cogan-Kernel/actions/runs/40713132298) lolos (tes, YAML, shell; 22.10 WIB). Branch draf `fix/cogan-smart-dram-detection` tidak diperlukan lagi.
 - Draf dari branch `fix/cogan-smart-dram-detection` diperiksa dan diselesaikan. DRAM dikenali dari ikatan driver `mtk-dvfsrc-devfreq`; Manager menampilkan governor aktual; UFS/GPU tidak lagi menjadi target BW walau daftar governor-nya sama; dropdown BW disembunyikan bila tidak ada pilihan yang bisa dipakai, kecuali untuk mengembalikan pilihan lama ke DRAM Sistem.
 - Tambahan saat penyelesaian: teks DRAM di mode English kini diterjemahkan penuh (termasuk "belum terbaca" → "unavailable").
 - Terukur lokal: 252 tes Python dan cek WebUI lolos; `sh -n` lolos. [Paket uji](modules/cogan-smart/rilis/v2.10.5/Cogan-Smart-Kernel-v2.10.5.zip) 40 file, 149444 byte, dapat dibuat ulang dengan SHA256 `a148ff25d146b7cb162622b1eb5c8c5c45609a4d75ed26ff70c918539336966d` (cara kemas dibuktikan dengan membuat ulang ZIP v2.10.4: SHA256 sama).
@@ -21,4 +22,4 @@ Owner meminta draf v2.10.5 dilanjutkan (28 Okt). Paket uji v2.10.5 selesai; liha
 
 ## English state summary
 
-v2.10.4 native ZRAM init integration is on main (PR #68). The owner's devfreq dump identifies DRAM as `mtk-dvfsrc-devfreq` with `userspace`; no device offers `bw_hwmon`. v2.10.5 (versionCode 24) finishes the DRAM detection/UI draft: driver-bound DRAM identification, actual governor readback, no UFS/GPU BW targets, hidden BW dropdown when unusable, full English text. 252 local tests and the WebUI check pass; the reproducible test ZIP has SHA256 `a148ff25…966d`. Not phone-tested and not released. Wait for the owner's instructions.
+v2.10.4 native ZRAM init integration is on main (PR #68). The owner's devfreq dump identifies DRAM as `mtk-dvfsrc-devfreq` with `userspace`; no device offers `bw_hwmon`. v2.10.5 (versionCode 24) finishes the DRAM detection/UI draft: driver-bound DRAM identification, actual governor readback, no UFS/GPU BW targets, hidden BW dropdown when unusable, full English text. 252 local tests and the WebUI check pass; the reproducible test ZIP has SHA256 `a148ff25…966d`. Merged to main via PR #70 (`8b1fe72`) after Validate 40713132298 passed. Not phone-tested and not released. Wait for the owner's instructions.
