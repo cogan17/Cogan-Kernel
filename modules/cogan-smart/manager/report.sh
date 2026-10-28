@@ -187,16 +187,37 @@ user_id() {
   CM_USER=$(am get-current-user 2>/dev/null)
   uint "$CM_USER" && [ "$CM_USER" -le 99999 ] || fail 'Pengguna Android tidak dapat dibaca.'
 }
+scan_fail() {
+  cm_detail=$1
+  [ -n "$cm_detail" ] || cm_detail=$(head -c 240 "$cm_tmp/error")
+  [ -n "$cm_detail" ] || cm_detail=$(head -c 240 "$cm_tmp/$cm_file")
+  [ -n "$cm_detail" ] || cm_detail='perintah gagal'
+  cm_detail=$(printf '%s' "$cm_detail" | tr '\r\n' '  ')
+  fail "Pemindaian gagal pada $cm_stage (kode $cm_code): $cm_detail"
+}
+scan_read() {
+  cm_file=$1; cm_stage=$2; cm_limit=$3; shift 3
+  timeout "$cm_limit" "$@" > "$cm_tmp/$cm_file" 2> "$cm_tmp/error"
+  cm_code=$?
+  [ "$cm_code" = 0 ] || scan_fail ''
+  # Android dumpsys can exit 0 after a timeout or permission failure. Never parse a partial dump.
+  cm_problem=$(grep -Eih -m 1 "DUMP TIMEOUT|^[[:space:]]*(Permission Denial|Permission denied|Security exception|java[.]lang[.]SecurityException|Can't find service|Error dumping service)" \
+    "$cm_tmp/$cm_file" "$cm_tmp/error" | head -c 240)
+  [ -z "$cm_problem" ] || scan_fail "$cm_problem"
+  [ -s "$cm_tmp/$cm_file" ] || scan_fail 'respons kosong'
+}
 scan_apps() {
   user_id
   command -v timeout >/dev/null 2>&1 || fail 'Pemindaian memerlukan perintah timeout.'
   cm_tmp=$(mktemp -d "$CM_DATA/scan.XXXXXX") || fail 'Gagal menyiapkan pemindaian.'
   trap 'rm -rf "$cm_tmp"; lock_drop "$CM_DATA/api.lock"' EXIT
-  timeout 15 pm list packages -3 --user "$CM_USER" > "$cm_tmp/list" 2>/dev/null &&
-  timeout 20 dumpsys usagestats -c > "$cm_tmp/usage" 2>/dev/null &&
-  timeout 20 dumpsys package packages > "$cm_tmp/packages" 2>/dev/null ||
-    fail 'Data pemakaian aplikasi belum dapat dibaca.'
-  ps -A -w -o args > "$cm_tmp/running" 2>/dev/null || : > "$cm_tmp/running"
+  scan_read list 'daftar aplikasi' 15 pm list packages -3 --user "$CM_USER"
+  # Set dumpsys' own deadline too (its default is only 10 seconds); the outer limit is a backstop.
+  scan_read usage 'riwayat pemakaian' 25 dumpsys -t 20 usagestats -c
+  scan_read packages 'tanggal pemasangan' 25 dumpsys -t 20 package packages
+  # Root managers may use BusyBox ps with different flags. Prefer Android's native ps.
+  cm_ps=ps; [ ! -x /system/bin/ps ] || cm_ps=/system/bin/ps
+  scan_read running 'proses berjalan' 10 "$cm_ps" -A -w -o args
   cm_now=$(date +%s)
   # PackageManager dates use Android's timezone; standalone BusyBox must use the same one.
   cm_tz=$(getprop persist.sys.timezone 2>/dev/null)

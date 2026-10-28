@@ -144,7 +144,7 @@ class ManagerTests(unittest.TestCase):
             usage += f"  package={p} totalTimeUsed=100 lastTimeUsed={last*1000} lastTimeVisible={last*1000} lastTimeFS={(now if p=='app.service' else 0)*1000}\n"
         usage += f"user=10\n package=app.profile lastTimeUsed={(now-9*86400)*1000}\n"
         write(self.base / "usage", usage)
-        self.tool("dumpsys", 'case "$1" in usagestats) cat ' + shlex.quote(str(self.base / "usage")) +
+        self.tool("dumpsys", '[ "$1 $2" = "-t 20" ] || exit 99\nshift 2\ncase "$1" in usagestats) cat ' + shlex.quote(str(self.base / "usage")) +
                   " " + ";; package) cat " + shlex.quote(str(self.base / "packages")) + ";; esac")
 
     def test_unused_apps_need_positive_evidence_in_the_current_user(self):
@@ -165,6 +165,33 @@ class ManagerTests(unittest.TestCase):
         self.app_fixture()
         write(self.base / "usage", "Permission Denial\n")
         self.assertEqual(self.report("scan")["ok"], 0)
+
+    def test_scan_rejects_failed_empty_denied_and_truncated_reads(self):
+        for stage, label in [("list", "daftar aplikasi"), ("usage", "riwayat pemakaian"),
+                             ("packages", "tanggal pemasangan"), ("running", "proses berjalan")]:
+            for failure in ("exit", "timeout", "denied", "empty"):
+                with self.subTest(stage=stage, failure=failure):
+                    self.app_fixture()
+                    # One fake timeout supervises the existing Android fixtures without waiting.
+                    # This catches failures from every command, including ps, with no hardware.
+                    body = ('file=list; case "$1" in 25) file=usage; [ "$5" = package ] && file=packages;; '
+                            '10) file=running;; esac\nshift\n')
+                    injected = {"exit": 'echo \'synthetic: "read failed"\' >&2; exit 42',
+                                "timeout": '"$@"; echo "*** SERVICE DUMP TIMEOUT EXPIRED ***"; exit 0',
+                                "denied": '"$@"; echo "Permission Denial: synthetic" >&2; exit 0',
+                                "empty": 'exit 0'}[failure]
+                    self.tool("timeout", body + 'if [ "$file" = ' + stage + ' ]; then ' + injected + '; fi\nexec "$@"')
+                    result = self.report("scan")
+                    self.assertEqual(result["ok"], 0, result)
+                    self.assertNotIn("apps", result)
+                    self.assertIn(label, result["error"])
+                    if failure == "exit":
+                        self.assertIn('kode 42', result["error"])
+                        self.assertIn('"read failed"', result["error"])
+                    self.assertFalse(list(self.data.glob("scan.*")))
+                    self.assertFalse((self.data / "api.lock").exists())
+        (self.bin / "timeout").unlink()
+        self.assertEqual([a["package"] for a in self.report("scan")["apps"]], ["app.old"])
 
     def test_webui_drafts_and_concurrent_native_callbacks(self):
         r = subprocess.run(["node", "tests/cogan_smart_client_check.js"], cwd=MODULE.parents[1],

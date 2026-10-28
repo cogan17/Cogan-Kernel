@@ -2,13 +2,14 @@
 
 **Versi paket terbaru: v2.9.1** (`versionCode` 18): modul lebih hemat CPU, satu angka Badan HP dari HyperOS, lonjakan suhu, nama aplikasi asli, batas CPU di log, dan penyaringan sensor macet. Dampak optimisasi terakhir pada HP belum diukur. Catatan perubahan lengkap ada di [`CHANGELOG.md`](CHANGELOG.md); status publikasi ada di [Releases](https://github.com/cogan17/Cogan-Kernel/releases).
 
-**Versi pengembangan: v2.10.0** (versionCode 19), tab Manager. Paket uji belum diuji pada HP; rilis v2.9.1 tetap tersedia.
+**Versi pengembangan: v2.10.1** (versionCode 20), perbaikan pemindai aplikasi Manager. Paket pembaruan belum diuji pada HP; rilis v2.9.1 tetap tersedia.
 
 ## ⬇️ Unduh
 
 | Versi | versionCode | ZIP siap pasang | Catatan | Salinan di repo | SHA256 ZIP |
 |---|---|---|---|---|---|
-| **v2.10.0** (paket uji Manager; belum uji HP) | 19 | [Paket uji](rilis/v2.10.0/Cogan-Smart-Kernel-v2.10.0.zip) | [What's New](rilis/v2.10.0/Cogan-Smart-v2.10.0-Whats-New-and-Fixes.txt) | [rilis/v2.10.0](rilis/v2.10.0) | `981caad71dfb458c39e0d8283cf37c895caf9990ce3936a4b4c15c55da8d955e` |
+| **v2.10.1** (paket uji perbaikan pemindai) | 20 | [Paket pembaruan](rilis/v2.10.1/Cogan-Smart-Kernel-v2.10.1.zip) | [What's New](rilis/v2.10.1/Cogan-Smart-v2.10.1-Whats-New-and-Fixes.txt) | [rilis/v2.10.1](rilis/v2.10.1) | `42281ceab4fac3704f778955d93cdb59e73213ef77ed8e3990a0248de1008de4` |
+| v2.10.0 (paket uji; pemindai aplikasi bermasalah) | 19 | [Paket uji](rilis/v2.10.0/Cogan-Smart-Kernel-v2.10.0.zip) | [What's New](rilis/v2.10.0/Cogan-Smart-v2.10.0-Whats-New-and-Fixes.txt) | [rilis/v2.10.0](rilis/v2.10.0) | `981caad71dfb458c39e0d8283cf37c895caf9990ce3936a4b4c15c55da8d955e` |
 | **v2.9.1** (paket rilis) | 18 | [Cogan-Smart-Kernel-v2.9.1.zip](rilis/v2.9.1/Cogan-Smart-Kernel-v2.9.1.zip) | [What's New](rilis/v2.9.1/Cogan-Smart-v2.9.1-Whats-New-and-Fixes.txt) | [`rilis/v2.9.1`](rilis/v2.9.1) | `64631a42c9133c2d91568ceb88c9582f5c5a95b1b6535c64cb27551fb502e29c` |
 | v2.9.0 | 17 | [Cogan-Smart-Kernel-v2.9.0.zip](https://github.com/cogan17/Cogan-Kernel/releases/download/cogan-smart-v2.9.0/Cogan-Smart-Kernel-v2.9.0.zip) | [What's New](https://github.com/cogan17/Cogan-Kernel/releases/download/cogan-smart-v2.9.0/Cogan-Smart-v2.9.0-Whats-New-and-Fixes.txt) | [`rilis/v2.9.0`](rilis/v2.9.0) | `7d15a729ce184aef8a3f870d5c0837010e22ccf69b910309c7f208b870057522` |
 | v2.8.2 | 16 | [Cogan-Smart-Kernel-v2.8.2.zip](https://github.com/cogan17/Cogan-Kernel/releases/download/cogan-smart-v2.8.2/Cogan-Smart-Kernel-v2.8.2.zip) | [What's New](https://github.com/cogan17/Cogan-Kernel/releases/download/cogan-smart-v2.8.2/Cogan-Smart-v2.8.2-Whats-New-and-Fixes.txt) | [`rilis/v2.8.2`](rilis/v2.8.2) | `73f6d9c9a167d1528057ff84c65d6db371a5cde63e1435ca6e5e4f14bfc367d5` |
@@ -37,7 +38,7 @@ Satu modul KernelSU / KernelSU Next / BakaSU / Magisk yang menggabungkan **Cogan
 WebUI punya empat tab: **⚡ Daya**, **🌡️ Suhu**, **🛠️ Manager** dan **🧩 Modul**, plus halaman **ℹ️ Tentang & kredit** (`about.html`, bahasa Indonesia dengan pilihan English) dari tautan di bawah tiap tab. Dua tema bergaya Material You di `webroot/theme.css`: **Terang hangat** dan **Gelap OLED** (hitam murni); bawaannya mengikuti mode gelap HP, pilihan tetap disimpan dari halaman Tentang. Setiap kartu bisa dilipat; posisi buka/tutup diingat per tab.
 Tiap tab adalah halaman sendiri, jadi `client.js` menyimpan jawaban baca terakhir (dan identitas kernel/HP) di `localStorage` WebView: pindah tab langsung menampilkan nilai terakhir (angka redup, ↻ di pojok) sampai bacaan baru datang. Tab Modul memakai hasil pindaian yang berumur < 2 menit apa adanya; Pindai ulang untuk memperbarui.
 
-## 🛠️ Manager (v2.10.0, pengembangan)
+## 🛠️ Manager (v2.10.1, pengembangan)
 
 - **Prosesor:** Kernel Default, sugov_ext atau schedutil. Pilihan hanya aktif bila tersedia pada semua policy. Tulisan nilai aktif menampilkan governor yang benar-benar terbaca.
 - **RAM:** Snappy & Daily Driver (bw_hwmon + LZ4) dan Heavy Multitasker / Space Saver (bw_hwmon + ZSTD). Kompresor harus tersedia pada semua perangkat ZRAM. bw_hwmon hanya diterapkan pada driver memori yang menawarkannya; bila tidak ada, governor memori bawaan dipertahankan dan UI menjelaskannya.
@@ -45,10 +46,11 @@ Tiap tab adalah halaman sendiri, jadi `client.js` menyimpan jawaban baca terakhi
 - **Integrasi:** penulisan CPU/RAM memerlukan rothko, platform mt6989 serta identitas Cogan Bridge/device tree yang cocok. Batas CPU, cas dan termal dari Daya/HyperOS tetap berlaku. Tidak menambahkan loop pengendali.
 - **Kontrol Daya/Suhu:** Simpan, Terapkan, Reset dan Mulai/Hentikan dipindah dari kedua tab ke Manager; Hapus riwayat juga di sini. Formulir tetap di tab semula. Perubahan kolom disimpan sebagai draf lokal sampai diterapkan dari Manager; Simpan log tetap di tab Suhu.
 - **Aplikasi:** pindai manual aplikasi user pada pengguna Android aktif. Saran hanya untuk bukti penggunaan terakhir ≥ 7 hari, tanggal pemasangan cukup lama, dan proses tidak sedang berjalan. Waktu aktivitas komponen/foreground service ikut dihitung; data hilang bukan bukti tidak dipakai. Tinjau aplikasi membuka info aplikasi Android untuk memilih uninstall/nonaktifkan, tanpa tindakan massal.
+- **Keandalan pemindaian (v2.10.1):** hasil dump terpotong, ditolak atau kosong membatalkan saran. Pembacaan proses wajib berhasil, dengan ps native Android bila tersedia. Deadline dumpsys diatur langsung; kegagalan menampilkan tahap, kode proses dan rincian singkat yang tetap terlihat di halaman. Data belum cukup tetap bukan bukti tidak dipakai.
 - **Pemulihan:** Ikuti kernel melepas governor milik Manager; perubahan pihak lain dipertahankan. Kompresor ZRAM yang sudah aktif mengikuti konfigurasi sistem pada restart. Pilihan boot bawaan mati.
 - Data Manager: `/data/adb/cogan_smart/manager`; draf UI memakai localStorage WebView.
 
-English: Manager adds supported CPU governors, two RAM profiles, centralized Power/Temperature actions and seven-day app review. Hardware writes require a matching rothko/mt6989 Cogan Bridge. Active ZRAM is never reset; boot application is best effort and actual readbacks are shown. App removal/disable is chosen in Android app info. This build has not been tested on a physical phone.
+English: Manager adds supported CPU governors, two RAM profiles, centralized Power/Temperature actions and seven-day app review. Hardware writes require a matching rothko/mt6989 Cogan Bridge. Active ZRAM is never reset; boot application is best effort and actual readbacks are shown. App removal/disable is chosen in Android app info. v2.10.1 rejects incomplete/denied/empty dumps and failed process reads, prefers native Android ps, sets dumpsys deadlines and keeps stage/exit details visible. This update has not been tested on a physical phone.
 
 ## Mode
 
