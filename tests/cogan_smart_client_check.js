@@ -48,5 +48,10 @@ vm.runInContext(fs.readFileSync('modules/cogan-smart/webroot/client.js','utf8'),
   await node('scanApps').onclick();
   assert.equal(node('apps').innerHTML,'');
   assert.equal(node('appsInfo').textContent,'Gagal: '+cause);
+  const matching=vm.runInContext('ramMessage({ram_state:"matching"})',page);
+  assert.match(matching,/bawaan sistem/);
+  assert.match(vm.runInContext('ramMessage({ram_state:"blocked"})',page),/restart berulang tidak/);
+  assert.match(vm.runInContext('ramMessage({ram_state:"pending_boot"})',page),/belum diterapkan/);
+  assert(!html.includes('bw_hwmon + LZ4'));
   console.log('WebUI drafts, native callbacks and scan errors: OK');
 })().catch(e=>{console.error(e);process.exitCode=1;});

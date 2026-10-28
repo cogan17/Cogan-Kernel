@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Cogan Smart · Manager</title>
-<link rel="stylesheet" href="theme.css?v=2.10.2">
-<script src="i18n.js?v=2.10.2"></script>
+<link rel="stylesheet" href="theme.css?v=2.10.3">
+<script src="i18n.js?v=2.10.3"></script>
 <script>try { document.documentElement.dataset.theme = localStorage.getItem('cogan.theme') || ''; } catch (_) {}</script>
 <style>
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 system-ui,sans-serif;padding:calc(env(safe-area-inset-top,0px) + 14px) 14px calc(env(safe-area-inset-bottom,0px) + 24px)}
@@ -37,12 +37,15 @@ main{max-width:640px;margin:auto}header{display:flex;align-items:center;gap:10px
   </details>
   <details class="card fold" id="ramCard">
     <summary>🧮 RAM (memori)</summary>
-    <label for="ramProfile">Profil memori</label>
-    <select id="ramProfile"><option value="default">Kernel Default</option><option value="snappy">Snappy &amp; Daily Driver (bw_hwmon + LZ4)</option><option value="heavy">Heavy Multitasker / Space Saver (bw_hwmon + ZSTD)</option></select>
-    <p id="ramInfo" class="muted" translate="no"></p>
-    <p id="bwInfo" class="muted"></p><p id="ramPending" class="warm"></p>
+    <label for="ramProfile">Kompresi ZRAM</label>
+    <select id="ramProfile"><option value="default">Ikuti sistem</option><option value="snappy">Snappy &amp; Daily Driver (LZ4)</option><option value="heavy">Heavy Multitasker / Space Saver (ZSTD)</option></select>
+    <p id="ramInfo" class="muted"></p><p id="ramPending" class="warm" role="status"></p>
+    <label for="bwGovernor">Governor DRAM</label>
+    <select id="bwGovernor"><option value="default">DRAM Sistem</option><option value="bw_hwmon">bw_hwmon (bila didukung driver)</option></select>
+    <p id="bwInfo" class="muted"></p>
     <p class="muted">LZ4 mengutamakan kompresi ringan; ZSTD mengutamakan rasio kompresi. Hasil tetap bergantung pada beban perangkat.</p>
-    <p class="muted">Kompresor ZRAM yang sudah aktif tidak direset. Pilihan dicoba saat boot jika ZRAM belum diinisialisasi; periksa algoritme yang benar-benar aktif setelah restart.</p>
+    <p class="muted">ZRAM dan kecepatan DRAM adalah kontrol terpisah. Restart tidak menambahkan governor yang tidak disediakan driver.</p>
+    <p class="muted">Kompresor hanya dapat diganti sebelum ZRAM diinisialisasi. Jika percobaan boot tetap gagal, ikuti algoritme aktif; perubahan memerlukan integrasi init/kernel yang sesuai.</p>
   </details>
   <section class="card">
     <label class="check">Terapkan CPU/RAM saat boot <input id="managerBoot" type="checkbox"></label>
@@ -72,7 +75,7 @@ main{max-width:640px;margin:auto}header{display:flex;align-items:center;gap:10px
   <p class="credit">Maintainer <b>Cogan17</b> &nbsp;·&nbsp; kernel <b>Cogan Rothko</b> &nbsp;·&nbsp; <b>KernelSU Next</b><br><a href="about.html">ℹ️ Tentang &amp; kredit</a></p>
 </main>
 <div id="actionStatus" class="feedback hidden" role="status" aria-live="polite"></div>
-<script src="client.js?v=2.10.2"></script>
+<script src="client.js?v=2.10.3"></script>
 <script>
 const REPORT = '/data/adb/modules/cogan_smart/manager/report.sh';
 const UI = CoganUI, api = UI.create(REPORT), $ = id => document.getElementById(id);
@@ -82,21 +85,32 @@ let status, editing = false, busy = false, poller, feedbackTimer;
 const toast = msg => { UI.text('actionStatus', msg); $('actionStatus').classList.remove('hidden'); clearTimeout(feedbackTimer); feedbackTimer = setTimeout(() => { if (!busy) $('actionStatus').classList.add('hidden'); }, 5000); };
 const confirm = s => window.confirm(CoganI18n.t(s));
 const tokens = s => String(s || '').split(/\s+/);
+function ramMessage(s) {
+  return ({system:'ZRAM mengikuti sistem; Manager tidak memilih algoritme.',
+    matching:'Algoritme terbaca sesuai pilihan. Nilai ini bisa sudah menjadi bawaan sistem.',
+    ready:'Pilihan belum diterapkan. ZRAM belum diinisialisasi; gunakan Terapkan sekarang.',
+    needs_boot:'Belum diterapkan: ZRAM sudah diinisialisasi. Aktifkan penerapan saat boot dan simpan untuk satu percobaan.',
+    pending_boot:'Pilihan tersimpan untuk dicoba saat boot; belum diterapkan pada ZRAM saat ini.',
+    blocked:'Percobaan boot belum menghasilkan algoritme pilihan. Ikuti algoritme aktif; restart berulang tidak menyelesaikan keterbatasan ini.',
+    unsupported:'Algoritme pilihan tidak ditawarkan kernel. Pilih algoritme yang tersedia.',
+    unavailable:'Perangkat ZRAM belum tersedia.'})[s.ram_state] || 'Status penerapan RAM belum dapat dipastikan.';
+}
 function render(s) {
   status = s; UI.kernel(s);
   UI.text('state', s.writable ? '✓ terintegrasi' : 'baca saja');
   UI.text('foot', 'Cogan Smart ' + s.version + ' · Manager');
-  if (!editing) { $('cpuGovernor').value=s.config.cpu; $('ramProfile').value=s.config.ram; $('managerBoot').checked=!!s.config.boot; }
+  if (!editing) { $('cpuGovernor').value=s.config.cpu; $('ramProfile').value=s.config.ram; $('managerBoot').checked=!!s.config.boot; $('bwGovernor').value=s.config.bw; }
   for (const option of $('cpuGovernor').options) option.disabled = option.value !== 'default' && (!s.cpu.length || !s.cpu.every(p => tokens(p.available).includes(option.value)));
   for (const option of $('ramProfile').options) {
     const algo = {snappy:'lz4',heavy:'zstd'}[option.value];
     option.disabled = !!algo && (!s.zram.length || !s.zram.every(z => tokens(z.available).includes(algo)));
   }
   $('cpuInfo').textContent=s.cpu.map(p => p.name + ': ' + p.current).join(' · ');
-  $('ramInfo').textContent=[...s.zram.map(z => z.name + ': ' + z.current), ...s.bw_hwmon.map(b => b.name + ': ' + b.current)].join(' · ');
-  UI.text('bwInfo', s.bw_hwmon.length ? 'bw_hwmon tersedia pada perangkat ini.' : 'bw_hwmon tidak tersedia; governor memori bawaan perangkat dipertahankan.');
-  const wanted={snappy:'lz4',heavy:'zstd'}[s.config.ram];
-  UI.text('ramPending', wanted && s.zram.some(z => z.current !== wanted) ? 'Belum diterapkan: ZRAM masih memakai kompresor lain.' : '');
+  UI.text('ramInfo', s.zram.map(z => z.name + ': ' + z.current + ' · ' + (z.swap_active===1 ? 'swap aktif' : z.swap_active===0 ? 'swap tidak aktif' : 'status swap belum terbaca')).join('\n'));
+  $('bwGovernor').options[1].disabled=!s.bw_hwmon.length;
+  UI.text('bwInfo', s.bw_hwmon.length ? s.bw_hwmon.map(b => b.name + ': ' + b.current).join(' · ') : 'Driver tidak menyediakan bw_hwmon; gunakan DRAM Sistem. Profil ZRAM tetap dapat dipilih.');
+  UI.text('ramPending', ramMessage(s));
+  $('ramPending').className=['system','matching'].includes(s.ram_state)?'muted':'warm';
   UI.text('managerSupport', s.writable ? 'Modul, perangkat dan Cogan Bridge cocok. Nilai aktif ditampilkan di atas.' : 'Kontrol Manager memerlukan Xiaomi 14T Pro dan Cogan Bridge yang cocok.');
   if (s.restore_pending) UI.text('managerSupport', 'Ada pemulihan Manager yang tertunda. Periksa nilai aktif; ZRAM yang masih aktif mengikuti sistem setelah restart.');
   for (const id of ['managerSave','managerApply','managerReset']) $(id).disabled=!s.writable;
@@ -124,7 +138,7 @@ async function run(button, task) {
   catch(e) { toast('Gagal: '+e.message); }
   finally { busy=false; poller?.poke(); }
 }
-function values() { return [$('cpuGovernor').value,$('ramProfile').value,$('managerBoot').checked?1:0].join(' '); }
+function values() { return [$('cpuGovernor').value,$('ramProfile').value,$('managerBoot').checked?1:0,$('bwGovernor').value].join(' '); }
 async function control(part, command) {
   const client=parts[part], changes=UI.draft.get(part);
   if (command==='reset' && !confirm(part==='power' ? 'Pulihkan setelan bawaan (cas 95/90) dan hentikan pengendali?' : 'Reset setelan pencatatan dan berhenti? Riwayat serta log tersimpan tetap ada.')) return;
@@ -141,10 +155,10 @@ async function control(part, command) {
   draftInfo(part); toast('Selesai; nilai aktif dibaca ulang.');
 }
 UI.folds();
-for (const id of ['cpuGovernor','ramProfile','managerBoot']) $(id).onchange=()=>editing=true;
+for (const id of ['cpuGovernor','ramProfile','managerBoot','bwGovernor']) $(id).onchange=()=>editing=true;
 $('retry').onclick=()=>run($('retry'),refresh);
 $('managerSave').onclick=()=>run($('managerSave'),async()=>{ render(await api.report('set '+values())); editing=false; toast('Setelan disimpan'); });
-$('managerApply').onclick=()=>run($('managerApply'),async()=>{ const s=await api.report('apply '+values()); editing=false; render(s); toast('Selesai; periksa nilai aktif CPU dan RAM.'); });
+$('managerApply').onclick=()=>run($('managerApply'),async()=>{ const s=await api.report('apply '+values()); editing=false; render(s); toast(ramMessage(s)); });
 $('managerReset').onclick=()=>{ if (confirm('Pulihkan governor milik Manager dan ikuti kernel? Kompresor ZRAM aktif kembali mengikuti sistem setelah restart.')) run($('managerReset'),async()=>{ const s=await api.report('reset'); editing=false; render(s); }); };
 for (const part of Object.keys(parts)) for (const [suffix,command] of [['Save','set'],['Apply','apply'],['Reset','reset'],['Toggle','toggle']]) {
   const b=$(part+suffix); b.onclick=()=>run(b,()=>control(part,command));
