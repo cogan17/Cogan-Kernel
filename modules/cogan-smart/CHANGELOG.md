@@ -1,5 +1,23 @@
 # Cogan Smart Kernel
 
+## Perbaiki hook init ZRAM / Fix the ZRAM init hook — v2.10.6 (paket uji / test build)
+
+Indonesia:
+
+- Uji HP owner pada v2.10.5 (28 Okt): setelah memilih ZSTD lalu restart, zram0 tetap lz4 dan penanda hook /dev/.cogan_smart_zram_init tidak ada. Aturan sudah ada di cache /metadata/vold/ksu/modules.rc dan kernel memuatnya (module rc: loaded 4024 bytes), jadi hook init v2.10.4–v2.10.5 tidak pernah berjalan.
+- Penyebab, dari kode init AOSP: tokenizer init tidak mengenal escape di dalam "...", sehingga \" di tengah program menutup kutipan dan baris exec terpotong. Selain itu argumen exec diekspansi dua kali (saat perintah dijalankan dan saat proses dimulai), sehingga $ yang hanya digandakan sekali ditolak sebagai sintaks properti lama.
+- Perbaikan: program ditulis sebagai satu token init tanpa kutipan, dengan escape yang memang dikenal init, dan setiap $ ditulis $$$$. Isi program, pemeriksaan identitas perangkat/Cogan Bridge dan perilaku ZRAM tidak berubah; ZRAM aktif tetap tidak direset.
+- Tes kini meniru tokenizer dan ekspansi init AOSP. Tes itu gagal pada v2.10.5 dan lolos pada v2.10.6.
+- Bagian DRAM v2.10.5 sudah terkonfirmasi di HP owner: DRAM MediaTek · mtk-dvfsrc-devfreq: userspace, tanpa dropdown BW. v2.10.6 belum diuji di HP.
+
+English:
+
+- The owner's v2.10.5 phone test (28 Oct): after choosing ZSTD and restarting, zram0 stayed lz4 and the /dev/.cogan_smart_zram_init hook marker was missing. The rules were in /metadata/vold/ksu/modules.rc and the kernel loaded them (module rc: loaded 4024 bytes), so the v2.10.4–v2.10.5 init hook never ran.
+- Cause, from the AOSP init source: init's tokenizer has no escapes inside "...", so the \" inside the program closed the quote and cut the exec line. Exec arguments are also expanded twice (when the command runs and when the process starts), so a $ doubled only once was rejected as deprecated property syntax.
+- Fix: write the program as one unquoted init token using the escapes init does support, with every $ written as $$$$. The program itself, the device/Cogan Bridge identity checks and the ZRAM behaviour are unchanged; live ZRAM is still never reset.
+- Tests now model AOSP init's tokenizer and expansion. They fail on v2.10.5 and pass on v2.10.6.
+- The v2.10.5 DRAM part is confirmed on the owner's phone: MediaTek DRAM · mtk-dvfsrc-devfreq: userspace, with no BW dropdown. v2.10.6 has not been phone-tested.
+
 ## Kenali DRAM MediaTek / Identify MediaTek DRAM — v2.10.5 (paket uji / test build)
 
 Indonesia:

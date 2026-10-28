@@ -12,6 +12,45 @@ from pathlib import Path
 from test_cogan_smart_power import MODULE, SHELL, write
 
 
+def init_tokens(line):
+    """Android init's tokenizer (system/core/init/tokenizer.cpp): no escapes inside quotes."""
+    tokens, i = [], 0
+    while i < len(line):
+        while i < len(line) and line[i] in " \t\r":
+            i += 1
+        if i == len(line):
+            break
+        out = []
+        while i < len(line) and line[i] not in " \t\r":
+            if line[i] == '"':
+                end = line.find('"', i + 1)
+                if end < 0:
+                    raise ValueError("unterminated quote: init stops reading the rc here")
+                out.append(line[i + 1:end])
+                i = end + 1
+            elif line[i] == "\\":
+                nxt = line[i + 1:i + 2]
+                out.append({"n": "\n", "r": "\r", "t": "\t"}.get(nxt, nxt))
+                i += 2
+            else:
+                out.append(line[i])
+                i += 1
+        tokens.append("".join(out))
+    return tokens
+
+
+def init_expand(value):
+    """ExpandProps (system/core/init/util.cpp): $$ is a literal $, other $ forms are properties."""
+    out, i = [], 0
+    while (j := value.find("$", i)) >= 0:
+        out.append(value[i:j])
+        if value[j + 1:j + 2] != "$":
+            raise ValueError("init cannot expand " + value[j:j + 20])
+        out.append("$")
+        i = j + 2
+    return "".join(out) + value[i:]
+
+
 class ManagerTests(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
@@ -208,14 +247,17 @@ class ManagerTests(unittest.TestCase):
 
     def run_init_command(self):
         rc = self.module / "initrc/cogan-zram.rc"
-        commands = [shlex.split(l) for l in rc.read_text().splitlines() if l.strip().startswith("exec ")]
+        commands = [init_tokens(l) for l in rc.read_text().splitlines() if l.strip().startswith("exec ")]
         self.assertEqual(len(commands), 3)
         self.assertIn('property:ro.product.device=rothko', rc.read_text())
         self.assertIn('property:ro.board.platform=mt6989', rc.read_text())
         cmd = commands[-1]
         self.assertEqual(cmd[1:7], ['u:r:ksu:s0', 'root', 'root', '--', '/system/bin/sh', '-c'])
-        # init unescapes $$ before invoking sh. Map only filesystem roots for this fake phone.
-        script = cmd[7].replace('$$', '$').replace('/sys/', str(self.sys) + '/')
+        self.assertEqual(len(cmd), 11)
+        # init expands exec arguments twice: when the builtin runs and again when the service starts.
+        cmd = [init_expand(init_expand(arg)) for arg in cmd]
+        # Map only filesystem roots for this fake phone.
+        script = cmd[7].replace('/sys/', str(self.sys) + '/')
         script = script.replace('/dev/.cogan_smart_zram_init', str(self.base / 'dev/.cogan_smart_zram_init'))
         r = subprocess.run([SHELL, '-c', script, *cmd[8:]], capture_output=True, text=True, timeout=5)
         self.assertEqual(r.returncode, 0, r.stderr)
