@@ -1,0 +1,26 @@
+Cogan Smart Kernel v2.10.4 — versionCode 23
+Paket pembaruan uji / Update test build — 28 Okt 2026 (WIB)
+
+## Integrasi ZRAM sebelum inisialisasi / ZRAM integration before initialization — v2.10.4 (paket uji / test build)
+
+Indonesia:
+
+- Pilihan RAM + Terapkan saat boot membuat initrc di dalam modul dan menyegarkan cache melalui ksud initrc refresh. Aturan init, early-fs dan post-fs berjalan lewat hook bawaan KernelSU Next/BakaSU sebelum hook modul post-fs-data. Tidak menambah skrip global atau daemon.
+- Aturan memeriksa properti rothko/mt6989, Cogan Bridge ABI 1, device/SoC/release, dukungan algoritme seluruh ZRAM, serta initstate=0 sebelum menulis. ZRAM aktif tetap tidak direset, swap tidak dimatikan, ukuran dan writeback tidak diubah.
+- Bila sistem sudah mengaktifkan mmd, siapkan hanya mmd.zram.comp_algorithm lewat system.prop. Tidak mengaktifkan mmd, memanggil setprop pada hook post-fs-data atau mengganti kebijakan memori lain.
+- Manager menampilkan kesiapan initrc/mmd, hasil hook pada boot ini dan error sinkronisasi. Algoritme serta status swap tetap dibaca dari kernel, bukan disimpulkan dari keberhasilan penyimpanan.
+- Menonaktifkan penerapan boot atau Ikuti kernel menghapus aturan milik modul dan menyegarkan cache. Root manager menangani pengecualian modul yang dinonaktifkan/dihapus. Isi system.prop/initrc lain tidak ditimpa; kegagalan refresh memulihkan aturan sebelumnya dan dilaporkan.
+- Selama pembaruan modul masih menunggu reboot, perubahan setelan diblokir agar cache tidak memakai salinan staged yang berbeda. Reset tetap memulihkan kontrol berjalan meski sinkronisasi init gagal.
+- Hook modules.rc sudah ada pada commit root kedua varian rilis Cogan r5 (riwayat run 40538599681). Perubahan ini memakai dukungan tersebut; tidak mengganti Image kernel, partisi boot, KMI, root manager atau driver ZRAM vendor.
+- Bila pilihan boot sudah tersimpan sebelum pembaruan, installer menyiapkannya untuk reboot pemasangan. Jika pilihan diubah setelahnya, Simpan lalu reboot satu kali. Hasil HP masih perlu dikonfirmasi melalui hasil hook dan algoritme aktual; belum ada klaim penghematan RAM/performa.
+
+English:
+
+- RAM selection plus Apply at boot generates module-owned initrc and refreshes the cache with ksud initrc refresh. Init, early-fs and post-fs actions use the existing KernelSU Next/BakaSU hook before module post-fs-data. No global boot script or daemon is added.
+- Actions check rothko/mt6989 properties, Cogan Bridge ABI 1, device/SoC/release, algorithm support across every ZRAM device, and initstate=0 before writing. Live ZRAM is not reset, swap is not disabled, and size/writeback are unchanged.
+- When the system already enables mmd, prepare only mmd.zram.comp_algorithm through system.prop. Do not enable mmd, call setprop during post-fs-data or change other memory policies.
+- Manager shows initrc/mmd preparation, this boot's hook result and synchronization errors. The actual algorithm and swap activity are still read from the kernel, not inferred from saved settings.
+- Disabling boot application or following the kernel removes module-owned rules and refreshes the cache. The root manager excludes disabled/removed modules. Unrelated property/RC contents are preserved; refresh failures restore prior rules and are reported.
+- Block settings changes while a module update awaits reboot so the cache cannot silently select a different staged copy. Reset still restores live controls when init synchronization fails.
+- The root commits for both Cogan r5 variants already contain the modules.rc hook (history run 40538599681). Reuse it without replacing the kernel Image, boot partition, KMI, root manager or vendor ZRAM driver.
+- A boot choice saved before updating is prepared by the installer for the installation reboot. After later changes, save and reboot once. Phone results still need hook/algorithm readback confirmation; there are no RAM/performance gain claims.

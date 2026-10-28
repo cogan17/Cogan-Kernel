@@ -2,6 +2,7 @@
 import json
 import os
 import shlex
+import shutil
 import subprocess
 import tempfile
 import time
@@ -15,6 +16,8 @@ class ManagerTests(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.base = Path(self.tmp.name)
+        self.module = self.base / "module"
+        shutil.copytree(MODULE, self.module, ignore=shutil.ignore_patterns("rilis"))
         self.sys = self.base / "sys"
         self.proc = self.base / "proc"
         self.data = self.base / "manager"
@@ -43,7 +46,7 @@ class ManagerTests(unittest.TestCase):
         p.chmod(0o755)
 
     def report(self, *args):
-        r = subprocess.run([SHELL, str(MODULE / "manager/report.sh"), *args], env=self.env,
+        r = subprocess.run([SHELL, str(self.module / "manager/report.sh"), *args], env=self.env,
                            text=True, capture_output=True, timeout=30)
         self.assertEqual(r.returncode, 0, r.stderr)
         return json.loads(r.stdout) if r.stdout.strip() else None
@@ -169,6 +172,115 @@ class ManagerTests(unittest.TestCase):
         self.assertEqual(self.report("set", "schedutil", "heavy", "2")["ok"], 0)
         self.assertEqual(self.report("apply", "schedutil", "snappy", "0", "bw_hwmon;id")["ok"], 0)
         self.assertEqual(self.governors(), ["schedutil", "schedutil"])
+
+    def init_daemon(self, broken=False):
+        self.tool("ksud", 'case "$1 $2" in "initrc --help") echo refresh;; "initrc refresh") '
+                  + ('echo "synthetic refresh failure" >&2; exit 42' if broken else
+                     'echo refresh >> ' + shlex.quote(str(self.base / "refreshes"))) + ';; *) exit 1;; esac')
+        self.env["CM_KSUD"] = str(self.bin / "ksud")
+        self.env["CM_DEV"] = str(self.base / "dev")
+        (self.base / "dev").mkdir(exist_ok=True)
+        self.tool("id", 'echo u:r:ksu:s0')
+
+    def run_init_command(self):
+        rc = self.module / "initrc/cogan-zram.rc"
+        commands = [shlex.split(l) for l in rc.read_text().splitlines() if l.strip().startswith("exec ")]
+        self.assertEqual(len(commands), 3)
+        self.assertIn('property:ro.product.device=rothko', rc.read_text())
+        self.assertIn('property:ro.board.platform=mt6989', rc.read_text())
+        cmd = commands[-1]
+        self.assertEqual(cmd[1:7], ['u:r:ksu:s0', 'root', 'root', '--', '/system/bin/sh', '-c'])
+        # init unescapes $$ before invoking sh. Map only filesystem roots for this fake phone.
+        script = cmd[7].replace('$$', '$').replace('/sys/', str(self.sys) + '/')
+        script = script.replace('/dev/.cogan_smart_zram_init', str(self.base / 'dev/.cogan_smart_zram_init'))
+        r = subprocess.run([SHELL, '-c', script, *cmd[8:]], capture_output=True, text=True, timeout=5)
+        self.assertEqual(r.returncode, 0, r.stderr)
+
+    def test_native_init_runs_before_initialization_and_leaves_active_zram_alone(self):
+        self.init_daemon()
+        before = (self.zram / "comp_algorithm").read_text()
+        self.assertEqual(self.report("set", "default", "heavy", "1")["init_state"], "ready")
+        self.run_init_command()
+        self.assertEqual((self.zram / "comp_algorithm").read_text(), before)
+        self.assertEqual(self.report("status")["init_seen"], "zstd post-fs pending")
+        write(self.zram / "initstate", "0\n")
+        self.run_init_command()
+        self.assertEqual((self.zram / "comp_algorithm").read_text().strip(), "zstd")
+        self.assertEqual(self.report("status")["init_seen"], "zstd post-fs matching")
+        self.assertFalse((self.zram / "reset").exists())
+
+    def test_native_init_guards_all_devices_and_identity_and_clears_disabled_boot(self):
+        self.init_daemon()
+        self.report("set", "default", "heavy", "1")
+        refreshes = (self.base / "refreshes").read_text()
+        self.report("set", "schedutil", "heavy", "1")
+        self.assertEqual((self.base / "refreshes").read_text(), refreshes)
+        write(self.zram / "initstate", "0\n")
+        write(self.sys / "block/zram1/comp_algorithm", "[lz4]\n")
+        write(self.sys / "block/zram1/initstate", "0\n")
+        self.run_init_command()
+        self.assertEqual((self.zram / "comp_algorithm").read_text(), "[lz4] zstd\n")
+        self.assertEqual(self.report("status")["init_seen"], "zstd post-fs unsupported")
+        marker = self.base / "dev/.cogan_smart_zram_init"
+        marker.unlink()
+        write(self.sys / "kernel/cogan/device", "other\n")
+        self.run_init_command()
+        self.assertFalse(marker.exists())
+        write(self.sys / "kernel/cogan/device", "rothko\n")
+        self.report("set", "default", "snappy", "0")
+        self.assertFalse((self.module / "initrc/cogan-zram.rc").exists())
+
+    def test_native_refresh_failure_rolls_back_rc_and_reports_saved_settings(self):
+        self.init_daemon()
+        self.report("set", "default", "heavy", "1")
+        rc = self.module / "initrc/cogan-zram.rc"
+        old = rc.read_bytes()
+        self.init_daemon(broken=True)
+        self.assertEqual(self.report("set", "default", "snappy", "1")["ok"], 0)
+        self.assertEqual(rc.read_bytes(), old)
+        s = self.report("status")
+        self.assertEqual((s["config"]["ram"], s["init_state"]), ("snappy", "error"))
+        self.assertIn('synthetic refresh failure', s["init_error"])
+        self.init_daemon()
+        self.report("reset")
+        self.assertFalse(rc.exists())
+
+    def test_mmd_uses_native_setup_property_without_enabling_the_daemon(self):
+        self.tool("getprop", 'case "$1" in ro.product.device) echo rothko;; ro.board.platform) echo mt6989;; mmd.zram.enabled) echo true;; esac')
+        s = self.report("set", "default", "heavy", "1")
+        self.assertEqual(s["init_state"], "mmd")
+        prop = self.module / "system.prop"
+        self.assertEqual(prop.read_text(), 'mmd.zram.comp_algorithm=zstd\n')
+        self.report("set", "default", "heavy", "0")
+        self.assertFalse(prop.exists())
+
+    def test_init_preserves_unrelated_properties_and_rc_files(self):
+        self.init_daemon()
+        prop = self.module / "system.prop"
+        prop.write_text('owner.custom=value\n')
+        self.assertEqual(self.report("set", "default", "heavy", "1")["ok"], 0)
+        self.assertEqual(prop.read_text(), 'owner.custom=value\n')
+        prop.unlink()
+        rc = self.module / "initrc/cogan-zram.rc"
+        write(rc, '# owner custom init action\n')
+        self.assertEqual(self.report("set", "default", "heavy", "1")["ok"], 0)
+        self.assertEqual(rc.read_text(), '# owner custom init action\n')
+        self.assertEqual(self.report("status")["init_state"], 'error')
+
+    def test_pending_update_cannot_silently_override_the_boot_selection(self):
+        self.init_daemon()
+        self.report("apply", "sugov_ext", "heavy", "1")
+        old = (self.data / "config").read_bytes()
+        adb = self.base / "adb"
+        self.env['CS_ADB'] = str(adb)
+        write(adb / 'modules_update/cogan_smart/module.prop', 'id=cogan_smart\n')
+        result = self.report("set", "default", "snappy", "1")
+        self.assertEqual(result['ok'], 0)
+        self.assertIn('Pembaruan modul', result['error'])
+        self.assertEqual((self.data / "config").read_bytes(), old)
+        # Reset still restores live controls even if pending-update cache sync is blocked.
+        self.assertEqual(self.report('reset')['ok'], 0)
+        self.assertEqual(self.governors(), ['schedutil', 'schedutil'])
 
     def app_fixture(self):
         now = int(time.time())

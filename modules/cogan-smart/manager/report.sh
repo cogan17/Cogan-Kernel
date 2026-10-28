@@ -31,6 +31,7 @@ save_config() {
 }
 contains() { case " $1 " in *" $2 "*) return 0 ;; *) return 1 ;; esac; }
 compressor() { case "$RAM" in snappy) echo lz4 ;; heavy) echo zstd ;; esac; }
+. "$MODDIR/init.sh"
 selected() {
   cm_val=$(read_node "$1")
   case "$cm_val" in *'['*']'*) cm_val=${cm_val#*[}; cm_val=${cm_val%%]*} ;; esac
@@ -218,7 +219,11 @@ status_json() {
       fi
     fi
   fi
-  printf '],"ram_state":"%s","restore_pending":%d}\n' "$cm_ram_state" "$([ -f "$CM_DATA/run/restore_pending" ] && echo 1 || echo 0)"
+  printf '],"ram_state":"%s","restore_pending":%d' "$cm_ram_state" "$([ -f "$CM_DATA/run/restore_pending" ] && echo 1 || echo 0)"
+  printf ',"init_state":'; json_string "$(read_node "$CM_DATA/init.state" unknown)"
+  printf ',"init_seen":'; json_string "$(read_node "$CM_DEV/.cogan_smart_zram_init")"
+  printf ',"init_error":'; json_string "$(head -c 200 "$CM_DATA/init.error" 2>/dev/null)"
+  printf '}\n'
 }
 user_id() {
   CM_USER=$(am get-current-user 2>/dev/null)
@@ -274,10 +279,16 @@ case "$1" in
   set|apply)
     cm_cmd=$1; shift
     valid_settings "$@" || fail 'Nilai tidak valid; tidak ada perubahan'
+    if init_update_pending; then
+      printf '%s\n' error > "$CM_DATA/init.state"
+      printf '%s\n' 'Pembaruan modul menunggu reboot. Selesaikan reboot pembaruan sebelum menyimpan pilihan boot.' > "$CM_DATA/init.error"
+      fail 'Pembaruan modul menunggu reboot. Selesaikan reboot pembaruan sebelum menyimpan pilihan boot.'
+    fi
     CPU=$1; RAM=$2; BOOT=$3; [ $# = 3 ] || BW=$4
     validate_hardware
     if [ "$cm_cmd" = apply ]; then apply_controls; fi
     save_config || fail 'Gagal menyimpan setelan'
+    sync_init || { printf '%s\n' error > "$CM_DATA/init.state"; fail 'Setelan tersimpan, tetapi integrasi init gagal disinkronkan. Periksa status Manager.'; }
     status_json ;;
   reset)
     gate || fail 'Kontrol Manager memerlukan Xiaomi 14T Pro dan Cogan Bridge yang cocok.'
@@ -285,9 +296,11 @@ case "$1" in
     CPU=default; RAM=default; BOOT=0; BW=default
     save_config || fail 'Gagal menyimpan setelan'
     restore_nodes || :
+    sync_init || { printf '%s\n' error > "$CM_DATA/init.state"; fail 'Setelan tersimpan, tetapi integrasi init gagal disinkronkan. Periksa status Manager.'; }
     [ "$cm_restore_error" = 0 ] || fail 'Sebagian governor belum pulih; periksa kontrol Manager.'
     status_json ;;
   early)
+    sync_init boot || printf '%s\n' error > "$CM_DATA/init.state"
     [ "$BOOT" = 1 ] && [ "$RAM" != default ] || exit 0
     gate || exit 0
     boot_session || exit 0
@@ -297,6 +310,8 @@ case "$1" in
       contains "$(read_node "$cm_z/comp_algorithm" | tr -d '[]')" "$cm_algo" || continue
       put_node "$cm_z/comp_algorithm" "$cm_algo" || :
     done ;;
+  prepare) sync_init prepare ;;
+  clear-init) BOOT=0; RAM=default; sync_init ;;
   boot)
     [ "$BOOT" = 1 ] || exit 0
     apply_controls

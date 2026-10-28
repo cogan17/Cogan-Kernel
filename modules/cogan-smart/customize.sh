@@ -20,6 +20,7 @@ migrate() {   # migrate OLD_DIR NEW_DIR
 migrate "$ADB/cogan_power" "$DATA/power"
 migrate "$ADB/cogan_thermal" "$DATA/thermal"
 mkdir -p "$DATA/power" "$DATA/thermal/data" "$DATA/manager"
+sh "$MODPATH/manager/report.sh" prepare >/dev/null 2>&1 || ui_print '! Integrasi init belum tersiapkan; periksa status Manager setelah reboot.'
 
 # Two controllers on the same CPU and charging nodes would fight, so the old modules go.
 for old in cogan_power cogan_thermal; do

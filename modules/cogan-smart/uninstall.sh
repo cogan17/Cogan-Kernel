@@ -3,6 +3,7 @@
 # Logs saved to Download stay with the user.
 MODDIR=${0%/*}; [ "$MODDIR" = "$0" ] && MODDIR=.
 sh "$MODDIR/manager/report.sh" reset >/dev/null 2>&1
+sh "$MODDIR/manager/report.sh" clear-init >/dev/null 2>&1
 rm -rf "${CS_ADB:-/data/adb}/cogan_smart/manager"
 sh "$MODDIR/power/uninstall.sh"
 sh "$MODDIR/thermal/uninstall.sh"
