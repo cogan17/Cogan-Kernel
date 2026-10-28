@@ -54,6 +54,16 @@ class ManagerTests(unittest.TestCase):
     def governors(self):
         return [p.read_text().strip() for p in sorted(self.sys.glob("devices/system/cpu/cpufreq/*/scaling_governor"))]
 
+    def devfreq(self, name, driver, current, available):
+        p = self.sys / "class/devfreq" / name
+        write(p / "governor", current + "\n")
+        write(p / "available_governors", available + "\n")
+        target = self.sys / "bus/platform/drivers" / driver
+        target.mkdir(parents=True, exist_ok=True)
+        (p / "device").mkdir()
+        (p / "device/driver").symlink_to(target)
+        return p
+
     def test_identity_preflight_and_all_cpu_policies(self):
         write(self.sys / "kernel/cogan/soc", "mediatek,MT6989\n")
         self.assertEqual(self.report("status")["writable"], 1)
@@ -113,21 +123,35 @@ class ManagerTests(unittest.TestCase):
         self.assertEqual((self.zram / "comp_algorithm").read_text().strip(), "lz4")
 
     def test_bw_hwmon_only_when_driver_offers_it(self):
-        mem = self.sys / "class/devfreq/memory"
-        gpu = self.sys / "class/devfreq/mali"
-        for p in (mem, gpu):
-            write(p / "available_governors", "bw_hwmon performance\n")
-            write(p / "governor", "performance\n")
+        mem = self.devfreq("mtk-dvfsrc-devfreq", "mtk-dvfsrc-devfreq", "userspace", "bw_hwmon userspace")
+        # The same global governor list is also exposed on storage and GPU.
+        gpu = self.devfreq("13000000.mali", "mali", "dummy", "bw_hwmon userspace")
+        ufs = self.devfreq("112b0000.ufshci", "ufshcd-mtk", "simple_ondemand", "bw_hwmon userspace")
         self.report("apply", "default", "snappy", "0", "bw_hwmon")
         self.assertEqual((mem / "governor").read_text().strip(), "bw_hwmon")
-        self.assertEqual((gpu / "governor").read_text().strip(), "performance")
+        self.assertEqual((gpu / "governor").read_text().strip(), "dummy")
+        self.assertEqual((ufs / "governor").read_text().strip(), "simple_ondemand")
         self.report("reset")
-        self.assertEqual((mem / "governor").read_text().strip(), "performance")
+        self.assertEqual((mem / "governor").read_text().strip(), "userspace")
+
+    def test_rothko_dram_driver_is_identified_without_guessing_a_governor(self):
+        available = "dummy apupassive-pe apuconstrain apuuser apupassive userspace powersave performance simple_ondemand"
+        mem = self.devfreq("mtk-dvfsrc-devfreq", "mtk-dvfsrc-devfreq", "userspace", available)
+        self.devfreq("13000000.mali", "mali", "dummy", available)
+        self.devfreq("112b0000.ufshci", "ufshcd-mtk", "simple_ondemand", available)
+        # A memory-looking name is insufficient without the correct driver binding.
+        self.devfreq("memory", "ufshcd-mtk", "simple_ondemand", "bw_hwmon userspace")
+        s = self.report("status")
+        self.assertEqual(s["dram"], [{"name": mem.name, "driver": "mtk-dvfsrc-devfreq", "current": "userspace", "available": available}])
+        self.assertEqual(s["bw_hwmon"], [])
+        self.assertEqual(self.report("apply", "sugov_ext", "snappy", "0", "bw_hwmon")["ok"], 0)
+        self.assertFalse((self.data / "config").exists())
+        self.assertEqual(self.governors(), ["schedutil", "schedutil"])
+        self.report("apply", "default", "snappy", "0")
+        self.assertEqual((mem / "governor").read_text().strip(), "userspace")
 
     def test_ram_and_bandwidth_are_independent_and_missing_bw_is_an_error(self):
-        mem = self.sys / "class/devfreq/memory"
-        write(mem / "available_governors", "bw_hwmon performance\n")
-        write(mem / "governor", "performance\n")
+        mem = self.devfreq("memory", "mtk-dvfsrc-devfreq", "performance", "bw_hwmon performance")
         s = self.report("apply", "default", "snappy", "0")
         self.assertEqual((s["config"]["bw"], s["ram_state"]), ("default", "matching"))
         self.assertEqual((mem / "governor").read_text().strip(), "performance")

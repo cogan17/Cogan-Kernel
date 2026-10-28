@@ -2,7 +2,7 @@
 
 **Versi paket terbaru: v2.9.1** (`versionCode` 18): modul lebih hemat CPU, satu angka Badan HP dari HyperOS, lonjakan suhu, nama aplikasi asli, batas CPU di log, dan penyaringan sensor macet. Dampak optimisasi terakhir pada HP belum diukur. Catatan perubahan lengkap ada di [`CHANGELOG.md`](CHANGELOG.md); status publikasi ada di [Releases](https://github.com/cogan17/Cogan-Kernel/releases).
 
-**Versi pengembangan: v2.10.4** (versionCode 23), integrasi init ZRAM melalui hook bawaan root manager dan status hasil boot. Paket pembaruan belum diuji pada HP; rilis v2.9.1 tetap tersedia.
+**Versi pengembangan: v2.10.5** (versionCode 24), perbaikan deteksi DRAM MediaTek berdasarkan hasil perintah pada HP owner; integrasi init ZRAM v2.10.4 tetap disertakan. Paket pembaruan belum diuji pada HP; rilis v2.9.1 tetap tersedia.
 
 ## ⬇️ Unduh
 
@@ -41,11 +41,11 @@ Satu modul KernelSU / KernelSU Next / BakaSU / Magisk yang menggabungkan **Cogan
 WebUI punya empat tab: **⚡ Daya**, **🌡️ Suhu**, **🛠️ Manager** dan **🧩 Modul**, plus halaman **ℹ️ Tentang & kredit** (`about.html`, bahasa Indonesia dengan pilihan English) dari tautan di bawah tiap tab. Dua tema bergaya Material You di `webroot/theme.css`: **Terang hangat** dan **Gelap OLED** (hitam murni); bawaannya mengikuti mode gelap HP, pilihan tetap disimpan dari halaman Tentang. Setiap kartu bisa dilipat; posisi buka/tutup diingat per tab. Navigasi memakai susunan ikon di atas dan judul satu baris di bawah dengan tinggi yang sama pada semua halaman; font besar dapat menggulir navigasi ke samping.
 Tiap tab adalah halaman sendiri, jadi `client.js` menyimpan jawaban baca terakhir (dan identitas kernel/HP) di `localStorage` WebView: pindah tab langsung menampilkan nilai terakhir (angka redup, ↻ di pojok) sampai bacaan baru datang. Tab Modul memakai hasil pindaian yang berumur < 2 menit apa adanya; Pindai ulang untuk memperbarui.
 
-## 🛠️ Manager (v2.10.4, pengembangan)
+## 🛠️ Manager (v2.10.5, pengembangan)
 
 - **Prosesor:** Kernel Default, sugov_ext atau schedutil. Pilihan hanya aktif bila tersedia pada semua policy. Tulisan nilai aktif menampilkan governor yang benar-benar terbaca.
 - **Kompresi ZRAM:** Snappy & Daily Driver (LZ4) atau Heavy Multitasker / Space Saver (ZSTD), hanya bila ditawarkan semua perangkat ZRAM. Pilihan terpisah dari governor DRAM. Bacaan algoritme yang sesuai pilihan bisa sudah menjadi bawaan; status swap aktif ditampilkan terpisah dari /proc/swaps.
-- **Governor DRAM:** DRAM Sistem atau bw_hwmon bila tersedia pada driver. Permintaan bw_hwmon yang tidak tersedia ditolak, bukan dianggap profil berhasil sebagian. Pada SS owner bw_hwmon tidak tersedia: gunakan DRAM Sistem. Konfigurasi lama tanpa BW mengikuti pilihan sistem dan melepas kepemilikan devfreq lama ketika diterapkan.
+- **DRAM MediaTek:** driver mtk-dvfsrc-devfreq dan governor userspace sudah dikonfirmasi melalui perintah owner. Manager menampilkan bacaan itu dan mempertahankan DRAM Sistem. bw_hwmon tidak tersedia pada hasil tersebut; dropdown hanya muncul bila ada target DRAM yang menawarkannya atau untuk membersihkan pilihan lama. Identifikasi memakai ikatan driver, bukan daftar governor global atau dugaan dari nama: UFS/GPU tidak menjadi target RAM. Pembaruan ini tidak menambahkan bw_hwmon atau mengganti governor MediaTek secara paksa. Konfigurasi lama tanpa BW mengikuti sistem dan melepas kepemilikan devfreq lama ketika diterapkan.
 - **ZRAM aktif tidak di-reset atau dimatikan.** Kompresor berbeda tetap berstatus belum diterapkan. Opsi boot mencoba memilihnya lewat post-fs-data sebelum ZRAM diinisialisasi. Bila Android sudah mengaktifkannya, pilihan tetap tertunda; restart tidak dijanjikan selalu mengganti kompresor. Integrasi v2.10.4 memakai initrc bawaan root manager pada init/early-fs/post-fs dan properti kompresor mmd bila sistem sudah memakainya. Manager menampilkan apakah hook terlihat pada boot ini; periksa algoritme aktual sebelum mencoba restart lagi.
 - **Integrasi:** penulisan CPU/RAM memerlukan rothko, platform mt6989 serta identitas Cogan Bridge/device tree yang cocok. Batas CPU, cas dan termal dari Daya/HyperOS tetap berlaku. Tidak menambahkan loop pengendali.
 - **Kontrol Daya/Suhu:** Simpan, Terapkan, Reset dan Mulai/Hentikan dipindah dari kedua tab ke Manager; Hapus riwayat juga di sini. Formulir tetap di tab semula. Perubahan kolom disimpan sebagai draf lokal sampai diterapkan dari Manager; Simpan log tetap di tab Suhu.

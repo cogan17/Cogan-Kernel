@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Cogan Smart · Manager</title>
-<link rel="stylesheet" href="theme.css?v=2.10.4">
-<script src="i18n.js?v=2.10.4"></script>
+<link rel="stylesheet" href="theme.css?v=2.10.5">
+<script src="i18n.js?v=2.10.5"></script>
 <script>try { document.documentElement.dataset.theme = localStorage.getItem('cogan.theme') || ''; } catch (_) {}</script>
 <style>
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 system-ui,sans-serif;padding:calc(env(safe-area-inset-top,0px) + 14px) 14px calc(env(safe-area-inset-bottom,0px) + 24px)}
@@ -41,8 +41,11 @@ main{max-width:640px;margin:auto}header{display:flex;align-items:center;gap:10px
     <select id="ramProfile"><option value="default">Ikuti sistem</option><option value="snappy">Snappy &amp; Daily Driver (LZ4)</option><option value="heavy">Heavy Multitasker / Space Saver (ZSTD)</option></select>
     <p id="ramInfo" class="muted"></p><p id="ramPending" class="warm" role="status"></p>
     <p id="initInfo" class="muted"></p><p id="initError" class="warm"></p>
-    <label for="bwGovernor">Governor DRAM</label>
-    <select id="bwGovernor"><option value="default">DRAM Sistem</option><option value="bw_hwmon">bw_hwmon (bila didukung driver)</option></select>
+    <p id="dramInfo" class="muted"></p>
+    <div id="bwControls" class="hidden">
+      <label for="bwGovernor">Governor DRAM</label>
+      <select id="bwGovernor"><option value="default">DRAM Sistem</option><option value="bw_hwmon">bw_hwmon (bila didukung driver)</option></select>
+    </div>
     <p id="bwInfo" class="muted"></p>
     <p class="muted">LZ4 mengutamakan kompresi ringan; ZSTD mengutamakan rasio kompresi. Hasil tetap bergantung pada beban perangkat.</p>
     <p class="muted">ZRAM dan kecepatan DRAM adalah kontrol terpisah. Restart tidak menambahkan governor yang tidak disediakan driver.</p>
@@ -76,7 +79,7 @@ main{max-width:640px;margin:auto}header{display:flex;align-items:center;gap:10px
   <p class="credit">Maintainer <b>Cogan17</b> &nbsp;·&nbsp; kernel <b>Cogan Rothko</b> &nbsp;·&nbsp; <b>KernelSU Next</b><br><a href="about.html">ℹ️ Tentang &amp; kredit</a></p>
 </main>
 <div id="actionStatus" class="feedback hidden" role="status" aria-live="polite"></div>
-<script src="client.js?v=2.10.4"></script>
+<script src="client.js?v=2.10.5"></script>
 <script>
 const REPORT = '/data/adb/modules/cogan_smart/manager/report.sh';
 const UI = CoganUI, api = UI.create(REPORT), $ = id => document.getElementById(id);
@@ -109,7 +112,9 @@ function render(s) {
   $('cpuInfo').textContent=s.cpu.map(p => p.name + ': ' + p.current).join(' · ');
   UI.text('ramInfo', s.zram.map(z => z.name + ': ' + z.current + ' · ' + (z.swap_active===1 ? 'swap aktif' : z.swap_active===0 ? 'swap tidak aktif' : 'status swap belum terbaca')).join('\n'));
   $('bwGovernor').options[1].disabled=!s.bw_hwmon.length;
-  UI.text('bwInfo', s.bw_hwmon.length ? s.bw_hwmon.map(b => b.name + ': ' + b.current).join(' · ') : 'Driver tidak menyediakan bw_hwmon; gunakan DRAM Sistem. Profil ZRAM tetap dapat dipilih.');
+  $('bwControls').classList.toggle('hidden', !s.bw_hwmon.length && s.config.bw==='default');
+  UI.text('dramInfo', s.dram.length ? s.dram.map(d => 'DRAM MediaTek · ' + d.driver + ': ' + (d.current || 'belum terbaca')).join('\n') : 'Driver DRAM belum teridentifikasi. Setelan bawaan dipertahankan.');
+  UI.text('bwInfo', s.bw_hwmon.length ? s.bw_hwmon.map(b => b.name + ': ' + b.current).join(' · ') : 'DRAM mengikuti sistem. Tidak ada target DRAM yang terdeteksi mendukung bw_hwmon; profil ZRAM tetap terpisah.');
   UI.text('ramPending', ramMessage(s));
   const initLabels={ready:'Integrasi initrc tersiapkan untuk boot berikutnya.',mmd:'Pilihan kompresor disiapkan untuk mmd pada boot berikutnya.',off:'Integrasi init nonaktif untuk boot berikutnya.',unsupported:'Root manager belum menawarkan integrasi initrc; hook post-fs-data tetap dicoba.',error:'Sinkronisasi init gagal. Pilihan boot belum dapat dipastikan.'};
   UI.text('initInfo',(initLabels[s.init_state]||'Status integrasi init belum terbaca.')+(s.init_seen?'\nHook boot ini: '+s.init_seen:''));
