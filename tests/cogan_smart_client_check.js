@@ -29,5 +29,24 @@ vm.runInContext(fs.readFileSync('modules/cogan-smart/webroot/client.js','utf8'),
   for(const c of calls) context[c.callback](0,'{"ok":1,"running":1}','');
   assert.deepEqual((await Promise.all(pending)).map(x=>x.running),[1,1]);
   await assert.rejects(a.report('set x;id'),/Argumen/);
-  console.log('WebUI drafts and native callbacks: OK');
+  // A failed scan clears old suggestions and leaves the cause on the page after the toast.
+  const nodes=new Map(), node=id=>{
+    if(!nodes.has(id)) nodes.set(id,{textContent:'',innerHTML:'',classList:{add(){},remove(){}}});
+    return nodes.get(id);
+  };
+  const cause='Pemindaian gagal pada proses berjalan (kode 42): synthetic';
+  const page={ksu:{},setTimeout:()=>0,clearTimeout(){},CoganI18n:{t:s=>s},
+    document:{getElementById:node},
+    CoganUI:{create:()=>({report:async()=>{throw new Error(cause);}}),folds(){},
+      text:(id,value)=>{node(id).textContent=value;},html:(id,value)=>{node(id).innerHTML=value;},
+      action:async(button,message,task)=>task(),poll:()=>({poke(){}})}};
+  page.window=page;
+  vm.createContext(page);
+  const html=fs.readFileSync('modules/cogan-smart/webroot/manager.html','utf8');
+  vm.runInContext(html.match(/<script>\s*(const REPORT[\s\S]*?)<\/script>/)[1],page);
+  node('apps').innerHTML='old suggestions';
+  await node('scanApps').onclick();
+  assert.equal(node('apps').innerHTML,'');
+  assert.equal(node('appsInfo').textContent,'Gagal: '+cause);
+  console.log('WebUI drafts, native callbacks and scan errors: OK');
 })().catch(e=>{console.error(e);process.exitCode=1;});

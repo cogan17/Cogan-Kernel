@@ -1,4 +1,22 @@
-# Cogan Smart Kernel v2.9.1
+# Cogan Smart Kernel
+
+## Perbaikan pemindai aplikasi / App scanner fixes — v2.10.1 (paket uji / test build)
+
+Indonesia:
+
+- Hasil dumpsys yang terpotong karena timeout atau ditolak izin tidak lagi menghasilkan saran, termasuk saat kode proses 0. Respons kosong juga membatalkan pemindaian.
+- Gagal membaca proses membatalkan saran. Gunakan ps native Android bila tersedia agar variasi opsi BusyBox tidak menghilangkan perlindungan aplikasi yang berjalan.
+- Atur deadline dumpsys langsung (20 detik), dengan batas luar 25 detik. Kegagalan menyebut tahap, kode proses dan rincian singkat; pesan tetap terlihat di Manager setelah notifikasi menghilang.
+- Tambah pemeriksaan regresi untuk kegagalan, respons kosong, penolakan izin dan timeout di setiap tahap; integrasi CPU/RAM, termal dan jalur info aplikasi Android dipertahankan.
+- Owner melaporkan pemindaian gagal pada v2.10.0. Penyebab perintah yang gagal di HP belum diketahui karena pesan lama menggabungkan semua tahap. Pembaruan ini sudah diperiksa lokal; hasil pada HP belum dikonfirmasi.
+
+English:
+
+- Dumpsys results interrupted by timeout or denied permission no longer produce suggestions, even with exit code 0. Empty responses also abort the scan.
+- Failed process reads abort suggestions. Prefer Android's native ps where available so BusyBox option differences cannot silently remove running-app protection.
+- Set dumpsys' own 20-second deadline with a 25-second outer limit. Errors identify the stage, exit code and a short detail; Manager keeps the message visible after the notification disappears.
+- Add regression coverage for failed, empty, denied and timed-out reads at every stage. CPU/RAM integration, thermal controls and Android app info remain intact.
+- The owner reported a scan failure on v2.10.0. The exact failing phone command is unknown because the old error merged all stages. This update has local checks; its phone result is not yet confirmed.
 
 ## Manager CPU/RAM dan kontrol terpusat / CPU/RAM Manager and centralized controls — v2.10.0 (pengembangan / development)
 
