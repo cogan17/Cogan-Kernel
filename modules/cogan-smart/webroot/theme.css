@@ -24,3 +24,11 @@
 .credit { text-align: center; color: var(--muted); font-size: 12px; margin-top: 6px; line-height: 1.7; }
 .credit b { color: var(--text); font-weight: 600; }
 .credit a { color: var(--accent); }
+
+/* One navigation layout: icon and label occupy the same rows on every tab. */
+.tabs { display: grid; grid-template-columns: repeat(4, minmax(max-content, 1fr)); gap: 6px; margin: 0 2px 12px; overflow-x: auto; }
+.tabs a { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 72px; box-sizing: border-box; padding: 8px 4px; border-radius: 12px; background: var(--chip); color: var(--text); text-decoration: none; font-size: 13px; line-height: 1.35; }
+.tabs a[aria-current] { background: var(--accent); color: var(--on-accent); font-weight: 600; }
+.tabs .tab-icon { display: grid; place-items: center; width: 24px; height: 24px; font-size: 20px; line-height: 1; }
+.tabs .tab-label { white-space: nowrap; }
+.tabs a:focus-visible { outline: 2px solid var(--accent); outline-offset: -3px; }

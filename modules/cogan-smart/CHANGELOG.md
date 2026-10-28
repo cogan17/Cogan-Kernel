@@ -1,5 +1,23 @@
 # Cogan Smart Kernel
 
+## Tab sejajar / Aligned tabs — v2.10.2 (paket uji / test build)
+
+Indonesia:
+
+- Ikon berada di atas dan judul di bawah pada keempat tab. Area ikon, jarak dan tinggi tab disamakan; judul Manager tidak lagi pindah baris sendiri.
+- Satu gaya navigasi dipakai Daya, Suhu, Manager, Modul dan Tentang. Font besar dapat menggulir navigasi ke samping tanpa memotong judul; fokus keyboard tetap terlihat.
+- Perbaikan pemindai v2.10.1 tetap disertakan. Backend CPU/RAM dan termal tidak diubah.
+- Pindah tab, pindai aplikasi dan menerapkan governor CPU yang didukung tidak memerlukan restart. Simpan hanya menyimpan pilihan; Terapkan sekarang mencoba menerapkannya. Kompresor ZRAM aktif tidak direset; opsi saat boot mencoba sebelum inisialisasi, tanpa menjanjikan perubahan pasti setelah reboot.
+- Setelah memasang ZIP pembaruan lewat root manager, reboot satu kali. Tata letak dan fungsi pada HP owner belum dikonfirmasi untuk paket ini.
+
+English:
+
+- All four tabs place the icon above the label. Icon areas, spacing and tab heights match; Manager no longer wraps onto a separate row by itself.
+- Power, Temperature, Manager, Modules and About share one navigation style. Large fonts can scroll the navigation horizontally without clipping labels; keyboard focus remains visible.
+- Includes the v2.10.1 app scanner fixes. CPU/RAM and thermal backends are unchanged.
+- Switching tabs, scanning apps and applying a supported CPU governor do not need a restart. Save only stores choices; Apply now attempts to apply them. Active ZRAM is never reset; boot application tries before initialization without guaranteeing a compressor change after reboot.
+- Reboot once after installing the module update through the root manager. This package's layout and functions have not been confirmed on the owner's phone.
+
 ## Perbaikan pemindai aplikasi / App scanner fixes — v2.10.1 (paket uji / test build)
 
 Indonesia:
