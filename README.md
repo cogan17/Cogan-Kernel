@@ -21,7 +21,7 @@
 </p>
 
 > [!WARNING]
-> **Masih tahap uji.** Build yang lolos uji di HP maintainer terbit sebagai **Pre-release** di [Releases](https://github.com/cogan17/Cogan-Kernel/releases); belum ada rilis resmi. Flash hanya bila kamu sudah punya cadangan `boot` dan paham cara [kembali ke stok](docs/kembali-ke-stok.md).
+> Jika terjadi bootloop atau brick, bukan tanggung jawab maintainer/developer. Pemilik device bertanggung jawab atas devicenya sendiri! Harap cadangkan datamu. TWRP sudah tersedia untuk Xiaomi 14T Pro. Kamu bisa mendownload [TWRP](https://github.com/cogan17/TWRP-14T-PRO).
 
 ---
 
