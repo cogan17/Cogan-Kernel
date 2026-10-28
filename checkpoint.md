@@ -1,6 +1,6 @@
 # Checkpoint — 28 Okt 2026 (WIB)
 
-Owner meminta draf v2.10.5 dilanjutkan (28 Okt). Paket uji v2.10.5 selesai dan sudah di `main` lewat [PR #70](https://github.com/cogan17/Cogan-Kernel/pull/70); lihat bagian v2.10.5. Sesi berikutnya baca `CLAUDE.md`, file ini dan `CHECKPOINT.md`, lalu tunggu instruksi owner. Jangan otomatis menguji HP, menjalankan build atau menerbitkan rilis.
+v2.10.5 sudah di `main` (PR #70) dan bagian DRAM-nya terkonfirmasi di HP. Uji HP yang sama menunjukkan hook init ZRAM v2.10.4 tidak pernah berjalan; perbaikannya v2.10.6 (lihat bagian v2.10.6). Sesi berikutnya baca `CLAUDE.md`, file ini dan `CHECKPOINT.md`, lalu tunggu instruksi owner. Jangan otomatis menguji HP, menjalankan build atau menerbitkan rilis.
 
 ## Sudah selesai
 
@@ -8,6 +8,15 @@ Owner meminta draf v2.10.5 dilanjutkan (28 Okt). Paket uji v2.10.5 selesai dan s
 - v2.10.4 menggunakan dukungan `initrc` KernelSU Next/BakaSU pada Cogan r5 untuk memilih kompresor sebelum ZRAM diinisialisasi. Tidak menambah governor DRAM, tidak reset ZRAM dan tidak swapoff.
 - Screenshot HP owner menunjukkan **v2.10.4 terpasang**, `zram0: lz4 · swap aktif`, opsi LZ4 terpilih, status “initrc tersiapkan untuk boot berikutnya”, dan `bw_hwmon` abu-abu. Bacaan LZ4/swap aktif terbukti, tetapi tidak membuktikan modul yang mengganti LZ4. Belum ada bukti hasil ZSTD atau hasil eksekusi hook initrc pada HP.
 - Owner menjalankan pembacaan root `/sys/class/devfreq/*`. Hasilnya: `112b0000.ufshci` → driver `ufshcd-mtk`, governor `simple_ondemand`; `13000000.mali` → driver `mali`, governor `dummy`; **`mtk-dvfsrc-devfreq` → driver `mtk-dvfsrc-devfreq`, governor `userspace`**. Ketiganya menampilkan daftar sama: `dummy apupassive-pe apuconstrain apuuser apupassive userspace powersave performance simple_ondemand`. **Tidak ada `bw_hwmon`.** `available_governors` devfreq dapat bersifat global; daftar UFS/GPU bukan bukti dukungan DRAM. `userspace` adalah governor aktif DRAM, bukan bukti ZRAM gagal. Jangan mengganti ke `simple_ondemand` atau port governor Qualcomm dengan asumsi.
+
+## v2.10.6 — perbaikan hook init ZRAM (versionCode 25)
+
+- **Bukti HP owner, 28 Okt sekitar 22.18–22.26 WIB (v2.10.5 terpasang):** bagian DRAM tampil benar (`DRAM MediaTek · mtk-dvfsrc-devfreq: userspace`, tanpa dropdown BW). Setelah memilih ZSTD dan restart, `zram0` tetap `[lz4]` (zstd tersedia) dan penanda `/dev/.cogan_smart_zram_init` tidak ada. Root: rc modul punya 3 blok `on` dengan `exec u:r:ksu:s0`; cache `/metadata/vold/ksu/modules.rc` berisi aturan Cogan; dmesg `KernelSU: module rc: loaded 4024 bytes`; config `RAM=heavy BOOT=1`, `init.state=ready`. Kesimpulan: hook v2.10.4–v2.10.5 tidak pernah berjalan.
+- **Penyebab, dari kode init AOSP (mirror GitHub `aosp-mirror/platform_system_core`, `init/tokenizer.cpp`, `action.cpp`, `service.cpp`, `util.cpp`):** di dalam `"..."` tokenizer init tidak mengenal escape, jadi `\"` di program menutup kutipan dan baris exec terpotong. Argumen `exec` diekspansi dua kali (`RunBuiltinFunction`, lalu `ExpandArgsAndExecv` saat proses dimulai), dan `$` tunggal sesudah ekspansi pertama memicu `LOG(FATAL)` "deprecated syntax". Bukti `dmesg` untuk pesan itu belum terbaca: perintahnya tertelan karena ditempel sebelum prompt root muncul.
+- **Perbaikan:** program ditulis sebagai satu token init tanpa kutipan (`\\`, `\"`, `\ `) dan setiap `$` menjadi `$$$$`. Isi program dan pemeriksaannya tidak berubah. Tes Manager kini meniru tokenizer dan ekspansi init AOSP; tes itu gagal pada kode v2.10.5 dan lolos pada v2.10.6.
+- [Paket uji](modules/cogan-smart/rilis/v2.10.6/Cogan-Smart-Kernel-v2.10.6.zip) 40 file, 150361 byte, SHA256 `585210b1d596853d8dc14dc1a4a20dbd676431e9e2c2cd85b22b865f83809ba7` (dua kali dikemas, sama).
+- **Belum diuji di HP dan belum dirilis.** Risiko berikutnya: `zram.ko` adalah modul (GKI `CONFIG_ZRAM=m`); bila belum dimuat pada tahap init/early-fs/post-fs, penanda akan berbunyi `missing`, dan itu masalah waktu muat yang perlu langkah lain.
+- Uji HP berikutnya (keputusan owner): pasang ZIP v2.10.6, reboot, buka Manager. Harapan: `zram0: zstd` dan baris `Hook boot ini: zstd post-fs matching`.
 
 ## v2.10.5 — paket uji deteksi DRAM MediaTek (versionCode 24)
 
@@ -22,4 +31,4 @@ Owner meminta draf v2.10.5 dilanjutkan (28 Okt). Paket uji v2.10.5 selesai dan s
 
 ## English state summary
 
-v2.10.4 native ZRAM init integration is on main (PR #68). The owner's devfreq dump identifies DRAM as `mtk-dvfsrc-devfreq` with `userspace`; no device offers `bw_hwmon`. v2.10.5 (versionCode 24) finishes the DRAM detection/UI draft: driver-bound DRAM identification, actual governor readback, no UFS/GPU BW targets, hidden BW dropdown when unusable, full English text. 252 local tests and the WebUI check pass; the reproducible test ZIP has SHA256 `a148ff25…966d`. Merged to main via PR #70 (`8b1fe72`) after Validate 40713132298 passed. Not phone-tested and not released. Wait for the owner's instructions.
+v2.10.5 (MediaTek DRAM detection) is on main (PR #70) and its DRAM display is confirmed on the owner's phone. The same phone test showed that the v2.10.4 ZRAM init hook never ran: the rules reached /metadata/vold/ksu/modules.rc and the kernel loaded them, but zram0 stayed lz4 and no hook marker existed. Per the AOSP init source, init's tokenizer has no escapes inside quotes and exec arguments are expanded twice. v2.10.6 (versionCode 25) writes the program as one unquoted init token with every $ as $$$$; tests now model init and fail on v2.10.5. Test ZIP SHA256 `585210b1…9ba7`. Not phone-tested and not released. Wait for the owner's instructions.
