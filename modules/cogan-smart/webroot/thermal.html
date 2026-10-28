@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Cogan Smart</title>
-<link rel="stylesheet" href="theme.css?v=2.9.0">
-<script src="i18n.js?v=2.9.1"></script>
+<link rel="stylesheet" href="theme.css?v=2.10.0">
+<script src="i18n.js?v=2.10.0"></script>
 <script>try { document.documentElement.dataset.theme = localStorage.getItem('cogan.theme') || ''; } catch (_) { /* storage off: follow the phone */ }</script>
 <style>
   * { box-sizing: border-box; }
@@ -91,8 +91,8 @@
   @media (prefers-reduced-motion: reduce) { details.fold > summary::after { transition: none; } }
   body.stale .big b, body.stale .chip b { opacity: .55; }   /* last known values until the first fresh read */
   body.stale #state::after { content: ' ↻'; }
-  .tabs { display: flex; gap: 8px; margin: 0 2px 12px; }
-  .tabs a { flex: 1; min-height: 44px; box-sizing: border-box; padding: 11px 6px; border-radius: 12px; text-align: center; background: var(--chip); color: var(--text); text-decoration: none; font-size: 14px; }
+  .tabs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin: 0 2px 12px; }
+  .tabs a { flex: 1; min-height: 44px; box-sizing: border-box; padding: 11px 3px; border-radius: 12px; text-align: center; background: var(--chip); color: var(--text); text-decoration: none; font-size: 13px; }
   .tabs a[aria-current] { background: var(--accent); color: var(--on-accent); font-weight: 600; }
 </style>
 </head>
@@ -102,7 +102,7 @@
     <h1>🧠 Cogan Smart</h1>
     <span id="state" class="pill">…</span>
   </header>
-  <nav class="tabs" aria-label="Bagian"><a href="index.html">⚡ Daya</a><a href="thermal.html" aria-current="page">🌡️ Suhu</a><a href="modules.html">🧩 Modul</a></nav>
+  <nav class="tabs" aria-label="Bagian"><a href="index.html">⚡ Daya</a><a href="thermal.html" aria-current="page">🌡️ Suhu</a><a href="manager.html">🛠️ Manager</a><a href="modules.html">🧩 Modul</a></nav>
 
   <div id="noksu" class="card hidden">
     Buka halaman ini dari WebUI modul di KernelSU, KernelSU Next atau BakaSU.
@@ -165,13 +165,8 @@
     <label class="f">Simpan riwayat (hari) <input id="sRETENTION_DAYS" type="number" min="1" max="30"></label>
     <label class="f">Notifikasi saat panas <input id="sNOTIFY" type="checkbox"></label>
     <label class="f">Notifikasi bila Badan HP ≥ (°C) <input id="sNOTIFY_TEMP" type="number" min="38" max="55"></label>
-    <div class="row">
-      <button id="saveSettings" class="primary">💾 Simpan</button>
-      <button id="applySettings" class="primary">Terapkan sekarang</button>
-      <button id="reset" class="danger">↺ Reset default</button>
-      <button id="toggle">⏹ Hentikan</button>
-      <button id="clear" class="danger">🗑 Hapus riwayat</button>
-    </div>
+    <p class="muted" id="draftNote"></p>
+    <p><a href="manager.html#thermalControls">Simpan, terapkan, reset, hentikan dan hapus riwayat dari tab Manager.</a></p>
     <p class="muted">Panas diukur dari suhu Badan HP (yang terasa di tangan), bukan prosesor yang saat santai pun sekitar 50 °C. Ambang ini hanya untuk pencatatan. Kendali CPU dan cas ada di tab Daya. Reset mempertahankan riwayat dan berhenti sampai Mulai.</p>
     <div class="muted" id="dataInfo" style="margin-top:8px"></div>
   </details>
@@ -181,7 +176,7 @@
 </main>
 
 <div id="actionStatus" class="feedback hidden" role="status" aria-live="polite"></div>
-<script src="client.js?v=2.9.1"></script>
+<script src="client.js?v=2.10.0"></script>
 <script>
 const confirm = value => window.confirm(CoganI18n.t(value));
 const REPORT = '/data/adb/modules/cogan_smart/thermal/report.sh';
@@ -210,12 +205,13 @@ function showStatus(s) {
   status = s; hot = s.hot;
   $('state').textContent = UI.recorder(s.monitor);
   $('state').className = 'pill ' + (s.monitor?.stalled ? 'warm' : s.running ? 'on' : 'off');
-  $('toggle').textContent = s.running ? '⏹ Hentikan' : '▶ Mulai';
   if (!editing) {
+    const draft = UI.draft.get('thermal');
     for (const key of ['INTERVAL', 'HOT_TEMP', 'RETENTION_DAYS', 'NOTIFY_TEMP'])
-      $('s' + key).value = {INTERVAL: s.interval, HOT_TEMP: s.hot, RETENTION_DAYS: s.retention, NOTIFY_TEMP: s.notify_temp}[key];
-    $('sNOTIFY').checked = !!s.notify;
+      $('s' + key).value = draft[key] ?? {INTERVAL: s.interval, HOT_TEMP: s.hot, RETENTION_DAYS: s.retention, NOTIFY_TEMP: s.notify_temp}[key];
+    $('sNOTIFY').checked = !!(draft.NOTIFY ?? s.notify);
   }
+  UI.text('draftNote', Object.keys(UI.draft.get('thermal')).length ? 'Perubahan belum disimpan. Buka Manager untuk menyimpan atau menerapkan.' : '');
   $('dataInfo').textContent = s.days ? `Riwayat: ${s.days} hari (sejak ${s.first}), ${s.size_kb} KB` : 'Riwayat masih kosong.';
   $('foot').textContent = `Cogan Smart ${s.version} · Suhu & log hanya membaca sensor`;
   CoganI18n.apply();
@@ -235,7 +231,6 @@ function renderNow(n) {
     status = {...status, running: m.running, monitor: m};
     UI.text('state', UI.recorder(m));
     $('state').className = 'pill ' + (m.stalled ? 'warm' : m.running ? 'on' : 'off');
-    UI.text('toggle', m.running ? '⏹ Hentikan' : '▶ Mulai');
   }
   const sensorAge = n.sensor_ts ? Math.max(0, Math.floor(Date.now() / 1000) - n.sensor_ts) : -1;
   UI.text('kernel', n.main > -9999 ? `sensor ${sensorAge} dtk lalu` : 'sensor tidak tersedia');
@@ -337,15 +332,18 @@ async function run(button, message, task) {
   catch (err) { toast('Gagal: ' + err.message); }
   finally { actionRunning = false; poller?.poke(); }
 }
-function settings() {
-  return ['INTERVAL', 'HOT_TEMP', 'RETENTION_DAYS', 'NOTIFY_TEMP'].map(key => `${key} ${Math.round(+$('s' + key).value) || 0}`)
-    .concat('NOTIFY ' + ($('sNOTIFY').checked ? 1 : 0)).join(' ');
-}
 function setup() {
   UI.folds();
+  window.addEventListener('pageshow', () => editing = false);
   $('summaryCard').addEventListener('toggle', () => { if ($('summaryCard').open) poller?.poke(); });
-  for (const id of ['saveSettings', 'applySettings', 'reset', 'toggle', 'clear', 'save']) $(id).setAttribute('data-action', '');
-  for (const key of ['INTERVAL', 'HOT_TEMP', 'RETENTION_DAYS', 'NOTIFY_TEMP', 'NOTIFY']) $('s' + key).addEventListener('input', () => editing = true);
+  $('save').setAttribute('data-action', '');
+  for (const key of ['INTERVAL', 'HOT_TEMP', 'RETENTION_DAYS', 'NOTIFY_TEMP', 'NOTIFY']) $('s' + key).addEventListener('input', () => {
+    editing = true;
+    try {
+      UI.draft.set('thermal', key, key === 'NOTIFY' ? ($('s' + key).checked ? 1 : 0) : Math.round(+$('s' + key).value) || 0);
+      UI.text('draftNote', 'Perubahan belum disimpan. Buka Manager untuk menyimpan atau menerapkan.');
+    } catch (err) { toast(err.message); }
+  });
   $('retry').onclick = () => run($('retry'), 'Membaca ulang…', () => refreshAll(true));
   $('coolingDetails').addEventListener('toggle', () => { if ($('coolingDetails').open) loadCooling().catch(err => toast(err.message)); });
   $('zonesDetails').addEventListener('toggle', renderZones);
@@ -371,32 +369,6 @@ function setup() {
       const short = file => file.replace(/^\/(sdcard|storage\/emulated\/0)\//, '');
       UI.html('saveNote', `✅ Tersimpan (${result.samples} sampel):<br>${esc(short(result.txt))}<br>${esc(short(result.csv))}`);
       $('saveNote').classList.remove('hidden'); toast('Log tersimpan di ' + short(result.dir));
-    });
-  };
-  $('saveSettings').onclick = () => run($('saveSettings'), 'Menyimpan setelan…', async () => {
-    await report('set ' + settings()); editing = false; identityAt = 0; summaryAt = 0;
-    await refreshAll(true); toast('Setelan disimpan');
-  });
-  $('applySettings').onclick = () => run($('applySettings'), 'Menerapkan setelan pencatatan…', async () => {
-    const result = await report('apply ' + settings()); editing = false; showStatus(result);
-    identityAt = 0; summaryAt = 0; await loadNow(); toast('Setelan pencatatan diterapkan');
-  });
-  $('reset').onclick = () => {
-    if (!confirm('Reset setelan pencatatan dan berhenti? Riwayat serta log tersimpan tetap ada.')) return;
-    run($('reset'), 'Memulihkan setelan bawaan…', async () => {
-      const result = await report('reset'); editing = false; showStatus(result); identityAt = 0; summaryAt = 0;
-      toast('Setelan bawaan dipulihkan; riwayat tetap ada. Tekan Mulai untuk mencatat.');
-    });
-  };
-  $('toggle').onclick = () => run($('toggle'), status?.running ? 'Menghentikan pencatat…' : 'Memulai pencatat…', async () => {
-    showStatus(await report(status?.running ? 'stop' : 'start')); identityAt = 0;
-    toast(status.running ? 'Pencatat berjalan' : 'Pencatat dihentikan');
-  });
-  $('clear').onclick = () => {
-    if (!confirm('Hapus semua riwayat suhu? Log yang sudah disimpan di Download tidak ikut terhapus.')) return;
-    run($('clear'), 'Menghapus riwayat…', async () => {
-      await report('clear'); identityAt = 0; summaryAt = 0;
-      await refreshAll(true); toast('Riwayat dihapus');
     });
   };
   if (typeof IntersectionObserver !== 'undefined') {

@@ -2,10 +2,13 @@
 
 **Versi paket terbaru: v2.9.1** (`versionCode` 18): modul lebih hemat CPU, satu angka Badan HP dari HyperOS, lonjakan suhu, nama aplikasi asli, batas CPU di log, dan penyaringan sensor macet. Dampak optimisasi terakhir pada HP belum diukur. Catatan perubahan lengkap ada di [`CHANGELOG.md`](CHANGELOG.md); status publikasi ada di [Releases](https://github.com/cogan17/Cogan-Kernel/releases).
 
+**Versi pengembangan: v2.10.0** (versionCode 19), tab Manager. Paket uji belum diuji pada HP; rilis v2.9.1 tetap tersedia.
+
 ## ⬇️ Unduh
 
 | Versi | versionCode | ZIP siap pasang | Catatan | Salinan di repo | SHA256 ZIP |
 |---|---|---|---|---|---|
+| **v2.10.0** (paket uji Manager; belum uji HP) | 19 | [Paket uji](rilis/v2.10.0/Cogan-Smart-Kernel-v2.10.0.zip) | [What's New](rilis/v2.10.0/Cogan-Smart-v2.10.0-Whats-New-and-Fixes.txt) | [rilis/v2.10.0](rilis/v2.10.0) | `981caad71dfb458c39e0d8283cf37c895caf9990ce3936a4b4c15c55da8d955e` |
 | **v2.9.1** (paket rilis) | 18 | [Cogan-Smart-Kernel-v2.9.1.zip](rilis/v2.9.1/Cogan-Smart-Kernel-v2.9.1.zip) | [What's New](rilis/v2.9.1/Cogan-Smart-v2.9.1-Whats-New-and-Fixes.txt) | [`rilis/v2.9.1`](rilis/v2.9.1) | `64631a42c9133c2d91568ceb88c9582f5c5a95b1b6535c64cb27551fb502e29c` |
 | v2.9.0 | 17 | [Cogan-Smart-Kernel-v2.9.0.zip](https://github.com/cogan17/Cogan-Kernel/releases/download/cogan-smart-v2.9.0/Cogan-Smart-Kernel-v2.9.0.zip) | [What's New](https://github.com/cogan17/Cogan-Kernel/releases/download/cogan-smart-v2.9.0/Cogan-Smart-v2.9.0-Whats-New-and-Fixes.txt) | [`rilis/v2.9.0`](rilis/v2.9.0) | `7d15a729ce184aef8a3f870d5c0837010e22ccf69b910309c7f208b870057522` |
 | v2.8.2 | 16 | [Cogan-Smart-Kernel-v2.8.2.zip](https://github.com/cogan17/Cogan-Kernel/releases/download/cogan-smart-v2.8.2/Cogan-Smart-Kernel-v2.8.2.zip) | [What's New](https://github.com/cogan17/Cogan-Kernel/releases/download/cogan-smart-v2.8.2/Cogan-Smart-v2.8.2-Whats-New-and-Fixes.txt) | [`rilis/v2.8.2`](rilis/v2.8.2) | `73f6d9c9a167d1528057ff84c65d6db371a5cde63e1435ca6e5e4f14bfc367d5` |
@@ -25,13 +28,27 @@ Satu modul KernelSU / KernelSU Next / BakaSU / Magisk yang menggabungkan **Cogan
 
 | Bagian | Folder | Tugas |
 |---|---|---|
+| Manager | `manager/` | Governor CPU, profil RAM, kontrol Daya/Suhu, saran aplikasi user ≥ 7 hari |
 | Daya | `power/` | Mode, batas CPU, boost aplikasi di layar, auto cut charging, readback kontrol |
 | Suhu | `thermal/` | Sensor tiap 20 detik (termasuk suhu papan HyperOS), dugaan penyebab panas per bagian HP dengan saran, riwayat 7 hari, simpan log |
 | Modul | `guard/` | Penjaga modul: perilaku modul lain, whitelist, hapus sampai ke akar |
 | Bersama | `bridge.sh`, `webroot/client.js` | Cogan Bridge ABI 1, transport WebUI |
 
-WebUI punya tiga tab: **⚡ Daya**, **🌡️ Suhu** dan **🧩 Modul**, plus halaman **ℹ️ Tentang & kredit** (`about.html`, bahasa Indonesia dengan pilihan English) dari tautan di bawah tiap tab. Dua tema bergaya Material You di `webroot/theme.css`: **Terang hangat** dan **Gelap OLED** (hitam murni); bawaannya mengikuti mode gelap HP, pilihan tetap disimpan dari halaman Tentang. Setiap kartu bisa dilipat; posisi buka/tutup diingat per tab.
+WebUI punya empat tab: **⚡ Daya**, **🌡️ Suhu**, **🛠️ Manager** dan **🧩 Modul**, plus halaman **ℹ️ Tentang & kredit** (`about.html`, bahasa Indonesia dengan pilihan English) dari tautan di bawah tiap tab. Dua tema bergaya Material You di `webroot/theme.css`: **Terang hangat** dan **Gelap OLED** (hitam murni); bawaannya mengikuti mode gelap HP, pilihan tetap disimpan dari halaman Tentang. Setiap kartu bisa dilipat; posisi buka/tutup diingat per tab.
 Tiap tab adalah halaman sendiri, jadi `client.js` menyimpan jawaban baca terakhir (dan identitas kernel/HP) di `localStorage` WebView: pindah tab langsung menampilkan nilai terakhir (angka redup, ↻ di pojok) sampai bacaan baru datang. Tab Modul memakai hasil pindaian yang berumur < 2 menit apa adanya; Pindai ulang untuk memperbarui.
+
+## 🛠️ Manager (v2.10.0, pengembangan)
+
+- **Prosesor:** Kernel Default, sugov_ext atau schedutil. Pilihan hanya aktif bila tersedia pada semua policy. Tulisan nilai aktif menampilkan governor yang benar-benar terbaca.
+- **RAM:** Snappy & Daily Driver (bw_hwmon + LZ4) dan Heavy Multitasker / Space Saver (bw_hwmon + ZSTD). Kompresor harus tersedia pada semua perangkat ZRAM. bw_hwmon hanya diterapkan pada driver memori yang menawarkannya; bila tidak ada, governor memori bawaan dipertahankan dan UI menjelaskannya.
+- **ZRAM aktif tidak di-reset atau dimatikan.** Kompresor berbeda tetap berstatus belum diterapkan. Opsi boot mencoba memilihnya lewat post-fs-data sebelum ZRAM diinisialisasi. Bila Android sudah mengaktifkannya, pilihan tetap tertunda; restart tidak dijanjikan selalu mengganti kompresor.
+- **Integrasi:** penulisan CPU/RAM memerlukan rothko, platform mt6989 serta identitas Cogan Bridge/device tree yang cocok. Batas CPU, cas dan termal dari Daya/HyperOS tetap berlaku. Tidak menambahkan loop pengendali.
+- **Kontrol Daya/Suhu:** Simpan, Terapkan, Reset dan Mulai/Hentikan dipindah dari kedua tab ke Manager; Hapus riwayat juga di sini. Formulir tetap di tab semula. Perubahan kolom disimpan sebagai draf lokal sampai diterapkan dari Manager; Simpan log tetap di tab Suhu.
+- **Aplikasi:** pindai manual aplikasi user pada pengguna Android aktif. Saran hanya untuk bukti penggunaan terakhir ≥ 7 hari, tanggal pemasangan cukup lama, dan proses tidak sedang berjalan. Waktu aktivitas komponen/foreground service ikut dihitung; data hilang bukan bukti tidak dipakai. Tinjau aplikasi membuka info aplikasi Android untuk memilih uninstall/nonaktifkan, tanpa tindakan massal.
+- **Pemulihan:** Ikuti kernel melepas governor milik Manager; perubahan pihak lain dipertahankan. Kompresor ZRAM yang sudah aktif mengikuti konfigurasi sistem pada restart. Pilihan boot bawaan mati.
+- Data Manager: `/data/adb/cogan_smart/manager`; draf UI memakai localStorage WebView.
+
+English: Manager adds supported CPU governors, two RAM profiles, centralized Power/Temperature actions and seven-day app review. Hardware writes require a matching rothko/mt6989 Cogan Bridge. Active ZRAM is never reset; boot application is best effort and actual readbacks are shown. App removal/disable is chosen in Android app info. This build has not been tested on a physical phone.
 
 ## Mode
 
@@ -59,7 +76,7 @@ Kartu **🧯 Rem HyperOS** di tab Daya menampilkan batas yang dipasang HyperOS s
 
 Tab Suhu menjelaskan tiap momen panas dari ±3 menit terakhir, per bagian HP, dengan saran: cas cepat, cas, grafis (GPU), modem (data seluler), prosesor, proses latar belakang, proses kernel, layar mati, atau layar & pemakaian biasa.
 
-**Henti** melepas semua kontrol milik modul sehingga pengaturan vendor (HyperOS/MediaTek) berjalan sendiri. Tombol Action di root manager berpindah ke mode berikutnya.
+**Henti Daya** melepas batas CPU, boost dan saklar cas milik pengendali Daya. Governor CPU/RAM dari Manager dilepas dengan **Ikuti kernel**; ZRAM aktif mengikuti sistem setelah restart. Tombol Action di root manager berpindah ke mode berikutnya.
 
 ## 🧩 Modul (penjaga modul, v2.2)
 
@@ -81,7 +98,7 @@ Tab Suhu menjelaskan tiap momen panas dari ±3 menit terakhir, per bagian HP, de
 
 ## Perangkat ⇄ kernel ⇄ modul
 
-Ketiganya saling mengenal (D-023). Kartu Kernel di kedua tab WebUI menampilkan hasilnya.
+Ketiganya saling mengenal (D-023). Kartu Kernel di semua tab WebUI menampilkan hasilnya.
 
 | Arah | Tanpa Cogan Bridge (kernel r2) | Dengan Cogan Bridge (r3) |
 |---|---|---|
@@ -97,8 +114,7 @@ Ketiganya saling mengenal (D-023). Kartu Kernel di kedua tab WebUI menampilkan h
 ## Uji dan paket
 
 ```sh
-cd tests && python3 -m unittest test_cogan_smart_power test_cogan_smart_thermal test_cogan_smart_bridge test_cogan_smart_android test_cogan_smart_module test_cogan_smart_guard
-node --test tests/test_cogan_smart_webui.cjs
+cd tests && python3 -m unittest test_cogan_smart_power test_cogan_smart_thermal test_cogan_smart_bridge test_cogan_smart_android test_cogan_smart_module test_cogan_smart_guard test_cogan_smart_manager
 python3 scripts/package_module.py modules/cogan-smart OUT_DIR   # ZIP siap pasang, tanpa README dan folder rilis/
 ```
 

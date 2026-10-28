@@ -21,12 +21,13 @@
   // Last answers, kept so a tab shows its last values at once while it reads fresh ones:
   // each tab is its own page, so without this every switch starts empty.
   const store = {
-    get(key) { try { return JSON.parse(localStorage.getItem('cogan.cache.v291.' + CoganI18n.language() + '.' + key)); } catch (_) { return null; } },
-    set(key, value) { try { localStorage.setItem('cogan.cache.v291.' + CoganI18n.language() + '.' + key, JSON.stringify(value)); } catch (_) { /* storage off or full */ } }
+    get(key) { try { return JSON.parse(localStorage.getItem('cogan.cache.v2100.' + CoganI18n.language() + '.' + key)); } catch (_) { return null; } },
+    set(key, value) { try { localStorage.setItem('cogan.cache.v2100.' + CoganI18n.language() + '.' + key, JSON.stringify(value)); } catch (_) { /* storage off or full */ } }
   };
 
+  let sequence = 0; // Unique across the Manager's three API clients in the same WebView.
   function create(script) {
-    let sequence = 0, running = false, revision = 0;
+    let running = false, revision = 0;
     const queue = [], reads = new Map();
 
     function native(args) {
@@ -231,5 +232,19 @@
     const wait = !pkgs.length || pairs.length ? 6 * 3600e3 : 600e3;
     try { localStorage.setItem('cogan.labels.next', String(Date.now() + wait)); } catch (_) { /* storage off */ }
   }
-  window.CoganUI = {create, poll, action, text, html, shortKernel, kernel, cooling, folds, identity, health, recorder, learnLabels};
+  // Each page is a document: carry only edited fields to Manager, not a stale full config.
+  const draft = {
+    get(part) {
+      try {
+        const value = JSON.parse(localStorage.getItem('cogan.draft.' + part));
+        return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+      } catch (_) { return {}; }
+    },
+    set(part, key, value) {
+      try { localStorage.setItem('cogan.draft.' + part, JSON.stringify({...this.get(part), [key]: value})); }
+      catch (_) { throw new Error(T('Perubahan antar tab gagal disimpan. Izinkan penyimpanan WebUI.')); }
+    },
+    clear(part) { localStorage.removeItem('cogan.draft.' + part); }
+  };
+  window.CoganUI = {create, poll, action, text, html, shortKernel, kernel, cooling, folds, identity, health, recorder, learnLabels, draft};
 })();

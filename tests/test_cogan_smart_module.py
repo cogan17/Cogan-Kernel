@@ -168,7 +168,7 @@ class InstallerTests(unittest.TestCase):
 
 class WebUITests(unittest.TestCase):
     def test_each_page_calls_an_existing_script_and_links_the_others(self):
-        pages = ("index.html", "thermal.html", "modules.html")
+        pages = ("index.html", "thermal.html", "manager.html", "modules.html")
         for page in pages:
             html = (MODULE / "webroot" / page).read_text()
             report = re.search(r"const REPORT = '/data/adb/modules/cogan_smart/(.+?)';", html).group(1)

@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cogan Smart · Manager</title>
+<link rel="stylesheet" href="theme.css?v=2.10.0">
+<script src="i18n.js?v=2.10.0"></script>
+<script>try { document.documentElement.dataset.theme = localStorage.getItem('cogan.theme') || ''; } catch (_) {}</script>
+<style>
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 system-ui,sans-serif;padding:calc(env(safe-area-inset-top,0px) + 14px) 14px calc(env(safe-area-inset-bottom,0px) + 24px)}
+main{max-width:640px;margin:auto}header{display:flex;align-items:center;gap:10px;margin:4px 2px 14px}h1{font-size:20px;margin:0;flex:1}.pill{font-size:12px;background:var(--chip);color:var(--muted);padding:3px 10px;border-radius:99px}
+.tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-bottom:12px}.tabs a{padding:11px 3px;min-height:44px;border-radius:12px;text-align:center;background:var(--chip);color:var(--text);text-decoration:none;font-size:13px}.tabs a[aria-current]{background:var(--accent);color:var(--on-accent);font-weight:600}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}details.card{padding:0 14px}details.card[open]{padding-bottom:14px}summary{display:flex;gap:8px;align-items:center;min-height:48px;padding:12px 0;font-weight:600;cursor:pointer;list-style:none}summary::-webkit-details-marker{display:none}summary::after{content:'▸';margin-left:auto;color:var(--muted)}details[open]>summary::after{transform:rotate(90deg)}
+.muted{color:var(--muted);font-size:13px;overflow-wrap:anywhere}.warm{color:var(--warm)}.ok{color:var(--ok)}.hot{color:var(--hot)}p{margin:8px 0}.row{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}button,select{font:inherit;color:var(--text);background:var(--chip);border:1px solid var(--line);border-radius:10px;padding:9px 12px;min-height:44px;max-width:100%}select{width:100%;font-size:14px}button{cursor:pointer}button:disabled{opacity:.5}button.primary{background:var(--accent);color:var(--on-accent);font-weight:600}button.danger{color:var(--hot)}label{display:block;margin:8px 0}label.check{display:flex;align-items:center;justify-content:space-between;gap:12px}input[type=checkbox]{width:22px;height:22px}button,summary,select,input{touch-action:manipulation;-webkit-tap-highlight-color:transparent}:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.app{padding:12px 0;border-bottom:1px solid var(--line)}.app b{overflow-wrap:anywhere}.app small{display:block}.hidden{display:none!important}.feedback{position:fixed;bottom:calc(env(safe-area-inset-bottom,0px) + 12px);left:14px;right:14px;max-width:612px;margin:auto;z-index:20;padding:10px 14px;border-radius:12px;background:var(--text);color:var(--card);font-size:13px;pointer-events:none}.working::before{content:'◌ ';}footer{text-align:center;font-size:12px;color:var(--muted);margin-top:18px}.kernel-value{overflow-wrap:anywhere;font-size:12px;white-space:pre-wrap}
+</style>
+</head>
+<body>
+<main>
+  <header><h1>🧠 Cogan Smart</h1><span id="state" class="pill">…</span></header>
+  <nav class="tabs" aria-label="Bagian"><a href="index.html">⚡ Daya</a><a href="thermal.html">🌡️ Suhu</a><a href="manager.html" aria-current="page">🛠️ Manager</a><a href="modules.html">🧩 Modul</a></nav>
+  <div id="noksu" class="card hidden">Buka halaman ini dari WebUI modul di KernelSU, KernelSU Next atau BakaSU.</div>
+  <section id="readError" class="card hidden" role="alert"><b class="hot">Data belum berhasil dibaca</b><p id="readErrorText" class="muted"></p><button id="retry">↻ Coba lagi</button></section>
+  <details class="card fold kernel-card" id="kernelCard">
+    <summary><span id="kernelTitle">Kernel</span><small id="kernelBadge" class="muted"></small></summary>
+    <p id="bridgeStatus" class="muted"></p><p id="deviceStatus" class="muted"></p><p id="identityLabel" class="muted"></p>
+    <p id="originalKernel" class="kernel-value"></p><p id="shownKernel" class="kernel-value"></p>
+    <p id="kernelFeatures" class="muted"></p><p id="clients" class="muted"></p>
+  </details>
+  <details class="card fold" id="processorCard" open>
+    <summary>🧠 Prosesor</summary>
+    <label for="cpuGovernor">Governor CPU</label>
+    <select id="cpuGovernor"><option value="default">Kernel Default</option><option value="sugov_ext">sugov_ext</option><option value="schedutil">schedutil</option></select>
+    <p id="cpuInfo" class="muted" translate="no"></p>
+    <p class="muted">Governor mengikuti dukungan semua policy CPU. Batas suhu dan kendali Daya tetap berlaku.</p>
+  </details>
+  <details class="card fold" id="ramCard">
+    <summary>🧮 RAM (memori)</summary>
+    <label for="ramProfile">Profil memori</label>
+    <select id="ramProfile"><option value="default">Kernel Default</option><option value="snappy">Snappy &amp; Daily Driver (bw_hwmon + LZ4)</option><option value="heavy">Heavy Multitasker / Space Saver (bw_hwmon + ZSTD)</option></select>
+    <p id="ramInfo" class="muted" translate="no"></p>
+    <p id="bwInfo" class="muted"></p><p id="ramPending" class="warm"></p>
+    <p class="muted">LZ4 mengutamakan kompresi ringan; ZSTD mengutamakan rasio kompresi. Hasil tetap bergantung pada beban perangkat.</p>
+    <p class="muted">Kompresor ZRAM yang sudah aktif tidak direset. Pilihan dicoba saat boot jika ZRAM belum diinisialisasi; periksa algoritme yang benar-benar aktif setelah restart.</p>
+  </details>
+  <section class="card">
+    <label class="check">Terapkan CPU/RAM saat boot <input id="managerBoot" type="checkbox"></label>
+    <p id="managerSupport" class="muted"></p>
+    <div class="row"><button id="managerSave" class="primary" data-action disabled>💾 Simpan</button><button id="managerApply" class="primary" data-action disabled>⚡ Terapkan sekarang</button><button id="managerReset" class="danger" data-action disabled>↺ Ikuti kernel</button></div>
+  </section>
+  <details class="card fold" id="powerControls">
+    <summary>⚡ Kontrol Daya</summary>
+    <p id="powerState" class="muted"></p><p id="powerDraft" class="muted"></p>
+    <p class="muted"><a href="index.html#settingsCard">Setelan mode dan cas ada di tab Daya.</a></p>
+    <div class="row"><button id="powerSave" class="primary" data-action disabled>💾 Simpan</button><button id="powerApply" class="primary" data-action disabled>⚡ Paksa / Terapkan</button><button id="powerReset" class="danger" data-action disabled>↺ Reset default</button><button id="powerToggle" data-action disabled>⏹ Hentikan</button></div>
+  </details>
+  <details class="card fold" id="thermalControls">
+    <summary>🌡️ Kontrol Suhu</summary>
+    <p id="thermalState" class="muted"></p><p id="thermalDraft" class="muted"></p>
+    <p class="muted"><a href="thermal.html#settingsCard">Setelan pencatatan ada di tab Suhu.</a></p>
+    <div class="row"><button id="thermalSave" class="primary" data-action disabled>💾 Simpan</button><button id="thermalApply" class="primary" data-action disabled>Terapkan sekarang</button><button id="thermalReset" class="danger" data-action disabled>↺ Reset default</button><button id="thermalToggle" data-action disabled>⏹ Hentikan</button><button id="thermalClear" class="danger" data-action disabled>🗑 Hapus riwayat</button></div>
+  </details>
+  <details class="card fold" id="appsCard">
+    <summary>📱 Aplikasi jarang dipakai</summary>
+    <p class="muted">Aplikasi user yang tidak tercatat dipakai selama sedikitnya 7 hari. Aplikasi baru, sedang berjalan, atau tanpa data yang cukup tidak disarankan untuk dihapus.</p>
+    <button id="scanApps" data-action disabled>🔎 Periksa aplikasi</button>
+    <p id="appsInfo" class="muted"></p><div id="apps"></div>
+    <p class="muted">Saran: tinjau aplikasi yang tidak dibutuhkan untuk uninstall atau nonaktifkan. Tindakan dipilih di halaman info aplikasi Android.</p>
+  </details>
+  <footer id="foot">Cogan Smart · Manager</footer>
+  <p class="credit">Maintainer <b>Cogan17</b> &nbsp;·&nbsp; kernel <b>Cogan Rothko</b> &nbsp;·&nbsp; <b>KernelSU Next</b><br><a href="about.html">ℹ️ Tentang &amp; kredit</a></p>
+</main>
+<div id="actionStatus" class="feedback hidden" role="status" aria-live="polite"></div>
+<script src="client.js?v=2.10.0"></script>
+<script>
+const REPORT = '/data/adb/modules/cogan_smart/manager/report.sh';
+const UI = CoganUI, api = UI.create(REPORT), $ = id => document.getElementById(id);
+const parts = {power: UI.create('/data/adb/modules/cogan_smart/power/report.sh'), thermal: UI.create('/data/adb/modules/cogan_smart/thermal/report.sh')};
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let status, editing = false, busy = false, poller, feedbackTimer;
+const toast = msg => { UI.text('actionStatus', msg); $('actionStatus').classList.remove('hidden'); clearTimeout(feedbackTimer); feedbackTimer = setTimeout(() => { if (!busy) $('actionStatus').classList.add('hidden'); }, 5000); };
+const confirm = s => window.confirm(CoganI18n.t(s));
+const tokens = s => String(s || '').split(/\s+/);
+function render(s) {
+  status = s; UI.kernel(s);
+  UI.text('state', s.writable ? '✓ terintegrasi' : 'baca saja');
+  UI.text('foot', 'Cogan Smart ' + s.version + ' · Manager');
+  if (!editing) { $('cpuGovernor').value=s.config.cpu; $('ramProfile').value=s.config.ram; $('managerBoot').checked=!!s.config.boot; }
+  for (const option of $('cpuGovernor').options) option.disabled = option.value !== 'default' && (!s.cpu.length || !s.cpu.every(p => tokens(p.available).includes(option.value)));
+  for (const option of $('ramProfile').options) {
+    const algo = {snappy:'lz4',heavy:'zstd'}[option.value];
+    option.disabled = !!algo && (!s.zram.length || !s.zram.every(z => tokens(z.available).includes(algo)));
+  }
+  $('cpuInfo').textContent=s.cpu.map(p => p.name + ': ' + p.current).join(' · ');
+  $('ramInfo').textContent=[...s.zram.map(z => z.name + ': ' + z.current), ...s.bw_hwmon.map(b => b.name + ': ' + b.current)].join(' · ');
+  UI.text('bwInfo', s.bw_hwmon.length ? 'bw_hwmon tersedia pada perangkat ini.' : 'bw_hwmon tidak tersedia; governor memori bawaan perangkat dipertahankan.');
+  const wanted={snappy:'lz4',heavy:'zstd'}[s.config.ram];
+  UI.text('ramPending', wanted && s.zram.some(z => z.current !== wanted) ? 'Belum diterapkan: ZRAM masih memakai kompresor lain.' : '');
+  UI.text('managerSupport', s.writable ? 'Modul, perangkat dan Cogan Bridge cocok. Nilai aktif ditampilkan di atas.' : 'Kontrol Manager memerlukan Xiaomi 14T Pro dan Cogan Bridge yang cocok.');
+  if (s.restore_pending) UI.text('managerSupport', 'Ada pemulihan Manager yang tertunda. Periksa nilai aktif; ZRAM yang masih aktif mengikuti sistem setelah restart.');
+  for (const id of ['managerSave','managerApply','managerReset']) $(id).disabled=!s.writable;
+  CoganI18n.apply();
+}
+function draftInfo(part) {
+  const n=Object.keys(UI.draft.get(part)).length;
+  UI.text(part+'Draft', n ? `Perubahan belum disimpan: ${n} setelan.` : 'Tidak ada perubahan setelan yang menunggu.');
+}
+async function refresh() {
+  render(await api.report('status', {background:true}));
+  for (const [part, client] of Object.entries(parts)) {
+    const s=await client.report('status brief', {background:true});
+    UI.text(part+'State', part==='power' ? (s.running ? 'Kontrol daya aktif' : 'Pengendali berhenti.') : UI.recorder(s.monitor));
+    UI.text(part+'Toggle', s.running ? '⏹ Hentikan' : '▶ Mulai');
+    draftInfo(part);
+    for (const b of $(part+'Controls').querySelectorAll('button')) b.disabled=false;
+  }
+  $('scanApps').disabled=false; $('readError').classList.add('hidden');
+}
+async function run(button, task) {
+  if (busy || typeof ksu==='undefined') return;
+  busy=true;
+  try { await UI.action(button,'Memproses…',task); }
+  catch(e) { toast('Gagal: '+e.message); }
+  finally { busy=false; poller?.poke(); }
+}
+function values() { return [$('cpuGovernor').value,$('ramProfile').value,$('managerBoot').checked?1:0].join(' '); }
+async function control(part, command) {
+  const client=parts[part], changes=UI.draft.get(part);
+  if (command==='reset' && !confirm(part==='power' ? 'Pulihkan setelan bawaan (cas 95/90) dan hentikan pengendali?' : 'Reset setelan pencatatan dan berhenti? Riwayat serta log tersimpan tetap ada.')) return;
+  if (command==='clear' && !confirm('Hapus semua riwayat suhu? Log yang sudah disimpan di Download tidak ikut terhapus.')) return;
+  if (command==='toggle') { const fresh=await client.report('status brief'); command=fresh.running?'stop':'start'; }
+  let args=command;
+  if (command==='set' || command==='apply') {
+    const entries=Object.entries(changes).filter(([key]) => !(part==='power' && command==='apply' && key==='FORCE'));
+    if (command==='set' && !entries.length) { toast('Tidak ada perubahan setelan yang menunggu.'); return; }
+    args += entries.map(([key,value])=>' '+key+' '+value).join('');
+  }
+  await client.report(args);
+  if (['set','apply','reset'].includes(command)) UI.draft.clear(part);
+  draftInfo(part); toast('Selesai; nilai aktif dibaca ulang.');
+}
+UI.folds();
+for (const id of ['cpuGovernor','ramProfile','managerBoot']) $(id).onchange=()=>editing=true;
+$('retry').onclick=()=>run($('retry'),refresh);
+$('managerSave').onclick=()=>run($('managerSave'),async()=>{ render(await api.report('set '+values())); editing=false; toast('Setelan disimpan'); });
+$('managerApply').onclick=()=>run($('managerApply'),async()=>{ const s=await api.report('apply '+values()); editing=false; render(s); toast('Selesai; periksa nilai aktif CPU dan RAM.'); });
+$('managerReset').onclick=()=>{ if (confirm('Pulihkan governor milik Manager dan ikuti kernel? Kompresor ZRAM aktif kembali mengikuti sistem setelah restart.')) run($('managerReset'),async()=>{ const s=await api.report('reset'); editing=false; render(s); }); };
+for (const part of Object.keys(parts)) for (const [suffix,command] of [['Save','set'],['Apply','apply'],['Reset','reset'],['Toggle','toggle']]) {
+  const b=$(part+suffix); b.onclick=()=>run(b,()=>control(part,command));
+}
+$('thermalClear').onclick=()=>run($('thermalClear'),()=>control('thermal','clear'));
+$('scanApps').onclick=()=>run($('scanApps'),async()=>{
+  UI.text('appsInfo','Data pemakaian belum tersedia.'); UI.html('apps','');
+  const scan=await api.report('scan');
+  let info=[];
+  if (typeof ksu.getPackagesInfo==='function' && scan.apps.length) {
+    try { info=JSON.parse(ksu.getPackagesInfo(JSON.stringify(scan.apps.map(a=>a.package)))); } catch (_) {}
+  }
+  const labels=new Map(info.filter(p=>p && !p.error).map(p=>[p.packageName,p.appLabel]));
+  UI.text('appsInfo',`${scan.apps.length} saran dari ${scan.total} aplikasi user · ${scan.unknown} belum cukup data.`);
+  UI.html('apps',scan.apps.sort((a,b)=>a.last_used-b.last_used).map(a=>`<div class="app"><b translate="no">${esc(labels.get(a.package)||a.package)}</b><small class="muted" translate="no">${esc(a.package)}</small><small class="muted">${a.idle_days} hari tidak dipakai</small><button data-package="${esc(a.package)}">Tinjau aplikasi</button></div>`).join('') || '<p class="muted">Tidak ada saran berdasarkan data yang tersedia.</p>');
+});
+$('apps').onclick=e=>{ const b=e.target.closest('[data-package]'); if(b) run(b,()=>api.report('app '+b.dataset.package)); };
+if (typeof ksu==='undefined') { $('noksu').classList.remove('hidden'); UI.text('state','tanpa root'); }
+else poller=UI.poll(()=>busy?Promise.resolve():refresh().catch(e=>{UI.text('readErrorText',e.message);$('readError').classList.remove('hidden');}),10000);
+</script>
+</body>
+</html>
