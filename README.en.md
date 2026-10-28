@@ -21,7 +21,10 @@
 </p>
 
 > [!WARNING]
-> The maintainer/developer is not responsible for bootloops or bricked devices. Device owners are responsible for their own devices! Please back up your data. TWRP is available for the Xiaomi 14T Pro. You can download [TWRP](https://github.com/cogan17/TWRP-14T-PRO).
+> The maintainer/developer is not responsible for bootloops or bricked devices. Device owners are responsible for their own devices! Please back up your data.
+
+> [!TIP]
+> TWRP is available for the Xiaomi 14T Pro. You can download [TWRP](https://github.com/cogan17/TWRP-14T-PRO).
 
 ---
 
