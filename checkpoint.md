@@ -1,6 +1,6 @@
-# Checkpoint — 28 Okt 2026, 09.19 WIB
+# Checkpoint — 28 Okt 2026, 09.21 WIB
 
-Owner meminta checkpoint: hentikan pekerjaan dan simpan keadaan terakhir. Sesi berikutnya membaca file ini serta CLAUDE.md, lalu menunggu instruksi owner. Jangan otomatis melanjutkan publikasi, login, build, atau pemeriksaan tugas lama.
+Owner meminta checkpoint: hentikan pekerjaan dan simpan keadaan terakhir. Sesi berikutnya membaca file ini serta CLAUDE.md, lalu menunggu instruksi owner. Jangan otomatis menjalankan workflow, login, build, atau pemeriksaan tugas lama.
 
 File ini memakai nama checkpoint.md sesuai permintaan owner. CHECKPOINT.md tetap menjadi pintu masuk dan menaut ke file ini.
 
@@ -8,7 +8,7 @@ File ini memakai nama checkpoint.md sesuai permintaan owner. CHECKPOINT.md tetap
 
 - Semua perubahan README yang diminta dalam sesi ini sudah digabung dan diverifikasi pada branch tujuan.
 - Tidak ada tugas README yang masih menunggu dikerjakan.
-- Publikasi Cogan Smart Kernel v2.9.1 belum berhasil diselesaikan dari sesi ini. Status rilis publik belum diperiksa ulang saat checkpoint; jangan menyatakan pasti belum ada rilis tanpa pemeriksaan baru.
+- **Cogan Smart Kernel v2.9.1 sudah rilis:** [halaman rilis](https://github.com/cogan17/Cogan-Kernel/releases/tag/cogan-smart-v2.9.1). Status dan kedua aset sudah dikonfirmasi lewat API GitHub saat pembaruan checkpoint.
 - Setelah permintaan checkpoint, pekerjaan dibatasi pada penyimpanan catatan ini lewat PR dan validasi otomatisnya.
 
 ## Repository dan commit acuan
@@ -58,7 +58,14 @@ Tip Indonesia:
 
 Versi Inggris sudah ditambahkan. Tautan kembali ke stok pada setiap README memakai panduan dalam bahasa yang sesuai. Kedua README pada branch tujuan sudah diverifikasi setelah merge. Tidak menjalankan build atau publikasi TWRP untuk perubahan dokumentasi ini.
 
-## Tertunda: publikasi Cogan Smart Kernel v2.9.1
+## Selesai: rilis Cogan Smart Kernel v2.9.1
+
+- Rilis: [Cogan Smart Kernel v2.9.1](https://github.com/cogan17/Cogan-Kernel/releases/tag/cogan-smart-v2.9.1).
+- Tag: cogan-smart-v2.9.1.
+- Terbit: 27 Okt 2026, 01.32 WIB.
+- Jenis GitHub: Release (draft=false, prerelease=false).
+- Target commit: 30405b3155682c041b192ff34afa322644ff7298.
+- ZIP dan catatan rilis tersedia; ukuran serta SHA256 keduanya cocok dengan paket yang disiapkan.
 
 Persiapan sudah selesai melalui PR [#58](https://github.com/cogan17/Cogan-Kernel/pull/58), merge 30405b3155682c041b192ff34afa322644ff7298. Jangan mengulang pengemasan atau tes yang sudah lolos.
 
@@ -71,25 +78,9 @@ Persiapan sudah selesai melalui PR [#58](https://github.com/cogan17/Cogan-Kernel
 - README modul sudah memuat paket dan catatan v2.9.1.
 - [Validate 40371370105](https://github.com/cogan17/Cogan-Kernel/actions/runs/40371370105): 218 tes lolos, YAML dan sintaks shell lolos.
 - Integritas ZIP, kesesuaian isi dengan sumber, izin berkas, dan langkah pemeriksaan paket dari workflow sudah lolos.
-- Pengukuran di HP untuk optimasi terakhir belum dibuktikan; jangan memberi label seluruh perubahan sudah diuji di HP.
+- Status rilis GitHub sudah dikonfirmasi. Pengukuran optimasi terakhir di HP tidak ditinjau ulang dalam pembaruan checkpoint ini; catat bukti uji fisik berdasarkan laporan owner.
 
-Publikasi terhambat autentikasi browser. Browser terakhir berada di login Google untuk GitHub; upaya autentikasi dan pemeriksaan berikutnya terputus/dibatalkan. Tidak ada workflow publikasi baru yang berhasil dijalankan oleh sesi ini. Konektor GitHub dapat membaca, mengubah berkas, membuat PR, dan merge; saat upaya publikasi itu, tool dispatch workflow baru atau create release tidak tersedia.
-
-Jika owner nanti meminta melanjutkan publikasi:
-
-1. Periksa dahulu apakah release/tag cogan-smart-v2.9.1 sudah ada. Jika sudah ada, verifikasi aset dan jangan menerbitkan duplikat.
-2. Jika belum ada dan akses tersedia, jalankan workflow [Cogan Smart Release](https://github.com/cogan17/Cogan-Kernel/actions/workflows/cogan-smart-release.yml) sekali pada main, dengan input berikut:
-
-| Input | Nilai |
-|---|---|
-| versi | v2.9.1 |
-| aksi | Terbitkan |
-| release_type | Pre-release |
-| kernel_uji | Biarkan bawaan; tidak dipakai untuk penerbitan |
-
-3. Tag yang diharapkan: cogan-smart-v2.9.1. Judul: Cogan Smart Kernel v2.9.1. Aset harus cocok dengan nama, ukuran dan SHA256 di atas.
-4. Jangan rerun run gagal 40368437802 atau 40368120654: input versi lamanya memakai tag lengkap dan salah. Input versi hanya v2.9.1.
-5. Jika akses tetap terblokir, jelaskan hambatannya segera. Jangan mengulang proses login yang macet atau meminta rahasia lewat chat.
+Owner memberikan tautan rilis pada 28 Okt 2026. Pemeriksaan API GitHub mengonfirmasi rilis telah terbit pada waktu di atas dan kedua aset sesuai. Publikasi v2.9.1 selesai; tidak ada langkah penerbitan ulang. Hambatan login pada upaya lama tidak lagi menjadi tugas tertunda.
 
 ## Aturan yang perlu dipertahankan
 
@@ -107,4 +98,4 @@ Jika owner nanti meminta melanjutkan publikasi:
 
 ## Langkah pertama sesi berikutnya
 
-Baca checkpoint.md dan CLAUDE.md, lalu tunggu permintaan owner. Semua tugas README yang diminta sudah selesai. Jangan melanjutkan publikasi v2.9.1 atau pekerjaan historis hanya karena checkpoint ini dibaca.
+Baca checkpoint.md dan CLAUDE.md, lalu tunggu permintaan owner. Semua tugas README yang diminta selesai dan rilis v2.9.1 sudah dikonfirmasi. Tidak ada pekerjaan baru yang perlu dimulai hanya karena checkpoint ini dibaca.
