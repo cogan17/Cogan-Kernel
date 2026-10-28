@@ -1,5 +1,27 @@
 # Cogan Smart Kernel v2.9.1
 
+## Manager CPU/RAM dan kontrol terpusat / CPU/RAM Manager and centralized controls — v2.10.0 (pengembangan / development)
+
+Indonesia:
+
+- Tab Manager dengan dropdown Prosesor (sugov_ext/schedutil sesuai dukungan semua policy) dan RAM: Snappy & Daily Driver (bw_hwmon + LZ4), Heavy Multitasker / Space Saver (bw_hwmon + ZSTD).
+- CPU/RAM hanya ditulis bila perangkat rothko, platform mt6989 dan Cogan Bridge cocok. bw_hwmon hanya pada driver yang menyediakannya; governor memori bawaan dipertahankan bila tidak tersedia.
+- ZRAM yang sedang aktif tidak di-reset atau dimatikan. Kompresor dicoba sebelum inisialisasi melalui opsi boot; UI tetap menunjukkan kompresor aktual dan status belum diterapkan jika terlambat.
+- Tombol Simpan/Terapkan/Reset/Hentikan dari Daya dan Suhu, serta Hapus riwayat, dipusatkan di Manager. Draf kolom bertahan saat pindah tab; Simpan log tetap di Suhu.
+- Pindai manual aplikasi user yang punya bukti tidak dipakai ≥ 7 hari. Aplikasi baru, proses aktif dan data tak cukup tidak menjadi saran. Info aplikasi Android menangani pilihan uninstall/nonaktifkan.
+- Nilai governor awal dicatat per boot dan dipulihkan tanpa menimpa kontrol pihak lain. Backend Daya, pencatat Suhu, rem termal dan ABI kernel tidak diganti.
+- Belum diuji pada HP sungguhan; tidak mengklaim penghematan RAM, peningkatan performa atau kompatibilitas bw_hwmon pada hardware owner.
+
+English:
+
+- Manager tab with a Processor dropdown (sugov_ext/schedutil when supported across every policy) and RAM profiles: Snappy & Daily Driver (bw_hwmon + LZ4), Heavy Multitasker / Space Saver (bw_hwmon + ZSTD).
+- CPU/RAM writes require a matching rothko device, mt6989 platform and Cogan Bridge. bw_hwmon is used only where the driver advertises it; otherwise the memory governor is retained.
+- Active ZRAM is never reset or disabled. Optional boot application tries compression before initialization; the UI still shows the actual compressor and a pending state if it is too late.
+- Power/Temperature Save/Apply/Reset/Stop controls and Clear history move to Manager. Edited fields survive tab changes; Save logs stays in Temperature.
+- On-demand review of user apps with evidence of at least seven idle days. New apps, running processes and insufficient data are excluded from suggestions. Android app info handles uninstall/disable choices.
+- Initial governors are recorded per boot and restored without overwriting other controllers. Power, Temperature recording, thermal limits and the kernel ABI remain intact.
+- Not tested on a physical phone. No claimed RAM savings, performance gains or bw_hwmon compatibility on the owner's hardware.
+
 ## Modul lebih hemat CPU, satu angka Badan HP, lonjakan suhu, nama aplikasi, batas CPU / A lighter module, one phone body number, temperature rises, app names, CPU cap — v2.9.1
 
 Indonesia:
