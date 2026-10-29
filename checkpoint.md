@@ -1,8 +1,28 @@
 # Checkpoint — 29 Okt 2026 (WIB)
 
-v2.10.8 (ZRAM ZSTD saat boot) terbukti di HP. v2.11.0 merombak WebUI: Manager pusat kendali, Mode Dev, Panduan (lihat bagian v2.11.0). Sesi berikutnya baca `CLAUDE.md`, file ini dan `CHECKPOINT.md`, lalu tunggu instruksi owner. Jangan otomatis menguji HP, menjalankan build atau menerbitkan rilis.
+Cogan Smart **v2.11.0** (Manager pusat kendali, Mode Dev, Panduan) sudah di `main`; v2.10.8 (ZRAM ZSTD saat boot) terbukti di HP. Rilis publik terakhir tetap v2.9.1. Sesi berikutnya baca `CLAUDE.md`, file ini dan `CHECKPOINT.md`, lalu tunggu instruksi owner. Jangan otomatis menguji HP, menjalankan build atau menerbitkan rilis.
 
-## Sudah selesai
+## Sedang berjalan
+
+- Tidak ada: tidak ada PR terbuka, run workflow atau draf yang berjalan.
+
+## Sudah selesai (sesi 28–29 Okt)
+
+- [PR #77](https://github.com/cogan17/Cogan-Kernel/pull/77) `61dbf3cfefc3b3942289b5c25734964ea8e18ee5`, digabung 29 Okt 09.55 WIB: v2.11.0 (lihat bagian v2.11.0). [Validate 40809071342](https://github.com/cogan17/Cogan-Kernel/actions/runs/40809071342) lolos 09.54 WIB. ZIP uji dikirim ke owner.
+- [PR #76](https://github.com/cogan17/Cogan-Kernel/pull/76) `2291616df26941b6393c071a2f7c9bfb43382da1`, digabung 29 Okt 07.11 WIB: artifact dan rilis kernel hanya membawa modul SUSFS sidex15 (file 5); modul simonpunk tidak dibangun lagi, SUSFS simonpunk tetap dicek di Cek pembaruan (aturan di `CLAUDE.md`).
+- PR #72–#75 (28 Okt): hook init ZRAM v2.10.6 → v2.10.7 → v2.10.8; v2.10.8 diuji owner di HP 23.23 WIB (`zram0: zstd`).
+- PR #70–#71 (28 Okt): deteksi DRAM MediaTek v2.10.5 dan checkpoint.
+
+## Tertunda (keputusan owner)
+
+- Uji v2.11.0 di HP: Manager → kartu 📊 Ringkasan terisi, tombol mode bekerja; saklar Mode Dev di Tentang; 📖 Panduan terbuka (ID/EN). Belum ada hasil.
+- Rilis Cogan Smart (v2.10.8 atau v2.11.0) lewat workflow Cogan Smart Release: belum diminta.
+
+## Langkah pertama berikutnya
+
+- Tunggu owner. Bila owner mengirim hasil uji v2.11.0, perbaiki yang salah berdasarkan screenshot (versi baru v2.11.1); bila owner meminta rilis, jalankan Cogan Smart Release untuk versi yang diminta.
+
+## v2.10.4 — initrc ZRAM (versionCode 23)
 
 - Integrasi init ZRAM Cogan Smart **v2.10.4 / versionCode 23** sudah masuk `main`: [PR #68](https://github.com/cogan17/Cogan-Kernel/pull/68), commit `0386eed3f4952a837a81c36da80a22644083c563`; [Validate 40693190837](https://github.com/cogan17/Cogan-Kernel/actions/runs/40693190837) dengan **251 tes lolos**. [Paket uji v2.10.4](modules/cogan-smart/rilis/v2.10.4/Cogan-Smart-Kernel-v2.10.4.zip) SHA256 `73abbc48992235ffcb7a2705eda6f561e892d09420713add514ed9651e262f90`. Tidak ada GitHub Release baru; rilis publik terakhir v2.9.1.
 - v2.10.4 menggunakan dukungan `initrc` KernelSU Next/BakaSU pada Cogan r5 untuk memilih kompresor sebelum ZRAM diinisialisasi. Tidak menambah governor DRAM, tidak reset ZRAM dan tidak swapoff.
@@ -18,7 +38,7 @@ v2.10.8 (ZRAM ZSTD saat boot) terbukti di HP. v2.11.0 merombak WebUI: Manager pu
 - **Terjemahan:** perbaikan aturan i18n (isian tidak melewati pemisah " · " atau baris baru), entri baru, `tests/test_cogan_smart_webui.py` menjalankan cek WebUI Node dan memastikan mode English tanpa teks Indonesia (dijalankan Validate).
 - **Log 16 jam owner (28 Okt 17.31 – 29 Okt 09.31 WIB):** Badan HP maks 43,6 °C, baterai maks 44,0 °C (mengecas), beban modul median 1,8% CPU. Arus 13–16 A berurutan saat HyperCharge dan kolom GPU kosong saat GPU tidur adalah normal; tidak ada perubahan pencatat, dijelaskan di Panduan.
 - Terukur lokal: semua tes Python + cek WebUI lolos; halaman dimuat Playwright tanpa error di mode pengguna dan Dev. [Paket uji](modules/cogan-smart/rilis/v2.11.0/Cogan-Smart-Kernel-v2.11.0.zip) 41 file, 163348 byte, SHA256 `e39523e0fa0d8a311956ac3c111979dcd844cfb91d3e553ddc6a17175e13443c` (dua kali dikemas, sama).
-- **Belum diuji di HP dan belum dirilis.**
+- **Sudah di `main`:** PR #77, commit `61dbf3c`, 29 Okt 09.55 WIB. **Belum diuji di HP dan belum dirilis.**
 
 ## v2.10.8 — hook ZRAM sebelum system_perf_init (versionCode 27)
 
@@ -61,4 +81,4 @@ v2.10.8 (ZRAM ZSTD saat boot) terbukti di HP. v2.11.0 merombak WebUI: Manager pu
 
 ## English state summary
 
-v2.10.8 (ZSTD ZRAM at boot) is proven on the phone. v2.11.0 (versionCode 28) reworks the WebUI at the owner's request: Manager is the control centre with a Summary card (temperatures, controller/recorder, mode buttons, 1-hour chart, heat cause, module scan), everyday text is short with technical detail behind a Dev mode switch in About, and a bilingual guide ships in the module (guide.html) and the repo (PANDUAN.md / PANDUAN.en.md). English template translation was fixed and a WebUI test now runs in Validate. Test ZIP SHA256 `e39523e0…443c`. Not phone-tested and not released. Wait for the owner's instructions.
+v2.10.8 (ZSTD ZRAM at boot) is proven on the phone. v2.11.0 (versionCode 28) reworks the WebUI at the owner's request: Manager is the control centre with a Summary card (temperatures, controller/recorder, mode buttons, 1-hour chart, heat cause, module scan), everyday text is short with technical detail behind a Dev mode switch in About, and a bilingual guide ships in the module (guide.html) and the repo (PANDUAN.md / PANDUAN.en.md). English template translation was fixed and a WebUI test now runs in Validate. Merged in PR #77 (29 Oct, 09.55 WIB). Test ZIP SHA256 `e39523e0…443c`, sent to the owner. Not phone-tested and not released. Since PR #76, kernel releases carry only the sidex15 SUSFS module. Wait for the owner's instructions.
