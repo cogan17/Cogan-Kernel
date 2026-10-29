@@ -1,11 +1,10 @@
-"""Manager against a fake phone: native identity, governors, live ZRAM and app evidence."""
+"""Manager against a fake phone: native identity, governors and live ZRAM (apps: test_cogan_smart_apps)."""
 import json
 import os
 import shlex
 import shutil
 import subprocess
 import tempfile
-import time
 import unittest
 from pathlib import Path
 
@@ -350,74 +349,6 @@ class ManagerTests(unittest.TestCase):
         # Reset still restores live controls even if pending-update cache sync is blocked.
         self.assertEqual(self.report('reset')['ok'], 0)
         self.assertEqual(self.governors(), ['schedutil', 'schedutil'])
-
-    def app_fixture(self):
-        now = int(time.time())
-        apps = ["app.old", "app.new", "app.recent", "app.service", "app.running", "app.unknown", "app.profile"]
-        self.tool("pm", "printf '%s\\n' " + " ".join(shlex.quote("package:" + p) for p in apps))
-        self.tool("am", 'if [ "$1" = get-current-user ]; then echo 0; else printf "%s\\n" "$@" > ' + shlex.quote(str(self.base / "intent")) + "; fi")
-        self.tool("ps", "echo app.running:service")
-        packages = ""
-        for p in apps:
-            date = time.strftime("%Y-%m-%d %H:%M:%S") if p == "app.new" else "2020-01-01 00:00:00"
-            packages += f"  Package [{p}] (abc):\n    firstInstallTime={date}\n    User 0: installed=true\n"
-        write(self.base / "packages", packages)
-        usage = "user=0\nIn-memory yearly stats\n"
-        for p in apps:
-            if p in ("app.unknown", "app.profile"):
-                continue
-            last = now - (86400 if p == "app.recent" else 8 * 86400)
-            usage += f"  package={p} totalTimeUsed=100 lastTimeUsed={last*1000} lastTimeVisible={last*1000} lastTimeFS={(now if p=='app.service' else 0)*1000}\n"
-        usage += f"user=10\n package=app.profile lastTimeUsed={(now-9*86400)*1000}\n"
-        write(self.base / "usage", usage)
-        self.tool("dumpsys", '[ "$1 $2" = "-t 20" ] || exit 99\nshift 2\ncase "$1" in usagestats) cat ' + shlex.quote(str(self.base / "usage")) +
-                  " " + ";; package) cat " + shlex.quote(str(self.base / "packages")) + ";; esac")
-
-    def test_unused_apps_need_positive_evidence_in_the_current_user(self):
-        self.app_fixture()
-        result = self.report("scan")
-        self.assertEqual([a["package"] for a in result["apps"]], ["app.old"])
-        self.assertEqual(result["total"], 7)
-        self.assertEqual(result["unknown"], 2)
-        self.assertEqual(result["apps"][0]["idle_days"], 8)
-        self.assertEqual(self.report("app", "app.old")["ok"], 1)
-        intent = (self.base / "intent").read_text()
-        self.assertIn("android.settings.APPLICATION_DETAILS_SETTINGS", intent)
-        self.assertIn("package:app.old", intent)
-        self.assertEqual(self.report("app", "system.foo")["ok"], 0)
-        self.assertEqual(self.report("app", "app.old;id")["ok"], 0)
-
-    def test_missing_usage_is_unknown_not_a_removal_list(self):
-        self.app_fixture()
-        write(self.base / "usage", "Permission Denial\n")
-        self.assertEqual(self.report("scan")["ok"], 0)
-
-    def test_scan_rejects_failed_empty_denied_and_truncated_reads(self):
-        for stage, label in [("list", "daftar aplikasi"), ("usage", "riwayat pemakaian"),
-                             ("packages", "tanggal pemasangan"), ("running", "proses berjalan")]:
-            for failure in ("exit", "timeout", "denied", "empty"):
-                with self.subTest(stage=stage, failure=failure):
-                    self.app_fixture()
-                    # One fake timeout supervises the existing Android fixtures without waiting.
-                    # This catches failures from every command, including ps, with no hardware.
-                    body = ('file=list; case "$1" in 25) file=usage; [ "$5" = package ] && file=packages;; '
-                            '10) file=running;; esac\nshift\n')
-                    injected = {"exit": 'echo \'synthetic: "read failed"\' >&2; exit 42',
-                                "timeout": '"$@"; echo "*** SERVICE DUMP TIMEOUT EXPIRED ***"; exit 0',
-                                "denied": '"$@"; echo "Permission Denial: synthetic" >&2; exit 0',
-                                "empty": 'exit 0'}[failure]
-                    self.tool("timeout", body + 'if [ "$file" = ' + stage + ' ]; then ' + injected + '; fi\nexec "$@"')
-                    result = self.report("scan")
-                    self.assertEqual(result["ok"], 0, result)
-                    self.assertNotIn("apps", result)
-                    self.assertIn(label, result["error"])
-                    if failure == "exit":
-                        self.assertIn('kode 42', result["error"])
-                        self.assertIn('"read failed"', result["error"])
-                    self.assertFalse(list(self.data.glob("scan.*")))
-                    self.assertFalse((self.data / "api.lock").exists())
-        (self.bin / "timeout").unlink()
-        self.assertEqual([a["package"] for a in self.report("scan")["apps"]], ["app.old"])
 
     def test_webui_drafts_and_concurrent_native_callbacks(self):
         r = subprocess.run(["node", "tests/cogan_smart_client_check.js"], cwd=MODULE.parents[1],

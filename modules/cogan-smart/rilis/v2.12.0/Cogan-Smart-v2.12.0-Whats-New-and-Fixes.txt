@@ -1,0 +1,37 @@
+Cogan Smart Kernel v2.12.0 / versionCode 30 — paket uji / test build
+
+Indonesia
+
+Baru:
+- Tab 📱 Aplikasi menggantikan "Aplikasi jarang dipakai" di Manager. Tiap aplikasi menampilkan dari mana dipasang, izin berbahaya, gerak-gerik (kamera, mikrofon, lokasi, SMS, kontak, telepon, clipboard), internet 7 hari dan baterai.
+- 🗑 Hapus sampai akar: melepas admin perangkat, menghapus dari semua pengguna (termasuk Aplikasi Ganda dan Ruang Kedua), sisa data, dan file APK yang sama di penyimpanan.
+- 🛡️ Blokir APK dari chat & sosmed (bawaan aktif): WhatsApp, Telegram, Instagram, Facebook, TikTok dan sejenisnya tidak bisa memasang aplikasi.
+- Manager menampilkan ringkasan tab Aplikasi. Panduan ditambah bagian Aplikasi.
+
+Batas:
+- Penanda bahaya adalah dugaan dari sumber dan izin, bukan antivirus. Aplikasi sistem dan root manager tidak bisa dihapus. Tidak ada tombol nonaktifkan.
+- v2.12.0 belum diuji di HP.
+
+Cara uji:
+1. Pasang sebagai pembaruan modul melalui root manager, lalu reboot.
+2. Buka tab 📱 Aplikasi: daftar terisi, pilih Semua untuk melihat semua aplikasi.
+3. Kirim APK apa saja ke diri sendiri di WhatsApp, lalu coba pasang: harus ditolak. Coba izinkan di Pengaturan: dalam beberapa detik dicabut lagi dan muncul notifikasi.
+4. Hapus sampai akar hanya untuk aplikasi yang memang ingin dihapus.
+
+English
+
+New:
+- 📱 Apps tab replaces Manager's "Rarely used apps". Each app shows where it came from, dangerous rights, activity (camera, microphone, location, SMS, contacts, phone, clipboard), 7-day internet use and battery.
+- 🗑 Remove completely: releases a device admin, removes the app for every user (Dual apps and Second space too), leftover data and identical APK files in storage.
+- 🛡️ Block APKs from chat & social apps (on by default): WhatsApp, Telegram, Instagram, Facebook, TikTok and similar apps cannot install apps.
+- Manager shows the Apps tab summary. The guide gains an Apps section.
+
+Limits:
+- Danger marks are guesses from source and rights, not an antivirus. System apps and the root manager cannot be removed. There is no disable button.
+- v2.12.0 has not been phone-tested.
+
+How to test:
+1. Install as a module update through the root manager, then reboot.
+2. Open the 📱 Apps tab: the list fills; choose All to see every app.
+3. Send yourself any APK on WhatsApp and try to install it: it must be refused. Allow it in Settings: within seconds it is taken back with a notification.
+4. Use Remove completely only on an app you really want gone.

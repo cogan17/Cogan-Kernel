@@ -1,6 +1,6 @@
 # Checkpoint — 29 Okt 2026 (WIB)
 
-Cogan Smart **v2.11.1** (revisi owner: Manager hanya memantau mode dan pindai modul; keluar WebUI sekali usap) di atas v2.11.0 (Manager pusat kendali, Mode Dev, Panduan); v2.10.8 (ZRAM ZSTD saat boot) terbukti di HP. Rilis publik terakhir tetap v2.9.1. Sesi berikutnya baca `CLAUDE.md`, file ini dan `CHECKPOINT.md`, lalu tunggu instruksi owner. Jangan otomatis menguji HP, menjalankan build atau menerbitkan rilis.
+Cogan Smart **v2.12.0** (tab 📱 Aplikasi: pantau gerak-gerik, hapus sampai akar, blokir APK dari chat & sosmed) di atas v2.11.1, yang sudah lolos uji owner di HP. Rilis publik terakhir tetap v2.9.1. Sesi berikutnya baca `CLAUDE.md`, file ini dan `CHECKPOINT.md`, lalu tunggu instruksi owner. Jangan otomatis menguji HP, menjalankan build atau menerbitkan rilis.
 
 ## Sedang berjalan
 
@@ -8,7 +8,8 @@ Cogan Smart **v2.11.1** (revisi owner: Manager hanya memantau mode dan pindai mo
 
 ## Sudah selesai (sesi 28–29 Okt)
 
-- v2.11.1 (lihat bagian v2.11.1): revisi owner atas v2.11.0 dan perbaikan usap kembali.
+- v2.12.0 (lihat bagian v2.12.0): tab Aplikasi.
+- v2.11.1 (lihat bagian v2.11.1): revisi owner atas v2.11.0 dan perbaikan usap kembali. ✅ Owner 29 Okt: "Semuanya lolos uji disisi saya".
 - [PR #77](https://github.com/cogan17/Cogan-Kernel/pull/77) `61dbf3cfefc3b3942289b5c25734964ea8e18ee5`, digabung 29 Okt 09.55 WIB: v2.11.0 (lihat bagian v2.11.0). [Validate 40809071342](https://github.com/cogan17/Cogan-Kernel/actions/runs/40809071342) lolos 09.54 WIB. ZIP uji dikirim ke owner.
 - [PR #76](https://github.com/cogan17/Cogan-Kernel/pull/76) `2291616df26941b6393c071a2f7c9bfb43382da1`, digabung 29 Okt 07.11 WIB: artifact dan rilis kernel hanya membawa modul SUSFS sidex15 (file 5); modul simonpunk tidak dibangun lagi, SUSFS simonpunk tetap dicek di Cek pembaruan (aturan di `CLAUDE.md`).
 - PR #72–#75 (28 Okt): hook init ZRAM v2.10.6 → v2.10.7 → v2.10.8; v2.10.8 diuji owner di HP 23.23 WIB (`zram0: zstd`).
@@ -16,12 +17,12 @@ Cogan Smart **v2.11.1** (revisi owner: Manager hanya memantau mode dan pindai mo
 
 ## Tertunda (keputusan owner)
 
-- Uji v2.11.1 di HP: Manager → 📊 Ringkasan terisi, Mode daya sama dengan pilihan di tab Daya (tanpa tombol), hasil pindai modul dari tab Modul; sekali usap kembali menutup WebUI; saklar Mode Dev dan 📖 Panduan. Belum ada hasil.
-- Rilis Cogan Smart (v2.10.8 atau v2.11.1) lewat workflow Cogan Smart Release: belum diminta.
+- Uji v2.12.0 di HP: tab 📱 Aplikasi terisi (Semua), penanda dan gerak-gerik masuk akal, kolom "Belum terbaca" kosong; APK kiriman WhatsApp ditolak dan izin yang dinyalakan lagi dicabut dengan notifikasi; Hapus sampai akar hanya pada aplikasi yang memang ingin dihapus. Belum ada hasil.
+- Rilis Cogan Smart (v2.11.1 sudah lolos uji HP, atau v2.12.0 setelah diuji) lewat workflow Cogan Smart Release: belum diminta.
 
 ## Langkah pertama berikutnya
 
-- Tunggu owner. Bila owner mengirim hasil uji v2.11.1, perbaiki yang salah berdasarkan screenshot (versi baru v2.11.2); bila owner meminta rilis, jalankan Cogan Smart Release untuk versi yang diminta.
+- Tunggu owner. Bila owner mengirim hasil uji v2.12.0, perbaiki yang salah berdasarkan screenshot (versi baru v2.12.1); format dump HyperOS 3 untuk appops, netstats dan batterystats belum terbukti, jadi kolom "Belum terbaca" atau angka kosong adalah petunjuk pertama; bila owner meminta rilis, jalankan Cogan Smart Release untuk versi yang diminta.
 
 ## v2.10.4 — initrc ZRAM (versionCode 23)
 
@@ -30,7 +31,18 @@ Cogan Smart **v2.11.1** (revisi owner: Manager hanya memantau mode dan pindai mo
 - Screenshot HP owner menunjukkan **v2.10.4 terpasang**, `zram0: lz4 · swap aktif`, opsi LZ4 terpilih, status “initrc tersiapkan untuk boot berikutnya”, dan `bw_hwmon` abu-abu. Bacaan LZ4/swap aktif terbukti, tetapi tidak membuktikan modul yang mengganti LZ4. Belum ada bukti hasil ZSTD atau hasil eksekusi hook initrc pada HP.
 - Owner menjalankan pembacaan root `/sys/class/devfreq/*`. Hasilnya: `112b0000.ufshci` → driver `ufshcd-mtk`, governor `simple_ondemand`; `13000000.mali` → driver `mali`, governor `dummy`; **`mtk-dvfsrc-devfreq` → driver `mtk-dvfsrc-devfreq`, governor `userspace`**. Ketiganya menampilkan daftar sama: `dummy apupassive-pe apuconstrain apuuser apupassive userspace powersave performance simple_ondemand`. **Tidak ada `bw_hwmon`.** `available_governors` devfreq dapat bersifat global; daftar UFS/GPU bukan bukti dukungan DRAM. `userspace` adalah governor aktif DRAM, bukan bukti ZRAM gagal. Jangan mengganti ke `simple_ondemand` atau port governor Qualcomm dengan asumsi.
 
+## v2.12.0 — tab Aplikasi (versionCode 30)
+
+- **Permintaan owner (29 Okt, dengan screenshot kartu Aplikasi jarang dipakai):** ganti fungsinya jadi bisa melihat semua gerak-gerik aplikasi dan menghapus sampai ke akar, termasuk APK scam/virus kiriman WA/sosmed; fungsi nonaktifkan tidak usah ada. Pilihan owner lewat pertanyaan: **tab baru 📱 Aplikasi** (Manager hanya ringkasan), **hapus manual + konfirmasi**, **blokir APK dari chat & sosmed** (saklar, bawaan aktif), pantau **akses sensitif, izin berbahaya, sumber & waktu instal, data internet & baterai**.
+- **Backend `apps/`:** `report.sh` (scan, trust/untrust, remove, block on|off, boot, stop), `apps.awk` (gabungan dump), `block.sh` (loop 5 detik), `common.sh` (daftar sumber chat/sosmed, blokir, notifikasi). Pemindai lama Manager (`manager/report.sh scan|app`, `manager/apps.awk`) dihapus; tesnya pindah ke `tests/test_cogan_smart_apps.py`.
+- **Bukti AOSP (main, dicek 29 Okt):** `dpm remove-active-admin` = `forceRemoveActiveAdmin` yang menolak admin non-uji; `handlePackagesChanged` melepas admin yang receiver-nya tidak bisa dibaca, jadi `pm disable` receiver sebagai root melepasnya; `setEnabledSettings` hanya membatasi uid shell (root bebas) dan paket DO/PO; `pm uninstall` tanpa `--user` = `DELETE_ALL_USERS`; format `appops get`/`dumpsys appops`, `query-op`, `dumpsys package` (installer/initiating/packageSource), `device_policy`, `batterystats --usage` (`UID uNaM: mAh`, locale English) dan `netstats` (Android 12, `UID stats:`).
+- **WebUI:** `apps.html` (blokir, filter Perlu dicek/Semua/Jarang dipakai, kartu per aplikasi, Percaya, Hapus sampai akar), nav 5 tab di semua halaman, baris 📱 Aplikasi di Ringkasan Manager, kartu aplikasi lama Manager dihapus, terjemahan English, Panduan (WebUI + PANDUAN.md/.en.md) bagian Aplikasi dan tanya jawab APK penipuan.
+- Terukur lokal: 257 tes lolos (7 tes baru tab Aplikasi dengan HP tiruan: scam APK dari WhatsApp sebagai admin perangkat, salinan APK berspasi di folder WhatsApp, root manager, blokir + loop), juga di mksh, dash, BusyBox ash, one-true-awk dan BusyBox awk; cek WebUI Node; Playwright 412 px ID/EN tanpa error, 5 tab muat. [Paket uji](modules/cogan-smart/rilis/v2.12.0/Cogan-Smart-Kernel-v2.12.0.zip) 45 file, 182515 byte, SHA256 `c1bd3f9f40ada48451d6a1f188e8aa41e4bcdbe3ce550c7335345a56a478b6a5` (dua kali dikemas, sama).
+- **Belum diuji di HP dan belum dirilis.** Yang paling mungkin berbeda di HyperOS 3: format dump appops/netstats/batterystats, dan apakah pemasang paket Xiaomi menghormati izin sumber yang dicabut (mode disimpan per paket atau per UID).
+
 ## v2.11.1 — Manager hanya memantau, keluar sekali usap (versionCode 29)
+
+- ✅ **Diuji di HP:** owner 29 Okt (sebelum permintaan tab Aplikasi): "Semuanya lolos uji disisi saya".
 
 - **Revisi owner (29 Okt, dengan screenshot tombol mode dan Pindai modul di Manager):** mode diatur tab Daya dan pindai modul oleh tab Modul; Manager hanya memantau. "Sisanya tidak perlu diubah": kartu Prosesor, RAM, Kontrol Daya/Suhu dan Aplikasi di Manager tetap.
 - **Manager:** tiga tombol mode diganti satu baris `#modeLine` (nama mode + keterangan dari setelan tab Daya); tombol Pindai modul dihapus, `#guardLine` membaca pindaian terakhir tab Modul (`guard.cached('scan')`, tab Modul memindai otomatis bila hasil > 2 menit).
@@ -91,4 +103,4 @@ Cogan Smart **v2.11.1** (revisi owner: Manager hanya memantau mode dan pindai mo
 
 ## English state summary
 
-v2.10.8 (ZSTD ZRAM at boot) is proven on the phone. v2.11.0 (versionCode 28) reworks the WebUI at the owner's request: Manager is the control centre with a Summary card (temperatures, controller/recorder, mode buttons, 1-hour chart, heat cause, module scan), everyday text is short with technical detail behind a Dev mode switch in About, and a bilingual guide ships in the module (guide.html) and the repo (PANDUAN.md / PANDUAN.en.md). English template translation was fixed and a WebUI test now runs in Validate. Merged in PR #77 (29 Oct, 09.55 WIB). v2.11.1 (versionCode 29, ZIP SHA256 `8961d4c5…3175`) applies the owner's revision: the Summary only watches the power mode and the last module scan (they are set in the Power and Modules tabs), and tab switches replace WebView history so one back gesture leaves the WebUI. Test ZIP SHA256 `e39523e0…443c`, sent to the owner. Not phone-tested and not released. Since PR #76, kernel releases carry only the sidex15 SUSFS module. Wait for the owner's instructions.
+v2.11.1 passed the owner's phone test (29 Oct). v2.12.0 (versionCode 30) adds the 📱 Apps tab at the owner's request: per-app install source, dangerous rights, last sensitive access, 7-day internet use and battery; Remove completely (device admin released by disabling its receiver, uninstall for every user, leftovers, byte-identical APK copies, stale accessibility/notification entries); and a default-on block that takes the install-unknown-apps right back from chat and social apps every 5 seconds. Manager shows only its summary. Test ZIP SHA256 `c1bd3f9f…b6a5`. Not phone-tested and not released; HyperOS 3 dump formats are the main unknown. Wait for the owner's instructions.

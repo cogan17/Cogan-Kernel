@@ -12,7 +12,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 WEBROOT = ROOT / "modules/cogan-smart/webroot"
-PAGES = ("index.html", "thermal.html", "manager.html", "modules.html", "about.html", "guide.html")
+PAGES = ("index.html", "thermal.html", "manager.html", "modules.html", "apps.html", "about.html", "guide.html")
 # Words that mean an English page still shows Indonesian. Names (Cogan17, KernelSU Next, sugov_ext) stay as they are.
 INDONESIAN = r"\b(dan|yang|untuk|tidak|belum|sudah|modul|suhu|cas|dari|tekan|aktif|bawaan|setelan|hapus|simpan|pindai|skrip|berhenti|mulai|ringkasan|bila|saat|kamu|lalu|pilih)\b"
 TRANSLATE = """

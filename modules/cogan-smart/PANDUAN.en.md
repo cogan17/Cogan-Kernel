@@ -13,11 +13,11 @@ Cogan Smart Kernel keeps the phone cool and records its temperature. This guide 
 ## 🛠️ Manager: the control centre
 
 - **Summary**: phone body, battery and processor temperature, controller and recorder status, a 1-hour temperature chart, the heat cause and the last module scan (scan in the Modules tab).
+- **📱 Apps**: how many apps are dangerous and the APK block status, from the Apps tab.
 - **Power mode**: shows the mode chosen in the Power tab. Manager only watches it; change the mode in the Power tab.
 - **Processor**: how the CPU sets its speed (governor). Kernel Default suits everyday use.
 - **RAM**: ZRAM compression. LZ4 is faster, ZSTD saves more RAM. Tick *Apply CPU/RAM at boot*, tap **Save**, then restart the phone.
 - **Power controls** and **Temperature controls**: every button that applies the settings of the Power and Temperature tabs.
-- **Rarely used apps**: apps not opened for 7 days or more. Tap *Review app* to open the app info.
 
 ## 🔘 What the buttons do
 
@@ -51,6 +51,17 @@ Cogan Smart Kernel keeps the phone cool and records its temperature. This guide 
 - **🗑 Remove completely**: removes the module with its boot scripts and processes. Can be undone before rebooting.
 - **📜 Boot scripts outside modules**: scripts that run at boot but are not in the module list.
 
+## 📱 Apps
+
+- Checks every app you installed: ✅ safe, ⚠️ needs a look, ⛔ dangerous. The marks come from where the app came from and what it may do; this is not an antivirus.
+- **Source**: an app store, an APK file sent through chat or social apps, or an APK file from a browser or file manager. APKs sent through WhatsApp or social apps are the most common scam.
+- **Dangerous rights**: reads SMS (OTP codes), accessibility (can read and tap the screen), device admin (hard to remove), reads notifications, draws over other apps, hidden icon.
+- **👁️ Activity**: when the app last used the camera, microphone, location, SMS, contacts, phone or clipboard, its internet use in 7 days and battery since the last full charge.
+- **⚠️ Needs a look / All / 💤 Rarely used**: choose which list to show. Rarely used means not opened for 7 days or more.
+- **🛡️ Trust**: the app is no longer flagged and cannot be removed by accident.
+- **🗑 Remove completely**: releases its device admin, stops and removes the app for every user (Dual apps and Second space too), then deletes leftover data and identical APK files in storage. This cannot be undone. System apps and the root manager cannot be removed here.
+- **🛡️ Block APKs from chat & social apps**: on by default. WhatsApp, Telegram, Instagram, Facebook, TikTok and similar apps cannot install apps. If the right is turned on again in Settings, the module takes it back within seconds and shows a notification. Browsers and file managers still can.
+
 ## ℹ️ About
 
 - Choose the **language** (ID/EN), the **theme** (Auto, Warm light, OLED dark) and **Dev mode**.
@@ -62,6 +73,8 @@ Cogan Smart Kernel keeps the phone cool and records its temperature. This guide 
 
 ## ❓ FAQ
 
+- **Cannot install an APK from WhatsApp or Telegram?** That is the APK block in the Apps tab. If you are sure the APK is safe, turn the block off first or open the file from a file manager.
+- **Already installed a scam APK?** Tap Remove completely in the Apps tab, then change your passwords and bank PIN, and call your bank if you see strange transactions. Removing the app does not undo data that was already stolen.
 - **Processor at 50–60 °C while idle, normal?** Yes. Heat is measured from the phone body, which is what you feel.
 - **GPU column empty in the log?** The GPU is asleep (screen off or unused), so its sensor cannot be read. Normal.
 - **Charging current up to 10–16 A?** That is 120 W HyperCharge fast charging. Normal.

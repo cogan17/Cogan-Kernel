@@ -29,11 +29,11 @@ vm.runInContext(fs.readFileSync('modules/cogan-smart/webroot/client.js','utf8'),
   for(const c of calls) context[c.callback](0,'{"ok":1,"running":1}','');
   assert.deepEqual((await Promise.all(pending)).map(x=>x.running),[1,1]);
   await assert.rejects(a.report('set x;id'),/Argumen/);
-  // A failed scan clears old suggestions and leaves the cause on the page after the toast.
+  // Manager's script against a fake page; every read fails, so only cached answers show.
   const nodes=new Map(), node=id=>{
     if(!nodes.has(id)) {
       const classes=new Set();
-      nodes.set(id,{textContent:'',innerHTML:'',options:[],children:[],addEventListener(){},classList:{
+      nodes.set(id,{textContent:'',innerHTML:'',options:[],children:[],style:{},addEventListener(){},classList:{
         add:c=>classes.add(c),remove:c=>classes.delete(c),contains:c=>classes.has(c),
         toggle:(c,on)=>on?classes.add(c):classes.delete(c)}});
     }
@@ -43,7 +43,8 @@ vm.runInContext(fs.readFileSync('modules/cogan-smart/webroot/client.js','utf8'),
   const page={ksu:{},setTimeout:()=>0,clearTimeout(){},CoganI18n:{t:s=>s,apply(){}},
     document:{getElementById:node},
     CoganUI:{create:path=>({report:async()=>{throw new Error(cause);},
-        cached:()=>path.includes('/guard/') ? {at:Date.now()-120000,data:{modules:[{risk:2,trusted:false},{risk:1,trusted:false},{risk:2,trusted:true}]}} : null}),
+        cached:()=>path.includes('/guard/') ? {at:Date.now()-120000,data:{modules:[{risk:2,trusted:false},{risk:1,trusted:false},{risk:2,trusted:true}]}}
+          : path.includes('/apps/') ? {at:Date.now()-60000,data:{block:{on:1},apps:[{risk:2,trusted:0,core:0},{risk:1,trusted:1,core:0},{risk:0,trusted:0,core:1}]}} : null}),
       folds(){},kernel(){},recorder:()=>'● mencatat',
       text:(id,value)=>{node(id).textContent=value;},html:(id,value)=>{node(id).innerHTML=value;},
       action:async(button,message,task)=>task(),poll:()=>({poke(){}})}};
@@ -51,10 +52,6 @@ vm.runInContext(fs.readFileSync('modules/cogan-smart/webroot/client.js','utf8'),
   vm.createContext(page);
   const html=fs.readFileSync('modules/cogan-smart/webroot/manager.html','utf8');
   vm.runInContext(html.match(/<script>\s*(const REPORT[\s\S]*?)<\/script>/)[1],page);
-  node('apps').innerHTML='old suggestions';
-  await node('scanApps').onclick();
-  assert.equal(node('apps').innerHTML,'');
-  assert.equal(node('appsInfo').textContent,'Gagal: '+cause);
   const matching=vm.runInContext('ramMessage({ram_state:"matching"})',page);
   assert.match(matching,/bawaan sistem/);
   assert.match(vm.runInContext('ramMessage({ram_state:"blocked"})',page),/Periksa hasil hook init/);
@@ -91,5 +88,42 @@ vm.runInContext(fs.readFileSync('modules/cogan-smart/webroot/client.js','utf8'),
   assert.equal(node('powerLine').textContent,'target batas CPU besar 90% · kecil 100% · Penyebab: Prosesor · mengecas 3000 mA');
   assert.equal(node('modeLine').innerHTML,'<b>🧠 Kernel Default</b> · <span class="muted">Badan HP dijaga ≤ 41 °C</span>');
   assert.equal(node('guardLine').textContent,'3 modul · 1 berbahaya · 1 perlu dicek · dipindai 2 menit lalu');
+  assert.equal(node('appsLine').textContent,'3 aplikasi · 1 berbahaya · 0 perlu dicek · Blokir APK chat: aktif · dipindai 1 menit lalu');
+  // Aplikasi tab: the last scan renders at once, with names from the root manager.
+  const appNodes=new Map(), appNode=id=>{
+    if(!appNodes.has(id)) { const classes=new Set(); appNodes.set(id,{textContent:'',innerHTML:'',style:{},disabled:false,addEventListener(){},
+      classList:{add:c=>classes.add(c),remove:c=>classes.delete(c),contains:c=>classes.has(c),toggle:(c,on)=>on?classes.add(c):classes.delete(c)}}); }
+    return appNodes.get(id);
+  };
+  const scan={ok:1,user:0,scanned_at:2000000,missing:['internet'],block:{on:1,running:1,sources:['com.whatsapp'],events:[{at:1999700,p:'com.whatsapp'}]},
+    apps:[{p:'id.scam',src:'chat',from:'com.whatsapp',inst:'2026-10-29 10:00:00',used:1999000,run:1,perms:['sms','a11y','hidden'],acc:{sms:125,cam:3723},net:-1,bat:12.5,risk:2,trusted:0,core:0},
+      {p:'app.old',src:'store',from:'com.android.vending',inst:'2020-01-01 00:00:00',used:2000000-10*86400,run:0,perms:[],acc:{},net:2048,bat:0,risk:0,trusted:0,core:0},
+      {p:'com.rifsxd.ksunext',src:'unknown',from:'',inst:'',used:0,run:0,perms:[],acc:{},net:0,bat:0,risk:0,trusted:0,core:1}]};
+  const appPage={ksu:{getPackagesInfo:list=>JSON.stringify(JSON.parse(list).map(p=>p==='id.scam'?{packageName:p,appLabel:'Undangan Nikah'}:{packageName:p,error:'not cached'}))},
+    setTimeout:()=>0,clearTimeout(){},CoganI18n:{t:s=>s,apply(){}},localStorage:{getItem:()=>null,setItem(){}},
+    document:{getElementById:appNode,querySelectorAll:()=>[]},addEventListener(){},
+    CoganUI:{create:()=>({report:async()=>{throw new Error('offline');},cached:()=>({at:Date.now(),data:scan}),revision:0}),
+      folds(){},text:(id,value)=>{appNode(id).textContent=value;},html:(id,value)=>{appNode(id).innerHTML=value;},action:async(b,m,task)=>task()}};
+  appPage.window=appPage;
+  vm.createContext(appPage);
+  const appsHtml=fs.readFileSync('modules/cogan-smart/webroot/apps.html','utf8');
+  vm.runInContext(appsHtml.match(/<script>\s*(\/\/ Aplikasi[\s\S]*?)<\/script>/)[1],appPage);
+  assert.match(appNode('summary').innerHTML,/3 aplikasi<\/b> · <span class="hot">1 berbahaya/);
+  assert.match(appNode('summary').innerHTML,/Belum terbaca: internet/);
+  assert.equal(appNode('blockBrief').textContent,'aktif');
+  assert.match(appNode('blockInfo').textContent,/Terpasang: WhatsApp\nDicabut: WhatsApp 5 menit lalu/);
+  const cards=appNode('apps').innerHTML;
+  assert.match(cards,/Undangan Nikah/);
+  assert.match(cards,/file APK dari WhatsApp/);
+  assert.match(cards,/SMS 2 menit lalu · Kamera 1 jam lalu/);
+  assert.match(cards,/Baterai sejak cas penuh: 12.5 mAh/);
+  assert.match(cards,/data-act="remove" data-p="id.scam"/);
+  assert(!cards.includes('app.old'), 'the risk filter hides apps without marks');
+  vm.runInContext('filter="idle"; render(data)',appPage);
+  assert.match(appNode('apps').innerHTML,/Terakhir dipakai: 10 hari lalu/);
+  assert.match(appNode('apps').innerHTML,/Internet 7 hari: 2.0 KB/);
+  vm.runInContext('filter="all"; render(data)',appPage);
+  assert.match(appNode('apps').innerHTML,/Dilindungi: aplikasi root manager/);
+  assert(!/data-act="remove" data-p="com.rifsxd.ksunext"/.test(appNode('apps').innerHTML));
   console.log('WebUI drafts, native callbacks and scan errors: OK');
 })().catch(e=>{console.error(e);process.exitCode=1;});

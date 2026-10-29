@@ -238,52 +238,8 @@ status_json() {
   printf ',"init_error":'; json_string "$(head -c 200 "$CM_DATA/init.error" 2>/dev/null)"
   printf '}\n'
 }
-user_id() {
-  CM_USER=$(am get-current-user 2>/dev/null)
-  uint "$CM_USER" && [ "$CM_USER" -le 99999 ] || fail 'Pengguna Android tidak dapat dibaca.'
-}
-scan_fail() {
-  cm_detail=$1
-  [ -n "$cm_detail" ] || cm_detail=$(head -c 240 "$cm_tmp/error")
-  [ -n "$cm_detail" ] || cm_detail=$(head -c 240 "$cm_tmp/$cm_file")
-  [ -n "$cm_detail" ] || cm_detail='perintah gagal'
-  cm_detail=$(printf '%s' "$cm_detail" | tr '\r\n' '  ')
-  fail "Pemindaian gagal pada $cm_stage (kode $cm_code): $cm_detail"
-}
-scan_read() {
-  cm_file=$1; cm_stage=$2; cm_limit=$3; shift 3
-  timeout "$cm_limit" "$@" > "$cm_tmp/$cm_file" 2> "$cm_tmp/error"
-  cm_code=$?
-  [ "$cm_code" = 0 ] || scan_fail ''
-  # Android dumpsys can exit 0 after a timeout or permission failure. Never parse a partial dump.
-  cm_problem=$(grep -Eih -m 1 "DUMP TIMEOUT|^[[:space:]]*(Permission Denial|Permission denied|Security exception|java[.]lang[.]SecurityException|Can't find service|Error dumping service)" \
-    "$cm_tmp/$cm_file" "$cm_tmp/error" | head -c 240)
-  [ -z "$cm_problem" ] || scan_fail "$cm_problem"
-  [ -s "$cm_tmp/$cm_file" ] || scan_fail 'respons kosong'
-}
-scan_apps() {
-  user_id
-  command -v timeout >/dev/null 2>&1 || fail 'Pemindaian memerlukan perintah timeout.'
-  cm_tmp=$(mktemp -d "$CM_DATA/scan.XXXXXX") || fail 'Gagal menyiapkan pemindaian.'
-  trap 'rm -rf "$cm_tmp"; lock_drop "$CM_DATA/api.lock"' EXIT
-  scan_read list 'daftar aplikasi' 15 pm list packages -3 --user "$CM_USER"
-  # Set dumpsys' own deadline too (its default is only 10 seconds); the outer limit is a backstop.
-  scan_read usage 'riwayat pemakaian' 25 dumpsys -t 20 usagestats -c
-  scan_read packages 'tanggal pemasangan' 25 dumpsys -t 20 package packages
-  # Root managers may use BusyBox ps with different flags. Prefer Android's native ps.
-  cm_ps=ps; [ ! -x /system/bin/ps ] || cm_ps=/system/bin/ps
-  scan_read running 'proses berjalan' 10 "$cm_ps" -A -w -o args
-  cm_now=$(date +%s)
-  # PackageManager dates use Android's timezone; standalone BusyBox must use the same one.
-  cm_tz=$(getprop persist.sys.timezone 2>/dev/null)
-  case "$cm_tz" in ''|*[!A-Za-z0-9_+./-]*) ;; *) TZ=$cm_tz; export TZ ;; esac
-  cm_cutoff=$(date -d "@$((cm_now - 604800))" '+%Y-%m-%d %H:%M:%S') ||
-    fail 'Tanggal pemakaian tidak dapat dihitung.'
-  awk -v user="$CM_USER" -v now="$cm_now" -v cutoff="$cm_cutoff" -f "$MODDIR/apps.awk" \
-    "$cm_tmp/list" "$cm_tmp/packages" "$cm_tmp/usage" "$cm_tmp/running"
-}
 case "$1" in status) status_json; exit 0 ;; esac
-# Every mutation and scan is serialized, including the short boot hook.
+# Every mutation is serialized, including the short boot hook.
 umask 077
 mkdir -p "$CM_DATA/run" || fail 'Gagal menyiapkan Manager.'
 lock_take "$CM_DATA/api.lock" || fail 'Perintah lain sedang berjalan'
@@ -329,14 +285,5 @@ case "$1" in
     [ "$BOOT" = 1 ] || exit 0
     apply_controls
     [ "$RAM" = default ] || compressor > "$CM_DATA/run/ram_boot_attempted" ;;
-  scan) scan_apps ;;
-  app)
-    user_id
-    [ $# = 2 ] && printf '%s\n' "$2" | grep -Eq '^[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z0-9_]+)+$' ||
-      fail 'Nama aplikasi tidak valid.'
-    pm list packages -3 --user "$CM_USER" 2>/dev/null | grep -Fxq "package:$2" || fail 'Aplikasi user tidak ditemukan.'
-    am start --user "$CM_USER" -a android.settings.APPLICATION_DETAILS_SETTINGS -d "package:$2" >/dev/null 2>&1 ||
-      fail 'Info aplikasi tidak dapat dibuka.'
-    printf '{"ok":1}\n' ;;
   *) fail 'Perintah tidak dikenal' ;;
 esac

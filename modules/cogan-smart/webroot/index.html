@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Cogan Smart</title>
-<link rel="stylesheet" href="theme.css?v=2.11.1">
-<script src="i18n.js?v=2.11.1"></script>
+<link rel="stylesheet" href="theme.css?v=2.12.0">
+<script src="i18n.js?v=2.12.0"></script>
 <script>try { document.documentElement.dataset.theme = localStorage.getItem('cogan.theme') || ''; document.documentElement.dataset.dev = localStorage.getItem('cogan.dev') || ''; } catch (_) { /* storage off: follow the phone */ }</script>
 <style>
   * { box-sizing: border-box; }
@@ -88,7 +88,7 @@
     <h1>🧠 Cogan Smart</h1>
     <span id="state" class="pill">…</span>
   </header>
-  <nav class="tabs" aria-label="Bagian"><a href="index.html" aria-current="page"><span class="tab-icon" aria-hidden="true">⚡</span><span class="tab-label">Daya</span></a><a href="thermal.html"><span class="tab-icon" aria-hidden="true">🌡️</span><span class="tab-label">Suhu</span></a><a href="manager.html"><span class="tab-icon" aria-hidden="true">🛠️</span><span class="tab-label">Manager</span></a><a href="modules.html"><span class="tab-icon" aria-hidden="true">🧩</span><span class="tab-label">Modul</span></a></nav>
+  <nav class="tabs" aria-label="Bagian"><a href="index.html" aria-current="page"><span class="tab-icon" aria-hidden="true">⚡</span><span class="tab-label">Daya</span></a><a href="thermal.html"><span class="tab-icon" aria-hidden="true">🌡️</span><span class="tab-label">Suhu</span></a><a href="manager.html"><span class="tab-icon" aria-hidden="true">🛠️</span><span class="tab-label">Manager</span></a><a href="modules.html"><span class="tab-icon" aria-hidden="true">🧩</span><span class="tab-label">Modul</span></a><a href="apps.html"><span class="tab-icon" aria-hidden="true">📱</span><span class="tab-label">Aplikasi</span></a></nav>
 
   <div id="noksu" class="card hidden">Buka halaman ini dari WebUI modul di KernelSU, KernelSU Next atau BakaSU.</div>
   <section id="readError" class="card hidden" role="alert">
@@ -188,7 +188,7 @@
 </main>
 
 <div id="actionStatus" class="feedback hidden" role="status" aria-live="polite"></div>
-<script src="client.js?v=2.11.1"></script>
+<script src="client.js?v=2.12.0"></script>
 <script>
 const confirm = value => window.confirm(CoganI18n.t(value));
 const REPORT = '/data/adb/modules/cogan_smart/power/report.sh';

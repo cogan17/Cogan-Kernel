@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cogan Smart · Aplikasi</title>
+<link rel="stylesheet" href="theme.css?v=2.12.0">
+<script src="i18n.js?v=2.12.0"></script>
+<script>try { document.documentElement.dataset.theme = localStorage.getItem('cogan.theme') || ''; document.documentElement.dataset.dev = localStorage.getItem('cogan.dev') || ''; } catch (_) { /* storage off: follow the phone */ }</script>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    padding: calc(env(safe-area-inset-top, 0px) + 14px) 14px calc(env(safe-area-inset-bottom, 0px) + 24px);
+  }
+  main { max-width: 640px; margin: 0 auto; }
+  header { display: flex; align-items: center; gap: 10px; margin: 4px 2px 14px; }
+  header h1 { font-size: 20px; margin: 0; flex: 1; }
+  .pill { font-size: 12px; padding: 3px 10px; border-radius: 99px; background: var(--chip); color: var(--muted); white-space: nowrap; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px; margin-bottom: 12px; }
+  .muted { color: var(--muted); font-size: 13px; }
+  .banner { font-size: 13px; padding: 9px 12px; border-radius: 12px; margin-bottom: 12px; background: var(--chip); border-left: 4px solid var(--ok); }
+  .banner.warn { border-left-color: var(--warm); } .banner.bad { border-left-color: var(--hot); }
+  .ok { color: var(--ok); } .warm { color: var(--warm); } .hot { color: var(--hot); }
+  button {
+    font: inherit; color: var(--text); background: var(--chip); border: 1px solid var(--line);
+    border-radius: 10px; padding: 7px 12px; cursor: pointer; min-height: 44px;
+  }
+  button:disabled { opacity: .5; } button.danger { color: var(--hot); }
+  button.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 600; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 10px; }
+  h3 { font-size: 13px; margin: 12px 0 2px; color: var(--muted); font-weight: 600; }
+  ul { margin: 4px 0; padding-left: 18px; font-size: 13px; } li { margin: 2px 0; overflow-wrap: anywhere; }
+  code { font-size: 12px; overflow-wrap: anywhere; }
+  .tag { display: inline-block; font-size: 12px; padding: 2px 8px; border-radius: 99px; background: var(--chip); margin: 2px 4px 2px 0; }
+  .tag.l2 { color: var(--hot); } .tag.l1 { color: var(--warm); }
+  .kernel-card > .muted { margin-top: 4px; }
+  .kernel-value { font-size: 12px; overflow-wrap: anywhere; white-space: pre-wrap; }
+  .hidden { display: none !important; }
+  footer { text-align: center; color: var(--muted); font-size: 12px; margin-top: 18px; }
+
+  button, summary { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+  button:active:not(:disabled) { filter: brightness(.92); }
+  button:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  summary { min-height: 44px; padding: 11px 0; cursor: pointer; font-size: 13px; color: var(--accent); }
+  details { margin-top: 4px; }
+  details.fold { padding: 0 14px; margin-top: 0; }
+  details.fold[open] { padding-bottom: 14px; }
+  details.fold > summary { display: flex; align-items: center; gap: 8px; list-style: none; min-height: 48px; padding: 12px 0; font-size: 15px; font-weight: 600; color: var(--text); }
+  details.fold > summary::-webkit-details-marker { display: none; }
+  details.fold > summary > span:first-child { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+  details.fold > summary small { font-weight: 400; text-align: right; }
+  details.fold > summary::after { content: '▸'; color: var(--muted); transition: transform .15s; }
+  details.fold[open] > summary::after { transform: rotate(90deg); }
+  .feedback { position: fixed; z-index: 20; bottom: calc(env(safe-area-inset-bottom, 0px) + 12px); left: 14px; right: 14px; max-width: 612px; margin: auto; padding: 10px 14px; border-radius: 12px; background: var(--text); color: var(--card); font-size: 13px; pointer-events: none; box-shadow: 0 3px 16px #0002; }
+  .feedback.working::before { content: ''; display: inline-block; width: 12px; height: 12px; margin-right: 8px; vertical-align: -2px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: cogan-spin .75s linear infinite; }
+  @keyframes cogan-spin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .feedback.working::before { animation: none; } details.fold > summary::after { transition: none; } }
+  .filters { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 2px 12px; }
+  .filters button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 600; }
+  .facts { font-size: 13px; margin: 6px 0; } .facts div { margin: 2px 0; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>🧠 Cogan Smart</h1>
+    <span id="state" class="pill">…</span>
+  </header>
+  <nav class="tabs" aria-label="Bagian"><a href="index.html"><span class="tab-icon" aria-hidden="true">⚡</span><span class="tab-label">Daya</span></a><a href="thermal.html"><span class="tab-icon" aria-hidden="true">🌡️</span><span class="tab-label">Suhu</span></a><a href="manager.html"><span class="tab-icon" aria-hidden="true">🛠️</span><span class="tab-label">Manager</span></a><a href="modules.html"><span class="tab-icon" aria-hidden="true">🧩</span><span class="tab-label">Modul</span></a><a href="apps.html" aria-current="page"><span class="tab-icon" aria-hidden="true">📱</span><span class="tab-label">Aplikasi</span></a></nav>
+
+  <div id="noksu" class="card hidden">Buka halaman ini dari WebUI modul di KernelSU, KernelSU Next atau BakaSU.</div>
+  <section id="readError" class="card hidden" role="alert">
+    <b class="hot">Data belum berhasil dibaca</b>
+    <p id="readErrorText" class="muted" style="overflow-wrap:anywhere"></p>
+  </section>
+  <div id="summary" class="banner">Memindai aplikasi…</div>
+  <div id="scanNote" class="muted hidden" style="margin:-4px 4px 12px"></div>
+
+  <details class="card fold" id="blockCard" open>
+    <summary><span>🛡️ Blokir APK dari chat &amp; sosmed</span><small class="muted" id="blockBrief"></small></summary>
+    <p class="muted">WhatsApp, Telegram, Instagram, Facebook, TikTok dan sejenisnya tidak bisa memasang aplikasi. Browser dan file manager tetap bisa.</p>
+    <p id="blockInfo" class="muted"></p>
+    <div class="row"><button id="blockOn" data-action>🛡️ Aktifkan</button><button id="blockOff" data-action>Matikan</button></div>
+  </details>
+
+  <div class="filters" role="group" aria-label="Tampilkan">
+    <button data-filter="risk" aria-pressed="true">⚠️ Perlu dicek</button><button data-filter="all" aria-pressed="false">Semua</button><button data-filter="idle" aria-pressed="false">💤 Jarang dipakai</button>
+  </div>
+  <div id="apps"></div>
+
+  <div class="row"><button id="rescan" class="primary" data-action>🔍 Pindai ulang</button></div>
+  <footer>Cogan Smart · Penanda risiko adalah dugaan dari sumber dan izin aplikasi, bukan antivirus.</footer>
+<p class="credit">Maintainer <b>Cogan17</b> &nbsp;·&nbsp; kernel <b>Cogan Rothko</b> &nbsp;·&nbsp; <b>KernelSU Next</b><br><a href="about.html">ℹ️ Tentang &amp; kredit</a> · <a href="guide.html">📖 Panduan</a></p>
+</main>
+
+<div id="actionStatus" class="feedback hidden" role="status" aria-live="polite"></div>
+<script src="client.js?v=2.12.0"></script>
+<script>
+// Aplikasi (owner 2026-10-29): what user apps do, removal down to the roots, and the APK block for chat apps.
+const confirm = value => window.confirm(CoganI18n.t(value));
+const REPORT = '/data/adb/modules/cogan_smart/apps/report.sh';
+const RISK = [['✅', 'tidak ada tanda bahaya', 'ok'], ['⚠️', 'perlu dicek', 'warm'], ['⛔', 'berbahaya', 'hot']];
+const SOURCE = {store: 'toko aplikasi', chat: 'file APK dari chat/sosmed', file: 'file APK (browser atau file manager)',
+  restore: 'pemulihan cadangan', adb: 'ADB / komputer', unknown: 'tidak diketahui'};
+const PERM = {sms: ['Baca SMS (kode OTP)', 2], a11y: ['Aksesibilitas: bisa membaca dan menekan layar', 2],
+  admin: ['Admin perangkat: sulit dihapus', 2], notif: ['Baca semua notifikasi', 1], overlay: ['Tampil di atas aplikasi lain', 1],
+  install: ['Boleh memasang aplikasi', 1], hidden: ['Ikon disembunyikan', 1]};
+const ACCESS = {cam: 'Kamera', mic: 'Mikrofon', loc: 'Lokasi', sms: 'SMS', contacts: 'Kontak', calls: 'Telepon', clip: 'Clipboard'};
+const NAMES = {'com.whatsapp': 'WhatsApp', 'com.whatsapp.w4b': 'WhatsApp Business', 'org.telegram.messenger': 'Telegram'};
+const $ = id => document.getElementById(id);
+const UI = CoganUI, api = UI.create(REPORT);
+const opened = new Set(), labels = new Map();
+let feedbackTimer, data = null, actionRunning = false, filter = 'risk';
+try { filter = localStorage.getItem('cogan.apps.filter') || 'risk'; } catch (_) { /* storage off */ }
+
+function esc(s) { return String(s).replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'})[c]); }
+function toast(msg) { UI.text('actionStatus', msg); $('actionStatus').classList.remove('hidden'); clearTimeout(feedbackTimer); feedbackTimer = setTimeout(() => { if (!$('actionStatus').classList.contains('working')) $('actionStatus').classList.add('hidden'); }, 6000); }
+window.addEventListener('unhandledrejection', e => { toast('Gagal: ' + (e.reason && e.reason.message || e.reason)); e.preventDefault(); });
+const name = p => labels.get(p) || NAMES[p] || p;
+function ago(sec) {
+  return sec < 60 ? 'baru saja' : sec < 3600 ? `${Math.floor(sec / 60)} menit lalu` : sec < 86400 ? `${Math.floor(sec / 3600)} jam lalu` : `${Math.floor(sec / 86400)} hari lalu`;
+}
+function bytes(n) { return n < 1024 ? n + ' B' : n < 1048576 ? (n / 1024).toFixed(1) + ' KB' : n < 1073741824 ? (n / 1048576).toFixed(1) + ' MB' : (n / 1073741824).toFixed(2) + ' GB'; }
+const idleDays = a => a.used > 0 ? Math.floor((data.scanned_at - a.used) / 86400) : -1;
+const button = (act, p, label, cls = '') => `<button data-action data-act="${act}" data-p="${esc(p)}"${cls ? ` class="${cls}"` : ''}>${label}</button>`;
+// The root manager knows app names (KernelSU Next and BakaSU: ksu.getPackagesInfo); without it the package name stays.
+function learnLabels(list) {
+  if (typeof ksu === 'undefined' || typeof ksu.getPackagesInfo !== 'function') return;
+  try {
+    for (const info of JSON.parse(ksu.getPackagesInfo(JSON.stringify(list.filter(p => !labels.has(p)))))) {
+      if (info && !info.error && info.appLabel) labels.set(info.packageName, info.appLabel);
+    }
+  } catch (_) { /* names stay as package names */ }
+}
+
+function appCard(a) {
+  const risk = RISK[a.risk], key = 'app:' + a.p, idle = idleDays(a);
+  const badge = a.core || a.trusted ? '🛡️' : risk[0];
+  const status = a.core ? 'Root manager · dilindungi' : a.trusted ? 'Di whitelist · dipercaya' : risk[1];
+  const from = a.src === 'chat' ? `file APK dari ${name(a.from)}` : SOURCE[a.src];
+  const access = Object.entries(a.acc).sort((x, y) => x[1] - y[1]).map(([k, s]) => `${ACCESS[k]} ${ago(s)}`);
+  const facts = [`Sumber: ${from}`, a.inst ? `Dipasang: ${a.inst.slice(0, 10)}` : '',
+    idle >= 0 ? (idle ? `Terakhir dipakai: ${idle} hari lalu` : 'Terakhir dipakai: hari ini') : 'Terakhir dipakai: tidak tercatat',
+    a.run ? 'Sedang berjalan' : '',
+    a.net >= 0 ? `Internet 7 hari: ${bytes(a.net)}` : '', a.bat >= 0 ? `Baterai sejak cas penuh: ${a.bat} mAh` : ''].filter(Boolean);
+  const perms = a.perms.map(k => `<span class="tag l${PERM[k][1]}">${PERM[k][0]}</span>`).join('');
+  let actions = '';
+  if (a.core) actions = '<span class="muted">Dilindungi: aplikasi root manager.</span>';
+  else {
+    actions = a.trusted ? button('untrust', a.p, 'Lepas dari whitelist') : button('trust', a.p, '🛡️ Percaya');
+    if (!a.trusted) actions += button('remove', a.p, '🗑 Hapus sampai akar', 'danger');
+  }
+  return `<details class="card fold" data-key="${esc(key)}"${opened.has(key) ? ' open' : ''}>
+    <summary><span><span aria-hidden="true">${badge}</span> <span translate="no">${esc(name(a.p))}</span></span><small class="muted">${a.run ? '● ' : ''}${esc(a.src === 'chat' ? name(a.from) : '')}</small></summary>
+    <div class="muted dev"><code>${esc(a.p)}</code>${a.from ? ` · dari <code>${esc(a.from)}</code>` : ''}</div>
+    <div class="${a.core || a.trusted ? 'ok' : risk[2]}">${status}</div>
+    <div>${perms}</div>
+    <div class="facts">${facts.map(f => `<div>${esc(f)}</div>`).join('')}</div>
+    <h3>👁️ Gerak-gerik</h3>
+    <div class="muted">${access.length ? esc(access.join(' · ')) : 'Tidak ada akses kamera, mikrofon, lokasi, SMS, kontak, telepon atau clipboard yang tercatat.'}</div>
+    <div class="row">${actions}</div>
+  </details>`;
+}
+
+function render(d) {
+  data = d;
+  learnLabels(d.apps.map(a => a.p).concat(d.block.sources));
+  const counted = r => d.apps.filter(a => !a.trusted && !a.core && a.risk === r).length;
+  const danger = counted(2), warn = counted(1);
+  $('summary').className = 'banner' + (danger ? ' bad' : warn ? ' warn' : '');
+  UI.html('summary', `📱 <b>${d.apps.length} aplikasi</b> · <span class="hot">${danger} berbahaya</span> · <span class="warm">${warn} perlu dicek</span>`
+    + (d.missing.length ? `<br><span class="muted">Belum terbaca: ${esc(d.missing.join(', '))}</span>` : ''));
+  UI.text('state', danger ? `⛔ ${danger} berbahaya` : warn ? `⚠️ ${warn} perlu dicek` : '✅ aman');
+  $('state').className = 'pill ' + (danger ? 'hot' : warn ? 'warm' : 'ok');
+  const b = d.block;
+  UI.text('blockBrief', b.on ? (b.running ? 'aktif' : 'aktif · menunggu') : 'mati');
+  UI.text('blockInfo', [b.sources.length ? 'Terpasang: ' + b.sources.map(name).join(', ') : 'Tidak ada aplikasi chat/sosmed yang dikenal.',
+    ...b.events.slice().reverse().slice(0, 3).map(e => `Dicabut: ${name(e.p)} ${ago(d.scanned_at - e.at)}`)].join('\n'));
+  $('blockInfo').style.whiteSpace = 'pre-line';
+  $('blockOn').disabled = !!b.on; $('blockOff').disabled = !b.on;
+  for (const f of document.querySelectorAll('[data-filter]')) f.setAttribute('aria-pressed', String(f.dataset.filter === filter));
+  const shown = d.apps.filter(a => filter === 'all' || (filter === 'risk' ? a.risk > 0 && !a.trusted : idleDays(a) >= 7))
+    .sort((x, y) => (y.risk - x.risk) || (filter === 'idle' ? idleDays(y) - idleDays(x) : 0) || name(x.p).localeCompare(name(y.p)));
+  UI.html('apps', shown.length ? shown.map(appCard).join('')
+    : `<div class="card muted">${filter === 'risk' ? 'Tidak ada aplikasi yang perlu dicek. 👍' : filter === 'idle' ? 'Tidak ada aplikasi yang tidak dipakai 7 hari atau lebih.' : 'Belum ada aplikasi.'}</div>`);
+}
+
+async function scan() {
+  const mark = api.revision, d = await api.report('scan', {background: true});
+  if (mark !== api.revision) return;
+  $('readError').classList.add('hidden'); render(d); note('');
+}
+function note(text) { UI.text('scanNote', text); $('scanNote').classList.toggle('hidden', !text); }
+async function run(target, message, task) {
+  if (actionRunning) return;
+  actionRunning = true;
+  try { await UI.action(target, message, task); }
+  catch (err) { toast('Gagal: ' + err.message); }
+  finally { actionRunning = false; }
+}
+function setup() {
+  UI.folds();
+  $('rescan').onclick = () => run($('rescan'), 'Memindai aplikasi…', async () => { await scan(); toast('Pemindaian selesai'); });
+  $('blockOn').onclick = () => run($('blockOn'), 'Mengaktifkan blokir…', async () => { await api.report('block on'); await scan(); toast('Blokir APK aktif'); });
+  $('blockOff').onclick = () => { if (confirm('Matikan blokir? Aplikasi chat dan sosmed bisa diizinkan memasang APK lagi.')) run($('blockOff'), 'Mematikan blokir…', async () => { await api.report('block off'); await scan(); toast('Blokir APK mati'); }); };
+  for (const f of document.querySelectorAll('[data-filter]')) f.onclick = () => {
+    filter = f.dataset.filter;
+    try { localStorage.setItem('cogan.apps.filter', filter); } catch (_) { /* storage off */ }
+    if (data) render(data);
+  };
+  $('apps').addEventListener('toggle', e => {
+    const key = e.target.dataset?.key;
+    if (key) e.target.open ? opened.add(key) : opened.delete(key);
+  }, true);
+  $('apps').addEventListener('click', e => {
+    const target = e.target.closest('[data-act]');
+    if (!target || target.disabled || !data) return;
+    const act = target.dataset.act, p = target.dataset.p;
+    if (act === 'remove' && !confirm([`Hapus ${name(p)} sampai ke akar?`, '',
+      '• Admin perangkat dilepas (bila ada)', '• Aplikasi dihentikan dan dihapus dari semua pengguna (termasuk Aplikasi Ganda dan Ruang Kedua)',
+      '• Sisa data dan file APK yang sama di penyimpanan ikut dihapus', '', 'Tidak bisa dibatalkan.'].join('\n'))) return;
+    const label = {trust: 'Menambah ke whitelist…', untrust: 'Melepas dari whitelist…', remove: 'Menghapus sampai akar…'}[act];
+    run(target, label, async () => {
+      const r = await api.report(act + ' ' + p);
+      await scan();
+      toast(act === 'trust' ? 'Masuk whitelist' : act === 'untrust' ? 'Dilepas dari whitelist'
+        : `Dihapus: admin dilepas ${r.admins} · sisa folder ${r.leftovers} · file APK ${r.apks.length}`);
+    });
+  });
+}
+
+setup();
+if (typeof ksu === 'undefined') { $('noksu').classList.remove('hidden'); UI.text('state', 'tanpa root'); UI.text('summary', 'Butuh akses root.'); }
+else {
+  // The last scan at once; a full scan reads several system dumps, so a recent one is not repeated on each visit.
+  const last = api.cached('scan'), age = last ? Date.now() - last.at : Infinity;
+  try { if (last) render(last.data); } catch (_) { /* older format: wait for the scan */ }
+  if (age < 120000) note(`Hasil pindaian ${Math.round(age / 1000)} dtk lalu · tekan Pindai ulang untuk memperbarui.`);
+  else {
+    if (last) note('↻ Memindai ulang… (sementara menampilkan hasil sebelumnya)');
+    scan().catch(err => { UI.text('readErrorText', err.message); $('readError').classList.remove('hidden'); note(''); if (!last) UI.text('summary', 'Pemindaian gagal.'); });
+  }
+}
+</script>
+</body>
+</html>
