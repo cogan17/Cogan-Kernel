@@ -201,26 +201,33 @@ case $1 in
     if [ "$BLOCK" = 1 ]; then block_pass; start_block; fi
     exit 0 ;;
   stop) stop_block; exit 0 ;;
-  status) printf '{"ok":1,"block":'; block_json; printf '}\n'; exit 0 ;;   # light: the block card without a full scan
 esac
 umask 077
 mkdir -p "$CA_RUN" || fail 'Gagal menyiapkan tab Aplikasi.'
-lock_take "$CA_DATA/api.lock" || fail 'Perintah lain sedang berjalan'
-trap 'lock_drop "$CA_DATA/api.lock"' EXIT
+# Light commands touch only the whitelist or the block switch, so they never wait for a running scan (owner 29 Oct:
+# Percaya took about 40 s). The lock below serialises the scan and removals.
 case $1 in
-  scan) scan ;;
+  status)   # the block card and the whitelist, without a full scan
+    printf '{"ok":1,"block":'; block_json; printf ',"trusted":'
+    cat "$CA_DATA/trusted" 2> /dev/null | awk 'BEGIN { printf "[" } /^[A-Za-z][A-Za-z0-9_.]*$/ { printf "%s\"%s\"", (n++ ? "," : ""), $0 } END { printf "]" }'
+    printf '}\n'; exit 0 ;;
   trust)
     valid_pkg "$2" || fail 'Nama aplikasi tidak valid.'
     is_trusted "$2" || echo "$2" >> "$CA_DATA/trusted" || fail 'Gagal menyimpan whitelist.'
-    printf '{"ok":1}\n' ;;
+    printf '{"ok":1}\n'; exit 0 ;;
   untrust)
     valid_pkg "$2" || fail 'Nama aplikasi tidak valid.'
-    drop_line "$CA_DATA/trusted" "$2"; printf '{"ok":1}\n' ;;
-  remove) remove_app "$2" ;;
+    drop_line "$CA_DATA/trusted" "$2"; printf '{"ok":1}\n'; exit 0 ;;
   block)
     case $2 in on) ca_b=1 ;; off) ca_b=0 ;; *) fail 'Pilihan tidak valid.' ;; esac
     printf 'BLOCK=%s\n' "$ca_b" > "$CA_DATA/config.tmp" && mv -f "$CA_DATA/config.tmp" "$CA_DATA/config" || fail 'Gagal menyimpan setelan.'
     if [ "$ca_b" = 1 ]; then block_pass; start_block; else stop_block; fi
-    printf '{"ok":1,"block":%s}\n' "$ca_b" ;;
+    printf '{"ok":1,"block":%s}\n' "$ca_b"; exit 0 ;;
+esac
+lock_take "$CA_DATA/api.lock" || fail 'Perintah lain sedang berjalan'
+trap 'lock_drop "$CA_DATA/api.lock"' EXIT
+case $1 in
+  scan) scan ;;
+  remove) remove_app "$2" ;;
   *) fail 'Perintah tidak dikenal' ;;
 esac

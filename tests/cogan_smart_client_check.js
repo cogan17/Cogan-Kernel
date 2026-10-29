@@ -98,7 +98,7 @@ vm.runInContext(fs.readFileSync('modules/cogan-smart/webroot/client.js','utf8'),
   const scan={ok:1,user:0,scanned_at:2000000,missing:['internet'],block:{on:1,running:1,sources:['com.whatsapp'],events:[{at:1999700,p:'com.whatsapp'}]},
     apps:[{p:'id.scam',src:'chat',from:'com.whatsapp',inst:'2026-10-29 10:00:00',used:1999000,run:1,perms:['sms','a11y','hidden'],acc:{sms:125,cam:3723},net:-1,bat:12.5,risk:2,trusted:0,core:0},
       {p:'app.old',src:'store',from:'com.android.vending',inst:'2020-01-01 00:00:00',used:2000000-10*86400,run:0,perms:[],acc:{},net:2048,bat:0,risk:0,trusted:0,core:0},
-      {p:'com.rifsxd.ksunext',src:'unknown',from:'',inst:'',used:0,run:0,perms:[],acc:{},net:0,bat:0,risk:0,trusted:0,core:1}]};
+      {p:'com.rifsxd.ksunext',src:'unknown',from:'',inst:'1999-12-31 23:00:00',used:0,run:0,perms:[],acc:{},net:0,bat:0,risk:0,trusted:0,core:1}]};
   // The block card waits for its own status read; a scan (cached or failed) never enables its buttons (audit 29 Oct).
   const nowS=Math.floor(Date.now()/1000);
   let blockStatus={on:1,running:1,query_ok:1,events:[{at:nowS-300,p:'com.whatsapp',ok:1}]};
@@ -108,7 +108,7 @@ vm.runInContext(fs.readFileSync('modules/cogan-smart/webroot/client.js','utf8'),
   const appPage={ksu:{getPackagesInfo:list=>JSON.stringify(JSON.parse(list).map(p=>p==='id.scam'?{packageName:p,appLabel:'Undangan Nikah'}:{packageName:p,error:'not cached'}))},
     setTimeout:()=>0,clearTimeout(){},CoganI18n:{t:s=>s,apply(){}},localStorage:{getItem:()=>null,setItem(){}},
     document:{getElementById:appNode,querySelectorAll:()=>[]},addEventListener(){},
-    CoganUI:{create:()=>({report:async args=>{ if(args==='status' && blockStatus) return {ok:1,block:blockStatus}; throw new Error('offline'); },cached:()=>({at:Date.now(),data:scan}),revision:0}),
+    CoganUI:{create:()=>({report:async args=>{ if(args==='status' && blockStatus) return {ok:1,block:blockStatus,trusted:[]}; throw new Error('offline'); },cached:()=>({at:Date.now(),data:scan}),revision:0}),
       folds(){},text:(id,value)=>{appNode(id).textContent=value;},html:(id,value)=>{appNode(id).innerHTML=value;},action:async(b,m,task)=>task()}};
   appPage.window=appPage;
   vm.createContext(appPage);
@@ -121,7 +121,7 @@ vm.runInContext(fs.readFileSync('modules/cogan-smart/webroot/client.js','utf8'),
   assert.deepEqual([appNode('blockOn').disabled,appNode('blockOff').disabled],[true,false]);
   // A status read that fails leaves both buttons disabled, whatever an older scan said.
   blockStatus=null; appNode('blockOn').disabled=true; appNode('blockOff').disabled=true;
-  vm.runInContext(appsHtml.match(/\n  (readBlock\(\)\.catch\([^\n]*)/)[1],appPage);
+  vm.runInContext(appsHtml.match(/\n  (readStatus\(\)\.catch\(blockUnknown\));/)[1],appPage);
   await new Promise(resolve=>setImmediate(resolve));
   assert.equal(appNode('blockBrief').textContent,'status belum terbaca');
   assert.deepEqual([appNode('blockOn').disabled,appNode('blockOff').disabled],[true,true]);
@@ -138,8 +138,10 @@ vm.runInContext(fs.readFileSync('modules/cogan-smart/webroot/client.js','utf8'),
   vm.runInContext('filter="idle"; render(data)',appPage);
   assert.match(appNode('apps').innerHTML,/Terakhir dipakai: 10 hari lalu/);
   assert.match(appNode('apps').innerHTML,/Internet 7 hari: 2.0 KB/);
+  assert.match(appNode('apps').innerHTML,/Dipasang: 2020-01-01<\/div>/);
   vm.runInContext('filter="all"; render(data)',appPage);
   assert.match(appNode('apps').innerHTML,/Dilindungi: aplikasi root manager/);
+  assert.match(appNode('apps').innerHTML,/Dipasang: 1999-12-31 \(tanggal tidak wajar dari Android/);
   assert(!/data-act="remove" data-p="com.rifsxd.ksunext"/.test(appNode('apps').innerHTML));
   console.log('WebUI drafts, native callbacks and scan errors: OK');
 })().catch(e=>{console.error(e);process.exitCode=1;});

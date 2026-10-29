@@ -206,7 +206,8 @@ esac""")
     def test_trust_clears_the_mark_and_protects_from_removal(self):
         self.assertEqual(self.report("trust", "com.tasker")["ok"], 1)
         apps, _ = self.scan()
-        self.assertEqual((apps["com.tasker"]["risk"], apps["com.tasker"]["trusted"]), (0, 1))
+        self.assertEqual((apps["com.tasker"]["risk"], apps["com.tasker"]["trusted"]), (1, 1))   # the mark stays; shown as trusted
+        self.assertEqual(self.report("status")["trusted"], ["com.tasker"])
         self.assertIn("whitelist", self.report("remove", "com.tasker")["error"])
         self.report("untrust", "com.tasker")
         self.assertEqual(self.scan()[0]["com.tasker"]["trusted"], 0)
@@ -304,6 +305,19 @@ esac""")
         self.assertEqual(self.report("scan")["ok"], 0)
         status = self.report("status")
         self.assertEqual((status["ok"], status["block"]["on"], status["block"]["query_ok"]), (1, 1, 1))
+
+    def test_trust_and_the_block_switch_do_not_wait_for_a_running_scan(self):
+        # Owner 29 Oct: Percaya took about 40 s, queued behind a full scan. A slow scan holds the lock here.
+        self.tool("dumpsys", (self.bin / "dumpsys").read_text().split("\n", 2)[2].replace("usagestats) cat", "usagestats) sleep 4; cat"))
+        scan = subprocess.Popen([SHELL, str(self.module / "apps/report.sh"), "scan"], env=self.env, stdout=subprocess.PIPE, text=True)
+        time.sleep(1)
+        self.assertTrue((self.data / "api.lock").exists())
+        start = time.time()
+        self.assertEqual(self.report("trust", "com.tasker")["ok"], 1)
+        self.assertEqual(self.report("block", "off")["block"], 0)
+        self.assertEqual(self.report("status")["trusted"], ["com.tasker"])
+        self.assertLess(time.time() - start, 2.5)
+        self.assertEqual(json.loads(scan.communicate(timeout=30)[0])["ok"], 1)
 
     def test_two_block_workers_started_together_leave_one(self):
         write(self.data / "config", "BLOCK=1\n")

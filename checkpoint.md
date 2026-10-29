@@ -1,6 +1,14 @@
 # Checkpoint — 29 Okt 2026 (WIB)
 
-Cogan Smart **v2.12.2** (versionCode 33: tab 📱 Aplikasi + perbaikan v2.11.2 + perbaikan audit + pindai lewat pipa) siap diuji. **Rilis ditahan owner** sampai diuji. Sesi berikutnya baca `CLAUDE.md`, file ini dan `CHECKPOINT.md`, lalu tunggu instruksi owner. Jangan otomatis menguji HP, menjalankan build atau menerbitkan rilis.
+Cogan Smart **v2.12.3** (versionCode 34: Percaya/blokir langsung) di atas v2.12.2, yang pindainya sudah terbukti di HP. Siap diuji. **Rilis ditahan owner** sampai diuji. Sesi berikutnya baca `CLAUDE.md`, file ini dan `CHECKPOINT.md`, lalu tunggu instruksi owner. Jangan otomatis menguji HP, menjalankan build atau menerbitkan rilis.
+
+## v2.12.3 — Percaya dan blokir langsung (owner 29 Okt ±13.45 WIB, rilis tetap DITAHAN)
+
+- ✅ **v2.12.2 diuji di HP:** owner 29 Okt 13.44–13.45 WIB, screenshot tab Aplikasi terisi (Swift Backup, WhatsApp, Hunter, SpotiFLAC, dll.): "Berjalan dengan baik." Pindai lewat pipa terbukti. Gerak-gerik, internet dan baterai terbaca.
+- **Laporan owner:** Menambah ke whitelist sekitar 40 detik ("bisa salah bisa benar"). Penyebab (kode v2.12.2): handler `trust`/`untrust`/`remove` di `apps.html` menjalankan `await scan()` sesudah aksi, dan klien `api` mengantrekan perintah di belakang pindai yang sedang berjalan. Backend `trust` hanya mengedit file whitelist, tetapi menunggu `api.lock`.
+- **Perbaikan v2.12.3 (versionCode 34):** `status`, `trust`, `untrust` dan `block` dijalankan sebelum `api.lock` (kunci hanya untuk `scan` dan `remove`). WebUI memakai klien `quick` terpisah. Percaya/Lepas mengubah kartu lokal tanpa pindai. Hapus diikuti pindai di latar belakang. `apps.awk` tidak lagi menolkan risiko aplikasi yang dipercaya (UI menghitung dipercaya terpisah). `status` membawa `trusted` untuk memperbarui daftar dari cache. Tes baru: Percaya dan blokir selesai < 2,5 detik saat pindai lambat memegang kunci.
+- **Cek acak owner 13.49 WIB:** Netflix "Dipasang: 1999-12-31" (sumber toko aplikasi, 37 hari tidak dipakai). Tanggal itu `firstInstallTime` dari Android, bukan hitungan modul; dugaan: aplikasi bawaan Xiaomi dengan tanggal tetap dari image sistem (belum dibuktikan di HP). WebUI kini memberi keterangan untuk tanggal sebelum 2008-09-23.
+- [Paket uji](modules/cogan-smart/rilis/v2.12.3/Cogan-Smart-Kernel-v2.12.3.zip) 189659 byte, SHA256 `3079c3577a8bb2a9a042f9c5f0f3b3d726f8ebbe67650bddbabee6c78adc3d60` (dua kali dikemas, sama). Terukur lokal: semua tes lolos (mksh, dash, BusyBox ash). Belum diuji di HP.
 
 ## Bug pindai di HP + audit v2.12.1 → v2.12.2 (owner 29 Okt ±12.57 WIB, rilis tetap DITAHAN)
 
@@ -26,7 +34,7 @@ Cogan Smart **v2.12.2** (versionCode 33: tab 📱 Aplikasi + perbaikan v2.11.2 +
 
 ## Sedang berjalan
 
-- PR v2.12.2 (lihat bagian Bug pindai). v2.12.1 sudah di-merge (#83), v2.12.0 juga (#80).
+- PR v2.12.3 (lihat bagian v2.12.3). v2.12.2 sudah di-merge (#84).
 
 ## Sudah selesai (sesi 28–29 Okt)
 
@@ -41,7 +49,7 @@ Cogan Smart **v2.12.2** (versionCode 33: tab 📱 Aplikasi + perbaikan v2.11.2 +
 
 ## Tertunda (keputusan owner)
 
-- Uji v2.12.2 di HP: tekan Mulai di Kontrol Daya/Suhu, tutup root manager, buka lagi → tetap aktif; tab 📱 Aplikasi terisi; APK kiriman WhatsApp/sosmed/email/SMS ditolak dan izin yang dinyalakan lagi dicabut dengan notifikasi.
+- Uji v2.12.3 di HP: Percaya/Lepas langsung selesai; sisanya: tekan Mulai di Kontrol Daya/Suhu, tutup root manager, buka lagi → tetap aktif; tab 📱 Aplikasi terisi; APK kiriman WhatsApp/sosmed/email/SMS ditolak dan izin yang dinyalakan lagi dicabut dengan notifikasi.
 - Rilis Cogan Smart: **ditahan owner** ("Untuk rilis tahan dulu!", 29 Okt 11.26 WIB).
 
 ## Langkah pertama berikutnya

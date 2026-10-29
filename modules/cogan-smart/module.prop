@@ -1,6 +1,6 @@
 id=cogan_smart
 name=Cogan Smart Kernel
-version=v2.12.2
-versionCode=33
+version=v2.12.3
+versionCode=34
 author=cogan17
 description=Satu modul: mode Hemat · Kernel Default · Performa, kontrol CPU/cas dengan readback, monitor suhu, log dan penyebab panas, Manager sebagai pusat kendali (ringkasan semua tab, CPU/RAM), tab Aplikasi (pantau, hapus sampai akar, blokir APK dari chat/sosmed), Mode Dev, panduan, penjaga modul (whitelist, hapus sampai akar). Mengenali perangkat dan kernel Cogan (Cogan Bridge bila tersedia).

@@ -167,7 +167,7 @@ END {
     side = src == "chat" || src == "file"
     strong = (p in sms) || (p in a11y) || (p in admin)
     core = (p in manager) || (host > 0 && aid > 0 && aid == host % 100000)
-    if (core || (p in trusted)) risk = 0
+    if (core) risk = 0   # a trusted app keeps its mark; the WebUI shows it as trusted and counts it apart
     else if (side && (strong || ((p in notif) && (p in overlay)) || (hidden && ((p in notif) || (p in overlay) || (p in install))))) risk = 2
     else if (src == "chat" || strong || (side && (hidden || (p in notif) || (p in overlay) || (p in install)))) risk = 1
     else risk = 0

@@ -1,0 +1,29 @@
+Cogan Smart Kernel v2.12.3 / versionCode 34 — paket uji / test build
+
+Indonesia
+
+Perbaikan:
+- Percaya dan Lepas dari whitelist langsung selesai, tanpa menunggu pindai ulang (sebelumnya sekitar 40 detik).
+- Aktifkan dan Matikan blokir juga tidak menunggu pindai yang sedang berjalan.
+- Setelah Hapus sampai akar, daftar diperbarui di latar belakang.
+
+Batas:
+- Belum diuji di HP.
+
+Cara uji:
+1. Pasang sebagai pembaruan modul melalui root manager, lalu reboot.
+2. Buka tab 📱 Aplikasi, tekan Pindai ulang, lalu langsung tekan 🛡️ Percaya pada satu aplikasi: harus selesai dalam beberapa detik.
+
+English
+
+Fixes:
+- Trust and Untrust finish at once, without waiting for a rescan (it took about 40 seconds before).
+- Turning the block on or off no longer waits for a scan that is running.
+- After Remove completely, the list refreshes in the background.
+
+Limits:
+- Not phone-tested yet.
+
+How to test:
+1. Install as a module update through the root manager, then reboot.
+2. Open the 📱 Apps tab, press Rescan, then right away press 🛡️ Trust on an app: it must finish within a few seconds.
