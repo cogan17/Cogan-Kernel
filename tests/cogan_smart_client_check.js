@@ -108,7 +108,7 @@ vm.runInContext(fs.readFileSync('modules/cogan-smart/webroot/client.js','utf8'),
   const appPage={ksu:{getPackagesInfo:list=>JSON.stringify(JSON.parse(list).map(p=>p==='id.scam'?{packageName:p,appLabel:'Undangan Nikah'}:{packageName:p,error:'not cached'}))},
     setTimeout:()=>0,clearTimeout(){},CoganI18n:{t:s=>s,apply(){}},localStorage:{getItem:()=>null,setItem(){}},
     document:{getElementById:appNode,querySelectorAll:()=>[]},addEventListener(){},
-    CoganUI:{create:()=>({report:async args=>{ if(args==='status' && blockStatus) return {ok:1,block:blockStatus}; throw new Error('offline'); },cached:()=>({at:Date.now(),data:scan}),revision:0}),
+    CoganUI:{create:()=>({report:async args=>{ if(args==='status' && blockStatus) return {ok:1,block:blockStatus,trusted:[]}; throw new Error('offline'); },cached:()=>({at:Date.now(),data:scan}),revision:0}),
       folds(){},text:(id,value)=>{appNode(id).textContent=value;},html:(id,value)=>{appNode(id).innerHTML=value;},action:async(b,m,task)=>task()}};
   appPage.window=appPage;
   vm.createContext(appPage);
@@ -121,7 +121,7 @@ vm.runInContext(fs.readFileSync('modules/cogan-smart/webroot/client.js','utf8'),
   assert.deepEqual([appNode('blockOn').disabled,appNode('blockOff').disabled],[true,false]);
   // A status read that fails leaves both buttons disabled, whatever an older scan said.
   blockStatus=null; appNode('blockOn').disabled=true; appNode('blockOff').disabled=true;
-  vm.runInContext(appsHtml.match(/\n  (readBlock\(\)\.catch\([^\n]*)/)[1],appPage);
+  vm.runInContext(appsHtml.match(/\n  (readStatus\(\)\.catch\(blockUnknown\));/)[1],appPage);
   await new Promise(resolve=>setImmediate(resolve));
   assert.equal(appNode('blockBrief').textContent,'status belum terbaca');
   assert.deepEqual([appNode('blockOn').disabled,appNode('blockOff').disabled],[true,true]);

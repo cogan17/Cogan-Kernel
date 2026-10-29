@@ -1,5 +1,21 @@
 # Cogan Smart Kernel
 
+## Percaya dan blokir langsung / Trust and block at once — v2.12.3 (paket uji / test build)
+
+Indonesia:
+
+- v2.12.2 diuji owner di HP 29 Okt: pindai tab Aplikasi berjalan baik.
+- Laporan owner: Menambah ke whitelist makan sekitar 40 detik. Penyebab: Percaya, Lepas dan Hapus menunggu pindai penuh ulang, dan perintahnya antre di belakang pindai yang sedang berjalan. Kini Percaya, Lepas, blokir dan status memakai antrean sendiri dan tidak memakai kunci pindai. Kartu langsung berubah tanpa pindai ulang. Setelah Hapus, pindai berjalan di latar belakang.
+- Aplikasi yang dipercaya menyimpan tanda risikonya. Ia ditampilkan dan dihitung sebagai dipercaya, dan tandanya kembali setelah dilepas tanpa perlu pindai. Status ringan juga membawa daftar whitelist, jadi hasil pindai lama di layar ikut benar.
+- Terukur lokal: tes lolos (mksh, dash, BusyBox ash). Belum diuji di HP.
+
+English:
+
+- v2.12.2 tested by the owner on the phone (29 Oct): the Apps tab scan works.
+- Owner report: adding to the whitelist took about 40 s. Cause: Trust, Untrust and Remove waited for a full rescan, queued behind a scan already running. Trust, Untrust, the block and status now use their own queue and skip the scan lock; the card changes at once without a rescan. After Remove the scan runs in the background.
+- A trusted app keeps its risk mark: it is shown and counted as trusted, and the mark returns after untrusting without a scan. The light status also carries the whitelist, so a cached list on screen is right too.
+- Measured locally: tests pass (mksh, dash, BusyBox ash). Not phone-tested yet.
+
 ## Pindai aplikasi bekerja di HP / App scan works on the phone — v2.12.2 (paket uji / test build)
 
 Indonesia:

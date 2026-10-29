@@ -2,7 +2,7 @@
 
 **Versi paket terbaru: v2.9.1** (`versionCode` 18): modul lebih hemat CPU, satu angka Badan HP dari HyperOS, lonjakan suhu, nama aplikasi asli, batas CPU di log, dan penyaringan sensor macet. Dampak optimisasi terakhir pada HP belum diukur. Catatan perubahan lengkap ada di [`CHANGELOG.md`](CHANGELOG.md); status publikasi ada di [Releases](https://github.com/cogan17/Cogan-Kernel/releases).
 
-**Versi pengembangan: v2.12.2** (versionCode 33, pindai aplikasi bekerja di HP: output Binder lewat pipa; perbaikan audit v2.12.0 dan v2.12.1): tab baru 📱 Aplikasi untuk memantau gerak-gerik aplikasi user, hapus sampai akar (admin perangkat dilepas, semua pengguna, sisa data, salinan APK) dan blokir APK dari chat & sosmed (bawaan aktif). Termasuk perbaikan v2.11.2 (pekerja tetap hidup setelah root manager ditutup). Belum diuji pada HP. v2.11.1 (Manager memantau, keluar sekali usap) dan hook ZRAM v2.10.8 sudah terbukti di HP. Rilis v2.9.1 tetap tersedia.
+**Versi pengembangan: v2.12.3** (versionCode 34, Percaya/Lepas/blokir langsung tanpa pindai ulang; v2.12.2 pindai berjalan di HP: pindai aplikasi bekerja di HP: output Binder lewat pipa; perbaikan audit v2.12.0 dan v2.12.1): tab baru 📱 Aplikasi untuk memantau gerak-gerik aplikasi user, hapus sampai akar (admin perangkat dilepas, semua pengguna, sisa data, salinan APK) dan blokir APK dari chat & sosmed (bawaan aktif). Termasuk perbaikan v2.11.2 (pekerja tetap hidup setelah root manager ditutup). Belum diuji pada HP. v2.11.1 (Manager memantau, keluar sekali usap) dan hook ZRAM v2.10.8 sudah terbukti di HP. Rilis v2.9.1 tetap tersedia.
 
 📖 **Panduan pemakaian:** [PANDUAN.md](PANDUAN.md) · [English](PANDUAN.en.md)
 
@@ -10,6 +10,7 @@
 
 | Versi | versionCode | ZIP siap pasang | Catatan | Salinan di repo | SHA256 ZIP |
 |---|---|---|---|---|---|
+| **v2.12.3** (paket uji Percaya dan blokir langsung) | 34 | [Paket pembaruan](rilis/v2.12.3/Cogan-Smart-Kernel-v2.12.3.zip) | [What's New](rilis/v2.12.3/Cogan-Smart-v2.12.3-Whats-New-and-Fixes.txt) | [rilis/v2.12.3](rilis/v2.12.3) | `354236c9735893817dae47b64de8e3db3c170e29d822bd46e2fd36d4fe547bde` |
 | **v2.12.2** (paket uji pindai aplikasi lewat pipa) | 33 | [Paket pembaruan](rilis/v2.12.2/Cogan-Smart-Kernel-v2.12.2.zip) | [What's New](rilis/v2.12.2/Cogan-Smart-v2.12.2-Whats-New-and-Fixes.txt) | [rilis/v2.12.2](rilis/v2.12.2) | `f3c5ccf16f6bfa5f6ef696dac73a3a98b7591dfd7c6c42c3c6b6816496f3a700` |
 | **v2.12.1** (paket uji perbaikan audit) | 32 | [Paket pembaruan](rilis/v2.12.1/Cogan-Smart-Kernel-v2.12.1.zip) | [What's New](rilis/v2.12.1/Cogan-Smart-v2.12.1-Whats-New-and-Fixes.txt) | [rilis/v2.12.1](rilis/v2.12.1) | `4568aeb4b1fe0e8c85f33b9cb13d47d7572898799e9226e4653d0dc42669a8e8` |
 | **v2.12.0** (paket uji tab Aplikasi) | 31 | [Paket pembaruan](rilis/v2.12.0/Cogan-Smart-Kernel-v2.12.0.zip) | [What's New](rilis/v2.12.0/Cogan-Smart-v2.12.0-Whats-New-and-Fixes.txt) | [rilis/v2.12.0](rilis/v2.12.0) | `7acc20223baabc925345f7d3e6c328bb8bf94a97460c92f9b65e15f27b566d47` |
