@@ -38,11 +38,19 @@ notify() {   # notify TEXT
 # and the block takes that back within seconds.
 # Read back: Android lists the package again while any user still allows it. A failure is logged and shown once,
 # not every 5 seconds. Switching the block off gives nothing back; the user allows an app again in Settings.
+CA_QUERY_BAD='fail|error|exception|denial|unknown'
 block_source() {   # block_source PKG
-  ca_users=$(users)
-  for ca_u in $ca_users; do cmd appops set --user "$ca_u" "$1" REQUEST_INSTALL_PACKAGES default > /dev/null 2>&1; done
-  if [ -n "$ca_users" ] && ! cmd appops query-op REQUEST_INSTALL_PACKAGES allow 2> /dev/null | grep -Fxq "$1"; then
-    ca_ok=1; rm -f "$CA_RUN/failed.$1"
+  ca_users=$(users); ca_ok=0
+  if [ -n "$ca_users" ]; then
+    # A user without the app refuses the set; the read back below is what counts.
+    for ca_u in $ca_users; do cmd appops set --user "$ca_u" "$1" REQUEST_INSTALL_PACKAGES default > /dev/null 2>&1; done
+    # query-op covers every user (AppOpsService.getPackagesForOps). Its own exit code and text are checked, so a
+    # failed query never reads as "no longer allowed" (audit 29 Oct).
+    ca_q=$(cmd appops query-op REQUEST_INSTALL_PACKAGES allow 2>&1) &&
+      ! printf '%s\n' "$ca_q" | grep -Eiq "$CA_QUERY_BAD" && ! printf '%s\n' "$ca_q" | grep -Fxq "$1" && ca_ok=1
+  fi
+  if [ "$ca_ok" = 1 ]; then
+    rm -f "$CA_RUN/failed.$1"
   else
     ca_ok=0; [ -f "$CA_RUN/failed.$1" ] && return 1
     mkdir -p "$CA_RUN" && : > "$CA_RUN/failed.$1"
@@ -53,8 +61,11 @@ block_source() {   # block_source PKG
   else notify "Izin memasang aplikasi dari $1 GAGAL dicabut. Cabut sendiri di Pengaturan, Instal aplikasi tak dikenal."; fi
   [ "$ca_ok" = 1 ]
 }
-block_pass() {
-  for ca_p in $(cmd appops query-op REQUEST_INSTALL_PACKAGES allow 2>/dev/null); do
-    is_source "$ca_p" && block_source "$ca_p"
-  done
+block_pass() {   # a query that cannot be read is marked for the WebUI, never taken as "nothing allowed"
+  if ! ca_q=$(cmd appops query-op REQUEST_INSTALL_PACKAGES allow 2>&1) || printf '%s\n' "$ca_q" | grep -Eiq "$CA_QUERY_BAD"; then
+    mkdir -p "$CA_RUN" && : > "$CA_RUN/query.failed"; return 1
+  fi
+  rm -f "$CA_RUN/query.failed"
+  for ca_p in $ca_q; do is_source "$ca_p" && block_source "$ca_p"; done
+  return 0
 }

@@ -1,0 +1,31 @@
+Cogan Smart Kernel v2.12.2 / versionCode 33 — paket uji / test build
+
+Indonesia
+
+Perbaikan:
+- Tab 📱 Aplikasi tidak lagi gagal dengan "Failed transaction". Android menolak hasil perintah aplikasi yang disimpan langsung ke folder modul; kini hasilnya dibaca lewat pipa.
+- Blokir APK tidak pernah mengaku "dicabut" bila Android tidak bisa membacakan hasilnya. Bila izin tidak terbaca, kartu blokir menulis "izin tidak terbaca".
+- Tombol Aktifkan/Matikan blokir baru aktif setelah statusnya terbaca, walaupun pindai gagal.
+
+Batas:
+- Belum diuji di HP.
+
+Cara uji:
+1. Pasang sebagai pembaruan modul melalui root manager, lalu reboot.
+2. Buka tab 📱 Aplikasi: daftar harus terisi (pilih Semua). Bila masih gagal, kirim screenshot pesan galatnya.
+3. Kartu blokir menampilkan aktif/mati, dan hanya satu tombol yang bisa ditekan.
+
+English
+
+Fixes:
+- The 📱 Apps tab no longer fails with "Failed transaction". Android refused command output saved straight into the module folder; it is now read through a pipe.
+- The APK block never claims "revoked" when Android cannot read the result back. If rights cannot be read, the block card says "rights not readable".
+- The block Enable/Turn off buttons only become active once the block status is read, even when the scan fails.
+
+Limits:
+- Not phone-tested yet.
+
+How to test:
+1. Install as a module update through the root manager, then reboot.
+2. Open the 📱 Apps tab: the list must fill (choose All). If it still fails, send a screenshot of the error.
+3. The block card shows on/off, and only one of its buttons can be pressed.

@@ -1,6 +1,17 @@
 # Checkpoint — 29 Okt 2026 (WIB)
 
-Cogan Smart **v2.12.1** (versionCode 32: v2.12.0 tab 📱 Aplikasi + perbaikan v2.11.2 + perbaikan audit) siap diuji. **Rilis ditahan owner** sampai diuji. Sesi berikutnya baca `CLAUDE.md`, file ini dan `CHECKPOINT.md`, lalu tunggu instruksi owner. Jangan otomatis menguji HP, menjalankan build atau menerbitkan rilis.
+Cogan Smart **v2.12.2** (versionCode 33: tab 📱 Aplikasi + perbaikan v2.11.2 + perbaikan audit + pindai lewat pipa) siap diuji. **Rilis ditahan owner** sampai diuji. Sesi berikutnya baca `CLAUDE.md`, file ini dan `CHECKPOINT.md`, lalu tunggu instruksi owner. Jangan otomatis menguji HP, menjalankan build atau menerbitkan rilis.
+
+## Bug pindai di HP + audit v2.12.1 → v2.12.2 (owner 29 Okt ±12.57 WIB, rilis tetap DITAHAN)
+
+- **Bukti HP (screenshot owner, v2.12.1):** tab Aplikasi "Pemindaian gagal pada daftar aplikasi: cmd: Failure calling service package: Failed transaction (2147483646)", berulang setelah Pindai ulang. Kedua tombol blokir aktif walau status tidak terbaca.
+- **Audit v2.12.1 owner** menarik sendiri temuan IFS lama (byte `27 09 27`). Owner meminta: "Jangan langsung ditelan mentah-mentah. Pastikan kebenaran terlebih dahulu."
+- **A (pindai gagal): benar, penyebab ditemukan.** `read_must` dan `read_may` mengarahkan stdout/stderr `pm`/`dumpsys`/`settings` ke file di `/data/adb/cogan_smart/apps/scan.*` (`adb_data_file`). `cmd` meneruskan fd itu ke system_server lewat Binder. Kernel `security/selinux/hooks.c selinux_binder_transfer_file` memeriksa akses system_server ke file itu; ditolak → `binder.c` `-EPERM` → FAILED_TRANSACTION. Bagian modul yang membaca lewat pipa `$(...)` (dumpsys tab Suhu, hapus, blokir) bekerja di HP. Perbaikan: `run_to` (pipa `| cat > file`, kode keluar ke `.rc`), `settings` lewat pipa, `exec < /dev/null`. Reproduksi offline: fake Binder di tes gagal bila fd 1/2 bukan pipa atau `/dev/null`; kode v2.12.1 gagal dengan pesan yang sama persis.
+- **B (readback blokir): benar menurut kode.** `! query | grep` bernilai benar saat query gagal. Kini kode keluar dan teks `query-op` dicek (`CA_QUERY_BAD`). `block_pass` yang gagal membaca query menandai `run/query.failed`, dan `status` mengembalikan `query_ok` 0. Readback memakai `query-op`, yang mencakup semua user (getPackagesForOps). Set per user boleh gagal untuk user yang tidak memasang aplikasi itu.
+- **C (tombol blokir): benar.** Kini ada perintah ringan `report.sh status`. Kedua tombol `disabled` di HTML sampai status terbaca, `blockUnknown` dipanggil bila status gagal dibaca, dan aksi blokir dilaporkan terpisah dari pindai.
+- Tes menemukan bug tambahan: one-true-awk menolak `$3 == "0" ? 0 : 1` tanpa kurung di argumen printf (`block_json`). Sudah diberi kurung.
+- **v2.12.2 (versionCode 33):** [paket uji](modules/cogan-smart/rilis/v2.12.2/Cogan-Smart-Kernel-v2.12.2.zip) 188377 byte, SHA256 `f3c5ccf16f6bfa5f6ef696dac73a3a98b7591dfd7c6c42c3c6b6816496f3a700` (dua kali dikemas, sama). Terukur lokal: semua tes lolos (mksh, dash, BusyBox ash, one-true-awk, BusyBox awk), cek Node lolos. Belum diuji di HP.
+- **Cek opsional di HP (read-only; membuat lalu menghapus satu file sementara di folder data modul):** `su -c 'f=/data/adb/cogan_smart/apps/t; pm list packages -3 > $f 2>&1; echo file rc=$?; head -c 100 $f; echo; pm list packages -3 | head -n 1; rm -f $f'`. Harapan: baris file gagal "Failed transaction", baris pipa menampilkan satu paket.
 
 ## Audit v2.12.0 → v2.12.1 (owner 29 Okt, rilis tetap DITAHAN)
 
@@ -15,7 +26,7 @@ Cogan Smart **v2.12.1** (versionCode 32: v2.12.0 tab 📱 Aplikasi + perbaikan v
 
 ## Sedang berjalan
 
-- PR perbaikan audit v2.12.1 (lihat bagian Audit). PR #80 (v2.12.0) sudah di-merge (`edd18a5`).
+- PR v2.12.2 (lihat bagian Bug pindai). v2.12.1 sudah di-merge (#83), v2.12.0 juga (#80).
 
 ## Sudah selesai (sesi 28–29 Okt)
 
@@ -30,7 +41,7 @@ Cogan Smart **v2.12.1** (versionCode 32: v2.12.0 tab 📱 Aplikasi + perbaikan v
 
 ## Tertunda (keputusan owner)
 
-- Uji v2.12.1 di HP: tekan Mulai di Kontrol Daya/Suhu, tutup root manager, buka lagi → tetap aktif; tab 📱 Aplikasi terisi; APK kiriman WhatsApp/sosmed/email/SMS ditolak dan izin yang dinyalakan lagi dicabut dengan notifikasi.
+- Uji v2.12.2 di HP: tekan Mulai di Kontrol Daya/Suhu, tutup root manager, buka lagi → tetap aktif; tab 📱 Aplikasi terisi; APK kiriman WhatsApp/sosmed/email/SMS ditolak dan izin yang dinyalakan lagi dicabut dengan notifikasi.
 - Rilis Cogan Smart: **ditahan owner** ("Untuk rilis tahan dulu!", 29 Okt 11.26 WIB).
 
 ## Langkah pertama berikutnya

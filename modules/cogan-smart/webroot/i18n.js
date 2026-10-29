@@ -459,7 +459,7 @@
      'No camera, microphone, location, SMS, contacts, phone or clipboard access recorded.'],
     ['Belum terbaca: {0}', 'Not read yet: {0}'], ['pemakaian', 'usage'], ['akses', 'access'], ['ikon', 'icons'], ['baterai', 'battery'],
     ['internet', 'internet'], ['proses', 'processes'], ['mati', 'off'], ['menunggu', 'waiting'],
-    ['Terpasang: {0}', 'Installed: {0}'], ['Dicabut: {0}', 'Revoked: {0}'], ['Gagal dicabut: {0}', 'Not revoked: {0}'],
+    ['Terpasang: {0}', 'Installed: {0}'], ['Dicabut: {0}', 'Revoked: {0}'], ['Gagal dicabut: {0}', 'Not revoked: {0}'], ['izin tidak terbaca', 'rights not readable'], ['status belum terbaca', 'status not read yet'],
     ['Tidak ada aplikasi chat/sosmed/email/SMS yang dikenal.', 'No known chat, social, email or SMS app installed.'],
     ['Tidak ada aplikasi yang perlu dicek. 👍', 'No apps need a look. 👍'],
     ['Tidak ada aplikasi yang tidak dipakai 7 hari atau lebih.', 'No apps unused for 7 days or more.'], ['Belum ada aplikasi.', 'No apps yet.'],

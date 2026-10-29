@@ -1,5 +1,23 @@
 # Cogan Smart Kernel
 
+## Pindai aplikasi bekerja di HP / App scan works on the phone — v2.12.2 (paket uji / test build)
+
+Indonesia:
+
+- Bug di HP owner (v2.12.1, 29 Okt 12.56 WIB): "Pemindaian gagal pada daftar aplikasi: cmd: Failure calling service package: Failed transaction (2147483646)". Penyebab: `pm`, `cmd`, `dumpsys` dan `settings` mengirim stdout/stderr ke system_server lewat Binder, sedangkan pindai menyimpannya langsung ke file di `/data/adb`. SELinux tidak mengizinkan system_server menulis file itu, sehingga kernel menolak pengiriman fd (`selinux_binder_transfer_file`) dan transaksi gagal. Bagian modul yang membaca lewat pipa (tab Suhu, hapus, blokir) tidak terkena. Perbaikan: semua bacaan pindai lewat pipa, dan stdin dari `/dev/null`. Tes kini memakai fake yang menolak output ke file seperti di HP; bug lama bisa direproduksi dengan pesan yang sama.
+- Audit 29 Okt (diverifikasi, bukan diterima mentah): blokir APK bisa mencatat "dicabut" bila pembacaan ulang `query-op` gagal. Kini kode keluar dan teksnya diperiksa; query yang gagal tidak pernah dihitung "dicabut". Query yang tidak terbaca ditandai di kartu blokir ("izin tidak terbaca").
+- Audit 29 Okt: tombol Aktifkan dan Matikan aktif walau status blokir belum terbaca. Kini kartu blokir memakai perintah ringan `status` yang terpisah dari pindai. Kedua tombol nonaktif sampai status terbaca, dan aksi blokir dilaporkan terpisah dari pindai yang gagal.
+- awk Android (one-true-awk) menolak perbandingan tanpa kurung di argumen printf; ditemukan oleh tes, sudah diperbaiki.
+- Terukur lokal: tes lolos (mksh, dash, BusyBox ash; one-true-awk dan BusyBox awk). Belum diuji di HP.
+
+English:
+
+- Bug on the owner's phone (v2.12.1, 29 Oct 12.56 WIB): "Pemindaian gagal pada daftar aplikasi: cmd: Failure calling service package: Failed transaction (2147483646)". Cause: `pm`, `cmd`, `dumpsys` and `settings` hand stdout/stderr to system_server over Binder, and the scan pointed them at files in `/data/adb`. SELinux does not let system_server write those files, so the kernel refuses the fd transfer (`selinux_binder_transfer_file`) and the transaction fails. Module parts that read through a pipe (Temperature, removal, block) were not affected. Fix: every scan read goes through a pipe, with stdin from `/dev/null`. The tests now use fakes that refuse file output like the phone; the old bug reproduces with the same message.
+- Audit 29 Oct (verified, not taken as is): the APK block could log "revoked" when the `query-op` read back failed. Exit code and text are now checked; a failed query never counts as revoked. An unreadable query is shown on the block card ("rights not readable").
+- Audit 29 Oct: Enable and Turn off were active while the block status was unknown. The block card now uses a light `status` command separate from the scan; both buttons stay disabled until it answers, and block actions report separately from a failed scan.
+- Android's awk (one-true-awk) rejects an unparenthesized comparison in printf arguments; caught by the tests and fixed.
+- Measured locally: tests pass (mksh, dash, BusyBox ash; one-true-awk and BusyBox awk). Not phone-tested yet.
+
 ## Perbaikan hasil audit / Audit fixes — v2.12.1 (paket uji / test build)
 
 Indonesia:

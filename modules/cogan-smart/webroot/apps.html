@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Cogan Smart · Aplikasi</title>
-<link rel="stylesheet" href="theme.css?v=2.12.1">
-<script src="i18n.js?v=2.12.1"></script>
+<link rel="stylesheet" href="theme.css?v=2.12.2">
+<script src="i18n.js?v=2.12.2"></script>
 <script>try { document.documentElement.dataset.theme = localStorage.getItem('cogan.theme') || ''; document.documentElement.dataset.dev = localStorage.getItem('cogan.dev') || ''; } catch (_) { /* storage off: follow the phone */ }</script>
 <style>
   * { box-sizing: border-box; }
@@ -82,7 +82,7 @@
     <summary><span>🛡️ Blokir APK dari chat &amp; sosmed</span><small class="muted" id="blockBrief"></small></summary>
     <p class="muted">Aplikasi chat, sosmed, email dan SMS (WhatsApp, Telegram, Instagram, Facebook, TikTok, Gmail, Pesan dan lainnya) tidak bisa memasang aplikasi. Browser dan file manager tetap bisa.</p>
     <p id="blockInfo" class="muted"></p>
-    <div class="row"><button id="blockOn" data-action>🛡️ Aktifkan</button><button id="blockOff" data-action>Matikan</button></div>
+    <div class="row"><button id="blockOn" data-action disabled>🛡️ Aktifkan</button><button id="blockOff" data-action disabled>Matikan</button></div>
   </details>
 
   <div class="filters" role="group" aria-label="Tampilkan">
@@ -96,7 +96,7 @@
 </main>
 
 <div id="actionStatus" class="feedback hidden" role="status" aria-live="polite"></div>
-<script src="client.js?v=2.12.1"></script>
+<script src="client.js?v=2.12.2"></script>
 <script>
 // Aplikasi (owner 2026-10-29): what user apps do, removal down to the roots, and the APK block for chat apps.
 const confirm = value => window.confirm(CoganI18n.t(value));
@@ -112,7 +112,7 @@ const NAMES = {'com.whatsapp': 'WhatsApp', 'com.whatsapp.w4b': 'WhatsApp Busines
 const $ = id => document.getElementById(id);
 const UI = CoganUI, api = UI.create(REPORT);
 const opened = new Set(), labels = new Map();
-let feedbackTimer, data = null, actionRunning = false, filter = 'risk';
+let feedbackTimer, data = null, actionRunning = false, filter = 'risk', block = null, sources = [];
 try { filter = localStorage.getItem('cogan.apps.filter') || 'risk'; } catch (_) { /* storage off */ }
 
 function esc(s) { return String(s).replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'})[c]); }
@@ -174,12 +174,8 @@ function render(d) {
     + (d.missing.length ? `<br><span class="muted">Belum terbaca: ${esc(d.missing.join(', '))}</span>` : ''));
   UI.text('state', danger ? `⛔ ${danger} berbahaya` : warn ? `⚠️ ${warn} perlu dicek` : '✅ aman');
   $('state').className = 'pill ' + (danger ? 'hot' : warn ? 'warm' : 'ok');
-  const b = d.block;
-  UI.text('blockBrief', b.on ? (b.running ? 'aktif' : 'aktif · menunggu') : 'mati');
-  UI.text('blockInfo', [b.sources.length ? 'Terpasang: ' + b.sources.map(name).join(', ') : 'Tidak ada aplikasi chat/sosmed/email/SMS yang dikenal.',
-    ...b.events.slice().reverse().slice(0, 3).map(e => `${e.ok === 0 ? '⚠️ Gagal dicabut' : 'Dicabut'}: ${name(e.p)} ${ago(d.scanned_at - e.at)}`)].join('\n'));
-  $('blockInfo').style.whiteSpace = 'pre-line';
-  $('blockOn').disabled = !!b.on; $('blockOff').disabled = !b.on;
+  sources = d.block.sources;
+  if (block) renderBlock(block);
   for (const f of document.querySelectorAll('[data-filter]')) f.setAttribute('aria-pressed', String(f.dataset.filter === filter));
   const shown = d.apps.filter(a => filter === 'all' || (filter === 'risk' ? a.risk > 0 && !a.trusted : idleDays(a) >= 7))
     .sort((x, y) => (y.risk - x.risk) || (filter === 'idle' ? idleDays(y) - idleDays(x) : 0) || name(x.p).localeCompare(name(y.p)));
@@ -187,6 +183,23 @@ function render(d) {
     : `<div class="card muted">${filter === 'risk' ? 'Tidak ada aplikasi yang perlu dicek. 👍' : filter === 'idle' ? 'Tidak ada aplikasi yang tidak dipakai 7 hari atau lebih.' : 'Belum ada aplikasi.'}</div>`);
 }
 
+// The block card follows its own light status read, never a cached or failed scan (audit 29 Oct): until that read
+// answers, both buttons stay disabled.
+function renderBlock(b) {
+  block = b;
+  const now = Math.floor(Date.now() / 1000);
+  UI.text('blockBrief', !b.on ? 'mati' : b.query_ok === 0 ? 'aktif · izin tidak terbaca' : b.running ? 'aktif' : 'aktif · menunggu');
+  UI.text('blockInfo', [data ? (sources.length ? 'Terpasang: ' + sources.map(name).join(', ') : 'Tidak ada aplikasi chat/sosmed/email/SMS yang dikenal.') : '',
+    ...b.events.slice().reverse().slice(0, 3).map(e => `${e.ok === 0 ? '⚠️ Gagal dicabut' : 'Dicabut'}: ${name(e.p)} ${ago(now - e.at)}`)].filter(Boolean).join('\n'));
+  $('blockInfo').style.whiteSpace = 'pre-line';
+  $('blockOn').disabled = !!b.on; $('blockOff').disabled = !b.on;
+}
+function blockUnknown() { block = null; UI.text('blockBrief', 'status belum terbaca'); $('blockOn').disabled = $('blockOff').disabled = true; }
+async function readBlock() { renderBlock((await api.report('status')).block); }
+function scanFailed(err) {
+  UI.text('readErrorText', err.message); $('readError').classList.remove('hidden'); note('');
+  if (!data) UI.text('summary', 'Pemindaian gagal.');
+}
 async function scan() {
   const mark = api.revision, d = await api.report('scan', {background: true});
   if (mark !== api.revision) return;
@@ -203,8 +216,9 @@ async function run(target, message, task) {
 function setup() {
   UI.folds();
   $('rescan').onclick = () => run($('rescan'), 'Memindai aplikasi…', async () => { await scan(); toast('Pemindaian selesai'); });
-  $('blockOn').onclick = () => run($('blockOn'), 'Mengaktifkan blokir…', async () => { await api.report('block on'); await scan(); toast('Blokir APK aktif'); });
-  $('blockOff').onclick = () => { if (confirm('Matikan blokir? Izin yang sudah dicabut tidak dikembalikan. Aplikasi chat, sosmed, email dan SMS bisa diizinkan lagi di Pengaturan.')) run($('blockOff'), 'Mematikan blokir…', async () => { await api.report('block off'); await scan(); toast('Blokir APK mati'); }); };
+  // The action reports itself; a scan that fails afterwards shows its own error and does not undo the toast.
+  $('blockOn').onclick = () => run($('blockOn'), 'Mengaktifkan blokir…', async () => { await api.report('block on'); await readBlock().catch(blockUnknown); toast('Blokir APK aktif'); scan().catch(scanFailed); });
+  $('blockOff').onclick = () => { if (confirm('Matikan blokir? Izin yang sudah dicabut tidak dikembalikan. Aplikasi chat, sosmed, email dan SMS bisa diizinkan lagi di Pengaturan.')) run($('blockOff'), 'Mematikan blokir…', async () => { await api.report('block off'); await readBlock().catch(blockUnknown); toast('Blokir APK mati'); scan().catch(scanFailed); }); };
   for (const f of document.querySelectorAll('[data-filter]')) f.onclick = () => {
     filter = f.dataset.filter;
     try { localStorage.setItem('cogan.apps.filter', filter); } catch (_) { /* storage off */ }
@@ -234,13 +248,14 @@ function setup() {
 setup();
 if (typeof ksu === 'undefined') { $('noksu').classList.remove('hidden'); UI.text('state', 'tanpa root'); UI.text('summary', 'Butuh akses root.'); }
 else {
+  readBlock().catch(blockUnknown);
   // The last scan at once; a full scan reads several system dumps, so a recent one is not repeated on each visit.
   const last = api.cached('scan'), age = last ? Date.now() - last.at : Infinity;
   try { if (last) render(last.data); } catch (_) { /* older format: wait for the scan */ }
   if (age < 120000) note(`Hasil pindaian ${Math.round(age / 1000)} dtk lalu · tekan Pindai ulang untuk memperbarui.`);
   else {
     if (last) note('↻ Memindai ulang… (sementara menampilkan hasil sebelumnya)');
-    scan().catch(err => { UI.text('readErrorText', err.message); $('readError').classList.remove('hidden'); note(''); if (!last) UI.text('summary', 'Pemindaian gagal.'); });
+    scan().catch(scanFailed);
   }
 }
 </script>
