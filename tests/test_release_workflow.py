@@ -1,4 +1,4 @@
-"""Execute the release workflow's shell blocks offline with a fake GitHub CLI."""
+"""Execute the release workflow's shell blocks offline with a fake GitHub CLI; check the Cogan Smart tested label."""
 import json
 import hashlib
 import io
@@ -339,6 +339,32 @@ fi
                 self.assertEqual(result.returncode, 1)
                 self.assertIn("HTTP", result.stderr)
                 self.assertNotIn("Terbit:", self.summary())
+
+class CoganSmartTestedLabelTests(unittest.TestCase):
+    """The "tested on the phone" label of a Cogan Smart release, run as written in the workflow."""
+
+    def label(self, notes):
+        step = (WORKFLOW.parent / "cogan-smart-release.yml").read_text().split("Mark the release as tested on the phone", 1)[1]
+        code = textwrap.dedent(step.split("<<'PY'\n", 1)[1].split("\n          PY\n", 1)[0])
+        with tempfile.TemporaryDirectory() as tmp:
+            body = Path(tmp) / "body.md"
+            body.write_text("## Cogan Smart Kernel\n\n> [!NOTE]\n> note\n\n```text\n" + notes + "```\n", encoding="utf-8")
+            env = dict(os.environ, KERNEL_UJI="r6 (6.1.176)", AKSI="Tandai diuji di HP")
+            subprocess.run(["python3", "-", str(body)], input=code, text=True, env=env, check=True)
+            return body.read_text(encoding="utf-8")
+
+    def test_notes_written_before_the_phone_test_say_so(self):
+        body = self.label("PENGUJIAN\n- Belum diuji di HP.\n")
+        self.assertIn("kernel Cogan r6 (6.1.176)", body)
+        self.assertIn("ditulis sebelum uji HP ini", body)
+        self.assertIn("written before this phone test", body)
+
+    def test_notes_that_record_the_phone_test_are_not_called_older(self):
+        body = self.label("Diuji owner di HP: Xiaomi 14T Pro dengan kernel Cogan r6.\n")
+        self.assertIn("**Diuji owner di Xiaomi 14T Pro**", body)
+        self.assertNotIn("sebelum uji HP ini", body)
+        self.assertNotIn("written before this phone test", body)
+
 
 if __name__ == "__main__":
     unittest.main()

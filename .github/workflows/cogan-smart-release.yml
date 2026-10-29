@@ -166,14 +166,17 @@ jobs:
           day = time.strftime("%Y-%m-%d", time.gmtime(time.time() + 7 * 3600))   # WIB
           charge_id = ", termasuk pengisian HyperCharge" if "HyperCharge" in os.environ["AKSI"] else ""
           charge_en = ", including HyperCharge charging" if charge_id else ""
+          old = re.compile(r"<!-- diuji-hp -->.*?<!-- /diuji-hp -->\n\n", re.S)
+          if "Diuji owner di HP" in old.sub("", body):   # notes written after the phone test (v2.12.4 on) say so themselves
+              before_id = before_en = ""
+          else:
+              before_id = " Bagian pengujian di catatan bawah ditulis sebelum uji HP ini."
+              before_en = " The testing section in the notes below was written before this phone test."
           label = ("<!-- diuji-hp -->\n\n"
                    "> [!TIP]\n"
-                   f"> 🇮🇩 **Diuji owner di Xiaomi 14T Pro** dengan kernel Cogan {kernel}{charge_id} ({day}). "
-                   "Bagian pengujian di catatan bawah ditulis sebelum uji HP ini.\n"
-                   f"> 🇬🇧 **Tested by the owner on the Xiaomi 14T Pro** with the Cogan {kernel} kernel{charge_en} ({day}). "
-                   "The testing section in the notes below was written before this phone test.\n\n"
+                   f"> 🇮🇩 **Diuji owner di Xiaomi 14T Pro** dengan kernel Cogan {kernel}{charge_id} ({day}).{before_id}\n"
+                   f"> 🇬🇧 **Tested by the owner on the Xiaomi 14T Pro** with the Cogan {kernel} kernel{charge_en} ({day}).{before_en}\n\n"
                    "<!-- /diuji-hp -->\n\n")
-          old = re.compile(r"<!-- diuji-hp -->.*?<!-- /diuji-hp -->\n\n", re.S)
           if old.search(body):
               body = old.sub(lambda _: label, body, count=1)
           elif "> [!NOTE]" in body:
