@@ -1,6 +1,6 @@
 # Checkpoint — 29 Okt 2026 (WIB)
 
-Cogan Smart **v2.12.4** (versionCode 35) sudah di `main` lewat PR #86 (29 Okt 14.03 WIB) dan siap diuji di HP. Versi itu berisi v2.12.3 (Percaya/blokir langsung) dan v2.12.2 (pindai terbukti di HP). **Rilis ditahan owner** sampai diuji. Sesi berikutnya baca `CLAUDE.md`, file ini dan `CHECKPOINT.md`, lalu tunggu instruksi owner. Jangan otomatis menguji HP, menjalankan build atau menerbitkan rilis.
+Cogan Smart **v2.12.4** (versionCode 35) **lulus uji owner di HP** (29 Okt 21.36 WIB, kernel r6 6.1.176 No LTO) dan **terbit sebagai Release** [`cogan-smart-v2.12.4`](https://github.com/cogan17/Cogan-Kernel/releases/tag/cogan-smart-v2.12.4) dengan label diuji di HP (29 Okt ±21.47 WIB). Penahanan rilis sudah dicabut owner untuk versi ini. Sesi berikutnya baca `CLAUDE.md`, file ini dan `CHECKPOINT.md`, lalu tunggu instruksi owner. Jangan otomatis menguji HP, menjalankan build atau menerbitkan rilis.
 
 ## Sedang berjalan
 
@@ -8,6 +8,10 @@ Cogan Smart **v2.12.4** (versionCode 35) sudah di `main` lewat PR #86 (29 Okt 14
 
 ## Sudah selesai (sesi 28–29 Okt)
 
+- Rilis [`cogan-smart-v2.12.4`](https://github.com/cogan17/Cogan-Kernel/releases/tag/cogan-smart-v2.12.4) (Release, tidak menjadi Latest): [run Terbitkan 40894753629](https://github.com/cogan17/Cogan-Kernel/actions/runs/40894753629), lalu [run Tandai diuji di HP 40894958955](https://github.com/cogan17/Cogan-Kernel/actions/runs/40894958955) dengan kernel `r6 (6.1.176)`. ZIP sama dengan paket uji (SHA256 `c32130a0…`).
+- PR #89 `6104ed5` (21.45 WIB): catatan rilis lengkap v2.9.1 → v2.12.4 (ID + EN) dengan uji HP owner. Label diuji di HP tidak lagi menulis "ditulis sebelum uji HP ini" bila catatan sudah mencatat uji HP.
+- PR #88 `6dcabdb` (17.28 WIB): Builder mengunggah modul NoMount sekali per versi. Run 40853374637 (r6) menampilkannya dua kali; rilis r6 sudah satu karena saringan digest. Belum dibuktikan oleh run Builder baru.
+- ✅ Owner 29 Okt 21.36 WIB: "Lulus Uji v2.12.4". Screenshot: blokir APK aktif, izin pasang dari Telegram sudah dicabut, kotak Cari tampil.
 - PR #86 `caeecd0` (14.03 WIB): v2.12.4, 🔍 Cari di tab Aplikasi.
 - PR #85 `ec7d85f` (13.56 WIB): v2.12.3, Percaya/Lepas/blokir langsung tanpa pindai ulang, plus keterangan untuk tanggal pasang tidak wajar (Netflix 1999).
 - PR #84 `2adab8f` (13.18 WIB): v2.12.2, pindai lewat pipa (bug "Failed transaction"), readback blokir jujur, tombol blokir menunggu status. ✅ Pindai berjalan di HP owner 13.44 WIB.
@@ -24,17 +28,11 @@ Cogan Smart **v2.12.4** (versionCode 35) sudah di `main` lewat PR #86 (29 Okt 14
 
 ## Tertunda (keputusan owner)
 
-- Uji v2.12.4 di HP:
-  - 🔍 Cari: ketik "net", Netflix muncul.
-  - 🛡️ Percaya/Lepas selesai dalam beberapa detik, termasuk saat pindai sedang berjalan.
-  - Tekan Mulai di Kontrol Daya/Suhu, tutup root manager, lalu buka lagi: harus tetap aktif. Hasil Termux `0::/` sudah ada; uji tutup/buka belum dikonfirmasi.
-  - Blokir APK: APK kiriman WhatsApp ditolak, dan izin yang dinyalakan lagi dicabut dengan notifikasi.
-  - Opsional, Netflix: `su -c "dumpsys package com.netflix.mediaclient | grep -E 'firstInstallTime|codePath|installerPackageName'"`.
-- Rilis Cogan Smart: **ditahan owner** ("Untuk rilis tahan dulu!", 29 Okt 11.26 WIB). Kalau owner meminta rilis, jalankan workflow Cogan Smart Release untuk versi yang diminta.
+- Tidak ada pekerjaan Cogan Smart yang tertunda. Rilis berikutnya tetap atas permintaan owner lewat workflow Cogan Smart Release.
 
 ## Langkah pertama berikutnya
 
-- Tunggu hasil uji owner. Bila ada yang salah, perbaiki dari screenshot (versi baru v2.12.5). Data gerak-gerik, internet dan baterai sudah terbaca di HP (screenshot 13.44 WIB). Hapus sampai akar dan blokir APK belum terbukti di HP.
+- Tunggu instruksi owner. Bila owner melaporkan bug v2.12.4, perbaiki dari screenshot sebagai v2.12.5.
 
 ## v2.12.4 — Cari aplikasi (owner 29 Okt ±13.55 WIB, rilis tetap DITAHAN)
 
