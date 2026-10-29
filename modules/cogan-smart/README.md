@@ -10,7 +10,7 @@
 
 | Versi | versionCode | ZIP siap pasang | Catatan | Salinan di repo | SHA256 ZIP |
 |---|---|---|---|---|---|
-| **v2.12.3** (paket uji Percaya dan blokir langsung) | 34 | [Paket pembaruan](rilis/v2.12.3/Cogan-Smart-Kernel-v2.12.3.zip) | [What's New](rilis/v2.12.3/Cogan-Smart-v2.12.3-Whats-New-and-Fixes.txt) | [rilis/v2.12.3](rilis/v2.12.3) | `354236c9735893817dae47b64de8e3db3c170e29d822bd46e2fd36d4fe547bde` |
+| **v2.12.3** (paket uji Percaya dan blokir langsung) | 34 | [Paket pembaruan](rilis/v2.12.3/Cogan-Smart-Kernel-v2.12.3.zip) | [What's New](rilis/v2.12.3/Cogan-Smart-v2.12.3-Whats-New-and-Fixes.txt) | [rilis/v2.12.3](rilis/v2.12.3) | `3079c3577a8bb2a9a042f9c5f0f3b3d726f8ebbe67650bddbabee6c78adc3d60` |
 | **v2.12.2** (paket uji pindai aplikasi lewat pipa) | 33 | [Paket pembaruan](rilis/v2.12.2/Cogan-Smart-Kernel-v2.12.2.zip) | [What's New](rilis/v2.12.2/Cogan-Smart-v2.12.2-Whats-New-and-Fixes.txt) | [rilis/v2.12.2](rilis/v2.12.2) | `f3c5ccf16f6bfa5f6ef696dac73a3a98b7591dfd7c6c42c3c6b6816496f3a700` |
 | **v2.12.1** (paket uji perbaikan audit) | 32 | [Paket pembaruan](rilis/v2.12.1/Cogan-Smart-Kernel-v2.12.1.zip) | [What's New](rilis/v2.12.1/Cogan-Smart-v2.12.1-Whats-New-and-Fixes.txt) | [rilis/v2.12.1](rilis/v2.12.1) | `4568aeb4b1fe0e8c85f33b9cb13d47d7572898799e9226e4653d0dc42669a8e8` |
 | **v2.12.0** (paket uji tab Aplikasi) | 31 | [Paket pembaruan](rilis/v2.12.0/Cogan-Smart-Kernel-v2.12.0.zip) | [What's New](rilis/v2.12.0/Cogan-Smart-v2.12.0-Whats-New-and-Fixes.txt) | [rilis/v2.12.0](rilis/v2.12.0) | `7acc20223baabc925345f7d3e6c328bb8bf94a97460c92f9b65e15f27b566d47` |

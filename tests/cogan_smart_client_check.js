@@ -98,7 +98,7 @@ vm.runInContext(fs.readFileSync('modules/cogan-smart/webroot/client.js','utf8'),
   const scan={ok:1,user:0,scanned_at:2000000,missing:['internet'],block:{on:1,running:1,sources:['com.whatsapp'],events:[{at:1999700,p:'com.whatsapp'}]},
     apps:[{p:'id.scam',src:'chat',from:'com.whatsapp',inst:'2026-10-29 10:00:00',used:1999000,run:1,perms:['sms','a11y','hidden'],acc:{sms:125,cam:3723},net:-1,bat:12.5,risk:2,trusted:0,core:0},
       {p:'app.old',src:'store',from:'com.android.vending',inst:'2020-01-01 00:00:00',used:2000000-10*86400,run:0,perms:[],acc:{},net:2048,bat:0,risk:0,trusted:0,core:0},
-      {p:'com.rifsxd.ksunext',src:'unknown',from:'',inst:'',used:0,run:0,perms:[],acc:{},net:0,bat:0,risk:0,trusted:0,core:1}]};
+      {p:'com.rifsxd.ksunext',src:'unknown',from:'',inst:'1999-12-31 23:00:00',used:0,run:0,perms:[],acc:{},net:0,bat:0,risk:0,trusted:0,core:1}]};
   // The block card waits for its own status read; a scan (cached or failed) never enables its buttons (audit 29 Oct).
   const nowS=Math.floor(Date.now()/1000);
   let blockStatus={on:1,running:1,query_ok:1,events:[{at:nowS-300,p:'com.whatsapp',ok:1}]};
@@ -138,8 +138,10 @@ vm.runInContext(fs.readFileSync('modules/cogan-smart/webroot/client.js','utf8'),
   vm.runInContext('filter="idle"; render(data)',appPage);
   assert.match(appNode('apps').innerHTML,/Terakhir dipakai: 10 hari lalu/);
   assert.match(appNode('apps').innerHTML,/Internet 7 hari: 2.0 KB/);
+  assert.match(appNode('apps').innerHTML,/Dipasang: 2020-01-01<\/div>/);
   vm.runInContext('filter="all"; render(data)',appPage);
   assert.match(appNode('apps').innerHTML,/Dilindungi: aplikasi root manager/);
+  assert.match(appNode('apps').innerHTML,/Dipasang: 1999-12-31 \(tanggal tidak wajar dari Android/);
   assert(!/data-act="remove" data-p="com.rifsxd.ksunext"/.test(appNode('apps').innerHTML));
   console.log('WebUI drafts, native callbacks and scan errors: OK');
 })().catch(e=>{console.error(e);process.exitCode=1;});

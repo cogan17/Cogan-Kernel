@@ -142,7 +142,9 @@ function appCard(a) {
   const status = a.core ? 'Root manager · dilindungi' : a.trusted ? 'Di whitelist · dipercaya' : risk[1];
   const from = a.src === 'chat' ? `file APK dari ${name(a.from)}` : SOURCE[a.src];
   const access = Object.entries(a.acc).sort((x, y) => x[1] - y[1]).map(([k, s]) => `${ACCESS[k]} ${ago(s)}`);
-  const facts = [`Sumber: ${from}`, a.inst ? `Dipasang: ${a.inst.slice(0, 10)}` : '',
+  // Android reports the date as it is; one before Android existed (owner 29 Oct: Netflix 1999-12-31) is not a real install.
+  const inst = a.inst.slice(0, 10), oddDate = inst && inst < '2008-09-23';
+  const facts = [`Sumber: ${from}`, oddDate ? `Dipasang: ${inst} (tanggal tidak wajar dari Android; biasanya aplikasi bawaan HP)` : inst ? `Dipasang: ${inst}` : '',
     idle >= 0 ? (idle ? `Terakhir dipakai: ${idle} hari lalu` : 'Terakhir dipakai: hari ini') : 'Terakhir dipakai: tidak tercatat',
     a.run ? 'Sedang berjalan' : '',
     a.net >= 0 ? `Internet 7 hari: ${bytes(a.net)}` : '', a.bat >= 0 ? `Baterai sejak cas penuh: ${a.bat} mAh` : ''].filter(Boolean);
