@@ -149,8 +149,14 @@ esac""")
         self.report("stop")
         self.tmp.cleanup()
 
+    # Binder hands a command's stdout and stderr to system_server; SELinux allows a pipe or /dev/null, not a file in
+    # /data/adb, and cmd then fails like on the owner's phone (29 Oct). The fakes of Binder commands do the same.
+    BINDER = ("pm", "cmd", "dumpsys", "settings", "am")
+    GUARD = ('for fd in 1 2; do case $(readlink /proc/$$/fd/$fd) in /dev/null|pipe:*) ;; *) '
+             'echo "cmd: Failure calling service package: Failed transaction (2147483646)" >&2; exit 255;; esac; done\n')
+
     def tool(self, name, body):
-        write(self.bin / name, "#!/bin/sh\n" + body + "\n")
+        write(self.bin / name, "#!/bin/sh\n" + (self.GUARD if name in self.BINDER else "") + body + "\n")
         (self.bin / name).chmod(0o755)
 
     def report(self, *args):
@@ -233,7 +239,7 @@ esac""")
         self.assertTrue((self.root / f"data/data/{SCAM}").exists())
 
     def test_a_device_admin_that_stays_blocks_the_removal(self):
-        self.tool("pm", (self.bin / "pm").read_text().split("\n", 1)[1].replace('disable) echo', 'disable) exit 0; echo'))
+        self.tool("pm", (self.bin / "pm").read_text().split("\n", 2)[2].replace('disable) echo', 'disable) exit 0; echo'))
         self.tool("sleep", "exit 0")
         result = self.report("remove", SCAM)
         self.assertEqual(result["ok"], 0)
@@ -265,7 +271,7 @@ esac""")
         self.assertEqual(apps[SCAM]["src"], "chat")
 
     def test_a_revoke_that_does_not_hold_is_reported_once_not_claimed(self):
-        self.tool("cmd", (self.bin / "cmd").read_text().split("\n", 1)[1].replace('"appops set") echo "$*"', '"appops set") exit 0; echo "$*"'))
+        self.tool("cmd", (self.bin / "cmd").read_text().split("\n", 2)[2].replace('"appops set") echo "$*"', '"appops set") exit 0; echo "$*"'))
         self.report("block", "on"); self.report("block", "on")
         self.report("block", "off")
         log = (self.state / "log").read_text()
@@ -274,6 +280,30 @@ esac""")
         self.assertNotIn("com.whatsapp dicabut", log)
         _, result = self.scan()
         self.assertEqual([(e["p"], e["ok"]) for e in result["block"]["events"]][:1], [("com.whatsapp", 0)])
+
+    def test_a_failed_read_back_or_query_is_never_counted_as_revoked(self):
+        # Audit 29 Oct: with the query failing after the set, "! query | grep" read as success.
+        body = (self.bin / "cmd").read_text().split("\n", 2)[2]
+        broken = self.state / "broken"
+        self.tool("cmd", f'[ "$1 $2" = "appops query-op" ] && [ -e {broken} ] && {{ echo "Error: Failed transaction" >&2; exit 1; }}\n'
+                  + body.replace('"appops set") echo "$*"', f'"appops set") : > {broken}; echo "$*"'))
+        self.report("block", "on")
+        log = (self.state / "log").read_text()
+        self.assertIn("com.whatsapp GAGAL dicabut", log)
+        self.assertNotIn("com.whatsapp dicabut", log)
+        status = self.report("status")["block"]
+        self.assertEqual((status["on"], status["events"][0]["ok"]), (1, 0))
+        # A query that cannot be read at all marks the block card, and claims nothing.
+        self.report("block", "off"); (self.state / "log").write_text("")
+        self.report("block", "on")
+        self.assertEqual(self.report("status")["block"]["query_ok"], 0)
+        self.assertNotIn("dicabut", (self.state / "log").read_text())
+
+    def test_the_block_status_answers_when_the_package_service_does_not(self):
+        self.tool("pm", 'echo "cmd: Failure calling service package: Failed transaction (2147483646)" >&2; exit 255')
+        self.assertEqual(self.report("scan")["ok"], 0)
+        status = self.report("status")
+        self.assertEqual((status["ok"], status["block"]["on"], status["block"]["query_ok"]), (1, 1, 1))
 
     def test_two_block_workers_started_together_leave_one(self):
         write(self.data / "config", "BLOCK=1\n")

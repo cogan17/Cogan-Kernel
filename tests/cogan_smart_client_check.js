@@ -91,7 +91,7 @@ vm.runInContext(fs.readFileSync('modules/cogan-smart/webroot/client.js','utf8'),
   assert.equal(node('appsLine').textContent,'3 aplikasi · 1 berbahaya · 0 perlu dicek · Blokir APK chat: aktif · dipindai 1 menit lalu');
   // Aplikasi tab: the last scan renders at once, with names from the root manager.
   const appNodes=new Map(), appNode=id=>{
-    if(!appNodes.has(id)) { const classes=new Set(); appNodes.set(id,{textContent:'',innerHTML:'',style:{},disabled:false,addEventListener(){},
+    if(!appNodes.has(id)) { const classes=new Set(); appNodes.set(id,{textContent:'',innerHTML:'',style:{},disabled:/^block(On|Off)$/.test(id),addEventListener(){},
       classList:{add:c=>classes.add(c),remove:c=>classes.delete(c),contains:c=>classes.has(c),toggle:(c,on)=>on?classes.add(c):classes.delete(c)}}); }
     return appNodes.get(id);
   };
@@ -99,10 +99,16 @@ vm.runInContext(fs.readFileSync('modules/cogan-smart/webroot/client.js','utf8'),
     apps:[{p:'id.scam',src:'chat',from:'com.whatsapp',inst:'2026-10-29 10:00:00',used:1999000,run:1,perms:['sms','a11y','hidden'],acc:{sms:125,cam:3723},net:-1,bat:12.5,risk:2,trusted:0,core:0},
       {p:'app.old',src:'store',from:'com.android.vending',inst:'2020-01-01 00:00:00',used:2000000-10*86400,run:0,perms:[],acc:{},net:2048,bat:0,risk:0,trusted:0,core:0},
       {p:'com.rifsxd.ksunext',src:'unknown',from:'',inst:'',used:0,run:0,perms:[],acc:{},net:0,bat:0,risk:0,trusted:0,core:1}]};
+  // The block card waits for its own status read; a scan (cached or failed) never enables its buttons (audit 29 Oct).
+  const nowS=Math.floor(Date.now()/1000);
+  let blockStatus={on:1,running:1,query_ok:1,events:[{at:nowS-300,p:'com.whatsapp',ok:1}]};
+  const appsSource=fs.readFileSync('modules/cogan-smart/webroot/apps.html','utf8');
+  assert.match(appsSource,/id="blockOn" data-action disabled>/);
+  assert.match(appsSource,/id="blockOff" data-action disabled>/);
   const appPage={ksu:{getPackagesInfo:list=>JSON.stringify(JSON.parse(list).map(p=>p==='id.scam'?{packageName:p,appLabel:'Undangan Nikah'}:{packageName:p,error:'not cached'}))},
     setTimeout:()=>0,clearTimeout(){},CoganI18n:{t:s=>s,apply(){}},localStorage:{getItem:()=>null,setItem(){}},
     document:{getElementById:appNode,querySelectorAll:()=>[]},addEventListener(){},
-    CoganUI:{create:()=>({report:async()=>{throw new Error('offline');},cached:()=>({at:Date.now(),data:scan}),revision:0}),
+    CoganUI:{create:()=>({report:async args=>{ if(args==='status' && blockStatus) return {ok:1,block:blockStatus}; throw new Error('offline'); },cached:()=>({at:Date.now(),data:scan}),revision:0}),
       folds(){},text:(id,value)=>{appNode(id).textContent=value;},html:(id,value)=>{appNode(id).innerHTML=value;},action:async(b,m,task)=>task()}};
   appPage.window=appPage;
   vm.createContext(appPage);
@@ -110,7 +116,17 @@ vm.runInContext(fs.readFileSync('modules/cogan-smart/webroot/client.js','utf8'),
   vm.runInContext(appsHtml.match(/<script>\s*(\/\/ Aplikasi[\s\S]*?)<\/script>/)[1],appPage);
   assert.match(appNode('summary').innerHTML,/3 aplikasi<\/b> · <span class="hot">1 berbahaya/);
   assert.match(appNode('summary').innerHTML,/Belum terbaca: internet/);
+  await new Promise(resolve=>setImmediate(resolve));
   assert.equal(appNode('blockBrief').textContent,'aktif');
+  assert.deepEqual([appNode('blockOn').disabled,appNode('blockOff').disabled],[true,false]);
+  // A status read that fails leaves both buttons disabled, whatever an older scan said.
+  blockStatus=null; appNode('blockOn').disabled=true; appNode('blockOff').disabled=true;
+  vm.runInContext(appsHtml.match(/\n  (readBlock\(\)\.catch\([^\n]*)/)[1],appPage);
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(appNode('blockBrief').textContent,'status belum terbaca');
+  assert.deepEqual([appNode('blockOn').disabled,appNode('blockOff').disabled],[true,true]);
+  vm.runInContext('render(data)',appPage);
+  assert.deepEqual([appNode('blockOn').disabled,appNode('blockOff').disabled],[true,true]);
   assert.match(appNode('blockInfo').textContent,/Terpasang: WhatsApp\nDicabut: WhatsApp 5 menit lalu/);
   const cards=appNode('apps').innerHTML;
   assert.match(cards,/Undangan Nikah/);

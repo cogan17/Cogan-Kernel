@@ -13,6 +13,7 @@ if [ "$1" = --lang ]; then shift 2; fi
 MODDIR=${0%/*}; [ "$MODDIR" = "$0" ] && MODDIR=.
 . "$MODDIR/common.sh"
 export LC_ALL=C
+exec < /dev/null   # Binder commands hand stdin to system_server too; nothing here reads it
 
 fail() { printf '{"ok":0,"error":'; json_string "$1"; printf '}\n'; exit 0; }
 valid_pkg() { printf '%s\n' "$1" | grep -Eq '^[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z0-9_]+)+$' && [ ${#1} -le 200 ]; }
@@ -56,24 +57,31 @@ protected() {   # protected PKG: refuse with a reason when it must stay; unsure 
   is_trusted "$1" && fail 'Aplikasi ada di whitelist; lepaskan dulu.'
 }
 
-PROBLEM="DUMP TIMEOUT|^[[:space:]]*(Permission Denial|Permission denied|Security exception|java[.]lang[.]SecurityException|Can't find service|Error dumping service)"
+PROBLEM="DUMP TIMEOUT|Failure calling service|Failed transaction|^[[:space:]]*(Permission Denial|Permission denied|Security exception|java[.]lang[.]SecurityException|Can't find service|Error dumping service)"
+# pm, cmd, dumpsys and settings hand their stdout and stderr to system_server over Binder. SELinux lets it use a pipe,
+# not a file in /data/adb (adb_data_file): the kernel refuses the transfer (selinux_binder_transfer_file) and cmd
+# answers "Failure calling service package: Failed transaction" (owner's phone, 29 Oct). So reads go through a pipe.
+run_to() {   # run_to FILE LIMIT CMD...: output and errors of CMD into FILE; true when CMD exited 0
+  ca_o=$1; ca_lim=$2; shift 2
+  { timeout "$ca_lim" "$@" 2>&1; echo $? > "$ca_o.rc"; } | cat > "$ca_o"
+  read_into ca_rc "$ca_o.rc"; [ "$ca_rc" = 0 ]
+}
 scan_fail() {
-  ca_detail=$(head -c 240 "$ca_tmp/error"); [ -n "$ca_detail" ] || ca_detail=$(head -c 240 "$ca_tmp/$1")
-  [ -n "$ca_detail" ] || ca_detail='respons kosong'
+  ca_detail=$(head -c 240 "$ca_tmp/$1"); [ -n "$ca_detail" ] || ca_detail='respons kosong'
   fail "Pemindaian gagal pada $2: $(printf '%s' "$ca_detail" | tr '\r\n' '  ')"
 }
 read_must() {   # FILE LABEL LIMIT CMD...: no partial dump is ever parsed
   ca_f=$1; ca_l=$2; ca_t=$3; shift 3
-  timeout "$ca_t" "$@" > "$ca_tmp/$ca_f" 2> "$ca_tmp/error" || scan_fail "$ca_f" "$ca_l"
-  grep -Eiq -m 1 "$PROBLEM" "$ca_tmp/$ca_f" "$ca_tmp/error" && scan_fail "$ca_f" "$ca_l"
+  run_to "$ca_tmp/$ca_f" "$ca_t" "$@" || scan_fail "$ca_f" "$ca_l"
+  grep -Eiq -m 1 "$PROBLEM" "$ca_tmp/$ca_f" && scan_fail "$ca_f" "$ca_l"
   [ -s "$ca_tmp/$ca_f" ] || scan_fail "$ca_f" "$ca_l"
 }
 read_may() {    # the same, but a failed read only leaves that column empty and named in "missing"
   ca_f=$1; ca_l=$2; ca_t=$3; shift 3
   # The WebUI gives up after 120 s, so optional reads share what is left of a 100 s budget.
   ca_rest=$((ca_deadline - $(date +%s))); [ "$ca_t" -le "$ca_rest" ] || ca_t=$ca_rest
-  if [ "$ca_t" -ge 3 ] && timeout "$ca_t" "$@" > "$ca_tmp/$ca_f" 2> "$ca_tmp/error" && [ -s "$ca_tmp/$ca_f" ] &&
-     ! grep -Eiq -m 1 "$PROBLEM" "$ca_tmp/$ca_f" "$ca_tmp/error"; then return 0; fi
+  if [ "$ca_t" -ge 3 ] && run_to "$ca_tmp/$ca_f" "$ca_t" "$@" && [ -s "$ca_tmp/$ca_f" ] &&
+     ! grep -Eiq -m 1 "$PROBLEM" "$ca_tmp/$ca_f"; then return 0; fi
   : > "$ca_tmp/$ca_f"; ca_missing="$ca_missing $ca_l"
 }
 
@@ -93,8 +101,8 @@ scan() {
   read_may net internet 30 dumpsys -t 25 netstats --uid --full
   ca_ps=ps; [ ! -x /system/bin/ps ] || ca_ps=/system/bin/ps
   read_may running proses 10 "$ca_ps" -A -w -o args
-  timeout 5 settings --user "$CA_USER" get secure enabled_accessibility_services > "$ca_tmp/a11y" 2> /dev/null || : > "$ca_tmp/a11y"
-  timeout 5 settings --user "$CA_USER" get secure enabled_notification_listeners > "$ca_tmp/notif" 2> /dev/null || : > "$ca_tmp/notif"
+  { timeout 5 settings --user "$CA_USER" get secure enabled_accessibility_services 2> /dev/null; } | cat > "$ca_tmp/a11y"
+  { timeout 5 settings --user "$CA_USER" get secure enabled_notification_listeners 2> /dev/null; } | cat > "$ca_tmp/notif"
   cp "$CA_DATA/trusted" "$ca_tmp/trusted" 2> /dev/null || : > "$ca_tmp/trusted"
   cp "$CA_DATA/blocked.log" "$ca_tmp/events" 2> /dev/null || : > "$ca_tmp/events"
   # PackageManager dates use Android's timezone; standalone BusyBox must use the same one.
@@ -166,6 +174,13 @@ remove_app() {
   printf '{"ok":1,"admins":%d,"leftovers":%d,"settings":%d,"apks":[%s]}\n' "$ca_n_admin" "$ca_left" "$ca_set" "$ca_apks"
 }
 
+block_json() {   # the block switch, its worker, whether the last appops query could be read, the last events
+  load_config; ca_running=0; block_pid > /dev/null && ca_running=1
+  printf '{"on":%d,"running":%d,"query_ok":%d,"events":[' "$BLOCK" "$ca_running" "$([ -f "$CA_RUN/query.failed" ] && echo 0 || echo 1)"
+  tail -n 5 "$CA_DATA/blocked.log" 2> /dev/null | awk '$1 ~ /^[0-9]+$/ && $2 ~ /^[A-Za-z][A-Za-z0-9_.]*$/ {
+    printf "%s{\"at\":%s,\"p\":\"%s\",\"ok\":%d}", (n++ ? "," : ""), $1, $2, ($3 == "0" ? 0 : 1) }'
+  printf ']}'
+}
 start_block() {
   block_pid > /dev/null && return 0
   if command -v setsid > /dev/null 2>&1; then setsid sh "$MODDIR/block.sh" < /dev/null > /dev/null 2>&1 &
@@ -186,6 +201,7 @@ case $1 in
     if [ "$BLOCK" = 1 ]; then block_pass; start_block; fi
     exit 0 ;;
   stop) stop_block; exit 0 ;;
+  status) printf '{"ok":1,"block":'; block_json; printf '}\n'; exit 0 ;;   # light: the block card without a full scan
 esac
 umask 077
 mkdir -p "$CA_RUN" || fail 'Gagal menyiapkan tab Aplikasi.'
