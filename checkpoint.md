@@ -1,6 +1,40 @@
 # Checkpoint — 29 Okt 2026 (WIB)
 
-Cogan Smart **v2.12.4** (versionCode 35: 🔍 Cari) di atas v2.12.3 (Percaya/blokir langsung) dan v2.12.2 (pindai terbukti di HP). Siap diuji. **Rilis ditahan owner** sampai diuji. Sesi berikutnya baca `CLAUDE.md`, file ini dan `CHECKPOINT.md`, lalu tunggu instruksi owner. Jangan otomatis menguji HP, menjalankan build atau menerbitkan rilis.
+Cogan Smart **v2.12.4** (versionCode 35) sudah di `main` lewat PR #86 (29 Okt 14.03 WIB) dan siap diuji di HP. Versi itu berisi v2.12.3 (Percaya/blokir langsung) dan v2.12.2 (pindai terbukti di HP). **Rilis ditahan owner** sampai diuji. Sesi berikutnya baca `CLAUDE.md`, file ini dan `CHECKPOINT.md`, lalu tunggu instruksi owner. Jangan otomatis menguji HP, menjalankan build atau menerbitkan rilis.
+
+## Sedang berjalan
+
+- Tidak ada: tidak ada PR terbuka, run workflow atau draf yang berjalan.
+
+## Sudah selesai (sesi 28–29 Okt)
+
+- PR #86 `caeecd0` (14.03 WIB): v2.12.4, 🔍 Cari di tab Aplikasi.
+- PR #85 `ec7d85f` (13.56 WIB): v2.12.3, Percaya/Lepas/blokir langsung tanpa pindai ulang, plus keterangan untuk tanggal pasang tidak wajar (Netflix 1999).
+- PR #84 `2adab8f` (13.18 WIB): v2.12.2, pindai lewat pipa (bug "Failed transaction"), readback blokir jujur, tombol blokir menunggu status. ✅ Pindai berjalan di HP owner 13.44 WIB.
+- PR #83 `48adfe3` (12.52 WIB): v2.12.1, perbaikan audit v2.12.0 (temuan IFS tidak terbukti).
+- PR #80 `edd18a5` (12.33 WIB): v2.12.0, tab 📱 Aplikasi.
+- PR #82 `4e85020`: v2.11.2, pekerja tetap hidup setelah root manager ditutup (lihat bagian Bug Mulai berhenti).
+- PR #81: checkpoint owner 29 Okt.
+- [PR #79](https://github.com/cogan17/Cogan-Kernel/pull/79) `381e848`: v2.11.1 (Manager hanya memantau, keluar WebUI sekali usap). ✅ Owner 29 Okt: "Semuanya lolos uji disisi saya".
+- v2.11.1 (lihat bagian v2.11.1): revisi owner atas v2.11.0 dan perbaikan usap kembali.
+- [PR #77](https://github.com/cogan17/Cogan-Kernel/pull/77) `61dbf3cfefc3b3942289b5c25734964ea8e18ee5`, digabung 29 Okt 09.55 WIB: v2.11.0 (lihat bagian v2.11.0). [Validate 40809071342](https://github.com/cogan17/Cogan-Kernel/actions/runs/40809071342) lolos 09.54 WIB. ZIP uji dikirim ke owner.
+- [PR #76](https://github.com/cogan17/Cogan-Kernel/pull/76) `2291616df26941b6393c071a2f7c9bfb43382da1`, digabung 29 Okt 07.11 WIB: artifact dan rilis kernel hanya membawa modul SUSFS sidex15 (file 5); modul simonpunk tidak dibangun lagi, SUSFS simonpunk tetap dicek di Cek pembaruan (aturan di `CLAUDE.md`).
+- PR #72–#75 (28 Okt): hook init ZRAM v2.10.6 → v2.10.7 → v2.10.8; v2.10.8 diuji owner di HP 23.23 WIB (`zram0: zstd`).
+- PR #70–#71 (28 Okt): deteksi DRAM MediaTek v2.10.5 dan checkpoint.
+
+## Tertunda (keputusan owner)
+
+- Uji v2.12.4 di HP:
+  - 🔍 Cari: ketik "net", Netflix muncul.
+  - 🛡️ Percaya/Lepas selesai dalam beberapa detik, termasuk saat pindai sedang berjalan.
+  - Tekan Mulai di Kontrol Daya/Suhu, tutup root manager, lalu buka lagi: harus tetap aktif. Hasil Termux `0::/` sudah ada; uji tutup/buka belum dikonfirmasi.
+  - Blokir APK: APK kiriman WhatsApp ditolak, dan izin yang dinyalakan lagi dicabut dengan notifikasi.
+  - Opsional, Netflix: `su -c "dumpsys package com.netflix.mediaclient | grep -E 'firstInstallTime|codePath|installerPackageName'"`.
+- Rilis Cogan Smart: **ditahan owner** ("Untuk rilis tahan dulu!", 29 Okt 11.26 WIB). Kalau owner meminta rilis, jalankan workflow Cogan Smart Release untuk versi yang diminta.
+
+## Langkah pertama berikutnya
+
+- Tunggu hasil uji owner. Bila ada yang salah, perbaiki dari screenshot (versi baru v2.12.5). Data gerak-gerik, internet dan baterai sudah terbaca di HP (screenshot 13.44 WIB). Hapus sampai akar dan blokir APK belum terbukti di HP.
 
 ## v2.12.4 — Cari aplikasi (owner 29 Okt ±13.55 WIB, rilis tetap DITAHAN)
 
@@ -37,30 +71,6 @@ Cogan Smart **v2.12.4** (versionCode 35: 🔍 Cari) di atas v2.12.3 (Percaya/blo
   - **P2 timeout scan: benar** (190 detik > 120 detik). Bacaan opsional kini berbagi anggaran 100 detik (`CA_BUDGET`, tes 0). `settings` diberi `timeout 5`.
   - **Catatan cgroup:** `leave_app_cgroup` kini membaca ulang dan menulis ke logcat (`CoganSmart`) bila ditolak.
 - **v2.12.1 (versionCode 32):** [paket uji](modules/cogan-smart/rilis/v2.12.1/Cogan-Smart-Kernel-v2.12.1.zip) SHA256 `4568aeb4b1fe0e8c85f33b9cb13d47d7572898799e9226e4653d0dc42669a8e8` (dua kali dikemas, sama). Terukur lokal: semua tes lolos, termasuk 4 tes regresi baru di `test_cogan_smart_apps` (manager berganti nama, host tidak dikenal, readback gagal, dua pekerja) yang diulang di dash dan BusyBox ash. Belum diuji di HP.
-
-## Sedang berjalan
-
-- PR v2.12.4 (lihat bagian v2.12.4). v2.12.3 sudah di-merge (#85).
-
-## Sudah selesai (sesi 28–29 Okt)
-
-- PR #82 `4e85020`: v2.11.2, pekerja tetap hidup setelah root manager ditutup (lihat bagian Bug Mulai berhenti).
-- PR #81: checkpoint owner 29 Okt.
-- [PR #79](https://github.com/cogan17/Cogan-Kernel/pull/79) `381e848`: v2.11.1 (Manager hanya memantau, keluar WebUI sekali usap). ✅ Owner 29 Okt: "Semuanya lolos uji disisi saya".
-- v2.11.1 (lihat bagian v2.11.1): revisi owner atas v2.11.0 dan perbaikan usap kembali.
-- [PR #77](https://github.com/cogan17/Cogan-Kernel/pull/77) `61dbf3cfefc3b3942289b5c25734964ea8e18ee5`, digabung 29 Okt 09.55 WIB: v2.11.0 (lihat bagian v2.11.0). [Validate 40809071342](https://github.com/cogan17/Cogan-Kernel/actions/runs/40809071342) lolos 09.54 WIB. ZIP uji dikirim ke owner.
-- [PR #76](https://github.com/cogan17/Cogan-Kernel/pull/76) `2291616df26941b6393c071a2f7c9bfb43382da1`, digabung 29 Okt 07.11 WIB: artifact dan rilis kernel hanya membawa modul SUSFS sidex15 (file 5); modul simonpunk tidak dibangun lagi, SUSFS simonpunk tetap dicek di Cek pembaruan (aturan di `CLAUDE.md`).
-- PR #72–#75 (28 Okt): hook init ZRAM v2.10.6 → v2.10.7 → v2.10.8; v2.10.8 diuji owner di HP 23.23 WIB (`zram0: zstd`).
-- PR #70–#71 (28 Okt): deteksi DRAM MediaTek v2.10.5 dan checkpoint.
-
-## Tertunda (keputusan owner)
-
-- Uji v2.12.3 di HP: Percaya/Lepas langsung selesai; sisanya: tekan Mulai di Kontrol Daya/Suhu, tutup root manager, buka lagi → tetap aktif; tab 📱 Aplikasi terisi; APK kiriman WhatsApp/sosmed/email/SMS ditolak dan izin yang dinyalakan lagi dicabut dengan notifikasi.
-- Rilis Cogan Smart: **ditahan owner** ("Untuk rilis tahan dulu!", 29 Okt 11.26 WIB).
-
-## Langkah pertama berikutnya
-
-- Tunggu hasil uji owner. Bila ada yang salah, perbaiki dari screenshot (versi baru v2.12.1). Format dump HyperOS 3 untuk appops, netstats dan batterystats belum terbukti; kolom "Belum terbaca" atau angka kosong adalah petunjuk pertama.
 
 ## Bug Mulai berhenti → v2.11.2 (owner 29 Okt ±11.26 WIB, rilis DITAHAN)
 
@@ -149,4 +159,17 @@ Cogan Smart **v2.12.4** (versionCode 35: 🔍 Cari) di atas v2.12.3 (Percaya/blo
 
 ## English state summary
 
-The owner reported that Start in Power/Temperature controls fell back to stopped after closing the root manager. Workers started from the WebUI sat in the app's cgroup, which Android kills with cgroup.kill. v2.11.2 (PR #82) moves them to the root cgroup; the owner's Termux check showed both workers in `0::/`, but the close/reopen test is not confirmed yet. v2.12.0 (versionCode 31) adds the 📱 Apps tab with the same fix for its APK block loop, and the block now covers 33 chat, social, email and SMS apps. Releases are on hold by the owner. Wait for the owner's test results.
+29 Oct, end of the session's work: v2.12.4 (versionCode 35) is on `main` (PR #86, 14.03 WIB). It contains:
+
+- the 📱 Apps tab (watch apps, remove completely, block APKs from 33 chat/social/email/SMS apps);
+- audit fixes (v2.12.1);
+- the Binder pipe fix that makes the scan work on the phone (v2.12.2, proven by the owner at 13.44 WIB);
+- instant Trust/Untrust/block (v2.12.3);
+- app search (v2.12.4).
+
+Still to confirm on the phone:
+
+- the cgroup fix: the Termux check showed `0::/`, but the close/reopen test is not confirmed;
+- remove completely and the APK block.
+
+v2.11.1 passed the owner's phone test. Releases are on hold by the owner. No PR or workflow is running. Wait for the owner's test results.
