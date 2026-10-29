@@ -35,11 +35,24 @@ host_uid() {
   echo 0
 }
 ROOT_MANAGERS=' me.weishu.kernelsu com.rifsxd.ksunext com.sukisu.ultra com.topjohnwu.magisk io.github.vvb2060.magisk io.github.huskydg.magisk me.bmax.apatch '
+# Root manager apps ship their daemon as an extracted native library (KernelSU, Next and BakaSU libksud.so,
+# Magisk libmagisk*.so, APatch libapd.so/libkpatch.so), so a renamed manager is still found by what it carries.
+manager_pkgs() {
+  for ca_l in "$CA_ROOT"/data/app/*/*/lib/*/libksud.so "$CA_ROOT"/data/app/*/*/lib/*/libmagisk*.so \
+      "$CA_ROOT"/data/app/*/*/lib/*/libapd.so "$CA_ROOT"/data/app/*/*/lib/*/libkpatch.so \
+      "$CA_ROOT"/data/app/*/lib/*/libksud.so "$CA_ROOT"/data/app/*/lib/*/libmagisk*.so; do
+    [ -e "$ca_l" ] || continue
+    ca_d=${ca_l%/lib/*}; ca_d=${ca_d##*/}; printf '%s ' "${ca_d%%-*}"   # package names never hold "-"
+  done
+}
 app_id() { dumpsys package "$1" 2>/dev/null | sed -n -E 's/^ *(appId|userId)=([0-9]+).*/\2/p' | head -n 1; }
-protected() {   # protected PKG: refuse with a reason when it must stay
-  case $ROOT_MANAGERS in *" $1 "*) fail 'Aplikasi root manager tidak dihapus dari sini.' ;; esac
-  ca_host=$(host_uid)
-  [ "$ca_host" -gt 0 ] && [ "$(app_id "$1")" = $((ca_host % 100000)) ] && fail 'Ini aplikasi root manager yang membuka WebUI; tidak dihapus.'
+protected() {   # protected PKG: refuse with a reason when it must stay; unsure means no (audit 2026-10-29)
+  case "$ROOT_MANAGERS $(manager_pkgs)" in *" $1 "*) fail 'Aplikasi root manager tidak dihapus dari sini.' ;; esac
+  ca_host=${CA_HOST_UID:-$(host_uid)}   # CA_HOST_UID: the offline tests only
+  [ "$ca_host" -gt 0 ] || fail 'Aplikasi yang membuka WebUI tidak bisa dipastikan; penghapusan dibatalkan.'
+  ca_id=$(app_id "$1")
+  uint "$ca_id" || fail 'Identitas aplikasi tidak terbaca; penghapusan dibatalkan.'
+  [ "$ca_id" = $((ca_host % 100000)) ] && fail 'Ini aplikasi root manager yang membuka WebUI; tidak dihapus.'
   is_trusted "$1" && fail 'Aplikasi ada di whitelist; lepaskan dulu.'
 }
 
@@ -57,7 +70,9 @@ read_must() {   # FILE LABEL LIMIT CMD...: no partial dump is ever parsed
 }
 read_may() {    # the same, but a failed read only leaves that column empty and named in "missing"
   ca_f=$1; ca_l=$2; ca_t=$3; shift 3
-  if timeout "$ca_t" "$@" > "$ca_tmp/$ca_f" 2> "$ca_tmp/error" && [ -s "$ca_tmp/$ca_f" ] &&
+  # The WebUI gives up after 120 s, so optional reads share what is left of a 100 s budget.
+  ca_rest=$((ca_deadline - $(date +%s))); [ "$ca_t" -le "$ca_rest" ] || ca_t=$ca_rest
+  if [ "$ca_t" -ge 3 ] && timeout "$ca_t" "$@" > "$ca_tmp/$ca_f" 2> "$ca_tmp/error" && [ -s "$ca_tmp/$ca_f" ] &&
      ! grep -Eiq -m 1 "$PROBLEM" "$ca_tmp/$ca_f" "$ca_tmp/error"; then return 0; fi
   : > "$ca_tmp/$ca_f"; ca_missing="$ca_missing $ca_l"
 }
@@ -67,7 +82,7 @@ scan() {
   command -v timeout > /dev/null 2>&1 || fail 'Pemindaian memerlukan perintah timeout.'
   mkdir -p "$CA_DATA" && ca_tmp=$(mktemp -d "$CA_DATA/scan.XXXXXX") || fail 'Gagal menyiapkan pemindaian.'
   trap 'rm -rf "$ca_tmp"; lock_drop "$CA_DATA/api.lock"' EXIT
-  ca_missing=''
+  ca_missing=''; ca_deadline=$(($(date +%s) + ${CA_BUDGET:-100}))
   read_must list 'daftar aplikasi' 15 pm list packages -3 --user "$CA_USER"
   read_must packages 'data paket' 25 dumpsys -t 20 package packages
   read_may usage pemakaian 25 dumpsys -t 20 usagestats -c
@@ -78,8 +93,8 @@ scan() {
   read_may net internet 30 dumpsys -t 25 netstats --uid --full
   ca_ps=ps; [ ! -x /system/bin/ps ] || ca_ps=/system/bin/ps
   read_may running proses 10 "$ca_ps" -A -w -o args
-  { settings --user "$CA_USER" get secure enabled_accessibility_services; } > "$ca_tmp/a11y" 2> /dev/null || : > "$ca_tmp/a11y"
-  { settings --user "$CA_USER" get secure enabled_notification_listeners; } > "$ca_tmp/notif" 2> /dev/null || : > "$ca_tmp/notif"
+  timeout 5 settings --user "$CA_USER" get secure enabled_accessibility_services > "$ca_tmp/a11y" 2> /dev/null || : > "$ca_tmp/a11y"
+  timeout 5 settings --user "$CA_USER" get secure enabled_notification_listeners > "$ca_tmp/notif" 2> /dev/null || : > "$ca_tmp/notif"
   cp "$CA_DATA/trusted" "$ca_tmp/trusted" 2> /dev/null || : > "$ca_tmp/trusted"
   cp "$CA_DATA/blocked.log" "$ca_tmp/events" 2> /dev/null || : > "$ca_tmp/events"
   # PackageManager dates use Android's timezone; standalone BusyBox must use the same one.
@@ -87,7 +102,7 @@ scan() {
   case "$ca_tz" in ''|*[!A-Za-z0-9_+./-]*) ;; *) TZ=$ca_tz; export TZ ;; esac
   load_config
   ca_running=0; block_pid > /dev/null && ca_running=1
-  cd "$ca_tmp" && awk -v user="$CA_USER" -v now="$(date +%s)" -v host="$(host_uid)" -v managers="$ROOT_MANAGERS" \
+  cd "$ca_tmp" && awk -v user="$CA_USER" -v now="$(date +%s)" -v host="$(host_uid)" -v managers="$ROOT_MANAGERS $(manager_pkgs)" \
     -v sources="$CA_SOURCES" -v missing="$ca_missing" -v block="$BLOCK" -v block_running="$ca_running" \
     -f "$MODDIR/apps.awk" list packages usage appops admins launcher battery net running a11y notif trusted events
 }
@@ -156,7 +171,13 @@ start_block() {
   if command -v setsid > /dev/null 2>&1; then setsid sh "$MODDIR/block.sh" < /dev/null > /dev/null 2>&1 &
   else nohup sh "$MODDIR/block.sh" < /dev/null > /dev/null 2>&1 & fi
 }
-stop_block() { ca_p=$(block_pid) && kill "$ca_p" 2> /dev/null; rm -f "$CA_RUN/block.pid"; }
+stop_block() {
+  if ca_p=$(block_pid); then
+    kill "$ca_p" 2> /dev/null
+    ca_i=0; while [ "$ca_i" -lt 30 ] && kill -0 "$ca_p" 2> /dev/null; do sleep 0.1; ca_i=$((ca_i + 1)); done
+  fi
+  rm -f "$CA_RUN/block.pid"   # a second worker started at the same moment sees no PID of its own and leaves
+}
 
 case $1 in
   boot)

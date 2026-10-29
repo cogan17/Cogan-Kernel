@@ -1,0 +1,35 @@
+Cogan Smart Kernel v2.12.1 / versionCode 32 — paket uji / test build
+
+Indonesia
+
+Perbaikan (hasil audit v2.12.0):
+- Root manager yang nama paketnya disamarkan tetap tidak bisa dihapus. Bila aplikasi pembuka WebUI tidak bisa dipastikan, penghapusan dibatalkan.
+- Blokir APK mengecek ulang hasilnya. Bila izin gagal dicabut, muncul "GAGAL dicabut" sekali, bukan klaim berhasil.
+- Hanya satu proses blokir yang berjalan.
+- Pindai aplikasi selesai sebelum WebUI menyerah (120 detik).
+- Temuan "jurnal pemulihan CPU/RAM rusak" tidak terbukti: file memakai TAB asli dan Reset memulihkan governor.
+
+Batas:
+- Mematikan blokir tidak mengembalikan izin; izinkan lagi di Pengaturan bila perlu. Belum diuji di HP.
+
+Cara uji:
+1. Pasang sebagai pembaruan modul melalui root manager, lalu reboot.
+2. Tab 📱 Aplikasi → Semua: root manager bertanda 🛡️ tanpa tombol hapus.
+3. Coba pasang APK dari WhatsApp: ditolak. Izinkan di Pengaturan: dicabut lagi dengan notifikasi "dicabut" (atau "GAGAL dicabut" bila Android menolak).
+
+English
+
+Fixes (from the v2.12.0 audit):
+- A root manager with a disguised package name still cannot be removed. If the app showing the WebUI cannot be identified, removal is cancelled.
+- The APK block reads its result back. A right that could not be taken back shows "not revoked" once instead of claiming success.
+- Only one block process runs.
+- The app scan finishes before the WebUI gives up (120 seconds).
+- The finding "broken CPU/RAM restore journal" did not hold: the file uses a real TAB and Reset restores governors.
+
+Limits:
+- Turning the block off gives nothing back; allow an app again in Settings if needed. Not phone-tested yet.
+
+How to test:
+1. Install as a module update through the root manager, then reboot.
+2. 📱 Apps tab → All: the root manager shows 🛡️ without a remove button.
+3. Try to install an APK from WhatsApp: refused. Allow it in Settings: it is taken back with a "revoked" notification (or "not revoked" if Android refuses).

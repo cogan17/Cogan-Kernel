@@ -1,5 +1,27 @@
 # Cogan Smart Kernel
 
+## Perbaikan hasil audit / Audit fixes — v2.12.1 (paket uji / test build)
+
+Indonesia:
+
+- Audit read-only owner 29 Okt atas v2.12.0. Temuan P1 "IFS jurnal restore" **tidak terbukti**: `manager/report.sh` memakai karakter TAB asli; jurnal terbaca utuh di mksh, dash dan BusyBox ash, dan tes Reset sudah memulihkan governor. Reproduksi audit mengetik `\t` secara harfiah. Hanya ditambah komentar.
+- Pengaman root manager kini gagal tertutup: root manager juga dikenali dari library daemon yang dibawanya (`libksud.so`, `libmagisk*.so`, `libapd.so`, `libkpatch.so`), jadi nama paket yang disamarkan tetap terlindungi. Bila aplikasi pembuka WebUI atau identitas aplikasi tidak terbaca, penghapusan dibatalkan.
+- Blokir APK membaca ulang hasilnya. Izin yang gagal dicabut dicatat dan diberitahukan sekali sebagai "GAGAL dicabut", tidak lagi diklaim berhasil. Mematikan blokir tidak mengembalikan izin; teks konfirmasinya kini menyebut itu.
+- Hanya satu pekerja blokir yang hidup: bila dua mulai bersamaan, yang lain berhenti sendiri. Mematikan blokir menunggu pekerjanya benar-benar berhenti.
+- Pindai aplikasi selesai sebelum batas 120 detik WebUI: bacaan opsional berbagi anggaran 100 detik, dan yang tidak sempat dibaca disebut "Belum terbaca".
+- Pindah cgroup pekerja dibaca ulang; bila ditolak, dicatat ke logcat (`logcat -s CoganSmart`).
+- Terukur lokal: tes lolos (mksh, dash, BusyBox ash). Belum diuji di HP.
+
+English:
+
+- Owner's read-only audit of v2.12.0 (29 Oct). Finding P1 "restore journal IFS" **did not hold**: `manager/report.sh` uses a real TAB character; the journal reads whole in mksh, dash and BusyBox ash, and the Reset test already restores governors. The audit's reproduction typed `\t` literally. Only a comment was added.
+- The root manager guard now fails closed: root managers are also recognised by the daemon library they ship (`libksud.so`, `libmagisk*.so`, `libapd.so`, `libkpatch.so`), so a renamed package stays protected. If the app showing the WebUI or the app identity cannot be read, removal is cancelled.
+- The APK block reads its result back. A right that could not be taken back is logged and notified once as "not revoked" instead of being claimed. Turning the block off gives nothing back; its confirmation now says so.
+- Only one block worker runs: if two start together, the other one leaves. Turning the block off waits for the worker to stop.
+- The app scan finishes before the WebUI's 120 s limit: optional reads share a 100 s budget, and what could not be read is listed as "Not read yet".
+- Moving a worker's cgroup is read back; a refused move is logged to logcat (`logcat -s CoganSmart`).
+- Measured locally: tests pass (mksh, dash, BusyBox ash). Not phone-tested yet.
+
 ## Tab Aplikasi: pantau, hapus sampai akar, blokir APK / Apps tab: watch, remove completely, block APKs — v2.12.0 (paket uji / test build)
 
 Indonesia:
