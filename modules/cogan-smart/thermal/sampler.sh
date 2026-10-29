@@ -12,6 +12,7 @@
 
 MODDIR=${0%/*}; [ "$MODDIR" = "$0" ] && MODDIR=.   # started as "sh report.sh"
 . "$MODDIR/common.sh"
+leave_app_cgroup
 
 # Each sample starts as few processes as it can (shell builtins read the files): on the owner's phone the
 # recorder and controller together used 4.8% of the CPU in the first v2.9.1 test (25 Oct 2026).

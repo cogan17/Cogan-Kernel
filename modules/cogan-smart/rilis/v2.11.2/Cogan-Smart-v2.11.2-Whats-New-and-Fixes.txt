@@ -1,0 +1,27 @@
+Cogan Smart Kernel v2.11.2 / versionCode 30 — paket uji / test build
+
+Indonesia
+
+Perbaikan:
+- Mulai di Kontrol Daya dan Kontrol Suhu tidak lagi kembali menjadi "berhenti" setelah root manager ditutup. Penyebabnya, Android mematikan semua proses milik aplikasi root manager saat aplikasi itu ditutup, termasuk pengendali dan pencatat yang dimulai dari WebUI. Kini keduanya pindah ke luar grup aplikasi saat mulai.
+
+Batas:
+- Setelan, mode, cas, suhu dan ZRAM tidak berubah. Belum diuji di HP.
+
+Cara uji:
+1. Pasang sebagai pembaruan modul melalui root manager, lalu reboot.
+2. Buka Manager, tekan Mulai di Kontrol Daya dan Kontrol Suhu.
+3. Tutup root manager (geser dari aplikasi terbaru), tunggu 1 menit, buka lagi: keduanya harus tetap aktif / mencatat.
+
+English
+
+Fixes:
+- Start in Power and Temperature controls no longer turns back to "stopped" after the root manager is closed. Android kills every process of the root manager app when it closes, including the controller and recorder started from the WebUI. They now leave the app group when they start.
+
+Limits:
+- Settings, mode, charging, temperature and ZRAM are unchanged. Not phone-tested yet.
+
+How to test:
+1. Install as a module update through the root manager, then reboot.
+2. Open Manager and press Start in Power and Temperature controls.
+3. Close the root manager (swipe it from recent apps), wait 1 minute, open it again: both must still be active / recording.
