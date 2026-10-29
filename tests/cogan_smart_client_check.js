@@ -82,17 +82,14 @@ vm.runInContext(fs.readFileSync('modules/cogan-smart/webroot/client.js','utf8'),
   vm.runInContext('render(snapshot)',page);
   assert.match(node('ramPending').textContent,/Mode Dev/);
   assert.match(node('ramPendingDev').textContent,/Periksa hasil hook init/);
-  // Manager oversees the other tabs (owner 2026-10-29): power, temperature and the module guard.
-  const button=mode=>({dataset:{mode},disabled:true,classList:{toggle(){}},setAttribute(){}});
-  node('modes').children=[button('hemat'),button('seimbang'),button('game')];
+  // Manager only watches the other tabs (owner 2026-10-29): the mode is set in Power, the scan in Modules.
   page.fixture={running:1,body:405,main:612,battery:{level:80,temp:352,status:'charging',current:3000},
     config:{mode:'seimbang',TARGET_TEMP:41,GAME_LIMIT:44,SAVER_CAP:60},state:{limit:41,big:90,little:100,cause:'Prosesor'}};
   vm.runInContext('power=fixture; thermal={monitor:{}}; overview()',page);
   assert.match(node('overviewChips').innerHTML,/Badan HP<\/small><b class="warm">40.5°/);
   assert.match(node('overviewChips').innerHTML,/80% · 35.2°/);
   assert.equal(node('powerLine').textContent,'target batas CPU besar 90% · kecil 100% · Penyebab: Prosesor · mengecas 3000 mA');
-  assert.equal(node('mode-seimbang').textContent,'Badan HP dijaga ≤ 41 °C');
-  assert(node('modes').children.every(b=>!b.disabled));
+  assert.equal(node('modeLine').innerHTML,'<b>🧠 Kernel Default</b> · <span class="muted">Badan HP dijaga ≤ 41 °C</span>');
   assert.equal(node('guardLine').textContent,'3 modul · 1 berbahaya · 1 perlu dicek · dipindai 2 menit lalu');
   console.log('WebUI drafts, native callbacks and scan errors: OK');
 })().catch(e=>{console.error(e);process.exitCode=1;});

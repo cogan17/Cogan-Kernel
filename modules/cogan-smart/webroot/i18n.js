@@ -397,8 +397,7 @@
     ['Mode daya', 'Power mode'],
     ['Suhu 1 jam terakhir', 'Temperature, last hour'],
     ['Modul root', 'Root modules'],
-    ['Belum dipindai.', 'Not scanned yet.'],
-    ['Pindai modul', 'Scan modules'],
+    ['Belum dipindai. Pindai di tab Modul.', 'Not scanned yet. Scan in the Modules tab.'],
     ['Detail:', 'Details:'],
     ['Panduan', 'Guide'],
     ['Pengendali', 'Controller'],
@@ -434,7 +433,7 @@
     ['Skrip yang jalan saat boot tapi tidak terlihat di daftar modul.', 'Scripts that run at boot but are not in the module list.'],
     ['Skrip boot di luar modul', 'Boot scripts outside modules'],
     // With the icon: the "{0} modul" rule would otherwise claim them first.
-    ['🔍 Pindai modul', '🔍 Scan modules'], ['📜 Skrip boot di luar modul', '📜 Boot scripts outside modules']
+    ['📜 Skrip boot di luar modul', '📜 Boot scripts outside modules']
   ];
   const catalog = new Map(entries), originals = new WeakMap();
   const escapeRE = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -504,4 +503,12 @@
   try { document.documentElement.lang = localStorage.getItem('cogan.lang') === 'en' ? 'en' : 'id'; } catch (_) { document.documentElement.lang = 'id'; }
   window.CoganI18n = {t: translate, apply, setLanguage, language, locale: () => language() === 'en' ? 'en-GB' : 'id-ID'};
   document.addEventListener('DOMContentLoaded', () => apply());
+  // Each tab is its own page. Switching tabs replaces the history entry, so one back gesture leaves the WebUI
+  // (owner 2026-10-29: it took many swipes); only the guide stays in history, so back returns to the tab.
+  document.addEventListener('click', event => {
+    const link = event.target.closest?.('a[href]');
+    if (!link || event.defaultPrevented || link.origin !== location.origin || link.pathname.endsWith('/guide.html')) return;
+    event.preventDefault();
+    location.replace(link.href);
+  });
 })();
