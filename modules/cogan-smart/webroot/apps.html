@@ -80,7 +80,7 @@
 
   <details class="card fold" id="blockCard" open>
     <summary><span>🛡️ Blokir APK dari chat &amp; sosmed</span><small class="muted" id="blockBrief"></small></summary>
-    <p class="muted">WhatsApp, Telegram, Instagram, Facebook, TikTok dan sejenisnya tidak bisa memasang aplikasi. Browser dan file manager tetap bisa.</p>
+    <p class="muted">Aplikasi chat, sosmed, email dan SMS (WhatsApp, Telegram, Instagram, Facebook, TikTok, Gmail, Pesan dan lainnya) tidak bisa memasang aplikasi. Browser dan file manager tetap bisa.</p>
     <p id="blockInfo" class="muted"></p>
     <div class="row"><button id="blockOn" data-action>🛡️ Aktifkan</button><button id="blockOff" data-action>Matikan</button></div>
   </details>
@@ -176,7 +176,7 @@ function render(d) {
   $('state').className = 'pill ' + (danger ? 'hot' : warn ? 'warm' : 'ok');
   const b = d.block;
   UI.text('blockBrief', b.on ? (b.running ? 'aktif' : 'aktif · menunggu') : 'mati');
-  UI.text('blockInfo', [b.sources.length ? 'Terpasang: ' + b.sources.map(name).join(', ') : 'Tidak ada aplikasi chat/sosmed yang dikenal.',
+  UI.text('blockInfo', [b.sources.length ? 'Terpasang: ' + b.sources.map(name).join(', ') : 'Tidak ada aplikasi chat/sosmed/email/SMS yang dikenal.',
     ...b.events.slice().reverse().slice(0, 3).map(e => `Dicabut: ${name(e.p)} ${ago(d.scanned_at - e.at)}`)].join('\n'));
   $('blockInfo').style.whiteSpace = 'pre-line';
   $('blockOn').disabled = !!b.on; $('blockOff').disabled = !b.on;
@@ -204,7 +204,7 @@ function setup() {
   UI.folds();
   $('rescan').onclick = () => run($('rescan'), 'Memindai aplikasi…', async () => { await scan(); toast('Pemindaian selesai'); });
   $('blockOn').onclick = () => run($('blockOn'), 'Mengaktifkan blokir…', async () => { await api.report('block on'); await scan(); toast('Blokir APK aktif'); });
-  $('blockOff').onclick = () => { if (confirm('Matikan blokir? Aplikasi chat dan sosmed bisa diizinkan memasang APK lagi.')) run($('blockOff'), 'Mematikan blokir…', async () => { await api.report('block off'); await scan(); toast('Blokir APK mati'); }); };
+  $('blockOff').onclick = () => { if (confirm('Matikan blokir? Aplikasi chat, sosmed, email dan SMS bisa diizinkan memasang APK lagi.')) run($('blockOff'), 'Mematikan blokir…', async () => { await api.report('block off'); await scan(); toast('Blokir APK mati'); }); };
   for (const f of document.querySelectorAll('[data-filter]')) f.onclick = () => {
     filter = f.dataset.filter;
     try { localStorage.setItem('cogan.apps.filter', filter); } catch (_) { /* storage off */ }

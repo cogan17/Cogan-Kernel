@@ -5,7 +5,7 @@ Indonesia
 Baru:
 - Tab 📱 Aplikasi menggantikan "Aplikasi jarang dipakai" di Manager. Tiap aplikasi menampilkan dari mana dipasang, izin berbahaya, gerak-gerik (kamera, mikrofon, lokasi, SMS, kontak, telepon, clipboard), internet 7 hari dan baterai.
 - 🗑 Hapus sampai akar: melepas admin perangkat, menghapus dari semua pengguna (termasuk Aplikasi Ganda dan Ruang Kedua), sisa data, dan file APK yang sama di penyimpanan.
-- 🛡️ Blokir APK dari chat & sosmed (bawaan aktif): WhatsApp, Telegram, Instagram, Facebook, TikTok dan sejenisnya tidak bisa memasang aplikasi.
+- 🛡️ Blokir APK dari chat & sosmed (bawaan aktif): aplikasi chat, sosmed, email dan SMS (WhatsApp, Telegram, Signal, Instagram, Facebook, Threads, TikTok, X, Gmail, Outlook, Pesan dan lainnya) tidak bisa memasang aplikasi.
 - Manager menampilkan ringkasan tab Aplikasi. Panduan ditambah bagian Aplikasi.
 
 Batas:
@@ -23,7 +23,7 @@ English
 New:
 - 📱 Apps tab replaces Manager's "Rarely used apps". Each app shows where it came from, dangerous rights, activity (camera, microphone, location, SMS, contacts, phone, clipboard), 7-day internet use and battery.
 - 🗑 Remove completely: releases a device admin, removes the app for every user (Dual apps and Second space too), leftover data and identical APK files in storage.
-- 🛡️ Block APKs from chat & social apps (on by default): WhatsApp, Telegram, Instagram, Facebook, TikTok and similar apps cannot install apps.
+- 🛡️ Block APKs from chat & social apps (on by default): chat, social, email and SMS apps (WhatsApp, Telegram, Signal, Instagram, Facebook, Threads, TikTok, X, Gmail, Outlook, Messages and more) cannot install apps.
 - Manager shows the Apps tab summary. The guide gains an Apps section.
 
 Limits:

@@ -60,7 +60,7 @@ Cogan Smart Kernel menjaga HP tetap adem dan mencatat suhunya. Panduan ini menje
 - **⚠️ Perlu dicek / Semua / 💤 Jarang dipakai**: pilih daftar yang ditampilkan. Jarang dipakai artinya tidak dibuka 7 hari atau lebih.
 - **🛡️ Percaya**: aplikasi tidak ditandai lagi dan tidak bisa terhapus tanpa sengaja.
 - **🗑 Hapus sampai akar**: melepas admin perangkat, menghentikan dan menghapus aplikasi dari semua pengguna (termasuk Aplikasi Ganda dan Ruang Kedua), lalu menghapus sisa data dan file APK yang sama di penyimpanan. Tidak bisa dibatalkan. Aplikasi sistem dan root manager tidak bisa dihapus dari sini.
-- **🛡️ Blokir APK dari chat & sosmed**: bawaan aktif. WhatsApp, Telegram, Instagram, Facebook, TikTok dan sejenisnya tidak bisa memasang aplikasi. Bila izinnya dinyalakan lagi di Pengaturan, modul mencabutnya dalam beberapa detik dan memberi notifikasi. Browser dan file manager tetap bisa.
+- **🛡️ Blokir APK dari chat & sosmed**: bawaan aktif. Aplikasi chat, sosmed, email dan SMS (WhatsApp, Telegram, Signal, Instagram, Facebook, Threads, TikTok, X, Gmail, Outlook, Pesan dan lainnya) tidak bisa memasang aplikasi. Bila izinnya dinyalakan lagi di Pengaturan, modul mencabutnya dalam beberapa detik dan memberi notifikasi. Browser dan file manager tetap bisa.
 
 ## ℹ️ Tentang
 

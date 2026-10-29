@@ -4,12 +4,17 @@ MODROOT=$(cd "$MODDIR/.." && pwd)
 CA_DATA=${CA_DATA:-${CS_ADB:-/data/adb}/cogan_smart/apps}
 CA_RUN=$CA_DATA/run
 CA_ROOT=${CA_ROOT:-}   # the offline tests put /data under a temporary folder
-# Chat and social apps whose "install unknown apps" right is taken back while the block is on (owner 2026-10-29:
-# scam APKs arrive through WhatsApp and social media). Browsers and file managers keep it.
+# Chat, social, email and SMS apps whose "install unknown apps" right is taken back while the block is on
+# (owner 2026-10-29: scam APKs arrive through WhatsApp and social media; email and SMS added the same day).
+# Browsers and file managers keep it.
 CA_SOURCES='com.whatsapp com.whatsapp.w4b org.telegram.messenger org.telegram.messenger.web org.thunderdog.challegram
+org.telegram.plus org.thoughtcrime.securesms com.michatapp.im
 com.facebook.katana com.facebook.lite com.facebook.orca com.facebook.mlite com.instagram.android com.instagram.lite
-com.zhiliaoapp.musically com.ss.android.ugc.trill com.twitter.android jp.naver.line.android com.discord
-com.snapchat.android com.viber.voip com.imo.android.imoim com.tencent.mm com.kakao.talk com.bsb.hike'
+com.instagram.barcelona com.zhiliaoapp.musically com.zhiliaoapp.musically.go com.ss.android.ugc.trill com.twitter.android
+jp.naver.line.android com.discord com.snapchat.android com.viber.voip com.imo.android.imoim com.tencent.mm com.kakao.talk
+com.bsb.hike
+com.google.android.gm com.microsoft.office.outlook com.android.email com.yahoo.mobile.client.android.mail
+com.google.android.apps.messaging com.android.mms'
 BLOCK=1
 
 load_config() {
@@ -35,7 +40,7 @@ block_source() {   # block_source PKG
   for ca_u in $(users); do cmd appops set --user "$ca_u" "$1" REQUEST_INSTALL_PACKAGES default > /dev/null 2>&1; done
   mkdir -p "$CA_DATA" && printf '%s %s\n' "$(date +%s)" "$1" >> "$CA_DATA/blocked.log"
   tail -n 20 "$CA_DATA/blocked.log" > "$CA_DATA/blocked.tmp" && mv -f "$CA_DATA/blocked.tmp" "$CA_DATA/blocked.log"
-  notify "Izin memasang aplikasi dari $1 dicabut. Jangan pasang APK kiriman chat atau sosmed."
+  notify "Izin memasang aplikasi dari $1 dicabut. Jangan pasang APK kiriman chat, sosmed, email atau SMS."
 }
 block_pass() {
   for ca_p in $(cmd appops query-op REQUEST_INSTALL_PACKAGES allow 2>/dev/null); do

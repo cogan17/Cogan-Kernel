@@ -9,7 +9,7 @@
 #   battery   dumpsys batterystats --usage          UID uNaM: MAH ( ...   since the last full charge
 #   net       dumpsys netstats --uid --full         UID stats: / ident=[..] uid=N set= / st=S rb=B .. tb=B
 #   running   ps -A -w -o args;  a11y, notif: settings secure values (NAME/CLASS:NAME/CLASS)
-#   trusted   the whitelist;  events: "EPOCH NAME" of chat apps whose install right was taken back
+#   trusted   the whitelist;  events: "EPOCH NAME" of chat/social/email/SMS apps whose install right was taken back
 # A missing dump leaves its column unknown (-1 / absent), never "nothing found".
 function pkg_ok(p) { return p ~ /^[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z0-9_]+)+$/ }
 function value(s) { sub(/^[^=]*=/, "", s); sub(/[ \t\r].*$/, "", s); return s == "null" ? "" : s }
@@ -53,6 +53,7 @@ f == "packages" {
   if ($0 ~ /^[^ ]/) { save_install(); pkg = ""; next }   # a new section (Shared users:, ...) owns what follows
   if ($0 ~ /^ +Package \[/) {
     save_install(); pkg = $0; sub(/^.*Package \[/, "", pkg); sub(/\].*$/, "", pkg)
+    if (pkg in source) present[pkg] = 1   # Gmail and the SMS app are system apps, not in the user list
     if (!(pkg in apps)) pkg = ""
     own_date = global_date = ""; scope = -1; next
   }
@@ -138,7 +139,8 @@ END {
   save_install()
   printf "{\"ok\":1,\"user\":%d,\"scanned_at\":%d,\"missing\":%s,\"block\":{\"on\":%d,\"running\":%d,\"sources\":[", user, now, json_list(missing), block, block_running
   sep = ""
-  for (i = 1; i <= napps; i++) if (order[i] in source) { printf "%s\"%s\"", sep, order[i]; sep = "," }
+  n = split(sources, a, " ")
+  for (i = 1; i <= n; i++) if (a[i] in present) { printf "%s\"%s\"", sep, a[i]; sep = "," }
   printf "],\"events\":["
   first = nev > 5 ? nev - 4 : 1
   for (i = first; i <= nev; i++) printf "%s%s", (i > first ? "," : ""), ev[i]

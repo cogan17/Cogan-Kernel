@@ -34,7 +34,7 @@ class AppsTests(unittest.TestCase):
         q = lambda p: shlex.quote(str(p))
         write(self.state / "installed", "".join(f"package:{p}\n" for p in APPS))
         write(self.state / "admins", f"  {SCAM}/.Admin\n")
-        write(self.state / "allowed", "com.whatsapp\ncom.android.chrome\n")
+        write(self.state / "allowed", "com.whatsapp\ncom.android.chrome\ncom.google.android.gm\n")
         write(self.state / "0.enabled_accessibility_services", f"{SCAM}/.Spy:com.tasker/.Service")
         write(self.state / "0.enabled_notification_listeners", f"{SCAM}/.Otp")
         packages = "Packages:\n"
@@ -53,6 +53,8 @@ class AppsTests(unittest.TestCase):
                             "        android.permission.CAMERA: granted=true, flags=[ USER_SET ]\n" if p == SCAM else "")
                          + "    User 999: ceDataInode=2 installed=true hidden=false\n      firstInstallTime=2020-01-01 00:00:00\n"
                          + ("        android.permission.RECEIVE_SMS: granted=true\n" if p == "com.bank.app" else ""))
+        # Gmail is a system app: not a user app, but still a source the block covers.
+        packages += "  Package [com.google.android.gm] (gm):\n    appId=10150\n    pkgFlags=[ SYSTEM ]\n"
         # A shared user section after the packages must not lend its permissions to the last package.
         packages += "\nShared users:\n  SharedUser [android.uid.phone] (x):\n    User 0:\n      android.permission.READ_SMS: granted=true\n"
         write(self.base / "packages", packages)
@@ -180,7 +182,7 @@ esac""")
         self.assertLess(apps["app.old"]["used"], time.time() - 9 * 86400)
         self.assertEqual(apps["app.old"]["inst"], "2020-01-01 00:00:00")
         self.assertEqual(apps["com.bank.app"]["net"], 0)
-        self.assertEqual(result["block"]["sources"], ["com.whatsapp"])
+        self.assertEqual(result["block"]["sources"], ["com.whatsapp", "com.google.android.gm"])
         self.assertEqual(result["block"]["on"], 1)
         self.assertFalse(list(self.data.glob("scan.*")))
 
@@ -244,6 +246,7 @@ esac""")
         log = (self.state / "log").read_text()
         self.assertIn("appops set --user 0 com.whatsapp REQUEST_INSTALL_PACKAGES default", log)
         self.assertIn("appops set --user 999 com.whatsapp REQUEST_INSTALL_PACKAGES default", log)
+        self.assertIn("appops set --user 0 com.google.android.gm REQUEST_INSTALL_PACKAGES default", log)
         self.assertIn("notify", log)
         self.assertEqual((self.state / "allowed").read_text(), "com.android.chrome\n")   # browsers keep it
         for _ in range(50):
@@ -252,7 +255,7 @@ esac""")
             time.sleep(0.1)
         _, result = self.scan()
         self.assertEqual(result["block"]["running"], 1)
-        self.assertEqual([e["p"] for e in result["block"]["events"]], ["com.whatsapp"])
+        self.assertEqual([e["p"] for e in result["block"]["events"]], ["com.whatsapp", "com.google.android.gm"])
         # Allowed again in Settings: the loop takes it back.
         write(self.state / "allowed", "com.whatsapp\n")
         for _ in range(60):
