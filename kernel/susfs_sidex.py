@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
-"""sidex15's SUSFS module (with WebUI) for a Builder run: the 6th file (owner 2026-10-26: SUSFS has two
-developers, simonpunk and sidex15). It has no releases: the newest CI build of its v1.5.2+ branch that
+"""sidex15's SUSFS module (with WebUI) for a Builder run: the 5th file. It replaced simonpunk's own module
+(owner 2026-10-29: sidex15's module is simonpunk's SUSFS with a WebUI). It has no releases: the newest CI build of its v1.5.2+ branch that
 still has its artifact (found by kernel/resolve.py, in the run's snapshot) is taken as sidex15 built it.
 The artifact is the module itself (module.prop at the top); it is checked, then named
-6-SUSFS-MODULE-SIDEX15_<version>.zip. Install it or simonpunk's module (file 5), not both: each puts
-ksu_susfs in /data/adb/ksu/bin.
+5-SUSFS-MODULE-SIDEX15_<version>.zip. It installs sidex15's ksu_susfs tool in /data/adb/ksu/bin.
 
 Usage: susfs_sidex.py --snapshots DIR --out DIR   (GH_TOKEN for the artifact; exit 1 when there is none)
-Writes OUT/6-SUSFS-MODULE-SIDEX15_<version>.zip and OUT/susfs-sidex15.env.
+Writes OUT/5-SUSFS-MODULE-SIDEX15_<version>.zip and OUT/susfs-sidex15.env.
 """
 import argparse
 import hashlib
@@ -66,7 +65,7 @@ def main(argv=None, fetch=download):
     raw = args.out / "sidex15.download.zip"
     fetch(info["repo"], info["artifact"], raw)
     version = check(raw)
-    name = f"6-SUSFS-MODULE-SIDEX15_{version}.zip"
+    name = f"5-SUSFS-MODULE-SIDEX15_{version}.zip"
     raw.replace(args.out / name)
     lines = {"SUSFS_MODULE": name, "SUSFS_MODULE_SHA256": hashlib.sha256((args.out / name).read_bytes()).hexdigest(),
              "SUSFS_MODULE_VERSION": version, "SUSFS_MODULE_COMMIT": info.get("commit", ""), "SUSFS_MODULE_RUN": info.get("url", "")}

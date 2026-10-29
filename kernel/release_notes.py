@@ -17,10 +17,7 @@ USES = {
     "2": ("Aplikasi manager root", "Root manager app"),
     "3": ("Manager spoofed (nama paket disamarkan), pasang salah satu", "Spoofed manager (hidden package name), install one"),
     "4": ("Modul di manager", "Manager module"),
-    "5": ("Modul SUSFS simonpunk (alat `ksu_susfs`, commit SUSFS yang sama dengan kernel). Pasang **salah satu**: 5 atau 6",
-          "simonpunk's SUSFS module (`ksu_susfs` tool, the kernel's own SUSFS commit). Install **one**: 5 or 6"),
-    "6": ("Modul SUSFS sidex15 dengan WebUI (build CI terbarunya). Pasang **salah satu**: 5 atau 6",
-          "sidex15's SUSFS module with WebUI (its newest CI build). Install **one**: 5 or 6"),
+    "5": ("Modul SUSFS sidex15 dengan WebUI (build CI terbarunya)", "sidex15's SUSFS module with WebUI (its newest CI build)"),
 }
 
 
@@ -99,11 +96,10 @@ def compact_notes(builds, run_url, repo, tested=False, note="", artifact_run=Fal
         lines += changelog.splitlines()[1:] if changelog else ["Lihat catatan build / See build notes."]
         lines.append("")
     lines += ["</details>", "", "<details>", "<summary>📦 <b>Modul pendukung / Modules</b></summary>", ""]
-    modules = sorted({name for _, files, _ in builds for name in files if name.startswith(("4-", "5-", "6-"))})
-    labels = {"4": "NoMount", "5": "SUSFS · simonpunk", "6": "SUSFS · sidex15 (WebUI)"}
+    modules = sorted({name for _, files, _ in builds for name in files if name.startswith(("4-", "5-"))})
+    labels = {"4": "NoMount", "5": "SUSFS · sidex15 (WebUI)"}
     lines += [f"- {download(name, labels[name[0]])}" for name in modules]
-    lines += ["", "Pasang satu modul SUSFS / Install one SUSFS module: simonpunk **atau / or** sidex15.", "",
-              "</details>", "", "<details>", "<summary>🧩 <b>Komponen & fitur / Components & features</b></summary>", ""]
+    lines += ["", "</details>", "", "<details>", "<summary>🧩 <b>Komponen & fitur / Components & features</b></summary>", ""]
     for build, _, changelog in builds:
         lines += [f"## {build['ROOT_NAME']} · {build['LINUX_VERSION']}", "", *component_lines(build), ""]
         # Each root section keeps its source commit so future comparisons use the built code.

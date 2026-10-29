@@ -53,13 +53,10 @@ def prepare(info, files, run_url, repo, tested=False, note="", sha="", api=tg.gh
             raise ValueError(f"{root}: harus tepat satu APK manager / exactly one manager APK required")
         own = [kernel, *managers, *sorted(name for name in available
                if name.startswith(f"3-MANAGER-SPOOFED_{ROOTS[root]}_") and name.endswith(".apk"))]
-        shared = sorted(name for name in available if name.startswith("5-SUSFS-MODULE-SIMONPUNK_")
-                        and name.endswith(f"_{env['SUSFS_COMMIT'][:8]}.zip"))
-        if len(shared) != 1:
-            raise ValueError(f"{folder.name}: modul SUSFS simonpunk tidak cocok / no matching simonpunk SUSFS module")
+        shared = []
         if env["NOMOUNT"] != "-":
             shared.append(f"4-NOMOUNT-MODULE_{env['NOMOUNT']}.zip")
-        sidex = sorted(name for name in available if name.startswith("6-SUSFS-MODULE-SIDEX15_")
+        sidex = sorted(name for name in available if name.startswith("5-SUSFS-MODULE-SIDEX15_")
                        and name.endswith(".zip"))
         if not sidex or any(name not in available for name in shared):
             raise ValueError(f"{folder.name}: modul NoMount/SUSFS tidak lengkap / missing NoMount/SUSFS modules")

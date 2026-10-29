@@ -118,8 +118,7 @@ fi
             self.payloads += [(kernel, content), (f"2-MANAGER_{slug}_fixture.apk", f"manager {root}".encode()),
                               (f"3-MANAGER-SPOOFED_{slug}_fixture.apk", f"spoofed {root}".encode()),
                               ("4-NOMOUNT-MODULE_v2.2.0.zip", b"shared NoMount")]
-        self.payloads += [("5-SUSFS-MODULE-SIMONPUNK_v2.3.0_27e0a0e4.zip", b"simonpunk"),
-                          ("6-SUSFS-MODULE-SIDEX15_v1.5.2-CI-fixture.zip", b"sidex15")]
+        self.payloads += [("5-SUSFS-MODULE-SIDEX15_v1.5.2-CI-fixture.zip", b"sidex15")]
         self.wrapped = wrapped
 
     def write_artifacts(self):
@@ -270,7 +269,7 @@ fi
 
     def test_missing_susfs_module_stops_the_release(self):
         self.artifacts()
-        self.payloads = [(name, data) for name, data in self.payloads if not name.startswith("6-")]
+        self.payloads = [(name, data) for name, data in self.payloads if not name.startswith("5-")]
         result = self.download()
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("missing NoMount/SUSFS modules", result.stderr)
