@@ -11,7 +11,7 @@ build.env (built), wait.json (a newest version does not fit yet), kmi-compat.jso
 report), error.txt (a fault of this repository) and stage.txt (the last stage it started).
 RESULT is a job result: success, failure, cancelled or skipped. DIR holds id.txt and en.txt of
 kernel/telegram.py; with one build they are shown in a code block, ready to copy for Telegram.
---susfs DIR holds the susfs-<commit>.env files of the SUSFS module job (kernel/susfs_module.sh).
+--susfs DIR holds the susfs-sidex15.env file of the SUSFS module job (kernel/susfs_sidex.py).
 """
 import argparse
 import json
@@ -31,8 +31,8 @@ TEXT = {
            "attest": "❌ Tanda tangan ZIP gagal: jangan terbitkan run ini.",
            "published": "Terbit: [{tag}]({url})", "unpublished": "❌ Gagal terbit: lihat job Terbit.",
            "telegram": "**📣 Teks Telegram** (salin lewat tombol di pojok kanan atas kotak)",
-           "susfs": "**Modul SUSFS** (5 simonpunk, 6 sidex15 dengan WebUI; pasang salah satu)",
-           "susfs_fail": "❌ Modul SUSFS gagal dibuat atau diambil: lihat job Modul SUSFS. Run ini tidak bisa diterbitkan."},
+           "susfs": "**Modul SUSFS** (sidex15, dengan WebUI)",
+           "susfs_fail": "❌ Modul SUSFS gagal diambil: lihat job Modul SUSFS. Run ini tidak bisa diterbitkan."},
     "en": {"flag": "🇬🇧 English", "build": "Build", "result": "Result", "detail": "Details",
            "ok": "✅ Built", "fail": "❌ Failed", "wait": "⏳ Not built",
            "count": "**{ok} built · {fail} failed · {wait} not built**",
@@ -43,8 +43,8 @@ TEXT = {
            "attest": "❌ Signing the ZIP failed: do not publish this run.",
            "published": "Published: [{tag}]({url})", "unpublished": "❌ Publishing failed: see the publish job.",
            "telegram": "**📣 Telegram post** (copy with the button at the top right of the box)",
-           "susfs": "**SUSFS modules** (5 simonpunk, 6 sidex15 with WebUI; install one)",
-           "susfs_fail": "❌ A SUSFS module could not be built or fetched: see the SUSFS modules job. This run cannot be published."},
+           "susfs": "**SUSFS module** (sidex15, with WebUI)",
+           "susfs_fail": "❌ The SUSFS module could not be fetched: see the SUSFS module job. This run cannot be published."},
 }
 
 

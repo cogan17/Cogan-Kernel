@@ -22,11 +22,10 @@ class ReleaseNotesTest(unittest.TestCase):
         self.assertIn("KernelSU Next dev-susfs `d21e0a66c887` (33405) + SUSFS v2.3.0 `c27ebe93c68e`", text)
         self.assertIn("- KMI Xiaomi 14T Pro (rothko): OK; CRC differs 0\n", text)
         self.assertLess(text.index("1-KERNEL_x.zip"), text.index("4-NOMOUNT"))
-        text = rn.notes(ENV, FILES + ["5-SUSFS-MODULE-SIMONPUNK_v2.3.0_27e0a0e4.zip", "6-SUSFS-MODULE-SIDEX15_v1.5.2-CI-89b04b9.zip"],
-                        "https://run", "cogan17/Cogan-Kernel")
-        self.assertIn("| `5-SUSFS-MODULE-SIMONPUNK_v2.3.0_27e0a0e4.zip` | Modul SUSFS simonpunk (alat `ksu_susfs`, commit SUSFS "
-                      "yang sama dengan kernel). Pasang **salah satu**: 5 atau 6 |", text)
-        self.assertIn("| `6-SUSFS-MODULE-SIDEX15_v1.5.2-CI-89b04b9.zip` | Modul SUSFS sidex15 dengan WebUI", text)
+        text = rn.notes(ENV, FILES + ["5-SUSFS-MODULE-SIDEX15_v1.5.2-CI-89b04b9.zip"], "https://run", "cogan17/Cogan-Kernel")
+        self.assertIn("| `5-SUSFS-MODULE-SIDEX15_v1.5.2-CI-89b04b9.zip` | Modul SUSFS sidex15 dengan WebUI (build CI terbarunya) | "
+                      "sidex15's SUSFS module with WebUI (its newest CI build) |", text)
+        self.assertNotIn("SIMONPUNK", text)
 
     def test_tested_label_and_note(self):
         text = rn.notes(ENV, FILES, "https://run", "cogan17/Cogan-Kernel", tested=True, note="baris 1\\nline 2")

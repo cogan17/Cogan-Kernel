@@ -79,21 +79,19 @@ class RunSummaryTest(unittest.TestCase):
         self.assertIn("❌ Publishing failed", text)
 
     def test_susfs_module_is_listed_and_its_failure_named(self):
-        # Owner 2026-10-26: the SUSFS module is the 5th file of a run, next to the kernel, managers and NoMount.
+        # The SUSFS module is the 5th file of a run: sidex15's, next to the kernel, managers and NoMount (owner 2026-10-29).
         self.left("KSUN", 176, build_env=f"RELEASE=v26.10.26-r7\nZIP=z.zip\nZIP_SHA256={'d' * 64}\nKMI_COMPAT={KMI_OK}\n")
         susfs = Path(self.temp.name) / "susfs"
         susfs.mkdir()
-        (susfs / "susfs-27e0a0e4.env").write_text(f"SUSFS_MODULE=5-SUSFS-MODULE-SIMONPUNK_v2.3.0_27e0a0e4.zip\nSUSFS_MODULE_SHA256={'e' * 64}\n")
-        (susfs / "susfs-sidex15.env").write_text(f"SUSFS_MODULE=6-SUSFS-MODULE-SIDEX15_v1.5.2-CI-89b04b9.zip\nSUSFS_MODULE_SHA256={'f' * 64}\n")
+        (susfs / "susfs-sidex15.env").write_text(f"SUSFS_MODULE=5-SUSFS-MODULE-SIDEX15_v1.5.2-CI-89b04b9.zip\nSUSFS_MODULE_SHA256={'f' * 64}\n")
         text = rs.summary([build("KSUN", 176)], self.info, self.snapshots, "r/r", susfs=susfs, susfs_result="success")
-        self.assertIn("**Modul SUSFS** (5 simonpunk, 6 sidex15 dengan WebUI; pasang salah satu)\n"
-                      f"- `5-SUSFS-MODULE-SIMONPUNK_v2.3.0_27e0a0e4.zip` · sha256 `{'e' * 64}`\n"
-                      f"- `6-SUSFS-MODULE-SIDEX15_v1.5.2-CI-89b04b9.zip` · sha256 `{'f' * 64}`", text)
-        self.assertIn("**SUSFS modules** (5 simonpunk, 6 sidex15 with WebUI; install one)", text)
+        self.assertIn("**Modul SUSFS** (sidex15, dengan WebUI)\n"
+                      f"- `5-SUSFS-MODULE-SIDEX15_v1.5.2-CI-89b04b9.zip` · sha256 `{'f' * 64}`", text)
+        self.assertIn("**SUSFS module** (sidex15, with WebUI)", text)
         text = rs.summary([build("KSUN", 176)], self.info, self.snapshots, "r/r", susfs=Path(self.temp.name) / "none",
                           susfs_result="failure")
-        self.assertIn("❌ Modul SUSFS gagal dibuat atau diambil", text)
-        self.assertIn("❌ A SUSFS module could not be built or fetched", text)
+        self.assertIn("❌ Modul SUSFS gagal diambil", text)
+        self.assertIn("❌ The SUSFS module could not be fetched", text)
 
     def test_telegram_post_is_shown_in_a_code_block_for_one_build(self):
         self.left("KSUN", 176, build_env=f"RELEASE=v26.10.24-r2\nZIP=z.zip\nZIP_SHA256={'c' * 64}\nKMI_COMPAT={KMI_OK}\n")

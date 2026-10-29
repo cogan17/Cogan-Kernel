@@ -36,9 +36,7 @@ Salin hasilnya ke **PC atau flashdisk**, jangan hanya di HP. Simpan juga `boot.i
 ## 3. Setelah menyala
 
 1. Pasang aplikasi root manager dari paket rilis yang sama (**KernelSU Next** atau **BakaSU**, sesuai ZIP kernel), lalu metamodule **NoMount**.
-   Rilis sejak 26 Okt 2026 juga berisi dua **modul SUSFS**; pasang **salah satu saja** di manager bila ingin mengatur SUSFS (keduanya memasang alat `ksu_susfs`):
-   - `5-SUSFS-MODULE-SIMONPUNK_…zip`: modul simonpunk dari commit SUSFS yang sama dengan kernel;
-   - `6-SUSFS-MODULE-SIDEX15_…zip`: modul sidex15 dengan WebUI (build CI terbarunya).
+   Bila ingin mengatur SUSFS, pasang juga **modul SUSFS** `5-SUSFS-MODULE-SIDEX15_…zip`: modul sidex15 dengan WebUI (build CI terbarunya), memasang alat `ksu_susfs`. Rilis 26–28 Okt 2026 juga berisi modul simonpunk (`5-…SIMONPUNK`) dan menomori modul sidex15 `6-`; pasang salah satunya saja.
 2. *Opsional:* modul **[Cogan Smart Kernel](https://github.com/cogan17/Cogan-Kernel/blob/main/modules/cogan-smart/README.md)**. Pengembangannya sedang diparkir (hanya perbaikan bug); kernel berjalan normal tanpanya. Bila dipasang, reboot sekali, lalu cek di WebUI modul: **"Identitas asli · terverifikasi"** dan **"✓ kernel dibuat untuk HP ini"**.
 
 > 💡 Versi kernel di Setelan bisa tampil lain (mis. `6.1.170`). Itu SUSFS yang menyamarkan `uname`. Identitas asli dibaca modul Cogan Smart lewat Cogan Bridge.

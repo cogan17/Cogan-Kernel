@@ -87,7 +87,7 @@ jobs:
           declare -A downloaded=()
           while IFS=$'\t' read -r id name digest; do
             case "$name" in
-              [1-6]-*) if [ "${downloaded[$name]+yes}" = yes ]; then
+              [1-5]-*) if [ "${downloaded[$name]+yes}" = yes ]; then
                          [ "${downloaded[$name]}" = "$digest" ] \
                            || { echo "::error::$name: artifact bernama sama berbeda isi / same artifact name, different contents"; exit 1; }
                          continue

@@ -48,7 +48,7 @@ class SusfsSidexTest(unittest.TestCase):
         self.snapshot("BSU.json", INFO)
         code, asked = self.run_main()
         self.assertEqual((code, asked), (0, [("sidex15/susfs4ksu-module", 21)]))
-        name = "6-SUSFS-MODULE-SIDEX15_v1.5.2-CI-89b04b9.zip"
+        name = "5-SUSFS-MODULE-SIDEX15_v1.5.2-CI-89b04b9.zip"
         self.assertTrue((self.base / "out" / name).is_file())
         env = dict(line.split("=", 1) for line in (self.base / "out/susfs-sidex15.env").read_text().splitlines())
         self.assertEqual((env["SUSFS_MODULE"], env["SUSFS_MODULE_VERSION"], env["SUSFS_MODULE_COMMIT"]),

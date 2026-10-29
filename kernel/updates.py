@@ -13,8 +13,9 @@ Its permanent Markdown record in kernel/history survives deletion of Actions log
 runs. Snapshot artifacts remain a fallback for builds made before permanent recording was added.
 Upstream text (commit titles, release notes) is shown as its authors wrote it.
 
-SUSFS has two developers (owner 2026-10-26): simonpunk (kernel patch and module, file 5) and sidex15
-(module with WebUI, file 6, CI builds only); both are checked.
+SUSFS has two developers (owner 2026-10-26): simonpunk (the kernel patch) and sidex15 (the module with
+WebUI shipped as file 5, CI builds only); both are checked. simonpunk's own module is no longer shipped
+(owner 2026-10-29), but his SUSFS changes are still followed here.
 
 Usage: updates.py --repo OWNER/REPO [--out FILE]   (GH_TOKEN for the GitHub API)
 """
