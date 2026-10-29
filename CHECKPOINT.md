@@ -1,10 +1,9 @@
 # Checkpoint
 
-Catatan terbaru: **[checkpoint.md](checkpoint.md)** — 29 Okt 2026 (WIB).
+Catatan terbaru: **[checkpoint.md](checkpoint.md)**. **CHECKPOINT owner 29 Okt 2026 ±11.15 WIB: semua pekerjaan dihentikan.**
 
-- v2.11.1 (versionCode 29): revisi owner, Manager hanya memantau mode daya dan hasil pindai modul; pindah tab tidak menambah riwayat, jadi sekali usap kembali keluar dari WebUI. Paket uji di `modules/cogan-smart/rilis/v2.11.1/`; belum diuji di HP dan belum dirilis.
-- v2.11.0 (versionCode 28): Manager pusat kendali, Mode Dev, Panduan ID/EN. Di `main` lewat PR #77 (29 Okt 09.55 WIB); paket uji di `modules/cogan-smart/rilis/v2.11.0/`, belum diuji di HP dan belum dirilis.
-- v2.10.8 (versionCode 27): hook ZRAM pada `load-bpf-programs`, sesudah lz4 vendor dan sebelum `system_perf_init` Xiaomi menyalakan ZRAM (v2.10.7 terlambat). Paket uji di `modules/cogan-smart/rilis/v2.10.8/`. ✅ Diuji di HP 28 Okt 23.23 WIB: `zram0: zstd`, hook `load-bpf-programs matching`. Belum dirilis.
-- v2.10.6 (hook init berjalan) dan v2.10.5 (deteksi DRAM) sudah di `main` dan terkonfirmasi di HP.
-- Rilis kernel hanya membawa modul SUSFS sidex15 (PR #76).
-- Baca `CLAUDE.md` dan `checkpoint.md`, lalu tunggu instruksi owner.
+- **Sedang berjalan:** [PR #80](https://github.com/cogan17/Cogan-Kernel/pull/80) (`feat/cogan-smart-tab-aplikasi`): Cogan Smart v2.12.0 dengan tab 📱 Aplikasi. Commit WIP `5130ca8` menambah blokir untuk email, SMS dan sosmed lain (33 paket).
+- **Belum:** ZIP `rilis/v2.12.0` belum dikemas ulang setelah commit WIP, dan SHA-nya belum diganti di README dan checkpoint. Validate belum dicek, PR belum di-merge, ZIP belum dikirim. Belum diuji di HP.
+- **Langkah pertama:** di branch PR #80, kemas ulang ZIP dua kali, ganti SHA, jalankan tes, push, lalu cek Validate, merge dan kirim ZIP.
+- **Sudah:** v2.11.1 (#79) ✅ lolos uji owner di HP. v2.10.8 ✅ ZRAM ZSTD saat boot. Rilis kernel hanya membawa modul SUSFS sidex15 (#76).
+- Baca `CLAUDE.md` dan `checkpoint.md`, lalu lanjut **hanya setelah owner meminta**.
