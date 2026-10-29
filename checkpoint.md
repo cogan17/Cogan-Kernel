@@ -1,6 +1,6 @@
-# Checkpoint — 28 Okt 2026 (WIB)
+# Checkpoint — 29 Okt 2026 (WIB)
 
-v2.10.5 (DRAM) dan v2.10.6 (hook init berjalan) sudah di `main` dan terkonfirmasi di HP. v2.10.7 keliru menebak tahap swap; v2.10.8 memasang hook tepat sebelum alat Xiaomi `system_perf_init` menyalakan ZRAM dan sudah terbukti di HP (lihat bagian v2.10.8). Sesi berikutnya baca `CLAUDE.md`, file ini dan `CHECKPOINT.md`, lalu tunggu instruksi owner. Jangan otomatis menguji HP, menjalankan build atau menerbitkan rilis.
+v2.10.8 (ZRAM ZSTD saat boot) terbukti di HP. v2.11.0 merombak WebUI: Manager pusat kendali, Mode Dev, Panduan (lihat bagian v2.11.0). Sesi berikutnya baca `CLAUDE.md`, file ini dan `CHECKPOINT.md`, lalu tunggu instruksi owner. Jangan otomatis menguji HP, menjalankan build atau menerbitkan rilis.
 
 ## Sudah selesai
 
@@ -8,6 +8,17 @@ v2.10.5 (DRAM) dan v2.10.6 (hook init berjalan) sudah di `main` dan terkonfirmas
 - v2.10.4 menggunakan dukungan `initrc` KernelSU Next/BakaSU pada Cogan r5 untuk memilih kompresor sebelum ZRAM diinisialisasi. Tidak menambah governor DRAM, tidak reset ZRAM dan tidak swapoff.
 - Screenshot HP owner menunjukkan **v2.10.4 terpasang**, `zram0: lz4 · swap aktif`, opsi LZ4 terpilih, status “initrc tersiapkan untuk boot berikutnya”, dan `bw_hwmon` abu-abu. Bacaan LZ4/swap aktif terbukti, tetapi tidak membuktikan modul yang mengganti LZ4. Belum ada bukti hasil ZSTD atau hasil eksekusi hook initrc pada HP.
 - Owner menjalankan pembacaan root `/sys/class/devfreq/*`. Hasilnya: `112b0000.ufshci` → driver `ufshcd-mtk`, governor `simple_ondemand`; `13000000.mali` → driver `mali`, governor `dummy`; **`mtk-dvfsrc-devfreq` → driver `mtk-dvfsrc-devfreq`, governor `userspace`**. Ketiganya menampilkan daftar sama: `dummy apupassive-pe apuconstrain apuuser apupassive userspace powersave performance simple_ondemand`. **Tidak ada `bw_hwmon`.** `available_governors` devfreq dapat bersifat global; daftar UFS/GPU bukan bukti dukungan DRAM. `userspace` adalah governor aktif DRAM, bukan bukti ZRAM gagal. Jangan mengganti ke `simple_ondemand` atau port governor Qualcomm dengan asumsi.
+
+## v2.11.0 — Manager pusat kendali, Mode Dev, Panduan (versionCode 28)
+
+- **Permintaan owner (29 Okt):** Manager hierarkinya di atas tab lain (lihat semua statistik/grafik, terapkan/paksa perubahan); teks terlalu baku dan panjang, perlu versi user ringkas dan versi Dev/debug; buku panduan. Pilihan owner lewat pertanyaan: **pusat kendali** (Manager ringkasan + semua tombol, tab lain untuk detail dan pilihannya sendiri), **satu saklar Mode Dev** di Tentang, **panduan di modul + repo**, log **cukup dianalisa**.
+- **Manager:** kartu 📊 Ringkasan (suhu Badan HP/baterai/prosesor, pengendali, pencatat, tombol mode, grafik 1 jam + waktu panas + penyebab utama, hasil pindai modul + tombol Pindai modul). Grafik dipindah ke `client.js` (`UI.chart`) dan dipakai tab Suhu juga. Aksi per modul (percaya, nonaktifkan, hapus) tetap di tab Modul karena per item.
+- **Mode Dev:** `theme.css` menyembunyikan `.dev` kecuali `<html data-dev="1">` (`localStorage cogan.dev`); `.user` disembunyikan saat Mode Dev. Detail teknis di semua tab ditandai `.dev`; setelan lanjutan (interval cek, terapkan ulang, interval pencatat) hanya di Mode Dev.
+- **Panduan:** `webroot/guide.html` (ID/EN), `PANDUAN.md` dan `PANDUAN.en.md` (isi sama, tidak ikut ZIP: `scripts/package_module.py` melewatinya seperti README).
+- **Terjemahan:** perbaikan aturan i18n (isian tidak melewati pemisah " · " atau baris baru), entri baru, `tests/test_cogan_smart_webui.py` menjalankan cek WebUI Node dan memastikan mode English tanpa teks Indonesia (dijalankan Validate).
+- **Log 16 jam owner (28 Okt 17.31 – 29 Okt 09.31 WIB):** Badan HP maks 43,6 °C, baterai maks 44,0 °C (mengecas), beban modul median 1,8% CPU. Arus 13–16 A berurutan saat HyperCharge dan kolom GPU kosong saat GPU tidur adalah normal; tidak ada perubahan pencatat, dijelaskan di Panduan.
+- Terukur lokal: semua tes Python + cek WebUI lolos; halaman dimuat Playwright tanpa error di mode pengguna dan Dev. [Paket uji](modules/cogan-smart/rilis/v2.11.0/Cogan-Smart-Kernel-v2.11.0.zip) 41 file, 163348 byte, SHA256 `e39523e0fa0d8a311956ac3c111979dcd844cfb91d3e553ddc6a17175e13443c` (dua kali dikemas, sama).
+- **Belum diuji di HP dan belum dirilis.**
 
 ## v2.10.8 — hook ZRAM sebelum system_perf_init (versionCode 27)
 
@@ -50,4 +61,4 @@ v2.10.5 (DRAM) dan v2.10.6 (hook init berjalan) sudah di `main` dan terkonfirmas
 
 ## English state summary
 
-v2.10.5 (DRAM detection) and v2.10.6 (initrc exec fix) are on main and confirmed on the phone. On rothko HyperOS the vendor init writes lz4 on post-fs-data and Xiaomi's system_perf_init (started on load-bpf-programs) initializes ZRAM at about 9.7 s with whatever algorithm is set; v2.10.7's boot-completed run was too late. v2.10.8 (versionCode 27) moves the last hook run to load-bpf-programs, which per AOSP init runs after post-fs-data and, because init.rc is parsed before /system_ext/etc/init, before start system_perf_init. Test ZIP SHA256 `552fb6fe…fbd8`. Phone-tested by the owner on 28 Oct, 23.23 WIB: zram0 runs zstd with active swap and the hook reports `zstd load-bpf-programs matching`. Not released. Wait for the owner's instructions.
+v2.10.8 (ZSTD ZRAM at boot) is proven on the phone. v2.11.0 (versionCode 28) reworks the WebUI at the owner's request: Manager is the control centre with a Summary card (temperatures, controller/recorder, mode buttons, 1-hour chart, heat cause, module scan), everyday text is short with technical detail behind a Dev mode switch in About, and a bilingual guide ships in the module (guide.html) and the repo (PANDUAN.md / PANDUAN.en.md). English template translation was fixed and a WebUI test now runs in Validate. Test ZIP SHA256 `e39523e0…443c`. Not phone-tested and not released. Wait for the owner's instructions.

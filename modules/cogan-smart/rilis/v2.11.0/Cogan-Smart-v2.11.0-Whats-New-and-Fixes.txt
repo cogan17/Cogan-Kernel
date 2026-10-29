@@ -1,0 +1,39 @@
+Cogan Smart Kernel v2.11.0 / versionCode 28 — paket uji / test build
+
+Indonesia
+
+Baru:
+- Manager jadi pusat kendali. Kartu 📊 Ringkasan menampilkan suhu, baterai, status pengendali dan pencatat, tombol mode, grafik suhu 1 jam, penyebab panas dan hasil pindai modul. Semua tombol terapkan ada di Manager.
+- Teks lebih ringkas. Saklar Mode Dev di Tentang (bawaan mati) memunculkan detail teknis untuk debug.
+- 📖 Panduan di modul (Tentang, atau tautan di bawah tiap tab), dalam bahasa Indonesia dan English.
+
+Perbaikan:
+- Terjemahan English yang setengah Indonesia (mis. "kecil 100%", "Pindai modul").
+
+Batas:
+- Cara kerja kontrol daya, suhu, ZRAM dan penjaga modul tidak berubah. v2.11.0 belum diuji di HP.
+
+Cara uji:
+1. Pasang sebagai pembaruan modul melalui root manager, lalu reboot.
+2. Buka tab Manager: kartu 📊 Ringkasan ada di atas.
+3. Buka Tentang → Mode Dev → Nyala, lalu lihat lagi tab Manager atau Daya: detail teknis muncul.
+4. Buka Tentang → 📖 Panduan.
+
+English
+
+New:
+- Manager is the control centre. The 📊 Summary card shows temperatures, battery, controller and recorder status, mode buttons, a 1-hour temperature chart, the heat cause and the module scan result. Every apply button is in Manager.
+- Shorter text. The Dev mode switch in About (off by default) shows technical detail for debugging.
+- 📖 Guide in the module (About, or the link under each tab), in Indonesian and English.
+
+Fixes:
+- English text that stayed half Indonesian (e.g. "kecil 100%", "Pindai modul").
+
+Limits:
+- Power, temperature, ZRAM and module guard behaviour is unchanged. v2.11.0 has not been phone-tested.
+
+How to test:
+1. Install as a module update through the root manager, then reboot.
+2. Open the Manager tab: the 📊 Summary card is at the top.
+3. Open About → Dev mode → On, then look at the Manager or Power tab again: technical detail appears.
+4. Open About → 📖 Guide.

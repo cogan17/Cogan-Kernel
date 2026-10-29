@@ -4,9 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Cogan Smart</title>
-<link rel="stylesheet" href="theme.css?v=2.10.8">
-<script src="i18n.js?v=2.10.8"></script>
-<script>try { document.documentElement.dataset.theme = localStorage.getItem('cogan.theme') || ''; } catch (_) { /* storage off: follow the phone */ }</script>
+<link rel="stylesheet" href="theme.css?v=2.11.0">
+<script src="i18n.js?v=2.11.0"></script>
+<script>try { document.documentElement.dataset.theme = localStorage.getItem('cogan.theme') || ''; document.documentElement.dataset.dev = localStorage.getItem('cogan.dev') || ''; } catch (_) { /* storage off: follow the phone */ }</script>
 <style>
   * { box-sizing: border-box; }
   body {
@@ -99,18 +99,18 @@
 
   <details class="card kernel-card fold" id="kernelCard">
     <summary><span id="kernelTitle">Kernel</span><small class="muted" id="kernelBadge"></small></summary>
-    <div id="bridgeStatus" class="muted">Memeriksa dukungan…</div>
     <div id="identityLabel" class="muted"></div>
     <div id="deviceStatus" class="muted"></div>
-    <div id="peerStatus" class="muted"></div>
-    <details id="kernelDetails"><summary>Detail kernel</summary>
+    <div id="bridgeStatus" class="muted dev">Memeriksa dukungan…</div>
+    <div id="peerStatus" class="muted dev"></div>
+    <details id="kernelDetails" class="dev"><summary>Detail kernel</summary>
       <p id="originalKernel" class="kernel-value">—</p>
       <p id="shownKernel" class="kernel-value"></p>
       <p id="kernelFeatures" class="muted"></p>
       <p id="clients" class="muted"></p>
       <details><summary>Info build lengkap</summary><p id="kernelBanner" class="kernel-value"></p></details>
     </details>
-    <details id="coolingDetails"><summary id="coolingTitle">Cooling kernel</summary><div id="coolingInfo" class="muted">Buka untuk membaca.</div></details>
+    <details id="coolingDetails" class="dev"><summary id="coolingTitle">Cooling kernel</summary><div id="coolingInfo" class="muted">Buka untuk membaca.</div></details>
   </details>
   <div id="monitor" class="banner">…</div>
 
@@ -123,18 +123,19 @@
     <summary><span>🌡️ Suhu &amp; CPU</span><small class="muted" id="limitLine"></small></summary>
     <div class="big"><b id="temp">--</b><span class="muted" id="cpuLine"></span></div>
     <div class="muted" id="causeLine" style="margin-top:6px"></div>
-    <table id="policies"></table>
+    <table id="policies" class="dev"></table>
   </details>
 
   <details class="card fold hidden" id="hyperosCard">
     <summary><span>🧯 Rem HyperOS</span><small class="muted" id="hyperosBrief"></small></summary>
     <table id="hyperos"></table>
-    <p class="muted">Baca saja: batas yang dipasang HyperOS sendiri (thermal_message). Modul tidak mengubahnya. Suhu papan HyperOS juga dicatat di tab Suhu sebagai sensor hyperos_board (Badan HP).</p>
+    <p class="muted user">Batas panas dari HyperOS sendiri. Modul hanya membaca.</p>
+    <p class="muted dev">Baca saja: batas yang dipasang HyperOS sendiri (thermal_message). Modul tidak mengubahnya. Suhu papan HyperOS juga dicatat di tab Suhu sebagai sensor hyperos_board (Badan HP).</p>
   </details>
 
   <details class="card fold" id="chargeCard">
     <summary><span>🔌 Cas</span><small class="muted" id="chargeBrief"></small></summary>
-    <div class="muted" id="switchLine"></div>
+    <div class="muted dev" id="switchLine"></div>
     <div class="big"><b id="level">--</b><span class="muted" id="battLine"></span></div>
     <div id="chargeLine" style="margin-top:6px"></div>
     <label class="f">Auto cut charging <input id="sCHARGE_CTRL" type="checkbox"></label>
@@ -142,14 +143,16 @@
     <label class="f">Lanjut cas di (%) <input id="sCHARGE_RESUME" type="number" min="40" max="99"></label>
     <div id="chargePolicy" class="muted" style="margin:8px 0"></div>
     <label class="f">Jeda cas karena suhu oleh modul <input id="sCHARGE_THERMAL" type="checkbox"></label>
-    <p class="muted">Bawaan: mati. Suhu cas diatur sistem HP (HyperCharge). Nyalakan untuk jeda tambahan dari modul: cas dijeda bila baterai terlalu panas atau, di Kernel Default, bila cas membuat Badan HP panas; lanjut setelah turun 3 °C.</p>
+    <p class="muted user">Bawaan mati: HyperCharge sudah menjaga suhu cas. Nyalakan bila ingin jeda tambahan saat baterai panas.</p>
+    <p class="muted dev">Bawaan: mati. Suhu cas diatur sistem HP (HyperCharge). Nyalakan untuk jeda tambahan dari modul: cas dijeda bila baterai terlalu panas atau, di Kernel Default, bila cas membuat Badan HP panas; lanjut setelah turun 3 °C.</p>
     <label class="f">Jeda bila baterai ≥ (°C) <input id="sBATT_TEMP_STOP" type="number" min="35" max="50"></label>
     <label class="f">Kernel Default: jeda cas bila cas bikin panas <input id="sHEAT_PAUSE_CHARGE" type="checkbox"></label>
     <div class="row">
       <button id="detect">🔍 Cari saklar cas</button>
       <span class="muted">colokkan charger dulu</span>
     </div>
-    <p class="muted">Pencarian saklar mematikan dan menyalakan cas sebentar. Jika saklar sudah ditemukan, tidak perlu mencari ulang saat HyperCharge berjalan.</p>
+    <p class="muted user">Cas mati-nyala sebentar saat mencari. Cukup sekali.</p>
+    <p class="muted dev">Pencarian saklar mematikan dan menyalakan cas sebentar. Jika saklar sudah ditemukan, tidak perlu mencari ulang saat HyperCharge berjalan.</p>
     <div id="detectNote" class="note hidden"></div>
   </details>
 
@@ -158,16 +161,17 @@
     <label class="f">Kernel Default: ambang Badan HP (°C) <input id="sTARGET_TEMP" type="number" min="38" max="46"></label>
     <label class="f">Performa: rem di Badan HP (°C) <input id="sGAME_LIMIT" type="number" min="40" max="50"></label>
     <label class="f">Hemat: CPU besar maks (%) <input id="sSAVER_CAP" type="number" min="30" max="90"></label>
-    <p class="muted">Ambang mode dibaca dari suhu Badan HP (yang terasa di tangan). Hemat 2 °C di bawah Kernel Default. Langkah halus: mulai 1 °C sebelum ambang, CPU besar turun 10% per langkah sampai 60%, CPU kecil (yang menjaga UI tetap lancar) paling akhir dan tidak di bawah 80%. CPU hanya diturunkan saat prosesor bekerja (≥ 55 °C); panas dari cas atau ruangan tidak membuat CPU diturunkan. Di semua mode ada rem darurat bila prosesor ≥ 95 °C.</p>
+    <p class="muted user">Suhu di sini adalah suhu Badan HP, yang terasa di tangan.</p>
+    <p class="muted dev">Ambang mode dibaca dari suhu Badan HP (yang terasa di tangan). Hemat 2 °C di bawah Kernel Default. Langkah halus: mulai 1 °C sebelum ambang, CPU besar turun 10% per langkah sampai 60%, CPU kecil (yang menjaga UI tetap lancar) paling akhir dan tidak di bawah 80%. CPU hanya diturunkan saat prosesor bekerja (≥ 55 °C); panas dari cas atau ruangan tidak membuat CPU diturunkan. Di semua mode ada rem darurat bila prosesor ≥ 95 °C.</p>
     <label class="f">Performa: boost aplikasi di layar <input id="sGAME_BOOST" type="checkbox"></label>
-    <label class="f">Cek tiap (detik) <input id="sINTERVAL" type="number" min="5" max="60"></label>
-    <label class="f">Terapkan ulang tiap interval <input id="sFORCE" type="checkbox"></label>
-    <p class="muted">Simpan: simpan setelan (pengendali aktif membaca pada interval berikutnya). Paksa: simpan, mulai, terapkan sekarang dan ulangi tiap interval. Henti dan Reset melepaskan kontrol milik modul. Reset memakai cas 95/90 dan berhenti sampai Mulai.</p>
+    <label class="f dev">Cek tiap (detik) <input id="sINTERVAL" type="number" min="5" max="60"></label>
+    <label class="f dev">Terapkan ulang tiap interval <input id="sFORCE" type="checkbox"></label>
+    <p class="muted dev">Simpan: simpan setelan (pengendali aktif membaca pada interval berikutnya). Paksa: simpan, mulai, terapkan sekarang dan ulangi tiap interval. Henti dan Reset melepaskan kontrol milik modul. Reset memakai cas 95/90 dan berhenti sampai Mulai.</p>
     <p class="muted" id="draftNote"></p>
     <p><a href="manager.html#powerControls">Simpan, terapkan, reset dan hentikan dari tab Manager.</a></p>
   </details>
 
-  <details class="card fold" id="controlsCard">
+  <details class="card fold dev" id="controlsCard">
     <summary><span>🎛️ Kontrol kernel</span></summary>
     <p class="muted" id="backend">Belum diterapkan.</p>
     <table><thead><tr><th>Kontrol</th><th>Diminta → terbaca</th></tr></thead><tbody id="controls"></tbody></table>
@@ -180,11 +184,11 @@
   </details>
 
   <footer id="foot">Cogan Smart · Henti melepaskan kontrol Daya</footer>
-<p class="credit">Maintainer <b>Cogan17</b> &nbsp;·&nbsp; kernel <b>Cogan Rothko</b> &nbsp;·&nbsp; <b>KernelSU Next</b><br><a href="about.html">ℹ️ Tentang &amp; kredit</a></p>
+<p class="credit">Maintainer <b>Cogan17</b> &nbsp;·&nbsp; kernel <b>Cogan Rothko</b> &nbsp;·&nbsp; <b>KernelSU Next</b><br><a href="about.html">ℹ️ Tentang &amp; kredit</a> · <a href="guide.html">📖 Panduan</a></p>
 </main>
 
 <div id="actionStatus" class="feedback hidden" role="status" aria-live="polite"></div>
-<script src="client.js?v=2.10.8"></script>
+<script src="client.js?v=2.11.0"></script>
 <script>
 const confirm = value => window.confirm(CoganI18n.t(value));
 const REPORT = '/data/adb/modules/cogan_smart/power/report.sh';

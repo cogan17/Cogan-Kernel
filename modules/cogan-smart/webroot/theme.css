@@ -32,3 +32,11 @@
 .tabs .tab-icon { display: grid; place-items: center; width: 24px; height: 24px; font-size: 20px; line-height: 1; }
 .tabs .tab-label { white-space: nowrap; }
 .tabs a:focus-visible { outline: 2px solid var(--accent); outline-offset: -3px; }
+
+/* Mode Dev (owner 2026-10-29): everyday text stays short; technical detail (paths, readback, hooks,
+   raw values) is marked .dev and shown only when Mode Dev is on (Tentang/About, <html data-dev="1">). */
+:root:not([data-dev="1"]) .dev { display: none !important; }
+:root[data-dev="1"] .user { display: none !important; }
+.dev-tag { font-size: 11px; color: var(--muted); border: 1px dashed var(--line); border-radius: 6px; padding: 0 5px; margin-left: 4px; }
+.guide-link { text-align: center; font-size: 13px; margin: 2px 0 0; }
+.guide-link a { color: var(--accent); }

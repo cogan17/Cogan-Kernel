@@ -4,9 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Cogan Smart · Tentang</title>
-<link rel="stylesheet" href="theme.css?v=2.10.8">
-<script src="i18n.js?v=2.10.8"></script>
-<script>try { document.documentElement.dataset.theme = localStorage.getItem('cogan.theme') || ''; document.documentElement.lang = localStorage.getItem('cogan.lang') || 'id'; } catch (_) { /* storage off: defaults */ }</script>
+<link rel="stylesheet" href="theme.css?v=2.11.0">
+<script src="i18n.js?v=2.11.0"></script>
+<script>try { document.documentElement.dataset.theme = localStorage.getItem('cogan.theme') || ''; document.documentElement.dataset.dev = localStorage.getItem('cogan.dev') || ''; document.documentElement.lang = localStorage.getItem('cogan.lang') || 'id'; } catch (_) { /* storage off: defaults */ }</script>
 <style>
   * { box-sizing: border-box; }
   body {
@@ -96,6 +96,23 @@
   </section>
 
   <section class="card">
+    <h2 lang="id">📖 Panduan</h2>
+    <h2 lang="en">📖 Guide</h2>
+    <p lang="id">Cara memakai tiap tab dan tombol, dengan bahasa sederhana.</p>
+    <p lang="en">How to use each tab and button, in plain words.</p>
+    <p><a href="guide.html"><span lang="id">Buka panduan ›</span><span lang="en">Open the guide ›</span></a></p>
+  </section>
+  <section class="card">
+    <h2 lang="id">🛠️ Mode Dev</h2>
+    <h2 lang="en">🛠️ Dev mode</h2>
+    <div class="seg" role="group" aria-label="Mode Dev">
+      <button data-dev=""><span lang="id">👤 Mati (pengguna)</span><span lang="en">👤 Off (user)</span></button>
+      <button data-dev="1"><span lang="id">🛠️ Nyala (Dev/debug)</span><span lang="en">🛠️ On (Dev/debug)</span></button>
+    </div>
+    <p class="muted" lang="id">Mati: tampilan ringkas untuk pemakaian sehari-hari. Nyala: tampilkan detail teknis seperti node kernel, hasil baca ulang, hook boot dan nilai mentah.</p>
+    <p class="muted" lang="en">Off: a short view for everyday use. On: also show technical detail such as kernel nodes, readback, boot hooks and raw values.</p>
+  </section>
+  <section class="card">
     <h2 lang="id">🙏 Kredit</h2>
     <h2 lang="en">🙏 Credits</h2>
     <table>
@@ -116,7 +133,7 @@
   <p class="credit">Maintainer <b>Cogan17</b> &nbsp;·&nbsp; kernel <b>Cogan Rothko</b> &nbsp;·&nbsp; <b>KernelSU Next</b></p>
 </main>
 
-<script src="client.js?v=2.10.8"></script>
+<script src="client.js?v=2.11.0"></script>
 <script>
 const POWER = '/data/adb/modules/cogan_smart/power/report.sh';
 const UI = CoganUI, power = UI.create(POWER), root = document.documentElement;
@@ -129,8 +146,9 @@ document.addEventListener('click', e => {
   if (!button) return;
   if ('lang' in button.dataset) { CoganI18n.setLanguage(button.dataset.lang); mark('lang', root.lang); if (id) UI.kernel(id); }
   if ('theme' in button.dataset) { root.dataset.theme = button.dataset.theme; save('cogan.theme', root.dataset.theme); mark('theme', root.dataset.theme); }
+  if ('dev' in button.dataset) { root.dataset.dev = button.dataset.dev; save('cogan.dev', root.dataset.dev); mark('dev', root.dataset.dev); }
 });
-mark('lang', root.lang); mark('theme', root.dataset.theme || '');
+mark('lang', root.lang); mark('theme', root.dataset.theme || ''); mark('dev', root.dataset.dev || '');
 
 // Identity and version as last read by the other tabs; no root shell is needed for this page.
 const id = UI.identity(), last = power.cached('status brief') || power.cached('live');

@@ -33,7 +33,7 @@ vm.runInContext(fs.readFileSync('modules/cogan-smart/webroot/client.js','utf8'),
   const nodes=new Map(), node=id=>{
     if(!nodes.has(id)) {
       const classes=new Set();
-      nodes.set(id,{textContent:'',innerHTML:'',options:[],classList:{
+      nodes.set(id,{textContent:'',innerHTML:'',options:[],children:[],addEventListener(){},classList:{
         add:c=>classes.add(c),remove:c=>classes.delete(c),contains:c=>classes.has(c),
         toggle:(c,on)=>on?classes.add(c):classes.delete(c)}});
     }
@@ -42,7 +42,9 @@ vm.runInContext(fs.readFileSync('modules/cogan-smart/webroot/client.js','utf8'),
   const cause='Pemindaian gagal pada proses berjalan (kode 42): synthetic';
   const page={ksu:{},setTimeout:()=>0,clearTimeout(){},CoganI18n:{t:s=>s,apply(){}},
     document:{getElementById:node},
-    CoganUI:{create:()=>({report:async()=>{throw new Error(cause);}}),folds(){},kernel(){},
+    CoganUI:{create:path=>({report:async()=>{throw new Error(cause);},
+        cached:()=>path.includes('/guard/') ? {at:Date.now()-120000,data:{modules:[{risk:2,trusted:false},{risk:1,trusted:false},{risk:2,trusted:true}]}} : null}),
+      folds(){},kernel(){},recorder:()=>'● mencatat',
       text:(id,value)=>{node(id).textContent=value;},html:(id,value)=>{node(id).innerHTML=value;},
       action:async(button,message,task)=>task(),poll:()=>({poke(){}})}};
   page.window=page;
@@ -73,5 +75,24 @@ vm.runInContext(fs.readFileSync('modules/cogan-smart/webroot/client.js','utf8'),
   assert.equal(node('bwGovernor').value,'bw_hwmon');
   node('bwGovernor').value='default';
   assert.equal(vm.runInContext('values()',page),'default snappy 0 default');
+  // Everyday words are short; the full explanation stays for Mode Dev.
+  assert.equal(vm.runInContext('ramShort({ram_state:"matching"})',page),'✓ Aktif sesuai pilihan.');
+  assert.match(vm.runInContext('ramShort({ram_state:"blocked"})',page),/Mode Dev/);
+  page.snapshot.ram_state='blocked';
+  vm.runInContext('render(snapshot)',page);
+  assert.match(node('ramPending').textContent,/Mode Dev/);
+  assert.match(node('ramPendingDev').textContent,/Periksa hasil hook init/);
+  // Manager oversees the other tabs (owner 2026-10-29): power, temperature and the module guard.
+  const button=mode=>({dataset:{mode},disabled:true,classList:{toggle(){}},setAttribute(){}});
+  node('modes').children=[button('hemat'),button('seimbang'),button('game')];
+  page.fixture={running:1,body:405,main:612,battery:{level:80,temp:352,status:'charging',current:3000},
+    config:{mode:'seimbang',TARGET_TEMP:41,GAME_LIMIT:44,SAVER_CAP:60},state:{limit:41,big:90,little:100,cause:'Prosesor'}};
+  vm.runInContext('power=fixture; thermal={monitor:{}}; overview()',page);
+  assert.match(node('overviewChips').innerHTML,/Badan HP<\/small><b class="warm">40.5°/);
+  assert.match(node('overviewChips').innerHTML,/80% · 35.2°/);
+  assert.equal(node('powerLine').textContent,'target batas CPU besar 90% · kecil 100% · Penyebab: Prosesor · mengecas 3000 mA');
+  assert.equal(node('mode-seimbang').textContent,'Badan HP dijaga ≤ 41 °C');
+  assert(node('modes').children.every(b=>!b.disabled));
+  assert.equal(node('guardLine').textContent,'3 modul · 1 berbahaya · 1 perlu dicek · dipindai 2 menit lalu');
   console.log('WebUI drafts, native callbacks and scan errors: OK');
 })().catch(e=>{console.error(e);process.exitCode=1;});

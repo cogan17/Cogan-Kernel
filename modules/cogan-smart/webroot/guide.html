@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cogan Smart · Panduan</title>
+<link rel="stylesheet" href="theme.css?v=2.11.0">
+<script src="i18n.js?v=2.11.0"></script>
+<script>try { document.documentElement.dataset.theme = localStorage.getItem('cogan.theme') || ''; document.documentElement.dataset.dev = localStorage.getItem('cogan.dev') || ''; document.documentElement.lang = localStorage.getItem('cogan.lang') || 'id'; } catch (_) { /* storage off: defaults */ }</script>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    padding: calc(env(safe-area-inset-top, 0px) + 14px) 14px calc(env(safe-area-inset-bottom, 0px) + 24px);
+  }
+  main { max-width: 640px; margin: 0 auto; }
+  header { display: flex; align-items: center; gap: 10px; margin: 4px 2px 14px; }
+  header h1 { font-size: 20px; margin: 0; flex: 1; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 20px; padding: 16px; margin-bottom: 12px; }
+  .card h2 { font-size: 15px; margin: 0 0 8px; }
+  .muted { color: var(--muted); font-size: 13px; }
+  .ok { color: var(--ok); }
+  .hero { text-align: center; padding: 22px 16px; }
+  .hero .logo { font-size: 48px; line-height: 1; }
+  .hero h2 { font-size: 22px; margin: 10px 0 2px; }
+  .hero code { background: var(--chip); padding: 2px 8px; border-radius: 99px; }
+  .seg { display: flex; gap: 6px; flex-wrap: wrap; }
+  .seg button {
+    flex: 1; min-height: 44px; font: inherit; font-size: 14px; color: var(--text); background: var(--chip);
+    border: 1px solid var(--line); border-radius: 99px; padding: 8px 12px; cursor: pointer;
+  }
+  .seg button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 600; }
+  .lang button { flex: 0 0 auto; padding: 6px 12px; white-space: nowrap; }
+  .seg button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  td { padding: 7px 4px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  tr:last-child td { border-bottom: 0; }
+  td:first-child { font-weight: 600; white-space: nowrap; padding-right: 10px; }
+  code { font-size: 12px; overflow-wrap: anywhere; }
+  ul { margin: 4px 0; padding-left: 18px; font-size: 14px; } li { margin: 3px 0; }
+  /* Indonesian first; English when chosen */
+  html:not([lang="en"]) [lang="en"], html[lang="en"] [lang="id"] { display: none !important; }
+  ol, ul { margin: 4px 0; padding-left: 20px; font-size: 14px; } li { margin: 6px 0; line-height: 1.5; }
+  a { color: var(--accent); }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>📖 Panduan</h1>
+    <div class="seg lang" role="group" aria-label="Bahasa / Language">
+      <button data-lang="id">🇮🇩 ID</button><button data-lang="en">🇬🇧 EN</button>
+    </div>
+  </header>
+  <nav class="tabs" aria-label="Bagian"><a href="index.html"><span class="tab-icon" aria-hidden="true">⚡</span><span class="tab-label">Daya</span></a><a href="thermal.html"><span class="tab-icon" aria-hidden="true">🌡️</span><span class="tab-label">Suhu</span></a><a href="manager.html"><span class="tab-icon" aria-hidden="true">🛠️</span><span class="tab-label">Manager</span></a><a href="modules.html"><span class="tab-icon" aria-hidden="true">🧩</span><span class="tab-label">Modul</span></a></nav>
+  <section class="card">
+    <p lang="id">Cogan Smart Kernel menjaga HP tetap adem dan mencatat suhunya. Panduan ini menjelaskan tiap tab dan tombol dengan bahasa sederhana.</p>
+    <p lang="en">Cogan Smart Kernel keeps the phone cool and records its temperature. This guide explains every tab and button in plain words.</p>
+  </section>
+  <section class="card">
+    <h2 lang="id">🚀 Mulai cepat</h2>
+    <h2 lang="en">🚀 Quick start</h2>
+    <ol lang="id"><li>Pilih mode di <b>Manager</b> atau <b>Daya</b>: 🌿 Hemat, 🧠 Kernel Default atau 🎮 Performa.</li><li>Lihat <b>Ringkasan</b> di Manager: pengendali dan pencatat harus <i>aktif</i> / <i>mencatat</i>.</li><li>HP terasa panas? Buka tab <b>Suhu</b>: penyebabnya tercatat di sana.</li></ol>
+    <ol lang="en"><li>Choose a mode in <b>Manager</b> or <b>Power</b>: 🌿 Power saver, 🧠 Kernel Default or 🎮 Performance.</li><li>Check the <b>Summary</b> in Manager: the controller and recorder should be <i>active</i> / <i>recording</i>.</li><li>Phone feels hot? Open the <b>Temperature</b> tab: the cause is recorded there.</li></ol>
+  </section>
+  <section class="card">
+    <h2 lang="id">🛠️ Manager: pusat kendali</h2>
+    <h2 lang="en">🛠️ Manager: the control centre</h2>
+    <ul lang="id"><li><b>Ringkasan</b>: suhu Badan HP, baterai, prosesor, status pengendali dan pencatat, grafik suhu 1 jam, penyebab panas, dan hasil pindai modul.</li><li><b>Mode daya</b>: ganti mode langsung dari sini.</li><li><b>Prosesor</b>: cara CPU mengatur kecepatannya (governor). Kernel Default cocok untuk harian.</li><li><b>RAM</b>: kompresi ZRAM. LZ4 lebih cepat, ZSTD lebih hemat RAM. Centang <i>Terapkan CPU/RAM saat boot</i>, tekan <b>Simpan</b>, lalu restart HP.</li><li><b>Kontrol Daya</b> dan <b>Kontrol Suhu</b>: semua tombol untuk menerapkan setelan dari tab Daya dan Suhu.</li><li><b>Aplikasi jarang dipakai</b>: daftar aplikasi yang tidak dibuka 7 hari atau lebih. Tekan <i>Tinjau aplikasi</i> untuk membuka info aplikasinya.</li></ul>
+    <ul lang="en"><li><b>Summary</b>: phone body, battery and processor temperature, controller and recorder status, a 1-hour temperature chart, the heat cause and the module scan result.</li><li><b>Power mode</b>: switch the mode right here.</li><li><b>Processor</b>: how the CPU sets its speed (governor). Kernel Default suits everyday use.</li><li><b>RAM</b>: ZRAM compression. LZ4 is faster, ZSTD saves more RAM. Tick <i>Apply CPU/RAM at boot</i>, tap <b>Save</b>, then restart the phone.</li><li><b>Power controls</b> and <b>Temperature controls</b>: every button that applies the settings of the Power and Temperature tabs.</li><li><b>Rarely used apps</b>: apps not opened for 7 days or more. Tap <i>Review app</i> to open the app info.</li></ul>
+  </section>
+  <section class="card">
+    <h2 lang="id">🔘 Arti tombol</h2>
+    <h2 lang="en">🔘 What the buttons do</h2>
+    <ul lang="id"><li><b>💾 Simpan</b>: menyimpan setelan. Berlaku pada pemeriksaan berikutnya.</li><li><b>⚡ Paksa / Terapkan</b> dan <b>Terapkan sekarang</b>: menyimpan, menyalakan, lalu langsung berlaku.</li><li><b>↺ Reset default / Ikuti kernel</b>: kembali ke setelan bawaan. Riwayat suhu tidak dihapus.</li><li><b>⏹ Hentikan / ▶ Mulai</b>: mematikan atau menyalakan pengendali atau pencatat.</li><li><b>🗑 Hapus riwayat</b>: menghapus catatan suhu. Log yang sudah disimpan di Download tetap ada.</li></ul>
+    <ul lang="en"><li><b>💾 Save</b>: stores the settings. They take effect at the next check.</li><li><b>⚡ Force / Apply</b> and <b>Apply now</b>: saves, starts and applies at once.</li><li><b>↺ Reset defaults / Follow kernel</b>: back to the default settings. Temperature history is kept.</li><li><b>⏹ Stop / ▶ Start</b>: turns the controller or recorder off or on.</li><li><b>🗑 Clear history</b>: deletes the temperature records. Logs already saved in Download stay.</li></ul>
+  </section>
+  <section class="card">
+    <h2 lang="id">⚡ Daya</h2>
+    <h2 lang="en">⚡ Power</h2>
+    <ul lang="id"><li><b>🌿 Hemat</b>: CPU besar dibatasi 60%, Badan HP dijaga ≤ 39 °C.</li><li><b>🧠 Kernel Default</b>: Badan HP dijaga ≤ 41 °C. Pilihan harian.</li><li><b>🎮 Performa</b>: tenaga penuh, baru direm saat Badan HP 44 °C.</li><li><b>🔌 Cas</b>: berhenti mengecas di 95% dan lanjut di 90% (bisa diubah). <i>Cari saklar cas</i> cukup sekali, saat charger tercolok.</li><li><b>⚙️ Setelan mode</b>: ubah angka suhu tiap mode. Simpan dari Manager.</li><li><b>📝 Aktivitas</b>: catatan apa saja yang dilakukan modul.</li></ul>
+    <ul lang="en"><li><b>🌿 Power saver</b>: big CPU capped at 60%, phone body kept ≤ 39 °C.</li><li><b>🧠 Kernel Default</b>: phone body kept ≤ 41 °C. The everyday choice.</li><li><b>🎮 Performance</b>: full power, held back only at a 44 °C phone body.</li><li><b>🔌 Charging</b>: stops at 95% and resumes at 90% (adjustable). <i>Detect charging switch</i> once, with the charger plugged in.</li><li><b>⚙️ Mode settings</b>: change each mode's temperature. Save from Manager.</li><li><b>📝 Activity</b>: a record of what the module did.</li></ul>
+  </section>
+  <section class="card">
+    <h2 lang="id">🌡️ Suhu</h2>
+    <h2 lang="en">🌡️ Temperature</h2>
+    <ul lang="id"><li><b>Sekarang</b>: suhu Badan HP dan bagian HP lain saat ini.</li><li><b>📊 Ringkasan</b>: grafik, berapa lama HP panas, penyebab panas, dan suhu per aplikasi dan per mode.</li><li><b>💾 Simpan log</b>: menyimpan ringkasan (.txt) dan semua data (.csv) ke folder <i>Download/CoganThermal</i>.</li><li><b>⚙️ Setelan</b>: kapan HP dianggap panas (bawaan 41 °C), lama riwayat (7 hari) dan notifikasi (bawaan mati).</li></ul>
+    <ul lang="en"><li><b>Now</b>: the phone body and other parts right now.</li><li><b>📊 Summary</b>: chart, how long the phone was hot, the heat causes, and temperature per app and per mode.</li><li><b>💾 Save logs</b>: saves the summary (.txt) and all data (.csv) to the <i>Download/CoganThermal</i> folder.</li><li><b>⚙️ Settings</b>: when the phone counts as hot (default 41 °C), how long history is kept (7 days) and notifications (off by default).</li></ul>
+  </section>
+  <section class="card">
+    <h2 lang="id">🧩 Modul</h2>
+    <h2 lang="en">🧩 Modules</h2>
+    <ul lang="id"><li>Memeriksa modul root lain: ✅ aman, ⚠️ perlu dicek, ⛔ berbahaya. Ini dugaan; baca <i>Bukti</i> sebelum bertindak.</li><li><b>🛡️ Percaya</b>: modul tidak ditandai lagi dan terlindung dari hapus tidak sengaja.</li><li><b>⏸ Nonaktifkan / ▶ Aktifkan</b>: berlaku setelah reboot.</li><li><b>🗑 Hapus sampai akar</b>: menghapus modul beserta skrip boot dan prosesnya. Bisa dibatalkan sebelum reboot.</li><li><b>📜 Skrip boot di luar modul</b>: skrip yang jalan saat boot tapi tidak terlihat di daftar modul.</li></ul>
+    <ul lang="en"><li>Checks other root modules: ✅ safe, ⚠️ needs a look, ⛔ dangerous. These are guesses; read the <i>Evidence</i> before acting.</li><li><b>🛡️ Trust</b>: the module is no longer flagged and is protected from accidental removal.</li><li><b>⏸ Disable / ▶ Enable</b>: takes effect after a reboot.</li><li><b>🗑 Remove completely</b>: removes the module with its boot scripts and processes. Can be undone before rebooting.</li><li><b>📜 Boot scripts outside modules</b>: scripts that run at boot but are not in the module list.</li></ul>
+  </section>
+  <section class="card">
+    <h2 lang="id">ℹ️ Tentang</h2>
+    <h2 lang="en">ℹ️ About</h2>
+    <ul lang="id"><li>Pilih <b>bahasa</b> (ID/EN), <b>tema</b> (Otomatis, Terang hangat, Gelap OLED) dan <b>Mode Dev</b>.</li></ul>
+    <ul lang="en"><li>Choose the <b>language</b> (ID/EN), the <b>theme</b> (Auto, Warm light, OLED dark) and <b>Dev mode</b>.</li></ul>
+  </section>
+  <section class="card">
+    <h2 lang="id">🛠️ Mode Dev</h2>
+    <h2 lang="en">🛠️ Dev mode</h2>
+    <ul lang="id"><li>Bawaan mati: tampilan ringkas untuk pemakaian sehari-hari.</li><li>Nyala: muncul detail teknis, misalnya node kernel, hasil baca ulang, hook boot ZRAM, semua sensor, dan data mentah modul.</li></ul>
+    <ul lang="en"><li>Off by default: a short view for everyday use.</li><li>On: shows technical detail such as kernel nodes, readback, ZRAM boot hooks, every sensor and raw module data.</li></ul>
+  </section>
+  <section class="card">
+    <h2 lang="id">❓ Tanya jawab</h2>
+    <h2 lang="en">❓ FAQ</h2>
+    <ul lang="id"><li><b>Prosesor 50–60 °C saat santai, wajar?</b> Ya. Panas dihitung dari suhu Badan HP, yang terasa di tangan.</li><li><b>Kolom GPU di log kosong?</b> GPU sedang tidur (layar mati atau tidak dipakai), jadi sensornya tidak terbaca. Normal.</li><li><b>Arus cas sampai 10–16 A?</b> Itu HyperCharge 120 W saat mengecas cepat. Normal.</li><li><b>ZRAM tetap LZ4 setelah restart?</b> Centang <i>Terapkan CPU/RAM saat boot</i>, tekan Simpan, lalu restart. Butuh modul v2.10.8 atau lebih baru.</li><li><b>HP gagal masuk sistem?</b> Safe mode KernelSU mematikan semua modul sementara. Nyalakan lagi di root manager → Modul, lalu reboot.</li></ul>
+    <ul lang="en"><li><b>Processor at 50–60 °C while idle, normal?</b> Yes. Heat is measured from the phone body, which is what you feel.</li><li><b>GPU column empty in the log?</b> The GPU is asleep (screen off or unused), so its sensor cannot be read. Normal.</li><li><b>Charging current up to 10–16 A?</b> That is 120 W HyperCharge fast charging. Normal.</li><li><b>ZRAM still LZ4 after a restart?</b> Tick <i>Apply CPU/RAM at boot</i>, tap Save, then restart. Needs module v2.10.8 or newer.</li><li><b>Phone fails to boot?</b> KernelSU safe mode turns every module off for a while. Turn them back on in the root manager → Modules, then reboot.</li></ul>
+  </section>
+  <p class="credit">Maintainer <b>Cogan17</b> &nbsp;·&nbsp; kernel <b>Cogan Rothko</b> &nbsp;·&nbsp; <b>KernelSU Next</b><br><a href="about.html">ℹ️ Tentang &amp; kredit</a></p>
+</main>
+<script>
+// The guide is static text in both languages; only the language switch needs script.
+const root = document.documentElement;
+const mark = () => { for (const button of document.querySelectorAll('button[data-lang]')) button.setAttribute('aria-pressed', String(button.dataset.lang === root.lang)); };
+document.addEventListener('click', e => { const button = e.target.closest('button[data-lang]'); if (button) { CoganI18n.setLanguage(button.dataset.lang); mark(); } });
+mark();
+</script>
+</body>
+</html>
