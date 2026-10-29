@@ -6,14 +6,14 @@ Cogan Smart Kernel keeps the phone cool and records its temperature. This guide 
 
 ## 🚀 Quick start
 
-1. Choose a mode in **Manager** or **Power**: 🌿 Power saver, 🧠 Kernel Default or 🎮 Performance.
+1. Choose a mode in the **Power** tab: 🌿 Power saver, 🧠 Kernel Default or 🎮 Performance.
 2. Check the **Summary** in Manager: the controller and recorder should be *active* / *recording*.
 3. Phone feels hot? Open the **Temperature** tab: the cause is recorded there.
 
 ## 🛠️ Manager: the control centre
 
-- **Summary**: phone body, battery and processor temperature, controller and recorder status, a 1-hour temperature chart, the heat cause and the module scan result.
-- **Power mode**: switch the mode right here.
+- **Summary**: phone body, battery and processor temperature, controller and recorder status, a 1-hour temperature chart, the heat cause and the last module scan (scan in the Modules tab).
+- **Power mode**: shows the mode chosen in the Power tab. Manager only watches it; change the mode in the Power tab.
 - **Processor**: how the CPU sets its speed (governor). Kernel Default suits everyday use.
 - **RAM**: ZRAM compression. LZ4 is faster, ZSTD saves more RAM. Tick *Apply CPU/RAM at boot*, tap **Save**, then restart the phone.
 - **Power controls** and **Temperature controls**: every button that applies the settings of the Power and Temperature tabs.

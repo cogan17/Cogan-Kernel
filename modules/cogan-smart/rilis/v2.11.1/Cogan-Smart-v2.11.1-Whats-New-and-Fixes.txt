@@ -1,0 +1,33 @@
+Cogan Smart Kernel v2.11.1 / versionCode 29 — paket uji / test build
+
+Indonesia
+
+Baru:
+- Ringkasan di Manager hanya memantau. Mode daya tampil sesuai pilihan di tab Daya, dan hasil pindai modul diambil dari tab Modul. Ganti mode di tab Daya, pindai modul di tab Modul.
+
+Perbaikan:
+- Keluar dari modul cukup satu usapan kembali. Sebelumnya tiap pindah tab menambah riwayat, jadi harus mengusap berkali-kali.
+
+Batas:
+- Bagian Manager lain, kontrol daya, suhu, ZRAM dan penjaga modul tidak berubah. v2.11.1 belum diuji di HP.
+
+Cara uji:
+1. Pasang sebagai pembaruan modul melalui root manager, lalu reboot.
+2. Pilih mode di tab Daya, lalu buka Manager: Mode daya menampilkan mode yang sama, tanpa tombol.
+3. Pindah beberapa tab, lalu usap kembali satu kali: WebUI tertutup.
+
+English
+
+New:
+- The Manager Summary only watches. The power mode shows the Power tab's choice, and the module result comes from the Modules tab. Change the mode in Power and scan modules in Modules.
+
+Fixes:
+- One back gesture leaves the module. Before, every tab switch added to history, so it took many swipes.
+
+Limits:
+- The rest of Manager, power, temperature, ZRAM and module guard behaviour is unchanged. v2.11.1 has not been phone-tested.
+
+How to test:
+1. Install as a module update through the root manager, then reboot.
+2. Choose a mode in the Power tab, then open Manager: Power mode shows the same mode, without buttons.
+3. Switch between a few tabs, then swipe back once: the WebUI closes.

@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Cogan Smart · Manager</title>
-<link rel="stylesheet" href="theme.css?v=2.11.0">
-<script src="i18n.js?v=2.11.0"></script>
+<link rel="stylesheet" href="theme.css?v=2.11.1">
+<script src="i18n.js?v=2.11.1"></script>
 <script>try { document.documentElement.dataset.theme = localStorage.getItem('cogan.theme') || ''; document.documentElement.dataset.dev = localStorage.getItem('cogan.dev') || ''; } catch (_) {}</script>
 <style>
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 system-ui,sans-serif;padding:calc(env(safe-area-inset-top,0px) + 14px) 14px calc(env(safe-area-inset-bottom,0px) + 24px)}
@@ -15,7 +15,6 @@ main{max-width:640px;margin:auto}header{display:flex;align-items:center;gap:10px
 .muted{color:var(--muted);font-size:13px;overflow-wrap:anywhere}.warm{color:var(--warm)}.ok{color:var(--ok)}.hot{color:var(--hot)}p{margin:8px 0}.row{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}button,select{font:inherit;color:var(--text);background:var(--chip);border:1px solid var(--line);border-radius:10px;padding:9px 12px;min-height:44px;max-width:100%}select{width:100%;font-size:14px}button{cursor:pointer}button:disabled{opacity:.5}button.primary{background:var(--accent);color:var(--on-accent);font-weight:600}button.danger{color:var(--hot)}label{display:block;margin:8px 0}label.check{display:flex;align-items:center;justify-content:space-between;gap:12px}input[type=checkbox]{width:22px;height:22px}button,summary,select,input{touch-action:manipulation;-webkit-tap-highlight-color:transparent}:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 h3{font-size:13px;margin:14px 0 4px;color:var(--muted);font-weight:600}
 .chips{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px;margin-top:4px}.chip{background:var(--chip);border-radius:10px;padding:7px 9px}.chip small{display:block;color:var(--muted);font-size:12px}.chip b{font-size:16px;font-variant-numeric:tabular-nums}
-.modes{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.modes button{display:flex;flex-direction:column;align-items:flex-start;text-align:left;gap:2px}.modes button small{font-size:11px;color:var(--muted)}.modes button.sel{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}.modes button.sel small{color:var(--on-accent)}
 svg{width:100%;height:110px;display:block}.axis{display:flex;justify-content:space-between;font-size:12px;color:var(--muted)}
 .app{padding:12px 0;border-bottom:1px solid var(--line)}.app b{overflow-wrap:anywhere}.app small{display:block}.hidden{display:none!important}.feedback{position:fixed;bottom:calc(env(safe-area-inset-bottom,0px) + 12px);left:14px;right:14px;max-width:612px;margin:auto;z-index:20;padding:10px 14px;border-radius:12px;background:var(--text);color:var(--card);font-size:13px;pointer-events:none}.working::before{content:'◌ ';}footer{text-align:center;font-size:12px;color:var(--muted);margin-top:18px}.kernel-value{overflow-wrap:anywhere;font-size:12px;white-space:pre-wrap}
 </style>
@@ -37,14 +36,13 @@ svg{width:100%;height:110px;display:block}.axis{display:flex;justify-content:spa
     <summary>📊 Ringkasan</summary>
     <div class="chips" id="overviewChips"></div>
     <h3>⚡ Mode daya</h3>
-    <div class="modes" id="modes"></div>
+    <p id="modeLine">Memuat…</p>
     <p id="powerLine" class="muted"></p>
     <h3>🌡️ Suhu 1 jam terakhir</h3>
     <div id="overviewChart"><p class="muted">Memuat…</p></div>
     <p id="heatLine" class="muted"></p>
     <h3>🧩 Modul root</h3>
-    <p id="guardLine" class="muted">Belum dipindai.</p>
-    <div class="row"><button id="guardScan" data-action disabled>🔍 Pindai modul</button></div>
+    <p id="guardLine" class="muted">Belum dipindai. Pindai di tab Modul.</p>
     <p class="muted">Detail: <a href="index.html">⚡ Daya</a> · <a href="thermal.html">🌡️ Suhu</a> · <a href="modules.html">🧩 Modul</a></p>
   </details>
   <details class="card fold" id="processorCard">
@@ -102,12 +100,12 @@ svg{width:100%;height:110px;display:block}.axis{display:flex;justify-content:spa
   <p class="credit">Maintainer <b>Cogan17</b> &nbsp;·&nbsp; kernel <b>Cogan Rothko</b> &nbsp;·&nbsp; <b>KernelSU Next</b><br><a href="about.html">ℹ️ Tentang &amp; kredit</a> · <a href="guide.html">📖 Panduan</a></p>
 </main>
 <div id="actionStatus" class="feedback hidden" role="status" aria-live="polite"></div>
-<script src="client.js?v=2.11.0"></script>
+<script src="client.js?v=2.11.1"></script>
 <script>
 const REPORT = '/data/adb/modules/cogan_smart/manager/report.sh';
 const UI = CoganUI, api = UI.create(REPORT), $ = id => document.getElementById(id);
 const parts = {power: UI.create('/data/adb/modules/cogan_smart/power/report.sh'), thermal: UI.create('/data/adb/modules/cogan_smart/thermal/report.sh')};
-// Manager oversees every tab (owner 2026-10-29): it reads the Power and Temperature parts and the module guard.
+// Manager watches every tab (owner 2026-10-29): it reads Power, Temperature and the last module scan; the mode and scan are set in their own tabs.
 const guard = UI.create('/data/adb/modules/cogan_smart/guard/report.sh');
 const MODES = {hemat: ['🌿 Hemat', c => `CPU besar maks ${c.SAVER_CAP}%, Badan HP ≤ ${c.TARGET_TEMP - 2} °C`],
   seimbang: ['🧠 Kernel Default', c => `Badan HP dijaga ≤ ${c.TARGET_TEMP} °C`],
@@ -173,11 +171,7 @@ function overview() {
     chip('Prosesor', p && p.main > -9999 ? deg(p.main) + '°' : '--'),
     chip('Pengendali', p ? (p.running ? 'aktif' : 'berhenti') : '…', p ? (p.running ? 'ok' : 'warm') : ''),
     chip('Pencatat', t ? UI.recorder(t.monitor) : '…')].join(''));
-  if (c) for (const button of $('modes').children) {
-    const key = button.dataset.mode;
-    button.classList.toggle('sel', c.mode === key); button.setAttribute('aria-pressed', String(c.mode === key));
-    button.disabled = false; UI.text('mode-' + key, MODES[key][1](c));
-  }
+  if (c) UI.html('modeLine', MODES[c.mode] ? `<b>${esc(MODES[c.mode][0])}</b> · <span class="muted">${esc(MODES[c.mode][1](c))}</span>` : esc(c.mode));
   UI.text('powerLine', !p ? 'Memuat…' : !p.running ? 'Pengendali berhenti: mode belum dijaga. Tekan Mulai di Kontrol Daya.'
     : [st ? `target batas CPU besar ${st.big}%` : '', st ? `kecil ${st.little}%` : '', st?.cause ? `Penyebab: ${st.cause}` : '',
        b?.status === 'charging' ? `mengecas ${b.current} mA` : ''].filter(Boolean).join(' · ') || 'Kontrol daya aktif');
@@ -211,7 +205,7 @@ async function refresh() {
     draftInfo(part);
     for (const b of $(part+'Controls').querySelectorAll('button')) b.disabled=false;
   }
-  $('scanApps').disabled=false; $('guardScan').disabled=false; $('readError').classList.add('hidden');
+  $('scanApps').disabled=false; $('readError').classList.add('hidden');
   overview(); await loadSummary();
 }
 async function run(button, task) {
@@ -238,18 +232,7 @@ async function control(part, command) {
   draftInfo(part); toast('Selesai; nilai aktif dibaca ulang.');
 }
 UI.folds();
-UI.html('modes', Object.entries(MODES).map(([key, [name]]) => `<button data-mode="${key}" data-action disabled><b>${esc(name)}</b><small id="mode-${key}">…</small></button>`).join(''));
-$('modes').onclick=e=>{
-  const b=e.target.closest('[data-mode]');
-  if (!b || b.disabled) return;
-  run(b, async()=>{
-    await parts.power.report('mode '+b.dataset.mode);
-    if (!power?.running) await parts.power.report('start');
-    power=await parts.power.report('status brief'); overview(); toast(MODES[b.dataset.mode][0]);
-  });
-};
 $('overviewCard').addEventListener('toggle',()=>{ if ($('overviewCard').open) poller?.poke(); });
-$('guardScan').onclick=()=>run($('guardScan'),async()=>{ await guard.report('scan'); overview(); toast('Pemindaian selesai'); });
 for (const id of ['cpuGovernor','ramProfile','managerBoot','bwGovernor']) $(id).onchange=()=>editing=true;
 $('retry').onclick=()=>run($('retry'),refresh);
 $('managerSave').onclick=()=>run($('managerSave'),async()=>{ render(await api.report('set '+values())); editing=false; toast('Setelan disimpan'); });

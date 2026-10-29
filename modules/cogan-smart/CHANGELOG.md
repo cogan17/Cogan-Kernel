@@ -1,5 +1,19 @@
 # Cogan Smart Kernel
 
+## Manager hanya memantau, keluar sekali usap / Manager only watches, one back gesture to leave — v2.11.1 (paket uji / test build)
+
+Indonesia:
+
+- Revisi owner 29 Okt: Ringkasan Manager hanya memantau. Mode daya tampil sesuai pilihan di tab Daya (tanpa tombol), hasil pindai modul tampil dari pindaian terakhir di tab Modul (tanpa tombol Pindai modul). Bagian Manager lain tidak berubah.
+- Perbaikan: keluar dari WebUI butuh banyak usapan kembali, karena tiap pindah tab menambah riwayat halaman. Kini pindah tab mengganti riwayat, jadi satu usapan kembali langsung keluar. Panduan tetap tercatat, jadi kembali dari Panduan membuka tab sebelumnya.
+- Panduan (WebUI, PANDUAN.md, PANDUAN.en.md) disesuaikan. v2.11.1 belum diuji di HP.
+
+English:
+
+- Owner revision 29 Oct: the Manager Summary only watches. The power mode shows what the Power tab selected (no buttons), and the module result comes from the last scan in the Modules tab (no Scan modules button). The rest of Manager is unchanged.
+- Fix: leaving the WebUI took many back gestures because every tab switch added a page to history. Tab switches now replace the history entry, so one back gesture leaves. The guide still adds an entry, so back from the guide returns to the tab.
+- The guide (WebUI, PANDUAN.md, PANDUAN.en.md) is updated. v2.11.1 has not been phone-tested.
+
 ## Manager pusat kendali, Mode Dev dan panduan / Manager control centre, Dev mode and guide — v2.11.0 (paket uji / test build)
 
 Indonesia:

@@ -6,14 +6,14 @@ Cogan Smart Kernel menjaga HP tetap adem dan mencatat suhunya. Panduan ini menje
 
 ## 🚀 Mulai cepat
 
-1. Pilih mode di **Manager** atau **Daya**: 🌿 Hemat, 🧠 Kernel Default atau 🎮 Performa.
+1. Pilih mode di tab **Daya**: 🌿 Hemat, 🧠 Kernel Default atau 🎮 Performa.
 2. Lihat **Ringkasan** di Manager: pengendali dan pencatat harus *aktif* / *mencatat*.
 3. HP terasa panas? Buka tab **Suhu**: penyebabnya tercatat di sana.
 
 ## 🛠️ Manager: pusat kendali
 
-- **Ringkasan**: suhu Badan HP, baterai, prosesor, status pengendali dan pencatat, grafik suhu 1 jam, penyebab panas, dan hasil pindai modul.
-- **Mode daya**: ganti mode langsung dari sini.
+- **Ringkasan**: suhu Badan HP, baterai, prosesor, status pengendali dan pencatat, grafik suhu 1 jam, penyebab panas, dan hasil pindai modul terakhir (pindai di tab Modul).
+- **Mode daya**: menampilkan mode yang dipilih di tab Daya. Manager hanya memantau; ganti mode di tab Daya.
 - **Prosesor**: cara CPU mengatur kecepatannya (governor). Kernel Default cocok untuk harian.
 - **RAM**: kompresi ZRAM. LZ4 lebih cepat, ZSTD lebih hemat RAM. Centang *Terapkan CPU/RAM saat boot*, tekan **Simpan**, lalu restart HP.
 - **Kontrol Daya** dan **Kontrol Suhu**: semua tombol untuk menerapkan setelan dari tab Daya dan Suhu.
