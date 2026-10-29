@@ -13,11 +13,11 @@ Cogan Smart Kernel menjaga HP tetap adem dan mencatat suhunya. Panduan ini menje
 ## 🛠️ Manager: pusat kendali
 
 - **Ringkasan**: suhu Badan HP, baterai, prosesor, status pengendali dan pencatat, grafik suhu 1 jam, penyebab panas, dan hasil pindai modul terakhir (pindai di tab Modul).
+- **📱 Aplikasi**: jumlah aplikasi berbahaya dan status blokir APK dari tab Aplikasi.
 - **Mode daya**: menampilkan mode yang dipilih di tab Daya. Manager hanya memantau; ganti mode di tab Daya.
 - **Prosesor**: cara CPU mengatur kecepatannya (governor). Kernel Default cocok untuk harian.
 - **RAM**: kompresi ZRAM. LZ4 lebih cepat, ZSTD lebih hemat RAM. Centang *Terapkan CPU/RAM saat boot*, tekan **Simpan**, lalu restart HP.
 - **Kontrol Daya** dan **Kontrol Suhu**: semua tombol untuk menerapkan setelan dari tab Daya dan Suhu.
-- **Aplikasi jarang dipakai**: daftar aplikasi yang tidak dibuka 7 hari atau lebih. Tekan *Tinjau aplikasi* untuk membuka info aplikasinya.
 
 ## 🔘 Arti tombol
 
@@ -51,6 +51,17 @@ Cogan Smart Kernel menjaga HP tetap adem dan mencatat suhunya. Panduan ini menje
 - **🗑 Hapus sampai akar**: menghapus modul beserta skrip boot dan prosesnya. Bisa dibatalkan sebelum reboot.
 - **📜 Skrip boot di luar modul**: skrip yang jalan saat boot tapi tidak terlihat di daftar modul.
 
+## 📱 Aplikasi
+
+- Memeriksa semua aplikasi yang kamu pasang: ✅ aman, ⚠️ perlu dicek, ⛔ berbahaya. Tandanya dari sumber pasang dan izin aplikasi, bukan antivirus.
+- **Sumber**: dari toko aplikasi, file APK kiriman chat atau sosmed, atau file APK dari browser dan file manager. APK kiriman WhatsApp atau sosmed paling sering dipakai penipuan.
+- **Izin berbahaya**: baca SMS (kode OTP), aksesibilitas (bisa membaca dan menekan layar), admin perangkat (sulit dihapus), baca notifikasi, tampil di atas aplikasi lain, ikon disembunyikan.
+- **👁️ Gerak-gerik**: kapan terakhir aplikasi memakai kamera, mikrofon, lokasi, SMS, kontak, telepon atau clipboard, pemakaian internet 7 hari dan baterai sejak cas penuh.
+- **⚠️ Perlu dicek / Semua / 💤 Jarang dipakai**: pilih daftar yang ditampilkan. Jarang dipakai artinya tidak dibuka 7 hari atau lebih.
+- **🛡️ Percaya**: aplikasi tidak ditandai lagi dan tidak bisa terhapus tanpa sengaja.
+- **🗑 Hapus sampai akar**: melepas admin perangkat, menghentikan dan menghapus aplikasi dari semua pengguna (termasuk Aplikasi Ganda dan Ruang Kedua), lalu menghapus sisa data dan file APK yang sama di penyimpanan. Tidak bisa dibatalkan. Aplikasi sistem dan root manager tidak bisa dihapus dari sini.
+- **🛡️ Blokir APK dari chat & sosmed**: bawaan aktif. Aplikasi chat, sosmed, email dan SMS (WhatsApp, Telegram, Signal, Instagram, Facebook, Threads, TikTok, X, Gmail, Outlook, Pesan dan lainnya) tidak bisa memasang aplikasi. Bila izinnya dinyalakan lagi di Pengaturan, modul mencabutnya dalam beberapa detik dan memberi notifikasi. Browser dan file manager tetap bisa.
+
 ## ℹ️ Tentang
 
 - Pilih **bahasa** (ID/EN), **tema** (Otomatis, Terang hangat, Gelap OLED) dan **Mode Dev**.
@@ -62,6 +73,8 @@ Cogan Smart Kernel menjaga HP tetap adem dan mencatat suhunya. Panduan ini menje
 
 ## ❓ Tanya jawab
 
+- **Tidak bisa memasang APK dari WhatsApp atau Telegram?** Itu blokir APK dari tab Aplikasi. Bila kamu yakin APK-nya aman, matikan blokir dulu atau buka file-nya dari file manager.
+- **Terlanjur memasang APK penipuan?** Tekan Hapus sampai akar di tab Aplikasi, lalu ganti kata sandi dan PIN bank, dan hubungi bank bila ada transaksi aneh. Menghapus aplikasi tidak membatalkan data yang sudah dicuri.
 - **Prosesor 50–60 °C saat santai, wajar?** Ya. Panas dihitung dari suhu Badan HP, yang terasa di tangan.
 - **Kolom GPU di log kosong?** GPU sedang tidur (layar mati atau tidak dipakai), jadi sensornya tidak terbaca. Normal.
 - **Arus cas sampai 10–16 A?** Itu HyperCharge 120 W saat mengecas cepat. Normal.

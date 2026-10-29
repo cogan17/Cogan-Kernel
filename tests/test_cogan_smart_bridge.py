@@ -145,7 +145,7 @@ class CompanionTests(unittest.TestCase):
             (cg / 'cgroup.procs').write_text('')
             r = subprocess.run(['sh', '-c', script, 'sh', line], capture_output=True, text=True, timeout=10)
             self.assertEqual((cg / 'cgroup.procs').read_text().strip(), r.stdout.strip() if moved else '', line)
-        for worker in ('power/controller.sh', 'thermal/sampler.sh'):
+        for worker in ('power/controller.sh', 'thermal/sampler.sh', 'apps/block.sh'):
             self.assertIn('. "$MODDIR/common.sh"\nleave_app_cgroup\n', (MODULE / worker).read_text(), worker)
 
     def test_cooling_state_and_peer_detection(self):

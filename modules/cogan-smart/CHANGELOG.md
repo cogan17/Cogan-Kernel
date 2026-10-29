@@ -1,5 +1,27 @@
 # Cogan Smart Kernel
 
+## Tab Aplikasi: pantau, hapus sampai akar, blokir APK / Apps tab: watch, remove completely, block APKs — v2.12.0 (paket uji / test build)
+
+Indonesia:
+
+- Permintaan owner 29 Okt: kartu "Aplikasi jarang dipakai" di Manager diganti tab baru **📱 Aplikasi**. Manager hanya menampilkan ringkasannya.
+- Tiap aplikasi user menampilkan sumber pasang (toko aplikasi, file APK kiriman chat/sosmed, browser/file manager), izin berbahaya (baca SMS, aksesibilitas, admin perangkat, baca notifikasi, tampil di atas aplikasi lain, boleh memasang aplikasi, ikon tersembunyi), gerak-gerik (akses terakhir kamera, mikrofon, lokasi, SMS, kontak, telepon, clipboard), internet 7 hari dan baterai sejak cas penuh. Penanda ⛔/⚠️ adalah dugaan, bukan antivirus. Daftar bisa dipilih: Perlu dicek, Semua, Jarang dipakai (≥ 7 hari).
+- **🗑 Hapus sampai akar:** admin perangkat dilepas, aplikasi dihentikan dan dihapus dari semua pengguna (termasuk Aplikasi Ganda dan Ruang Kedua), sisa folder dan salinan APK yang sama di penyimpanan (mis. folder WhatsApp) ikut dihapus. Root manager dan aplikasi di whitelist dilindungi. Tombol nonaktifkan tidak ada.
+- **🛡️ Blokir APK dari chat & sosmed** (bawaan aktif): aplikasi chat, sosmed, email dan SMS (WhatsApp, Telegram, Signal, Instagram, Facebook, Threads, TikTok, X, Gmail, Outlook, Pesan dan lainnya) tidak bisa memasang aplikasi; izin yang dinyalakan lagi dicabut dalam beberapa detik dengan notifikasi. Browser dan file manager tetap bisa.
+- Navigasi menjadi 5 tab. Panduan (WebUI, PANDUAN.md, PANDUAN.en.md) ditambah bagian Aplikasi dan tanya jawab APK penipuan.
+- Termasuk perbaikan v2.11.2; proses blokir APK juga keluar dari cgroup aplikasi saat dinyalakan dari WebUI. versionCode 31.
+- v2.11.1 lolos uji owner di HP (29 Okt). v2.12.0 belum diuji di HP.
+
+English:
+
+- Owner request 29 Oct: Manager's "Rarely used apps" card becomes a new **📱 Apps** tab. Manager only shows its summary.
+- Each user app shows its install source (app store, APK sent through chat/social apps, browser/file manager), dangerous rights (reads SMS, accessibility, device admin, reads notifications, draws over other apps, may install apps, hidden icon), activity (last camera, microphone, location, SMS, contacts, phone, clipboard access), 7-day internet use and battery since the last full charge. ⛔/⚠️ marks are guesses, not an antivirus. Lists: Needs a look, All, Rarely used (≥ 7 days).
+- **🗑 Remove completely:** releases the device admin, stops and removes the app for every user (Dual apps and Second space too), and deletes leftover folders and identical APK copies in storage (e.g. the WhatsApp folder). Root manager apps and whitelisted apps are protected. There is no disable button.
+- **🛡️ Block APKs from chat & social apps** (on by default): chat, social, email and SMS apps (WhatsApp, Telegram, Signal, Instagram, Facebook, Threads, TikTok, X, Gmail, Outlook, Messages and more) cannot install apps; a right turned on again is taken back within seconds, with a notification. Browsers and file managers still can.
+- Navigation has 5 tabs. The guide (WebUI, PANDUAN.md, PANDUAN.en.md) gains an Apps section and a scam APK FAQ.
+- Includes the v2.11.2 fix; the APK block loop also leaves the app cgroup when switched on from the WebUI. versionCode 31.
+- v2.11.1 passed the owner's phone test (29 Oct). v2.12.0 has not been phone-tested.
+
 ## Pengendali dan pencatat tetap hidup setelah root manager ditutup / Controller and recorder survive a closed root manager — v2.11.2 (paket uji / test build)
 
 Indonesia:

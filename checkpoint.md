@@ -1,38 +1,15 @@
 # Checkpoint — 29 Okt 2026 (WIB)
 
-**CHECKPOINT owner 29 Okt ±11.15 WIB: semua pekerjaan dihentikan.** Sesi berikutnya baca `CLAUDE.md`, file ini dan `CHECKPOINT.md`, lalu lanjut **hanya setelah owner meminta**. Jangan otomatis menguji HP, menjalankan build atau menerbitkan rilis.
-
-## Bug Mulai berhenti → v2.11.2 (owner 29 Okt ±11.26 WIB, rilis DITAHAN)
-
-- **Laporan owner** (screenshot Manager v2.11.1 dan berkas investigasi read-only): Mulai di Kontrol Daya/Suhu kembali "berhenti" setelah keluar dari root manager lalu masuk lagi. Di HP terbaca AUTOSTART=1, power `run/pid` dan `daemon.lock/pid` = 26305, thermal = 27125, tanpa flag disable/remove. Cmdline kedua PID tidak tercetak. Owner: **"Untuk rilis tahan dulu!"**
-- **Penyebab (dari kode, belum dibuktikan di HP):** pekerja yang dimulai dari WebUI (`start_controller`/`start_sampler` lewat `setsid`/`nohup`) tetap berada di cgroup v2 aplikasi root manager (`uid_N/pid_M`). Saat proses aplikasi mati, system_server menulis `cgroup.kill` (AOSP `libprocessgroup/processgroup.cpp` `sendSignalToProcessGroup`, dicek 29 Okt) sehingga semua proses di cgroup itu mati, termasuk proses root. SIGKILL melewati trap EXIT, jadi PID dan lock tertinggal, sesuai bukti owner. Pekerja dari `service.sh` saat boot tidak terkena.
-- **Perbaikan v2.11.2 (versionCode 30):** `bridge.sh leave_app_cgroup` memindahkan pekerja ke `/sys/fs/cgroup/cgroup.procs`, hanya bila `/proc/$$/cgroup` berisi `::/uid_`. Dipanggil di awal `power/controller.sh` dan `thermal/sampler.sh`. Tes baru ada di `test_cogan_smart_bridge`. [Paket uji](modules/cogan-smart/rilis/v2.11.2/Cogan-Smart-Kernel-v2.11.2.zip) 164759 byte, SHA256 `559d113d1e56e4b6ad48d601d567923897e8ba064839ba564abaa0d403ebc10b` (dua kali dikemas, sama). Belum diuji di HP.
-- **Bukti di HP setelah pasang (read-only):** `su -c 'for f in /data/adb/cogan_smart/power/run/pid /data/adb/cogan_smart/thermal/run/sampler.pid; do p=$(cat $f); echo $f $p; cat /proc/$p/cgroup | grep "^0::"; done'` harus menampilkan `0::/`, bukan `0::/uid_…`. Lalu tutup root manager, buka lagi, dan status harus tetap aktif.
-- **Dampak ke PR #80 (v2.12.0):** merge `main` ke branch itu, naikkan versionCode v2.12.0 menjadi 31, dan tambahkan `leave_app_cgroup` di awal `apps/block.sh` (blokir yang dinyalakan dari WebUI punya bug yang sama).
+Cogan Smart **v2.12.0** (versionCode 31, tab 📱 Aplikasi + perbaikan v2.11.2) siap diuji. **Rilis ditahan owner** sampai diuji. Sesi berikutnya baca `CLAUDE.md`, file ini dan `CHECKPOINT.md`, lalu tunggu instruksi owner. Jangan otomatis menguji HP, menjalankan build atau menerbitkan rilis.
 
 ## Sedang berjalan
 
-- **[PR #80](https://github.com/cogan17/Cogan-Kernel/pull/80) terbuka**, branch `feat/cogan-smart-tab-aplikasi`: Cogan Smart **v2.12.0** (versionCode 30), tab baru 📱 Aplikasi (pantau gerak-gerik, hapus sampai akar, blokir APK). Rincian lengkap ada di bagian v2.12.0 `checkpoint.md` di branch itu.
-  - Commit 1 (sudah di-push): tab Aplikasi lengkap. Paket uji dan SHA256 `c1bd3f9f40ada48451d6a1f188e8aa41e4bcdbe3ce550c7335345a56a478b6a5` dibuat untuk commit ini. Hasil Validate belum dicek.
-  - Commit 2 `5130ca8` (WIP checkpoint, sudah di-push): atas pilihan owner, blokir APK ditambah Signal, Threads, TikTok Lite, MiChat, Plus Messenger, Gmail, Outlook, Email Xiaomi, Yahoo Mail, Google Messages dan Pesan Xiaomi (total 33 paket di `apps/common.sh`). Gmail dan Pesan adalah aplikasi sistem, jadi daftar "Terpasang" kini dibaca dari semua paket. Teks WebUI, i18n, Panduan, README, CHANGELOG, catatan rilis dan tes ikut diperbarui. Terukur lokal sebelum checkpoint: 257 tes lolos, termasuk BusyBox ash/awk, dan cek WebUI Node lolos.
-- Owner sudah ditanya apakah blokir berlaku untuk sosmed selain WA. Jawabannya: tambah sosmed lain, email dan SMS (commit 2).
-
-## Belum selesai (PR #80)
-
-1. **ZIP `rilis/v2.12.0/` belum dikemas ulang** setelah commit 2. SHA di README dan `checkpoint.md` branch PR masih SHA lama `c1bd3f9f…b6a5`.
-2. Validate PR #80 belum dicek, PR belum di-merge, dan ZIP belum dikirim ke owner.
-3. v2.12.0 belum diuji di HP. Yang belum terbukti: format dump HyperOS 3 (appops, netstats, batterystats), dan apakah pemasang paket Xiaomi menghormati izin sumber yang dicabut.
-
-## Langkah pertama berikutnya (setelah owner meminta)
-
-- `git checkout feat/cogan-smart-tab-aplikasi`.
-- `python3 scripts/package_module.py modules/cogan-smart modules/cogan-smart/rilis/v2.12.0` dua kali, dan pastikan SHA keduanya sama.
-- Ganti SHA lama di `modules/cogan-smart/README.md` dan `checkpoint.md` (beserta ukuran byte).
-- Jalankan `python3 -m unittest discover -s tests -b` dan `node tests/cogan_smart_client_check.js`.
-- Commit sebagai owner, push, cek Validate PR #80, squash-merge, lalu kirim ZIP ke owner.
+- PR #80 (v2.12.0) diselesaikan dan di-merge setelah Validate lolos (lihat bagian v2.12.0). Tidak ada pekerjaan lain yang berjalan.
 
 ## Sudah selesai (sesi 28–29 Okt)
 
+- PR #82 `4e85020`: v2.11.2, pekerja tetap hidup setelah root manager ditutup (lihat bagian Bug Mulai berhenti).
+- PR #81: checkpoint owner 29 Okt.
 - [PR #79](https://github.com/cogan17/Cogan-Kernel/pull/79) `381e848`: v2.11.1 (Manager hanya memantau, keluar WebUI sekali usap). ✅ Owner 29 Okt: "Semuanya lolos uji disisi saya".
 - v2.11.1 (lihat bagian v2.11.1): revisi owner atas v2.11.0 dan perbaikan usap kembali.
 - [PR #77](https://github.com/cogan17/Cogan-Kernel/pull/77) `61dbf3cfefc3b3942289b5c25734964ea8e18ee5`, digabung 29 Okt 09.55 WIB: v2.11.0 (lihat bagian v2.11.0). [Validate 40809071342](https://github.com/cogan17/Cogan-Kernel/actions/runs/40809071342) lolos 09.54 WIB. ZIP uji dikirim ke owner.
@@ -42,8 +19,31 @@
 
 ## Tertunda (keputusan owner)
 
-- Uji v2.12.0 di HP setelah PR #80 selesai: tab Aplikasi terisi, APK kiriman WhatsApp ditolak, dan izin yang dinyalakan lagi dicabut dengan notifikasi.
-- Rilis Cogan Smart (v2.11.1 sudah lolos uji HP, atau v2.12.0 setelah diuji) lewat Cogan Smart Release: belum diminta.
+- Uji v2.11.2/v2.12.0 di HP: tekan Mulai di Kontrol Daya/Suhu, tutup root manager, buka lagi → tetap aktif; tab 📱 Aplikasi terisi; APK kiriman WhatsApp/sosmed/email/SMS ditolak dan izin yang dinyalakan lagi dicabut dengan notifikasi.
+- Rilis Cogan Smart: **ditahan owner** ("Untuk rilis tahan dulu!", 29 Okt 11.26 WIB).
+
+## Langkah pertama berikutnya
+
+- Tunggu hasil uji owner. Bila ada yang salah, perbaiki dari screenshot (versi baru v2.12.1). Format dump HyperOS 3 untuk appops, netstats dan batterystats belum terbukti; kolom "Belum terbaca" atau angka kosong adalah petunjuk pertama.
+
+## Bug Mulai berhenti → v2.11.2 (owner 29 Okt ±11.26 WIB, rilis DITAHAN)
+
+- **Laporan owner** (screenshot Manager v2.11.1 dan berkas investigasi read-only): Mulai di Kontrol Daya/Suhu kembali "berhenti" setelah keluar dari root manager lalu masuk lagi. Di HP terbaca AUTOSTART=1, power `run/pid` dan `daemon.lock/pid` = 26305, thermal = 27125, tanpa flag disable/remove. Cmdline kedua PID tidak tercetak. Owner: **"Untuk rilis tahan dulu!"**
+- **Penyebab (dari kode, belum dibuktikan di HP):** pekerja yang dimulai dari WebUI (`start_controller`/`start_sampler` lewat `setsid`/`nohup`) tetap berada di cgroup v2 aplikasi root manager (`uid_N/pid_M`). Saat proses aplikasi mati, system_server menulis `cgroup.kill` (AOSP `libprocessgroup/processgroup.cpp` `sendSignalToProcessGroup`, dicek 29 Okt) sehingga semua proses di cgroup itu mati, termasuk proses root. SIGKILL melewati trap EXIT, jadi PID dan lock tertinggal, sesuai bukti owner. Pekerja dari `service.sh` saat boot tidak terkena.
+- **Perbaikan v2.11.2 (versionCode 30):** `bridge.sh leave_app_cgroup` memindahkan pekerja ke `/sys/fs/cgroup/cgroup.procs`, hanya bila `/proc/$$/cgroup` berisi `::/uid_`. Dipanggil di awal `power/controller.sh` dan `thermal/sampler.sh`. Tes baru ada di `test_cogan_smart_bridge`. [Paket uji](modules/cogan-smart/rilis/v2.11.2/Cogan-Smart-Kernel-v2.11.2.zip) 164759 byte, SHA256 `559d113d1e56e4b6ad48d601d567923897e8ba064839ba564abaa0d403ebc10b` (dua kali dikemas, sama). Belum diuji di HP.
+- **Bukti di HP (owner, 29 Okt 12.26 WIB, Termux):** power PID 13892 dan thermal PID 12704 keduanya `0::/`. Owner belum menyebut apakah kedua PID itu dimulai lewat tombol Mulai dan apakah status bertahan setelah root manager ditutup; jadi v2.11.2 belum ditandai lolos uji HP.
+- **Cara cek (read-only):** `su -c 'for f in /data/adb/cogan_smart/power/run/pid /data/adb/cogan_smart/thermal/run/sampler.pid; do p=$(cat $f); echo $f $p; cat /proc/$p/cgroup | grep "^0::"; done'` harus menampilkan `0::/`, bukan `0::/uid_…`. Lalu tutup root manager, buka lagi, dan status harus tetap aktif.
+- **Dampak ke PR #80 (v2.12.0):** sudah dikerjakan atas "Lanjutkan" owner (lihat bagian v2.12.0).
+
+## v2.12.0 — tab Aplikasi (versionCode 31)
+
+- **Permintaan owner (29 Okt, dengan screenshot kartu Aplikasi jarang dipakai):** ganti fungsinya jadi bisa melihat semua gerak-gerik aplikasi dan menghapus sampai ke akar, termasuk APK scam/virus kiriman WA/sosmed; fungsi nonaktifkan tidak usah ada. Pilihan owner lewat pertanyaan: **tab baru 📱 Aplikasi** (Manager hanya ringkasan), **hapus manual + konfirmasi**, **blokir APK dari chat & sosmed** (saklar, bawaan aktif), pantau **akses sensitif, izin berbahaya, sumber & waktu instal, data internet & baterai**.
+- **Backend `apps/`:** `report.sh` (scan, trust/untrust, remove, block on|off, boot, stop), `apps.awk` (gabungan dump), `block.sh` (loop 5 detik), `common.sh` (daftar sumber chat/sosmed, blokir, notifikasi). Pemindai lama Manager (`manager/report.sh scan|app`, `manager/apps.awk`) dihapus; tesnya pindah ke `tests/test_cogan_smart_apps.py`.
+- **Bukti AOSP (main, dicek 29 Okt):** `dpm remove-active-admin` = `forceRemoveActiveAdmin` yang menolak admin non-uji; `handlePackagesChanged` melepas admin yang receiver-nya tidak bisa dibaca, jadi `pm disable` receiver sebagai root melepasnya; `setEnabledSettings` hanya membatasi uid shell (root bebas) dan paket DO/PO; `pm uninstall` tanpa `--user` = `DELETE_ALL_USERS`; format `appops get`/`dumpsys appops`, `query-op`, `dumpsys package` (installer/initiating/packageSource), `device_policy`, `batterystats --usage` (`UID uNaM: mAh`, locale English) dan `netstats` (Android 12, `UID stats:`).
+- **WebUI:** `apps.html` (blokir, filter Perlu dicek/Semua/Jarang dipakai, kartu per aplikasi, Percaya, Hapus sampai akar), nav 5 tab di semua halaman, baris 📱 Aplikasi di Ringkasan Manager, kartu aplikasi lama Manager dihapus, terjemahan English, Panduan (WebUI + PANDUAN.md/.en.md) bagian Aplikasi dan tanya jawab APK penipuan.
+- Terukur lokal: 257 tes lolos (7 tes baru tab Aplikasi dengan HP tiruan: scam APK dari WhatsApp sebagai admin perangkat, salinan APK berspasi di folder WhatsApp, root manager, blokir + loop), juga di mksh, dash, BusyBox ash, one-true-awk dan BusyBox awk; cek WebUI Node; Playwright 412 px ID/EN tanpa error, 5 tab muat. [Paket uji](modules/cogan-smart/rilis/v2.12.0/Cogan-Smart-Kernel-v2.12.0.zip) 45 file, 183994 byte, SHA256 `7acc20223baabc925345f7d3e6c328bb8bf94a97460c92f9b65e15f27b566d47` (dua kali dikemas, sama).
+- **Sesudah checkpoint (owner "Lanjutkan", 29 Okt):** blokir APK ditambah sosmed lain, email dan SMS (33 paket; Gmail dan Pesan adalah aplikasi sistem, jadi "Terpasang" dibaca dari semua paket); `main` (v2.11.2) di-merge; versionCode 31; `apps/block.sh` memanggil `leave_app_cgroup` (blokir yang dinyalakan dari WebUI tidak mati bersama root manager).
+- **Belum diuji di HP dan belum dirilis.** Yang paling mungkin berbeda di HyperOS 3: format dump appops/netstats/batterystats, dan apakah pemasang paket Xiaomi menghormati izin sumber yang dicabut (mode disimpan per paket atau per UID).
 
 ## v2.10.4 — initrc ZRAM (versionCode 23)
 
@@ -113,4 +113,4 @@
 
 ## English state summary
 
-CHECKPOINT by the owner, 29 Oct around 11.15 WIB: all work stopped. v2.11.1 is merged (#79) and passed the owner's phone test. PR #80 (v2.12.0, the Apps tab) is open. Its WIP commit `5130ca8` extends the APK block to 33 chat, social, email and SMS apps. The test ZIP still has to be repackaged after that commit, and its SHA updated in the README and checkpoint. After that: run the tests, check Validate, merge and send the ZIP. Continue only when the owner asks.
+The owner reported that Start in Power/Temperature controls fell back to stopped after closing the root manager. Workers started from the WebUI sat in the app's cgroup, which Android kills with cgroup.kill. v2.11.2 (PR #82) moves them to the root cgroup; the owner's Termux check showed both workers in `0::/`, but the close/reopen test is not confirmed yet. v2.12.0 (versionCode 31) adds the 📱 Apps tab with the same fix for its APK block loop, and the block now covers 33 chat, social, email and SMS apps. Releases are on hold by the owner. Wait for the owner's test results.
