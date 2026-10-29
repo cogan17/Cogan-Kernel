@@ -1,25 +1,194 @@
-Cogan Smart Kernel v2.12.4 / versionCode 35 — paket uji / test build
+Cogan Smart Kernel v2.12.4
+What's New & Fixes / Penambahan, Pembaruan, dan Perbaikan
 
-Indonesia
+Tanggal / Date: 29 Oktober 2026 / 29 October 2026
+Maintainer: Cogan (cogan17)
+Paket / Package: Cogan-Smart-Kernel-v2.12.4.zip
+ID modul / Module ID: cogan_smart
+versionCode: 35
+Cakupan / Scope: v2.9.1 -> v2.12.4 (rilis publik sebelumnya / previous public release: v2.9.1)
+Source: cogan17/Cogan-Kernel @ caeecd0d909e7d38d7a0b20ab8082bf854189625
 
-Baru:
-- 🔍 Cari di tab Aplikasi: di atas daftar dan tetap terlihat saat digeser. Ketik nama aplikasi atau nama paket; mencari di semua aplikasi.
+Diuji owner di HP: Xiaomi 14T Pro dengan kernel Cogan r6 (6.1.176, No LTO), 29 Oktober 2026.
+Tested by the owner on the phone: Xiaomi 14T Pro with the Cogan r6 kernel (6.1.176, No LTO), 29 October 2026.
 
-Batas:
-- Belum diuji di HP.
+BAHASA INDONESIA
 
-Cara uji:
-1. Pasang sebagai pembaruan modul melalui root manager, lalu reboot.
-2. Buka tab 📱 Aplikasi, ketik "net" di kotak Cari: Netflix langsung muncul.
+BARU
 
-English
+- Tab 📱 Aplikasi (pengganti kartu "Aplikasi jarang dipakai"). Navigasi kini 5 tab.
+  - Tiap aplikasi user menampilkan:
+    - sumber pasang: toko aplikasi, APK kiriman chat/sosmed, atau browser/file manager;
+    - izin berbahaya: baca SMS, aksesibilitas, admin perangkat, baca notifikasi, tampil di atas
+      aplikasi lain, boleh memasang aplikasi, ikon tersembunyi;
+    - akses terakhir ke kamera, mikrofon, lokasi, SMS, kontak, telepon dan clipboard;
+    - internet 7 hari dan baterai sejak cas penuh.
+  - Penanda ⛔/⚠️ adalah dugaan, bukan antivirus. Daftar: Perlu dicek, Semua, Jarang dipakai (7 hari
+    atau lebih).
+  - 🗑 Hapus sampai akar:
+    - admin perangkat dilepas, lalu aplikasi dihentikan dan dihapus dari semua pengguna (termasuk
+      Aplikasi Ganda dan Ruang Kedua);
+    - sisa folder dan salinan APK yang sama di penyimpanan (mis. folder WhatsApp) ikut dihapus;
+    - selalu dengan konfirmasi; root manager (juga yang namanya disamarkan) dan aplikasi di whitelist
+      dilindungi;
+    - tombol nonaktifkan aplikasi tidak ada.
+  - 🛡️ Blokir APK (bawaan aktif):
+    - 33 aplikasi chat, sosmed, email dan SMS tidak bisa memasang aplikasi, antara lain WhatsApp,
+      Telegram, Signal, Facebook, Instagram, Threads, TikTok, X, LINE, Discord, Gmail, Outlook dan Pesan;
+    - izin yang dinyalakan lagi dicabut dalam beberapa detik, dengan notifikasi;
+    - hasilnya dibaca ulang: yang gagal dicabut disebut "GAGAL dicabut", bukan diklaim berhasil;
+    - browser dan file manager tetap bisa memasang aplikasi;
+    - mematikan blokir tidak mengembalikan izin; izinkan lagi sendiri di Pengaturan.
+  - Percaya (whitelist), Lepas dan blokir langsung berubah tanpa menunggu pindai.
+  - 🔍 Cari: di atas daftar dan tetap terlihat saat digeser. Mencari nama aplikasi atau nama paket di
+    semua aplikasi.
+  - Tanggal pasang yang tidak wajar dari Android (sebelum 2008, mis. Netflix "1999-12-31") diberi
+    keterangan "biasanya aplikasi bawaan HP".
+- Manager:
+  - kartu 📊 Ringkasan berisi suhu Badan HP, baterai, prosesor, status pengendali dan pencatat, grafik
+    suhu 1 jam, ringkasan modul dan aplikasi;
+  - Manager hanya memantau: mode daya diatur di tab Daya, pindai modul di tab Modul;
+  - tombol Simpan, Terapkan, Paksa, Reset, Mulai dan Hentikan tetap di Manager.
+- Manager CPU/RAM:
+  - Prosesor: sugov_ext atau schedutil, bila didukung semua policy CPU.
+  - Kompresi ZRAM: LZ4 atau ZSTD, diterapkan saat boot lewat hook init root manager (KernelSU Next dan
+    BakaSU), sebelum HyperOS menyalakan swap. ZRAM yang sedang aktif tidak pernah direset.
+  - DRAM MediaTek (mtk-dvfsrc-devfreq) dikenali. Pilihan BW yang tidak didukung disembunyikan.
+  - CPU/RAM hanya ditulis bila perangkat rothko, platform mt6989 dan Cogan Bridge cocok.
+- Mode Dev (saklar di Tentang, bawaan mati) untuk detail teknis: node kernel dan readback, frekuensi
+  per policy, hook ZRAM, driver DRAM, semua sensor, data mentah dan setelan lanjutan.
+- 📖 Panduan di modul (Tentang dan tautan di bawah tiap tab), ID/EN, juga PANDUAN.md / PANDUAN.en.md
+  di repo, termasuk tanya jawab APK penipuan.
 
-New:
-- 🔍 Search in the Apps tab: above the list and visible while scrolling. Type an app name or package name; it searches every app.
+DIPERBAIKI
 
-Limits:
-- Not phone-tested yet.
+- Kontrol Daya dan Kontrol Suhu yang dimulai dari WebUI tidak lagi berhenti saat root manager ditutup.
+  Penyebabnya, Android mematikan semua proses di cgroup aplikasi root manager saat aplikasi itu
+  ditutup. Kini pekerja pindah ke cgroup root saat mulai.
+- Keluar dari WebUI cukup satu usapan kembali, sebelumnya berkali-kali.
+- Pindai aplikasi di HP gagal dengan "Failed transaction". Penyebabnya, output pm/cmd/dumpsys ke file
+  di /data/adb ditolak SELinux. Kini semua bacaan lewat pipa.
+- Menambah ke whitelist sebelumnya sekitar 40 detik, kini langsung.
+- Pindai aplikasi selesai sebelum batas 120 detik WebUI. Yang belum sempat terbaca disebut "Belum
+  terbaca".
+- Tombol Aktifkan dan Matikan blokir nonaktif sampai status terbaca. Izin yang tidak terbaca ditandai,
+  tidak dianggap sudah dicabut.
+- Hanya satu pekerja blokir yang hidup.
+- Hook init ZRAM: aturan init yang terpotong diperbaiki (v2.10.6), lalu waktunya dipindah ke
+  on load-bpf-programs, sebelum system_perf_init HyperOS menyalakan swap (v2.10.8).
+- Penulisan BW DRAM tidak lagi menyasar UFS, GPU atau perangkat lain.
+- Terjemahan English yang setengah jadi diperbaiki. Mode English tidak menyisakan teks Indonesia.
 
-How to test:
-1. Install as a module update through the root manager, then reboot.
-2. Open the 📱 Apps tab and type "net" in the Search box: Netflix shows at once.
+PENGUJIAN
+
+- Diuji owner di HP dengan kernel Cogan r6 (6.1.176, No LTO): v2.12.4 lulus uji, 29 Okt 2026
+  (±21.36 WIB). Di screenshot uji terlihat blokir APK aktif dan sudah mencabut izin pasang aplikasi
+  dari Telegram, serta kotak Cari di tab Aplikasi.
+- Bukti HP dari paket uji sebelumnya:
+  - ZRAM zstd dengan swap aktif (v2.10.8, 28 Okt 23.23 WIB);
+  - DRAM MediaTek dikenali (v2.10.5);
+  - Manager hanya memantau dan keluar sekali usap (v2.11.1, 29 Okt);
+  - pengendali dan pencatat di cgroup root `0::/` (v2.11.2, dicek owner lewat Termux);
+  - pindai aplikasi berjalan (v2.12.2, 29 Okt 13.44 WIB).
+- Lokal: semua tes repo lolos di mksh, dash dan BusyBox ash (awk: one-true-awk dan BusyBox awk),
+  ditambah cek WebUI dengan Node dan Playwright pada lebar 412 px.
+- Belum diukur: dampak ZRAM zstd pada performa dan baterai.
+
+CARA MEMPERBARUI
+
+1) Pasang Cogan-Smart-Kernel-v2.12.4.zip lewat root manager sebagai pembaruan modul, lalu reboot.
+   ID cogan_smart, pengaturan dan riwayat yang sudah ada dipertahankan.
+2) Tutup dan buka ulang WebUI Cogan Smart.
+3) Bila memilih kompresi ZRAM dengan Terapkan saat boot: Simpan, lalu reboot sekali.
+- Jeda cas karena suhu oleh modul tetap mati secara bawaan. HyperCharge dan sistem HP tetap mengelola
+  pengisian. Auto cut charging 95/90 tetap tersedia.
+
+ENGLISH
+
+NEW
+
+- 📱 Apps tab (replaces the "Rarely used apps" card). Navigation now has 5 tabs.
+  - Each user app shows:
+    - install source: app store, APK sent through chat/social apps, or browser/file manager;
+    - dangerous rights: reads SMS, accessibility, device admin, reads notifications, draws over other
+      apps, may install apps, hidden icon;
+    - last camera, microphone, location, SMS, contacts, phone and clipboard access;
+    - 7-day internet use and battery since the last full charge.
+  - ⛔/⚠️ marks are guesses, not an antivirus. Lists: Needs a look, All, Rarely used (7 days or more).
+  - 🗑 Remove completely:
+    - releases the device admin, then stops and removes the app for every user (Dual apps and Second
+      space too);
+    - deletes leftover folders and identical APK copies in storage (e.g. the WhatsApp folder);
+    - always asks first; root managers (renamed ones too) and whitelisted apps are protected;
+    - there is no disable button.
+  - 🛡️ APK block (on by default):
+    - 33 chat, social, email and SMS apps cannot install apps, among them WhatsApp, Telegram, Signal,
+      Facebook, Instagram, Threads, TikTok, X, LINE, Discord, Gmail, Outlook and Messages;
+    - a right turned on again is taken back within seconds, with a notification;
+    - the result is read back: a right that could not be taken back is reported as "not revoked"
+      instead of being claimed;
+    - browsers and file managers can still install apps;
+    - turning the block off gives nothing back; allow an app again in Settings yourself.
+  - Trust (whitelist), Untrust and the block change at once, without waiting for a scan.
+  - 🔍 Search: above the list and visible while scrolling. It matches app names or package names
+    across every app.
+  - Odd install dates from Android (before 2008, e.g. Netflix "1999-12-31") are labelled "usually a
+    preinstalled app".
+- Manager:
+  - a 📊 Summary card with phone body, battery and processor temperature, controller and recorder
+    status, a 1-hour temperature chart, and module and app summaries;
+  - Manager only watches: the power mode is set in the Power tab, the module scan in the Modules tab;
+  - Save, Apply, Force, Reset, Start and Stop stay in Manager.
+- CPU/RAM Manager:
+  - Processor: sugov_ext or schedutil, when every CPU policy supports it.
+  - ZRAM compression: LZ4 or ZSTD, applied at boot through the root manager's init hook (KernelSU Next
+    and BakaSU), before HyperOS starts swap. Live ZRAM is never reset.
+  - MediaTek DRAM (mtk-dvfsrc-devfreq) is identified. Unsupported BW choices are hidden.
+  - CPU/RAM is written only when the rothko device, the mt6989 platform and Cogan Bridge match.
+- Dev mode (a switch in About, off by default) for technical detail: kernel nodes and readback,
+  per-policy frequency, ZRAM hooks, DRAM driver, every sensor, raw data and advanced settings.
+- 📖 Guide in the module (About and the link under each tab), ID/EN, plus PANDUAN.md / PANDUAN.en.md in
+  the repository, including a scam APK FAQ.
+
+FIXED
+
+- Power and Temperature controls started from the WebUI no longer stop when the root manager closes.
+  The cause: Android kills every process in the root manager app's cgroup when that app closes.
+  Workers now move to the root cgroup when they start.
+- Leaving the WebUI takes one back gesture, before it took many.
+- The app scan failed on the phone with "Failed transaction". The cause: SELinux refused pm/cmd/dumpsys
+  output to files in /data/adb. Every read now goes through a pipe.
+- Adding to the whitelist took about 40 seconds, now it is instant.
+- The app scan finishes before the WebUI's 120-second limit. What could not be read in time is listed
+  as "Not read yet".
+- The block's Enable and Turn off buttons stay disabled until the status is read. An unreadable right
+  is marked, never counted as revoked.
+- Only one block worker runs.
+- ZRAM init hook: the cut-off init rule was fixed (v2.10.6), then the hook moved to
+  on load-bpf-programs, before HyperOS's system_perf_init starts swap (v2.10.8).
+- DRAM BW writes no longer target UFS, the GPU or other devices.
+- Half-translated English text is fixed. English mode leaves no Indonesian text.
+
+TESTING
+
+- Tested by the owner on the phone with the Cogan r6 kernel (6.1.176, No LTO): v2.12.4 passed, 29 Oct
+  2026 (about 21:36 WIB). The test screenshot shows the APK block on, having taken back Telegram's
+  right to install apps, and the Search box in the Apps tab.
+- Phone evidence from earlier test builds:
+  - ZRAM zstd with active swap (v2.10.8, 28 Oct 23:23 WIB);
+  - MediaTek DRAM identified (v2.10.5);
+  - Manager only watches and one back gesture leaves (v2.11.1, 29 Oct);
+  - controller and recorder in the root cgroup `0::/` (v2.11.2, checked by the owner in Termux);
+  - the app scan works (v2.12.2, 29 Oct 13:44 WIB).
+- Local: every repository test passes in mksh, dash and BusyBox ash (awk: one-true-awk and BusyBox awk),
+  plus WebUI checks with Node and Playwright at 412 px width.
+- Not measured: the effect of ZRAM zstd on performance and battery.
+
+HOW TO UPDATE
+
+1) Install Cogan-Smart-Kernel-v2.12.4.zip through your root manager as a module update, then reboot.
+   The cogan_smart ID, existing settings and history are kept.
+2) Close and reopen the Cogan Smart WebUI.
+3) If you choose ZRAM compression with Apply at boot: Save, then reboot once.
+- Module temperature-based charging pauses stay off by default. HyperCharge and the phone keep managing
+  charging. The 95/90 automatic charge cutoff stays available.
