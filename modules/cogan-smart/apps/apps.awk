@@ -134,7 +134,7 @@ f == "running" { p = $1; sub(/:.*/, "", p); if (p in apps) running[p] = 1; next 
 f == "a11y" { components($0, a11y); next }
 f == "notif" { components($0, notif); next }
 f == "trusted" { if (pkg_ok($0)) trusted[$0] = 1; next }
-f == "events" { if ($1 ~ /^[0-9]+$/ && pkg_ok($2)) ev[++nev] = "{\"at\":" $1 ",\"p\":\"" $2 "\"}"; next }
+f == "events" { if ($1 ~ /^[0-9]+$/ && pkg_ok($2)) ev[++nev] = "{\"at\":" $1 ",\"p\":\"" $2 "\",\"ok\":" ($3 == "0" ? 0 : 1) "}"; next }
 END {
   save_install()
   printf "{\"ok\":1,\"user\":%d,\"scanned_at\":%d,\"missing\":%s,\"block\":{\"on\":%d,\"running\":%d,\"sources\":[", user, now, json_list(missing), block, block_running

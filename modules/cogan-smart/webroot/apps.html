@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Cogan Smart · Aplikasi</title>
-<link rel="stylesheet" href="theme.css?v=2.12.0">
-<script src="i18n.js?v=2.12.0"></script>
+<link rel="stylesheet" href="theme.css?v=2.12.1">
+<script src="i18n.js?v=2.12.1"></script>
 <script>try { document.documentElement.dataset.theme = localStorage.getItem('cogan.theme') || ''; document.documentElement.dataset.dev = localStorage.getItem('cogan.dev') || ''; } catch (_) { /* storage off: follow the phone */ }</script>
 <style>
   * { box-sizing: border-box; }
@@ -96,7 +96,7 @@
 </main>
 
 <div id="actionStatus" class="feedback hidden" role="status" aria-live="polite"></div>
-<script src="client.js?v=2.12.0"></script>
+<script src="client.js?v=2.12.1"></script>
 <script>
 // Aplikasi (owner 2026-10-29): what user apps do, removal down to the roots, and the APK block for chat apps.
 const confirm = value => window.confirm(CoganI18n.t(value));
@@ -177,7 +177,7 @@ function render(d) {
   const b = d.block;
   UI.text('blockBrief', b.on ? (b.running ? 'aktif' : 'aktif · menunggu') : 'mati');
   UI.text('blockInfo', [b.sources.length ? 'Terpasang: ' + b.sources.map(name).join(', ') : 'Tidak ada aplikasi chat/sosmed/email/SMS yang dikenal.',
-    ...b.events.slice().reverse().slice(0, 3).map(e => `Dicabut: ${name(e.p)} ${ago(d.scanned_at - e.at)}`)].join('\n'));
+    ...b.events.slice().reverse().slice(0, 3).map(e => `${e.ok === 0 ? '⚠️ Gagal dicabut' : 'Dicabut'}: ${name(e.p)} ${ago(d.scanned_at - e.at)}`)].join('\n'));
   $('blockInfo').style.whiteSpace = 'pre-line';
   $('blockOn').disabled = !!b.on; $('blockOff').disabled = !b.on;
   for (const f of document.querySelectorAll('[data-filter]')) f.setAttribute('aria-pressed', String(f.dataset.filter === filter));
@@ -204,7 +204,7 @@ function setup() {
   UI.folds();
   $('rescan').onclick = () => run($('rescan'), 'Memindai aplikasi…', async () => { await scan(); toast('Pemindaian selesai'); });
   $('blockOn').onclick = () => run($('blockOn'), 'Mengaktifkan blokir…', async () => { await api.report('block on'); await scan(); toast('Blokir APK aktif'); });
-  $('blockOff').onclick = () => { if (confirm('Matikan blokir? Aplikasi chat, sosmed, email dan SMS bisa diizinkan memasang APK lagi.')) run($('blockOff'), 'Mematikan blokir…', async () => { await api.report('block off'); await scan(); toast('Blokir APK mati'); }); };
+  $('blockOff').onclick = () => { if (confirm('Matikan blokir? Izin yang sudah dicabut tidak dikembalikan. Aplikasi chat, sosmed, email dan SMS bisa diizinkan lagi di Pengaturan.')) run($('blockOff'), 'Mematikan blokir…', async () => { await api.report('block off'); await scan(); toast('Blokir APK mati'); }); };
   for (const f of document.querySelectorAll('[data-filter]')) f.onclick = () => {
     filter = f.dataset.filter;
     try { localStorage.setItem('cogan.apps.filter', filter); } catch (_) { /* storage off */ }

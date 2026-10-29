@@ -108,7 +108,7 @@ restore_nodes() {
     printf '%s\t%s\t%s\t%s\n' "$cm_rel" "$cm_old" "$cm_last" "$cm_want" >> "$CM_DATA/run/keep.tsv"
     cm_failed=1
     [ "$cm_busy" = 1 ] || cm_restore_error=1
-  done 2>/dev/null < "$CM_DATA/run/owned.tsv"
+  done 2>/dev/null < "$CM_DATA/run/owned.tsv"   # IFS above is one literal tab: the journal is TSV
   mv "$CM_DATA/run/keep.tsv" "$CM_DATA/run/owned.tsv"
   if [ "$cm_failed" = 1 ]; then : > "$CM_DATA/run/restore_pending"; else rm -f "$CM_DATA/run/restore_pending"; fi
   [ "$cm_failed" = 0 ]

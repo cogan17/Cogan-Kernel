@@ -28,7 +28,7 @@ class AppsTests(unittest.TestCase):
         self.bin.mkdir(); self.state.mkdir()
         os.symlink(AWK, self.bin / "awk")   # Android's awk is one-true-awk
         self.data = self.base / "adb/cogan_smart/apps"
-        self.env = dict(os.environ, CS_ADB=str(self.base / "adb"), CA_ROOT=str(self.root), CA_SLEEP="1",
+        self.env = dict(os.environ, CS_ADB=str(self.base / "adb"), CA_ROOT=str(self.root), CA_SLEEP="1", CA_HOST_UID="10999",
                         PATH=f"{self.bin}:{os.environ['PATH']}")
         now = int(time.time())
         q = lambda p: shlex.quote(str(p))
@@ -240,6 +240,51 @@ esac""")
         self.assertIn("Admin perangkat", result["error"])
         self.assertIn(f"package:{SCAM}", (self.state / "installed").read_text())
         self.assertTrue((self.root / f"data/data/{SCAM}").exists())
+
+    def test_a_renamed_root_manager_or_an_unknown_webui_host_is_never_removed(self):
+        # Audit 2026-10-29: a renamed manager is found by its native daemon library; an unknown host fails closed.
+        write(self.root / "data/app/~~y/com.weonse.bxmfmy-2/lib/arm64/libksud.so", "ELF")
+        write(self.state / "installed", (self.state / "installed").read_text() + "package:com.weonse.bxmfmy\n")
+        write(self.base / "packages", (self.base / "packages").read_text().replace(
+            "Packages:\n", "Packages:\n  Package [com.weonse.bxmfmy] (k):\n    appId=10300\n    User 0: installed=true\n"))
+        write(self.base / "launcher", (self.base / "launcher").read_text() + "com.weonse.bxmfmy/.Main\n")
+        apps, _ = self.scan()
+        self.assertEqual((apps["com.weonse.bxmfmy"]["core"], apps["com.weonse.bxmfmy"]["risk"]), (1, 0))
+        self.assertIn("root manager", self.report("remove", "com.weonse.bxmfmy")["error"])
+        self.env["CA_HOST_UID"] = "10202"   # the WebUI runs in com.bank.app
+        self.assertIn("membuka WebUI", self.report("remove", "com.bank.app")["error"])
+        self.env["CA_HOST_UID"] = "0"   # no app among the shell's parents
+        self.assertIn("tidak bisa dipastikan", self.report("remove", SCAM)["error"])
+        self.assertIn(f"package:{SCAM}", (self.state / "installed").read_text())
+        self.assertTrue(self.copy.exists())
+
+    def test_a_scan_that_runs_out_of_time_still_answers_before_the_webui_gives_up(self):
+        self.env["CA_BUDGET"] = "0"
+        apps, result = self.scan()
+        self.assertEqual(result["missing"], ["pemakaian", "akses", "admin", "ikon", "baterai", "internet", "proses"])
+        self.assertEqual(apps[SCAM]["src"], "chat")
+
+    def test_a_revoke_that_does_not_hold_is_reported_once_not_claimed(self):
+        self.tool("cmd", (self.bin / "cmd").read_text().split("\n", 1)[1].replace('"appops set") echo "$*"', '"appops set") exit 0; echo "$*"'))
+        self.report("block", "on"); self.report("block", "on")
+        self.report("block", "off")
+        log = (self.state / "log").read_text()
+        self.assertEqual(log.count("com.whatsapp GAGAL dicabut"), 1, log)   # two passes, one notice per app
+        self.assertEqual(log.count("com.google.android.gm GAGAL dicabut"), 1, log)
+        self.assertNotIn("com.whatsapp dicabut", log)
+        _, result = self.scan()
+        self.assertEqual([(e["p"], e["ok"]) for e in result["block"]["events"]][:1], [("com.whatsapp", 0)])
+
+    def test_two_block_workers_started_together_leave_one(self):
+        write(self.data / "config", "BLOCK=1\n")
+        procs = [subprocess.Popen([SHELL, str(self.module / "apps/block.sh")], env=self.env) for _ in range(2)]
+        time.sleep(2.5)
+        alive = [p for p in procs if p.poll() is None]
+        self.assertEqual(len(alive), 1)
+        self.assertEqual((self.data / "run/block.pid").read_text().strip(), str(alive[0].pid))
+        self.report("block", "off")
+        alive[0].wait(timeout=10)
+        self.assertFalse((self.data / "run/block.pid").exists())
 
     def test_block_takes_the_install_right_back_from_chat_apps_only(self):
         self.assertEqual(self.report("block", "on")["block"], 1)

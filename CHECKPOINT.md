@@ -2,6 +2,7 @@
 
 Catatan terbaru: **[checkpoint.md](checkpoint.md)** — 29 Okt 2026 (WIB). **Rilis Cogan Smart ditahan owner** sampai diuji.
 
+- v2.12.1 (versionCode 32): perbaikan audit v2.12.0 (pengaman root manager gagal tertutup, readback blokir APK, satu pekerja blokir, anggaran waktu pindai). Temuan IFS jurnal tidak terbukti. Paket uji di `modules/cogan-smart/rilis/v2.12.1/`; belum diuji di HP.
 - v2.12.0 (versionCode 31): tab 📱 Aplikasi (pantau, hapus sampai akar, blokir APK dari 33 aplikasi chat/sosmed/email/SMS) + perbaikan v2.11.2. Paket uji di `modules/cogan-smart/rilis/v2.12.0/`; belum diuji di HP.
 - v2.11.2 (versionCode 30): pengendali/pencatat yang dimulai dari WebUI tidak lagi mati saat root manager ditutup (keluar dari cgroup aplikasi). Termux owner: keduanya `0::/`; uji tutup/buka root manager belum dikonfirmasi.
 - v2.11.1 (versionCode 29): ✅ lolos uji owner di HP 29 Okt.

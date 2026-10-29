@@ -1,10 +1,21 @@
 # Checkpoint — 29 Okt 2026 (WIB)
 
-Cogan Smart **v2.12.0** (versionCode 31, tab 📱 Aplikasi + perbaikan v2.11.2) siap diuji. **Rilis ditahan owner** sampai diuji. Sesi berikutnya baca `CLAUDE.md`, file ini dan `CHECKPOINT.md`, lalu tunggu instruksi owner. Jangan otomatis menguji HP, menjalankan build atau menerbitkan rilis.
+Cogan Smart **v2.12.1** (versionCode 32: v2.12.0 tab 📱 Aplikasi + perbaikan v2.11.2 + perbaikan audit) siap diuji. **Rilis ditahan owner** sampai diuji. Sesi berikutnya baca `CLAUDE.md`, file ini dan `CHECKPOINT.md`, lalu tunggu instruksi owner. Jangan otomatis menguji HP, menjalankan build atau menerbitkan rilis.
+
+## Audit v2.12.0 → v2.12.1 (owner 29 Okt, rilis tetap DITAHAN)
+
+- Owner mengirim audit read-only atas ZIP v2.12.0 (SHA `7acc2022…6d47`). Hasil cek:
+  - **P1 IFS jurnal restore: tidak terbukti.** `manager/report.sh` baris 96 berisi TAB asli (`od -c` menunjukkan `\t` satu byte). Baris yang sama di mksh, dash dan BusyBox ash membaca 4 kolom utuh. Reproduksi audit mengetik `IFS='\t'` secara harfiah. `test_cpu_restore_preserves_other_controllers` sudah memulihkan governor lewat jurnal. Hanya ditambah komentar.
+  - **P1 root manager berganti nama: benar, bersyarat.** Diperbaiki: `manager_pkgs` mengenali `libksud.so`, `libmagisk*.so`, `libapd.so` dan `libkpatch.so` di `/data/app/*/*/lib/*`. Host tidak terbaca atau `appId` tidak terbaca → penghapusan dibatalkan (gagal tertutup).
+  - **P2 blokir tanpa readback: benar.** `block_source` kini membaca ulang lewat `query-op`, mencatat `ok` 0/1 di `blocked.log`, dan memberi tahu "GAGAL dicabut" sekali per paket (penanda `run/failed.PKG`). Block off tetap tidak mengembalikan izin (keputusan desain), dan teks konfirmasinya kini menyebut itu.
+  - **P2 race pekerja blokir: benar.** Tiap putaran memeriksa `block.pid == $$`; yang kalah keluar. `stop_block` menunggu maksimal 3 detik.
+  - **P2 timeout scan: benar** (190 detik > 120 detik). Bacaan opsional kini berbagi anggaran 100 detik (`CA_BUDGET`, tes 0). `settings` diberi `timeout 5`.
+  - **Catatan cgroup:** `leave_app_cgroup` kini membaca ulang dan menulis ke logcat (`CoganSmart`) bila ditolak.
+- **v2.12.1 (versionCode 32):** [paket uji](modules/cogan-smart/rilis/v2.12.1/Cogan-Smart-Kernel-v2.12.1.zip) SHA256 `4568aeb4b1fe0e8c85f33b9cb13d47d7572898799e9226e4653d0dc42669a8e8` (dua kali dikemas, sama). Terukur lokal: semua tes lolos, termasuk 4 tes regresi baru di `test_cogan_smart_apps` (manager berganti nama, host tidak dikenal, readback gagal, dua pekerja) yang diulang di dash dan BusyBox ash. Belum diuji di HP.
 
 ## Sedang berjalan
 
-- PR #80 (v2.12.0) diselesaikan dan di-merge setelah Validate lolos (lihat bagian v2.12.0). Tidak ada pekerjaan lain yang berjalan.
+- PR perbaikan audit v2.12.1 (lihat bagian Audit). PR #80 (v2.12.0) sudah di-merge (`edd18a5`).
 
 ## Sudah selesai (sesi 28–29 Okt)
 
@@ -19,7 +30,7 @@ Cogan Smart **v2.12.0** (versionCode 31, tab 📱 Aplikasi + perbaikan v2.11.2) 
 
 ## Tertunda (keputusan owner)
 
-- Uji v2.11.2/v2.12.0 di HP: tekan Mulai di Kontrol Daya/Suhu, tutup root manager, buka lagi → tetap aktif; tab 📱 Aplikasi terisi; APK kiriman WhatsApp/sosmed/email/SMS ditolak dan izin yang dinyalakan lagi dicabut dengan notifikasi.
+- Uji v2.12.1 di HP: tekan Mulai di Kontrol Daya/Suhu, tutup root manager, buka lagi → tetap aktif; tab 📱 Aplikasi terisi; APK kiriman WhatsApp/sosmed/email/SMS ditolak dan izin yang dinyalakan lagi dicabut dengan notifikasi.
 - Rilis Cogan Smart: **ditahan owner** ("Untuk rilis tahan dulu!", 29 Okt 11.26 WIB).
 
 ## Langkah pertama berikutnya

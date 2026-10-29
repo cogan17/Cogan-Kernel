@@ -36,11 +36,22 @@ notify() {   # notify TEXT
 
 # Back to Android's default for this op: a chat app cannot install an APK unless the user allows it again,
 # and the block takes that back within seconds.
+# Read back: Android lists the package again while any user still allows it. A failure is logged and shown once,
+# not every 5 seconds. Switching the block off gives nothing back; the user allows an app again in Settings.
 block_source() {   # block_source PKG
-  for ca_u in $(users); do cmd appops set --user "$ca_u" "$1" REQUEST_INSTALL_PACKAGES default > /dev/null 2>&1; done
-  mkdir -p "$CA_DATA" && printf '%s %s\n' "$(date +%s)" "$1" >> "$CA_DATA/blocked.log"
+  ca_users=$(users)
+  for ca_u in $ca_users; do cmd appops set --user "$ca_u" "$1" REQUEST_INSTALL_PACKAGES default > /dev/null 2>&1; done
+  if [ -n "$ca_users" ] && ! cmd appops query-op REQUEST_INSTALL_PACKAGES allow 2> /dev/null | grep -Fxq "$1"; then
+    ca_ok=1; rm -f "$CA_RUN/failed.$1"
+  else
+    ca_ok=0; [ -f "$CA_RUN/failed.$1" ] && return 1
+    mkdir -p "$CA_RUN" && : > "$CA_RUN/failed.$1"
+  fi
+  mkdir -p "$CA_DATA" && printf '%s %s %s\n' "$(date +%s)" "$1" "$ca_ok" >> "$CA_DATA/blocked.log"
   tail -n 20 "$CA_DATA/blocked.log" > "$CA_DATA/blocked.tmp" && mv -f "$CA_DATA/blocked.tmp" "$CA_DATA/blocked.log"
-  notify "Izin memasang aplikasi dari $1 dicabut. Jangan pasang APK kiriman chat, sosmed, email atau SMS."
+  if [ "$ca_ok" = 1 ]; then notify "Izin memasang aplikasi dari $1 dicabut. Jangan pasang APK kiriman chat, sosmed, email atau SMS."
+  else notify "Izin memasang aplikasi dari $1 GAGAL dicabut. Cabut sendiri di Pengaturan, Instal aplikasi tak dikenal."; fi
+  [ "$ca_ok" = 1 ]
 }
 block_pass() {
   for ca_p in $(cmd appops query-op REQUEST_INSTALL_PACKAGES allow 2>/dev/null); do

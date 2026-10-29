@@ -136,8 +136,11 @@ cooling_json() {
 # workers included: the owner's Start turned back to stopped (2026-10-29). setsid/nohup do not leave a cgroup, so a
 # worker moves itself to the root cgroup. Workers started at boot (service.sh, not an app) are left where they are.
 leave_app_cgroup() {
-  case "$(cat "${CB_CG_PROC:-/proc}/$$/cgroup" 2>/dev/null)" in
-    *::/uid_[0-9]*) echo $$ > "${CB_CGROUP:-/sys/fs/cgroup}/cgroup.procs" 2>/dev/null ;;
+  case "$(cat "${CB_CG_PROC:-/proc}/$$/cgroup" 2>/dev/null)" in *::/uid_[0-9]*) ;; *) return 0 ;; esac
+  echo $$ > "${CB_CGROUP:-/sys/fs/cgroup}/cgroup.procs" 2>/dev/null
+  # Read back; a refused move is told to logcat (logcat -s CoganSmart), never assumed to have worked.
+  case "$(cat "${CB_CG_PROC:-/proc}/$$/cgroup" 2>/dev/null)" in *::/uid_[0-9]*)
+    log -t CoganSmart "pid $$ ${0##*/}: masih di cgroup aplikasi, bisa mati saat root manager ditutup" 2>/dev/null; return 1 ;;
   esac
 }
 
