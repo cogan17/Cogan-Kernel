@@ -1,13 +1,31 @@
 # Checkpoint — 29 Okt 2026 (WIB)
 
-Cogan Smart **v2.11.1** (revisi owner: Manager hanya memantau mode dan pindai modul; keluar WebUI sekali usap) di atas v2.11.0 (Manager pusat kendali, Mode Dev, Panduan); v2.10.8 (ZRAM ZSTD saat boot) terbukti di HP. Rilis publik terakhir tetap v2.9.1. Sesi berikutnya baca `CLAUDE.md`, file ini dan `CHECKPOINT.md`, lalu tunggu instruksi owner. Jangan otomatis menguji HP, menjalankan build atau menerbitkan rilis.
+**CHECKPOINT owner 29 Okt ±11.15 WIB: semua pekerjaan dihentikan.** Sesi berikutnya baca `CLAUDE.md`, file ini dan `CHECKPOINT.md`, lalu lanjut **hanya setelah owner meminta**. Jangan otomatis menguji HP, menjalankan build atau menerbitkan rilis.
 
 ## Sedang berjalan
 
-- Tidak ada: tidak ada PR terbuka, run workflow atau draf yang berjalan.
+- **[PR #80](https://github.com/cogan17/Cogan-Kernel/pull/80) terbuka**, branch `feat/cogan-smart-tab-aplikasi`: Cogan Smart **v2.12.0** (versionCode 30), tab baru 📱 Aplikasi (pantau gerak-gerik, hapus sampai akar, blokir APK). Rincian lengkap ada di bagian v2.12.0 `checkpoint.md` di branch itu.
+  - Commit 1 (sudah di-push): tab Aplikasi lengkap. Paket uji dan SHA256 `c1bd3f9f40ada48451d6a1f188e8aa41e4bcdbe3ce550c7335345a56a478b6a5` dibuat untuk commit ini. Hasil Validate belum dicek.
+  - Commit 2 `5130ca8` (WIP checkpoint, sudah di-push): atas pilihan owner, blokir APK ditambah Signal, Threads, TikTok Lite, MiChat, Plus Messenger, Gmail, Outlook, Email Xiaomi, Yahoo Mail, Google Messages dan Pesan Xiaomi (total 33 paket di `apps/common.sh`). Gmail dan Pesan adalah aplikasi sistem, jadi daftar "Terpasang" kini dibaca dari semua paket. Teks WebUI, i18n, Panduan, README, CHANGELOG, catatan rilis dan tes ikut diperbarui. Terukur lokal sebelum checkpoint: 257 tes lolos, termasuk BusyBox ash/awk, dan cek WebUI Node lolos.
+- Owner sudah ditanya apakah blokir berlaku untuk sosmed selain WA. Jawabannya: tambah sosmed lain, email dan SMS (commit 2).
+
+## Belum selesai (PR #80)
+
+1. **ZIP `rilis/v2.12.0/` belum dikemas ulang** setelah commit 2. SHA di README dan `checkpoint.md` branch PR masih SHA lama `c1bd3f9f…b6a5`.
+2. Validate PR #80 belum dicek, PR belum di-merge, dan ZIP belum dikirim ke owner.
+3. v2.12.0 belum diuji di HP. Yang belum terbukti: format dump HyperOS 3 (appops, netstats, batterystats), dan apakah pemasang paket Xiaomi menghormati izin sumber yang dicabut.
+
+## Langkah pertama berikutnya (setelah owner meminta)
+
+- `git checkout feat/cogan-smart-tab-aplikasi`.
+- `python3 scripts/package_module.py modules/cogan-smart modules/cogan-smart/rilis/v2.12.0` dua kali, dan pastikan SHA keduanya sama.
+- Ganti SHA lama di `modules/cogan-smart/README.md` dan `checkpoint.md` (beserta ukuran byte).
+- Jalankan `python3 -m unittest discover -s tests -b` dan `node tests/cogan_smart_client_check.js`.
+- Commit sebagai owner, push, cek Validate PR #80, squash-merge, lalu kirim ZIP ke owner.
 
 ## Sudah selesai (sesi 28–29 Okt)
 
+- [PR #79](https://github.com/cogan17/Cogan-Kernel/pull/79) `381e848`: v2.11.1 (Manager hanya memantau, keluar WebUI sekali usap). ✅ Owner 29 Okt: "Semuanya lolos uji disisi saya".
 - v2.11.1 (lihat bagian v2.11.1): revisi owner atas v2.11.0 dan perbaikan usap kembali.
 - [PR #77](https://github.com/cogan17/Cogan-Kernel/pull/77) `61dbf3cfefc3b3942289b5c25734964ea8e18ee5`, digabung 29 Okt 09.55 WIB: v2.11.0 (lihat bagian v2.11.0). [Validate 40809071342](https://github.com/cogan17/Cogan-Kernel/actions/runs/40809071342) lolos 09.54 WIB. ZIP uji dikirim ke owner.
 - [PR #76](https://github.com/cogan17/Cogan-Kernel/pull/76) `2291616df26941b6393c071a2f7c9bfb43382da1`, digabung 29 Okt 07.11 WIB: artifact dan rilis kernel hanya membawa modul SUSFS sidex15 (file 5); modul simonpunk tidak dibangun lagi, SUSFS simonpunk tetap dicek di Cek pembaruan (aturan di `CLAUDE.md`).
@@ -16,12 +34,8 @@ Cogan Smart **v2.11.1** (revisi owner: Manager hanya memantau mode dan pindai mo
 
 ## Tertunda (keputusan owner)
 
-- Uji v2.11.1 di HP: Manager → 📊 Ringkasan terisi, Mode daya sama dengan pilihan di tab Daya (tanpa tombol), hasil pindai modul dari tab Modul; sekali usap kembali menutup WebUI; saklar Mode Dev dan 📖 Panduan. Belum ada hasil.
-- Rilis Cogan Smart (v2.10.8 atau v2.11.1) lewat workflow Cogan Smart Release: belum diminta.
-
-## Langkah pertama berikutnya
-
-- Tunggu owner. Bila owner mengirim hasil uji v2.11.1, perbaiki yang salah berdasarkan screenshot (versi baru v2.11.2); bila owner meminta rilis, jalankan Cogan Smart Release untuk versi yang diminta.
+- Uji v2.12.0 di HP setelah PR #80 selesai: tab Aplikasi terisi, APK kiriman WhatsApp ditolak, dan izin yang dinyalakan lagi dicabut dengan notifikasi.
+- Rilis Cogan Smart (v2.11.1 sudah lolos uji HP, atau v2.12.0 setelah diuji) lewat Cogan Smart Release: belum diminta.
 
 ## v2.10.4 — initrc ZRAM (versionCode 23)
 
@@ -91,4 +105,4 @@ Cogan Smart **v2.11.1** (revisi owner: Manager hanya memantau mode dan pindai mo
 
 ## English state summary
 
-v2.10.8 (ZSTD ZRAM at boot) is proven on the phone. v2.11.0 (versionCode 28) reworks the WebUI at the owner's request: Manager is the control centre with a Summary card (temperatures, controller/recorder, mode buttons, 1-hour chart, heat cause, module scan), everyday text is short with technical detail behind a Dev mode switch in About, and a bilingual guide ships in the module (guide.html) and the repo (PANDUAN.md / PANDUAN.en.md). English template translation was fixed and a WebUI test now runs in Validate. Merged in PR #77 (29 Oct, 09.55 WIB). v2.11.1 (versionCode 29, ZIP SHA256 `8961d4c5…3175`) applies the owner's revision: the Summary only watches the power mode and the last module scan (they are set in the Power and Modules tabs), and tab switches replace WebView history so one back gesture leaves the WebUI. Test ZIP SHA256 `e39523e0…443c`, sent to the owner. Not phone-tested and not released. Since PR #76, kernel releases carry only the sidex15 SUSFS module. Wait for the owner's instructions.
+CHECKPOINT by the owner, 29 Oct around 11.15 WIB: all work stopped. v2.11.1 is merged (#79) and passed the owner's phone test. PR #80 (v2.12.0, the Apps tab) is open. Its WIP commit `5130ca8` extends the APK block to 33 chat, social, email and SMS apps. The test ZIP still has to be repackaged after that commit, and its SHA updated in the README and checkpoint. After that: run the tests, check Validate, merge and send the ZIP. Continue only when the owner asks.
