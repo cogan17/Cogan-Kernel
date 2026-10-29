@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Cogan Smart · Aplikasi</title>
-<link rel="stylesheet" href="theme.css?v=2.12.3">
-<script src="i18n.js?v=2.12.3"></script>
+<link rel="stylesheet" href="theme.css?v=2.12.4">
+<script src="i18n.js?v=2.12.4"></script>
 <script>try { document.documentElement.dataset.theme = localStorage.getItem('cogan.theme') || ''; document.documentElement.dataset.dev = localStorage.getItem('cogan.dev') || ''; } catch (_) { /* storage off: follow the phone */ }</script>
 <style>
   * { box-sizing: border-box; }
@@ -58,6 +58,9 @@
   @keyframes cogan-spin { to { transform: rotate(360deg); } }
   @media (prefers-reduced-motion: reduce) { .feedback.working::before { animation: none; } details.fold > summary::after { transition: none; } }
   .filters { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 2px 12px; }
+  .find { position: sticky; top: 0; z-index: 5; background: var(--bg); padding: 6px 0 8px; }
+  .find input { width: 100%; font: inherit; color: var(--text); background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; min-height: 44px; }
+  .find input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
   .filters button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 600; }
   .facts { font-size: 13px; margin: 6px 0; } .facts div { margin: 2px 0; }
 </style>
@@ -85,6 +88,7 @@
     <div class="row"><button id="blockOn" data-action disabled>🛡️ Aktifkan</button><button id="blockOff" data-action disabled>Matikan</button></div>
   </details>
 
+  <div class="find"><input id="appSearch" type="search" aria-label="Cari aplikasi" placeholder="🔍 Cari di semua aplikasi…" autocomplete="off" spellcheck="false"></div>
   <div class="filters" role="group" aria-label="Tampilkan">
     <button data-filter="risk" aria-pressed="true">⚠️ Perlu dicek</button><button data-filter="all" aria-pressed="false">Semua</button><button data-filter="idle" aria-pressed="false">💤 Jarang dipakai</button>
   </div>
@@ -96,7 +100,7 @@
 </main>
 
 <div id="actionStatus" class="feedback hidden" role="status" aria-live="polite"></div>
-<script src="client.js?v=2.12.3"></script>
+<script src="client.js?v=2.12.4"></script>
 <script>
 // Aplikasi (owner 2026-10-29): what user apps do, removal down to the roots, and the APK block for chat apps.
 const confirm = value => window.confirm(CoganI18n.t(value));
@@ -113,7 +117,7 @@ const $ = id => document.getElementById(id);
 // quick: status, whitelist and the block switch on their own queue, so they never wait behind a full scan.
 const UI = CoganUI, api = UI.create(REPORT), quick = UI.create(REPORT);
 const opened = new Set(), labels = new Map();
-let feedbackTimer, data = null, actionRunning = false, filter = 'risk', block = null, sources = [];
+let feedbackTimer, data = null, actionRunning = false, filter = 'risk', block = null, sources = [], query = '';
 try { filter = localStorage.getItem('cogan.apps.filter') || 'risk'; } catch (_) { /* storage off */ }
 
 function esc(s) { return String(s).replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'})[c]); }
@@ -180,10 +184,12 @@ function render(d) {
   sources = d.block.sources;
   if (block) renderBlock(block);
   for (const f of document.querySelectorAll('[data-filter]')) f.setAttribute('aria-pressed', String(f.dataset.filter === filter));
-  const shown = d.apps.filter(a => filter === 'all' || (filter === 'risk' ? a.risk > 0 && !a.trusted : idleDays(a) >= 7))
+  // Search looks through every app, by name or package, whatever list is chosen (owner 29 Oct).
+  const found = a => name(a.p).toLowerCase().includes(query) || a.p.toLowerCase().includes(query);
+  const shown = d.apps.filter(a => query ? found(a) : filter === 'all' || (filter === 'risk' ? a.risk > 0 && !a.trusted : idleDays(a) >= 7))
     .sort((x, y) => (y.risk - x.risk) || (filter === 'idle' ? idleDays(y) - idleDays(x) : 0) || name(x.p).localeCompare(name(y.p)));
   UI.html('apps', shown.length ? shown.map(appCard).join('')
-    : `<div class="card muted">${filter === 'risk' ? 'Tidak ada aplikasi yang perlu dicek. 👍' : filter === 'idle' ? 'Tidak ada aplikasi yang tidak dipakai 7 hari atau lebih.' : 'Belum ada aplikasi.'}</div>`);
+    : `<div class="card muted">${query ? `Tidak ada aplikasi yang cocok dengan "${esc(query)}".` : filter === 'risk' ? 'Tidak ada aplikasi yang perlu dicek. 👍' : filter === 'idle' ? 'Tidak ada aplikasi yang tidak dipakai 7 hari atau lebih.' : 'Belum ada aplikasi.'}</div>`);
 }
 
 // The block card follows its own light status read, never a cached or failed scan (audit 29 Oct): until that read
@@ -221,6 +227,8 @@ async function run(target, message, task) {
   finally { actionRunning = false; }
 }
 function setup() {
+  $('appSearch').placeholder = CoganI18n.t('🔍 Cari di semua aplikasi…');
+  $('appSearch').oninput = () => { query = $('appSearch').value.trim().toLowerCase(); if (data) render(data); };
   UI.folds();
   $('rescan').onclick = () => run($('rescan'), 'Memindai aplikasi…', async () => { await scan(); toast('Pemindaian selesai'); });
   // The action reports itself; a scan that fails afterwards shows its own error and does not undo the toast.

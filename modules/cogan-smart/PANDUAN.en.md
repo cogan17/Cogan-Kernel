@@ -58,6 +58,7 @@ Cogan Smart Kernel keeps the phone cool and records its temperature. This guide 
 - **Dangerous rights**: reads SMS (OTP codes), accessibility (can read and tap the screen), device admin (hard to remove), reads notifications, draws over other apps, hidden icon.
 - **👁️ Activity**: when the app last used the camera, microphone, location, SMS, contacts, phone or clipboard, its internet use in 7 days and battery since the last full charge.
 - **⚠️ Needs a look / All / 💤 Rarely used**: choose which list to show. Rarely used means not opened for 7 days or more.
+- **🔍 Search** (above the list): type an app name or package name. It searches every app, whatever list is chosen.
 - **🛡️ Trust**: the app is no longer flagged and cannot be removed by accident.
 - **🗑 Remove completely**: releases its device admin, stops and removes the app for every user (Dual apps and Second space too), then deletes leftover data and identical APK files in storage. This cannot be undone. System apps and the root manager cannot be removed here.
 - **🛡️ Block APKs from chat & social apps**: on by default. Chat, social, email and SMS apps (WhatsApp, Telegram, Signal, Instagram, Facebook, Threads, TikTok, X, Gmail, Outlook, Messages and more) cannot install apps. If the right is turned on again in Settings, the module takes it back within seconds and shows a notification. Browsers and file managers still can.

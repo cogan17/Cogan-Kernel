@@ -1,0 +1,25 @@
+Cogan Smart Kernel v2.12.4 / versionCode 35 — paket uji / test build
+
+Indonesia
+
+Baru:
+- 🔍 Cari di tab Aplikasi: di atas daftar dan tetap terlihat saat digeser. Ketik nama aplikasi atau nama paket; mencari di semua aplikasi.
+
+Batas:
+- Belum diuji di HP.
+
+Cara uji:
+1. Pasang sebagai pembaruan modul melalui root manager, lalu reboot.
+2. Buka tab 📱 Aplikasi, ketik "net" di kotak Cari: Netflix langsung muncul.
+
+English
+
+New:
+- 🔍 Search in the Apps tab: above the list and visible while scrolling. Type an app name or package name; it searches every app.
+
+Limits:
+- Not phone-tested yet.
+
+How to test:
+1. Install as a module update through the root manager, then reboot.
+2. Open the 📱 Apps tab and type "net" in the Search box: Netflix shows at once.

@@ -1,5 +1,17 @@
 # Cogan Smart Kernel
 
+## Cari aplikasi / Search apps — v2.12.4 (paket uji / test build)
+
+Indonesia:
+
+- Permintaan owner 29 Okt: kotak **🔍 Cari** di tab Aplikasi. Letaknya di atas daftar (di atas pilihan Perlu dicek / Semua / Jarang dipakai) dan tetap terlihat saat daftar digeser, karena tombol Pindai ulang ada di paling bawah. Kotak ini mencari nama aplikasi atau nama paket di semua aplikasi, apa pun daftar yang dipilih, dan hasilnya langsung muncul tanpa pindai.
+- Terukur lokal: tes lolos; Playwright 412 px tanpa error. Belum diuji di HP.
+
+English:
+
+- Owner request 29 Oct: a **🔍 Search** box in the Apps tab. It sits above the list (above Needs a look / All / Rarely used) and stays visible while scrolling, because Rescan is at the very bottom. It matches app names or package names across every app, whatever list is chosen, and filters at once without a scan.
+- Measured locally: tests pass; Playwright at 412 px without errors. Not phone-tested yet.
+
 ## Percaya dan blokir langsung / Trust and block at once — v2.12.3 (paket uji / test build)
 
 Indonesia:

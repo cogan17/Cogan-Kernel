@@ -143,5 +143,14 @@ vm.runInContext(fs.readFileSync('modules/cogan-smart/webroot/client.js','utf8'),
   assert.match(appNode('apps').innerHTML,/Dilindungi: aplikasi root manager/);
   assert.match(appNode('apps').innerHTML,/Dipasang: 1999-12-31 \(tanggal tidak wajar dari Android/);
   assert(!/data-act="remove" data-p="com.rifsxd.ksunext"/.test(appNode('apps').innerHTML));
+  // Search: by name or package, over every app whatever list is chosen; nothing found says so.
+  vm.runInContext('filter="risk"; query="undangan"; render(data)',appPage);
+  assert.equal((appNode('apps').innerHTML.match(/data-key=/g)||[]).length,1);
+  assert.match(appNode('apps').innerHTML,/Undangan Nikah/);
+  vm.runInContext('query="rifsxd"; render(data)',appPage);
+  assert.match(appNode('apps').innerHTML,/data-key="app:com.rifsxd.ksunext"/);
+  vm.runInContext('query="zzz"; render(data)',appPage);
+  assert.match(appNode('apps').innerHTML,/Tidak ada aplikasi yang cocok dengan "zzz"/);
+  vm.runInContext('query=""; filter="all"; render(data)',appPage);
   console.log('WebUI drafts, native callbacks and scan errors: OK');
 })().catch(e=>{console.error(e);process.exitCode=1;});

@@ -1,6 +1,12 @@
 # Checkpoint — 29 Okt 2026 (WIB)
 
-Cogan Smart **v2.12.3** (versionCode 34: Percaya/blokir langsung) di atas v2.12.2, yang pindainya sudah terbukti di HP. Siap diuji. **Rilis ditahan owner** sampai diuji. Sesi berikutnya baca `CLAUDE.md`, file ini dan `CHECKPOINT.md`, lalu tunggu instruksi owner. Jangan otomatis menguji HP, menjalankan build atau menerbitkan rilis.
+Cogan Smart **v2.12.4** (versionCode 35: 🔍 Cari) di atas v2.12.3 (Percaya/blokir langsung) dan v2.12.2 (pindai terbukti di HP). Siap diuji. **Rilis ditahan owner** sampai diuji. Sesi berikutnya baca `CLAUDE.md`, file ini dan `CHECKPOINT.md`, lalu tunggu instruksi owner. Jangan otomatis menguji HP, menjalankan build atau menerbitkan rilis.
+
+## v2.12.4 — Cari aplikasi (owner 29 Okt ±13.55 WIB, rilis tetap DITAHAN)
+
+- **Permintaan owner** (screenshot daftar panjang dengan Pindai ulang di bawah): "Disebelah pindai bisa tambah cari ga? … ada saran peletakan yg tepat?" Saran yang dipakai: kotak cari di atas daftar (di atas filter) dan sticky, bukan di sebelah Pindai ulang yang ada di paling bawah.
+- `apps.html`: `#appSearch` (`.find` sticky). `query` mencocokkan label atau nama paket; saat ada isian, mencari di semua aplikasi tanpa memedulikan filter. Pesan "Tidak ada aplikasi yang cocok dengan …" bila kosong. Ditambah i18n, Panduan (WebUI, PANDUAN.md/.en.md) dan tes Node (nama, paket, tidak cocok).
+- [Paket uji](modules/cogan-smart/rilis/v2.12.4/Cogan-Smart-Kernel-v2.12.4.zip) 190463 byte, SHA256 `c32130a038a9dca1f676dd6c2bd3408846b2d6e65b1fc59e04e424a53587e47b` (dua kali dikemas, sama). Terukur lokal: semua tes lolos; Playwright 412 px tanpa error, kotak tetap di atas saat digeser. Belum diuji di HP.
 
 ## v2.12.3 — Percaya dan blokir langsung (owner 29 Okt ±13.45 WIB, rilis tetap DITAHAN)
 
@@ -34,7 +40,7 @@ Cogan Smart **v2.12.3** (versionCode 34: Percaya/blokir langsung) di atas v2.12.
 
 ## Sedang berjalan
 
-- PR v2.12.3 (lihat bagian v2.12.3). v2.12.2 sudah di-merge (#84).
+- PR v2.12.4 (lihat bagian v2.12.4). v2.12.3 sudah di-merge (#85).
 
 ## Sudah selesai (sesi 28–29 Okt)
 
