@@ -392,13 +392,58 @@
     ['Rem darurat: prosesor {0} °C ≥ {1} °C: CPU besar {2}%, kecil {3}%', 'Emergency brake: processor {0} °C ≥ {1} °C: big CPU {2}%, little {3}%'],
     ['Ada kontrol yang belum pulih; periksa izin node lalu Henti lagi', 'Some controls are not restored; check node permissions and tap Stop again'],
     ['Pemulihan CPU gagal: {0}', 'CPU restore failed: {0}'],
-    ['Reset: setelan bawaan dipulihkan (cas 95/90), pengendali dihentikan', 'Reset: defaults restored (95/90 charging), controller stopped']
+    ['Reset: setelan bawaan dipulihkan (cas 95/90), pengendali dihentikan', 'Reset: defaults restored (95/90 charging), controller stopped'],
+    // v2.11.0: Manager as the control centre, short everyday text and the guide (owner 2026-10-29).
+    ['Mode daya', 'Power mode'],
+    ['Suhu 1 jam terakhir', 'Temperature, last hour'],
+    ['Modul root', 'Root modules'],
+    ['Belum dipindai.', 'Not scanned yet.'],
+    ['Pindai modul', 'Scan modules'],
+    ['Detail:', 'Details:'],
+    ['Panduan', 'Guide'],
+    ['Pengendali', 'Controller'],
+    ['Pencatat', 'Recorder'],
+    ['Cara CPU mengatur kecepatannya. Kernel Default cocok untuk pemakaian harian.', 'How the CPU sets its speed. Kernel Default suits everyday use.'],
+    ['LZ4: lebih cepat. ZSTD: lebih hemat RAM. Simpan, lalu restart HP.', 'LZ4: faster. ZSTD: saves more RAM. Save, then restart the phone.'],
+    ['Cari aplikasi yang tidak dipakai 7 hari atau lebih.', 'Find apps not used for 7 days or more.'],
+    ['Tekan Tinjau aplikasi untuk membuka info aplikasi, lalu hapus atau nonaktifkan dari sana.', 'Tap Review app to open the app info, then uninstall or disable it there.'],
+    ['Mengikuti sistem.', 'Follows the system.'],
+    ['✓ Aktif sesuai pilihan.', '✓ Active as chosen.'],
+    ['Belum aktif. Tekan Terapkan sekarang.', 'Not active yet. Tap Apply now.'],
+    ['Berlaku setelah restart: centang Terapkan CPU/RAM saat boot, Simpan, lalu restart.', 'Takes effect after a restart: tick Apply CPU/RAM at boot, Save, then restart.'],
+    ['Tersimpan. Berlaku setelah restart.', 'Saved. Takes effect after a restart.'],
+    ['Belum aktif setelah restart. Nyalakan Mode Dev untuk detail.', 'Not active after the restart. Turn on Dev mode for details.'],
+    ['Kernel tidak mendukung pilihan ini.', 'The kernel does not support this choice.'],
+    ['ZRAM belum tersedia.', 'ZRAM is not available yet.'],
+    ['Status belum terbaca.', 'Status not read yet.'],
+    ['✓ HP dan kernel cocok.', '✓ Phone and kernel match.'],
+    ['Butuh Xiaomi 14T Pro dengan kernel Cogan.', 'Needs a Xiaomi 14T Pro with the Cogan kernel.'],
+    ['Ada pemulihan yang tertunda; cek nilai aktif.', 'A restore is pending; check the active values.'],
+    ['Pengendali berhenti: mode belum dijaga. Tekan Mulai di Kontrol Daya.', 'Controller stopped: the mode is not enforced. Tap Start in Power controls.'],
+    ['Data belum cukup untuk grafik.', 'Not enough data for a chart yet.'],
+    ['Belum ada data suhu 1 jam terakhir.', 'No temperature data in the last hour.'],
+    ['Waktu panas {0}%', 'Hot time {0}%'],
+    ['Penyebab utama: {0}', 'Main cause: {0}'],
+    ['dipindai {0} menit lalu', 'scanned {0} min ago'],
+    ['Batas panas dari HyperOS sendiri. Modul hanya membaca.', 'HyperOS\'s own heat limits. The module only reads them.'],
+    ['Bawaan mati: HyperCharge sudah menjaga suhu cas. Nyalakan bila ingin jeda tambahan saat baterai panas.', 'Off by default: HyperCharge already guards charging temperature. Turn on for an extra pause when the battery is hot.'],
+    ['Cas mati-nyala sebentar saat mencari. Cukup sekali.', 'Charging turns off and on briefly while searching. Once is enough.'],
+    ['Suhu di sini adalah suhu Badan HP, yang terasa di tangan.', 'Temperatures here are the phone body, what you feel in your hand.'],
+    ['Panas dihitung dari suhu Badan HP. Prosesor memang biasa sekitar 50 °C. Tab ini hanya mencatat, tidak mengatur CPU.', 'Heat is measured from the phone body. The processor normally runs around 50 °C. This tab only records; it does not control the CPU.'],
+    ['Modul yang kamu percaya tidak ditandai dan tidak bisa terhapus tanpa sengaja.', 'Modules you trust are not flagged and cannot be removed by accident.'],
+    ['Skrip yang jalan saat boot tapi tidak terlihat di daftar modul.', 'Scripts that run at boot but are not in the module list.'],
+    ['Skrip boot di luar modul', 'Boot scripts outside modules'],
+    // With the icon: the "{0} modul" rule would otherwise claim them first.
+    ['🔍 Pindai modul', '🔍 Scan modules'], ['📜 Skrip boot di luar modul', '📜 Boot scripts outside modules']
   ];
   const catalog = new Map(entries), originals = new WeakMap();
   const escapeRE = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const rules = entries.filter(([s]) => /\{\d+\}/.test(s)).sort((a,b) => b[0].length - a[0].length).map(([source, target]) => {
     const ids = [];
-    const parts = source.split(/(\{\d+\})/).map(part => /^\{\d+\}$/.test(part) ? (ids.push(part.slice(1,-1)), '([\\s\\S]*?)') : escapeRE(part));
+    // A value never spans a " · " or line break the template itself lacks, so one rule cannot swallow
+    // the next chunk ("target batas CPU besar 100% · kecil 100%").
+    const value = /( · |\n)/.test(source) ? '([\\s\\S]*?)' : '((?:(?! · |\\n)[\\s\\S])*?)';
+    const parts = source.split(/(\{\d+\})/).map(part => /^\{\d+\}$/.test(part) ? (ids.push(part.slice(1,-1)), value) : escapeRE(part));
     return {re: new RegExp('^' + parts.join('') + '$'), target, ids};
   });
   const language = () => document.documentElement.lang === 'en' ? 'en' : 'id';

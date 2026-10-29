@@ -2,7 +2,7 @@
 """Pack a KernelSU / Magisk module folder (e.g. modules/thermal-monitor) into an installable ZIP.
 
 The ZIP is reproducible: fixed timestamps, sorted entries, scripts 0755 and everything else 0644.
-README files and the rilis/ folder (released ZIPs and notes kept next to the source) stay out
+README and PANDUAN (guide) files and the rilis/ folder (released ZIPs and notes kept next to the source) stay out
 of the ZIP. Prints the path of the ZIP.
 Usage: package_module.py MODULE_DIR OUT_DIR
 """
@@ -11,7 +11,7 @@ import zipfile
 from pathlib import Path
 
 EXECUTABLE = {"update-binary"}
-SKIP = {"README.md", "README.en.md"}
+SKIP = {"README.md", "README.en.md", "PANDUAN.md", "PANDUAN.en.md"}
 SKIP_DIRS = {"rilis"}
 
 

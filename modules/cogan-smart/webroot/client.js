@@ -21,8 +21,8 @@
   // Last answers, kept so a tab shows its last values at once while it reads fresh ones:
   // each tab is its own page, so without this every switch starts empty.
   const store = {
-    get(key) { try { return JSON.parse(localStorage.getItem('cogan.cache.v2108.' + CoganI18n.language() + '.' + key)); } catch (_) { return null; } },
-    set(key, value) { try { localStorage.setItem('cogan.cache.v2108.' + CoganI18n.language() + '.' + key, JSON.stringify(value)); } catch (_) { /* storage off or full */ } }
+    get(key) { try { return JSON.parse(localStorage.getItem('cogan.cache.v2110.' + CoganI18n.language() + '.' + key)); } catch (_) { return null; } },
+    set(key, value) { try { localStorage.setItem('cogan.cache.v2110.' + CoganI18n.language() + '.' + key, JSON.stringify(value)); } catch (_) { /* storage off or full */ } }
   };
 
   let sequence = 0; // Unique across the Manager's three API clients in the same WebView.
@@ -246,5 +246,24 @@
     },
     clear(part) { localStorage.removeItem('cogan.draft.' + part); }
   };
-  window.CoganUI = {create, poll, action, text, html, shortKernel, kernel, cooling, folds, identity, health, recorder, learnLabels, draft};
+  // Phone body temperature over time with the hot threshold (Suhu tab and Manager).
+  function chart(series, hot) {
+    if (series.length < 2) return '';
+    const t0 = series[0][0], t1 = series[series.length - 1][0];
+    let lo = Math.min(...series.map(p => p[1]), hot * 10), hi = Math.max(...series.map(p => p[1]), hot * 10);
+    lo -= 10; hi += 10;
+    const x = t => ((t - t0) / Math.max(1, t1 - t0) * 600).toFixed(1), y = v => (150 - (v - lo) / (hi - lo) * 140).toFixed(1);
+    // Nothing is recorded while the phone sleeps or restarts: the line breaks there instead of drawing a
+    // steep jump across the gap (owner 2026-10-24, "naik turun, tidak stabil").
+    const steps = series.slice(1).map((p, i) => p[0] - series[i][0]).sort((a, b) => a - b);
+    const far = Math.max(120, 3 * (steps[Math.floor(steps.length / 2)] || 20));
+    const d = series.map((p, i) => `${i && p[0] - series[i - 1][0] <= far ? 'L' : 'M'}${x(p[0])},${y(p[1])}`).join(' ');
+    const clock = t => new Date(t * 1000).toLocaleTimeString(CoganI18n.locale(), { hour: '2-digit', minute: '2-digit' });
+    return `<svg viewBox="0 0 600 160" preserveAspectRatio="none" aria-label="Grafik suhu Badan HP">
+        <line x1="0" x2="600" y1="${y(hot * 10)}" y2="${y(hot * 10)}" stroke="var(--hot)" stroke-dasharray="6 5" vector-effect="non-scaling-stroke" opacity=".7"/>
+        <path d="${d}" fill="none" stroke="var(--accent)" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round"/>
+      </svg>
+      <div class="axis"><span>${clock(t0)}</span><span class="hot">Badan HP - - ${hot} °C</span><span>${clock(t1)}</span></div>`;
+  }
+  window.CoganUI = {create, poll, action, text, html, shortKernel, kernel, cooling, folds, identity, health, recorder, learnLabels, draft, chart};
 })();

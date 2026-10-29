@@ -4,9 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Cogan Smart · Modul</title>
-<link rel="stylesheet" href="theme.css?v=2.10.8">
-<script src="i18n.js?v=2.10.8"></script>
-<script>try { document.documentElement.dataset.theme = localStorage.getItem('cogan.theme') || ''; } catch (_) { /* storage off: follow the phone */ }</script>
+<link rel="stylesheet" href="theme.css?v=2.11.0">
+<script src="i18n.js?v=2.11.0"></script>
+<script>try { document.documentElement.dataset.theme = localStorage.getItem('cogan.theme') || ''; document.documentElement.dataset.dev = localStorage.getItem('cogan.dev') || ''; } catch (_) { /* storage off: follow the phone */ }</script>
 <style>
   * { box-sizing: border-box; }
   body {
@@ -75,10 +75,10 @@
 
   <details class="card kernel-card fold" id="kernelCard">
     <summary><span id="kernelTitle">Kernel</span><small class="muted" id="kernelBadge"></small></summary>
-    <div id="bridgeStatus" class="muted">Memeriksa dukungan…</div>
     <div id="identityLabel" class="muted"></div>
     <div id="deviceStatus" class="muted"></div>
-    <details><summary>Detail kernel</summary>
+    <div id="bridgeStatus" class="muted dev">Memeriksa dukungan…</div>
+    <details class="dev"><summary>Detail kernel</summary>
       <p id="originalKernel" class="kernel-value">—</p>
       <p id="shownKernel" class="kernel-value"></p>
       <p id="kernelFeatures" class="muted"></p>
@@ -93,18 +93,20 @@
     <ul id="coreList"></ul>
     <h3>Modul yang kamu percaya</h3>
     <div id="trustList" class="muted">Belum ada.</div>
-    <p class="muted">Modul di whitelist tidak dihitung mencurigakan dan tidak bisa dihapus sebelum dilepas dari whitelist. Root manager, metamodule dan Cogan Smart selalu dilindungi.</p>
+    <p class="muted user">Modul yang kamu percaya tidak ditandai dan tidak bisa terhapus tanpa sengaja.</p>
+    <p class="muted dev">Modul di whitelist tidak dihitung mencurigakan dan tidak bisa dihapus sebelum dilepas dari whitelist. Root manager, metamodule dan Cogan Smart selalu dilindungi.</p>
   </details>
 
   <div id="modules"></div>
 
   <details class="card fold" id="bootCard">
     <summary><span>📜 Skrip boot di luar modul</span><small class="muted" id="bootBrief"></small></summary>
-    <p class="muted">Berjalan saat boot tanpa terlihat di daftar modul root manager. Bisa sengaja dipasang modul, bisa juga sisa modul lama atau penyusup.</p>
+    <p class="muted user">Skrip yang jalan saat boot tapi tidak terlihat di daftar modul.</p>
+    <p class="muted dev">Berjalan saat boot tanpa terlihat di daftar modul root manager. Bisa sengaja dipasang modul, bisa juga sisa modul lama atau penyusup.</p>
     <div id="bootList"></div>
   </details>
 
-  <details class="card fold" id="adbCard">
+  <details class="card fold dev" id="adbCard">
     <summary><span>🗂️ Isi /data/adb</span><small class="muted" id="adbBrief"></small></summary>
     <p class="muted">Folder dan file milik root manager, data modul, atau sisa yang tidak dipakai lagi.</p>
     <div id="adbList"></div>
@@ -112,11 +114,11 @@
 
   <div class="row"><button id="rescan" class="primary" data-action>🔍 Pindai ulang</button></div>
   <footer>Cogan Smart · Penanda risiko adalah dugaan dari isi modul; baca buktinya sebelum menghapus.</footer>
-<p class="credit">Maintainer <b>Cogan17</b> &nbsp;·&nbsp; kernel <b>Cogan Rothko</b> &nbsp;·&nbsp; <b>KernelSU Next</b><br><a href="about.html">ℹ️ Tentang &amp; kredit</a></p>
+<p class="credit">Maintainer <b>Cogan17</b> &nbsp;·&nbsp; kernel <b>Cogan Rothko</b> &nbsp;·&nbsp; <b>KernelSU Next</b><br><a href="about.html">ℹ️ Tentang &amp; kredit</a> · <a href="guide.html">📖 Panduan</a></p>
 </main>
 
 <div id="actionStatus" class="feedback hidden" role="status" aria-live="polite"></div>
-<script src="client.js?v=2.10.8"></script>
+<script src="client.js?v=2.11.0"></script>
 <script>
 const confirm = value => window.confirm(CoganI18n.t(value));
 const REPORT = '/data/adb/modules/cogan_smart/guard/report.sh';
@@ -170,15 +172,15 @@ function moduleCard(m) {
   }
   return `<details class="card fold mod" data-key="${esc(key)}"${opened.has(key) ? ' open' : ''}>
     <summary><span translate="no">${badge} ${esc(m.name || m.id)}</span><small class="muted">${esc(m.version)}${STATE_ICON[m.state] || ''}</small></summary>
-    <div class="muted"><code>${esc(m.id)}</code>${m.author ? ' · <span translate="no">' + esc(m.author) + '</span>' : ''} · ${size(m.size)} · ${m.files} file</div>
+    <div class="muted dev"><code>${esc(m.id)}</code>${m.author ? ' · <span translate="no">' + esc(m.author) + '</span>' : ''} · ${size(m.size)} · ${m.files} file</div>
     <div class="${m.trusted ? 'ok' : risk[2]}" style="margin-top:4px">${m.core ? 'Inti root manager · dilindungi' : m.trusted ? 'Di whitelist · dipercaya' : risk[1]}${state ? ` <span class="muted">· ${state}</span>` : ''}</div>
     ${m.description ? `<p class="muted" translate="no">${esc(m.description)}</p>` : ''}
     ${does.length ? `<ul>${does.map(d => `<li>${esc(d)}</li>`).join('')}</ul>` : ''}
     <div>${tags(m)}</div>
     ${evidence(m)}
-    ${m.overlay_count ? `<details><summary>File sistem (${m.overlay_count})</summary><ul>${m.overlays.map(o => `<li><code>/${esc(o)}</code></li>`).join('')}${m.overlay_count > m.overlays.length ? `<li class="muted">…dan ${m.overlay_count - m.overlays.length} lagi</li>` : ''}</ul></details>` : ''}
-    ${m.procs.length ? `<details><summary>Proses (${m.procs.length})</summary><ul>${m.procs.map(p => `<li><code>${esc(p)}</code></li>`).join('')}</ul></details>` : ''}
-    ${m.roots.length ? `<div class="muted" style="margin-top:6px">Akar di luar folder: ${m.roots.map(r => `<code>${esc(r)}</code>`).join(', ')}</div>` : ''}
+    ${m.overlay_count ? `<details class="dev"><summary>File sistem (${m.overlay_count})</summary><ul>${m.overlays.map(o => `<li><code>/${esc(o)}</code></li>`).join('')}${m.overlay_count > m.overlays.length ? `<li class="muted">…dan ${m.overlay_count - m.overlays.length} lagi</li>` : ''}</ul></details>` : ''}
+    ${m.procs.length ? `<details class="dev"><summary>Proses (${m.procs.length})</summary><ul>${m.procs.map(p => `<li><code>${esc(p)}</code></li>`).join('')}</ul></details>` : ''}
+    ${m.roots.length ? `<div class="muted dev" style="margin-top:6px">Akar di luar folder: ${m.roots.map(r => `<code>${esc(r)}</code>`).join(', ')}</div>` : ''}
     <div class="row">${actions}</div>
   </details>`;
 }

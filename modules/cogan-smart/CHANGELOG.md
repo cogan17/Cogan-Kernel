@@ -1,5 +1,27 @@
 # Cogan Smart Kernel
 
+## Manager pusat kendali, Mode Dev dan panduan / Manager control centre, Dev mode and guide — v2.11.0 (paket uji / test build)
+
+Indonesia:
+
+- Manager kini pusat kendali (owner 29 Okt). Kartu baru **📊 Ringkasan** di atas: suhu Badan HP, baterai, prosesor, status pengendali dan pencatat, tombol mode daya, grafik suhu 1 jam dengan waktu panas dan penyebab utama, serta hasil pindai modul dengan tombol Pindai modul. Semua tombol Simpan/Terapkan/Paksa/Reset/Mulai/Hentikan tetap di Manager; tab Daya, Suhu dan Modul untuk melihat detail dan mengatur pilihannya sendiri.
+- Teks dibuat ringkas untuk pengguna umum. Saklar **Mode Dev** baru di Tentang (bawaan mati) memunculkan detail teknis: node kernel dan readback, frekuensi per policy CPU, hook boot ZRAM, driver DRAM, semua sensor, data mentah modul, serta setelan lanjutan (interval cek, terapkan ulang tiap interval, interval pencatat).
+- **📖 Panduan** baru di modul (Tentang dan tautan di bawah tiap tab), ID/EN, dan dokumen PANDUAN.md / PANDUAN.en.md di repo dengan isi yang sama: tiap tab, tiap tombol, dan tanya jawab.
+- Perbaiki terjemahan English: isian aturan tidak lagi menelan bagian sesudah pemisah " · " (mis. "kecil 100%" tetap Indonesia), dan "Pindai modul" / "Skrip boot di luar modul" tidak lagi setengah terjemahan.
+- Grafik suhu dipakai bersama tab Suhu dan Manager (client.js). Tes baru menjalankan cek WebUI di Validate dan memastikan mode English tidak menyisakan teks Indonesia.
+- Log suhu owner 16 jam (28–29 Okt): badan HP maks 43,6 °C, baterai maks 44,0 °C saat mengecas, beban modul median 1,8% CPU. Arus 13–16 A saat HyperCharge dan kolom GPU kosong saat GPU tidur adalah perilaku normal, dijelaskan di Panduan. Pencatat tidak diubah.
+- Fungsi kontrol tidak berubah. v2.11.0 belum diuji di HP.
+
+English:
+
+- Manager is now the control centre (owner 29 Oct). A new **📊 Summary** card at the top shows phone body, battery and processor temperature, controller and recorder status, power mode buttons, a 1-hour temperature chart with hot time and main cause, and the module scan result with a Scan modules button. Every Save/Apply/Force/Reset/Start/Stop button stays in Manager; the Power, Temperature and Modules tabs show detail and set their own choices.
+- Everyday text is short. A new **Dev mode** switch in About (off by default) shows the technical detail: kernel nodes and readback, per-policy CPU frequency, ZRAM boot hooks, DRAM driver, every sensor, raw module data and advanced settings (check interval, re-apply every interval, recorder interval).
+- A new **📖 Guide** in the module (About and the link under each tab), ID/EN, plus PANDUAN.md / PANDUAN.en.md in the repository with the same content: every tab, every button and an FAQ.
+- English translation fixes: a template value no longer swallows the chunk after a " · " separator (e.g. "kecil 100%" stayed Indonesian), and "Pindai modul" / "Skrip boot di luar modul" are no longer half translated.
+- The temperature chart is shared by the Temperature tab and Manager (client.js). New tests run the WebUI check in Validate and make sure English mode leaves no Indonesian text.
+- The owner's 16-hour temperature log (28–29 Oct): phone body max 43.6 °C, battery max 44.0 °C while charging, module load median 1.8% CPU. 13–16 A during HyperCharge and an empty GPU column while the GPU sleeps are normal behaviour, explained in the guide. The recorder is unchanged.
+- Control behaviour is unchanged. v2.11.0 has not been phone-tested.
+
 ## Hook ZRAM sebelum system_perf_init / ZRAM hook before system_perf_init — v2.10.8 (paket uji / test build)
 
 Indonesia:
