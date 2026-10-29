@@ -130,7 +130,7 @@ jobs:
           python3 - >> "$GITHUB_OUTPUT" <<'PY'
           import json, os
           from pathlib import Path
-          include, rows_id, waits = [], [], []
+          include, rows_id, waits, nomount = [], [], [], set()
           for path in sorted(Path("snapshots").glob("*.json")):
               snap = json.loads(path.read_text())
               root = snap["root"]
@@ -139,8 +139,12 @@ jobs:
                   waits.append((name, snap["wait"]))
                   continue
               for ack in snap["ack"]:
+                  # Every build fetches the same NoMount module; only the first build of each NoMount version
+                  # uploads it, so the run shows it once (owner 2026-10-29: run 40853374637 listed it twice).
+                  first = snap["nomount"]["tag"] not in nomount
+                  nomount.add(snap["nomount"]["tag"])
                   include.append({"root": root, "name": f"{name} 6.1.{ack['sublevel']}", "tag": ack["tag"],
-                                  "commit": ack["commit"], "sublevel": str(ack["sublevel"])})
+                                  "commit": ack["commit"], "sublevel": str(ack["sublevel"]), "nomount": "1" if first else ""})
               src = snap["root_source"]
               ref = src.get("tag") or src.get("branch")
               version = f" ({src['ksu_version']})" if src.get("ksu_version") else ""
@@ -300,7 +304,7 @@ jobs:
           archive: false
           retention-days: 90
       - name: Upload 4 - NoMount module
-        if: success() && hashFiles('out/4-NOMOUNT-MODULE_*') != ''
+        if: success() && matrix.nomount == '1' && hashFiles('out/4-NOMOUNT-MODULE_*') != ''
         uses: actions/upload-artifact@v7.0.1
         with:
           path: out/4-NOMOUNT-MODULE_*.zip
