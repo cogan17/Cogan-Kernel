@@ -58,6 +58,7 @@ Cogan Smart Kernel menjaga HP tetap adem dan mencatat suhunya. Panduan ini menje
 - **Izin berbahaya**: baca SMS (kode OTP), aksesibilitas (bisa membaca dan menekan layar), admin perangkat (sulit dihapus), baca notifikasi, tampil di atas aplikasi lain, ikon disembunyikan.
 - **👁️ Gerak-gerik**: kapan terakhir aplikasi memakai kamera, mikrofon, lokasi, SMS, kontak, telepon atau clipboard, pemakaian internet 7 hari dan baterai sejak cas penuh.
 - **⚠️ Perlu dicek / Semua / 💤 Jarang dipakai**: pilih daftar yang ditampilkan. Jarang dipakai artinya tidak dibuka 7 hari atau lebih.
+- **🔍 Cari** (di atas daftar): ketik nama aplikasi atau nama paket. Pencarian mencakup semua aplikasi, apa pun daftar yang dipilih.
 - **🛡️ Percaya**: aplikasi tidak ditandai lagi dan tidak bisa terhapus tanpa sengaja.
 - **🗑 Hapus sampai akar**: melepas admin perangkat, menghentikan dan menghapus aplikasi dari semua pengguna (termasuk Aplikasi Ganda dan Ruang Kedua), lalu menghapus sisa data dan file APK yang sama di penyimpanan. Tidak bisa dibatalkan. Aplikasi sistem dan root manager tidak bisa dihapus dari sini.
 - **🛡️ Blokir APK dari chat & sosmed**: bawaan aktif. Aplikasi chat, sosmed, email dan SMS (WhatsApp, Telegram, Signal, Instagram, Facebook, Threads, TikTok, X, Gmail, Outlook, Pesan dan lainnya) tidak bisa memasang aplikasi. Bila izinnya dinyalakan lagi di Pengaturan, modul mencabutnya dalam beberapa detik dan memberi notifikasi. Browser dan file manager tetap bisa.
