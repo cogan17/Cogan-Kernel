@@ -1,5 +1,21 @@
 # Cogan Smart Kernel
 
+## Pengendali dan pencatat tetap hidup setelah root manager ditutup / Controller and recorder survive a closed root manager — v2.11.2 (paket uji / test build)
+
+Indonesia:
+
+- Laporan owner 29 Okt: Mulai di Kontrol Daya dan Kontrol Suhu kembali menjadi "berhenti" setelah keluar dari root manager lalu membukanya lagi. PID dan lock masih tertinggal, sedangkan prosesnya tidak terbaca lagi.
+- Penyebab: pekerja yang dimulai dari WebUI berada di cgroup aplikasi root manager (`uid_N/pid_M`). Saat proses aplikasi itu mati, Android menulis `cgroup.kill` dan mematikan semua proses di cgroup tersebut, termasuk pekerja root (AOSP libprocessgroup `sendSignalToProcessGroup`). `setsid`/`nohup` tidak memindahkan cgroup. SIGKILL juga tidak menjalankan trap, jadi PID dan lock tertinggal.
+- Perbaikan: pengendali dan pencatat memindahkan dirinya ke cgroup root saat mulai, hanya bila ia berada di cgroup aplikasi. Pekerja yang dijalankan saat boot tidak diubah. Setelan, kebijakan CPU/RAM/suhu/cas dan data tidak berubah.
+- Terukur lokal: tes lolos. Belum diuji di HP. Setelah pasang, cukup tekan Mulai sekali; reboot hanya untuk memasang ZIP.
+
+English:
+
+- Owner report 29 Oct: Start in Power and Temperature controls turned back to "stopped" after leaving the root manager and opening it again; the PID and lock stayed behind while the process was gone.
+- Cause: workers started from the WebUI live in the root manager app's cgroup (`uid_N/pid_M`). When that app process dies, Android writes `cgroup.kill` and kills every process in it, root workers included (AOSP libprocessgroup `sendSignalToProcessGroup`). `setsid`/`nohup` do not leave a cgroup, and SIGKILL skips the exit trap, so the PID and lock stayed.
+- Fix: the controller and the recorder move themselves to the root cgroup when they start, only when they are in an app cgroup. Workers started at boot are untouched. Settings, CPU/RAM/temperature/charging policy and data are unchanged.
+- Measured locally: tests pass. Not phone-tested yet. After installing, press Start once; the reboot is only for installing the ZIP.
+
 ## Manager hanya memantau, keluar sekali usap / Manager only watches, one back gesture to leave — v2.11.1 (paket uji / test build)
 
 Indonesia:

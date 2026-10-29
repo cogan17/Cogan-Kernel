@@ -134,6 +134,20 @@ class CompanionTests(unittest.TestCase):
         self.assertTrue(any(x['result'] == 'applied' for x in s['controls']))
         self.assertEqual((self.p.data/'run/apply.request').read_text(), (self.p.data/'run/applied.request').read_text())
 
+    def test_workers_leave_the_root_manager_app_cgroup(self):
+        # Started from the WebUI, a worker sits in the app's cgroup, which Android kills with cgroup.kill when the
+        # app process dies (owner 2026-10-29: Start turned back to stopped). Boot workers stay where they are.
+        cg, proc = self.base / 'cgroup', self.base / 'cgproc'
+        cg.mkdir()
+        script = (f'. {MODULE}/bridge.sh; mkdir -p {proc}/$$; printf "%s\\n" "$1" > {proc}/$$/cgroup; '
+                  f'CB_CG_PROC={proc} CB_CGROUP={cg} leave_app_cgroup; echo $$')
+        for line, moved in [('0::/uid_10234/pid_5678', True), ('0::/', False), ('0::/system', False)]:
+            (cg / 'cgroup.procs').write_text('')
+            r = subprocess.run(['sh', '-c', script, 'sh', line], capture_output=True, text=True, timeout=10)
+            self.assertEqual((cg / 'cgroup.procs').read_text().strip(), r.stdout.strip() if moved else '', line)
+        for worker in ('power/controller.sh', 'thermal/sampler.sh'):
+            self.assertIn('. "$MODDIR/common.sh"\nleave_app_cgroup\n', (MODULE / worker).read_text(), worker)
+
     def test_cooling_state_and_peer_detection(self):
         root = self.p.sys / 'class/thermal/cooling_device0'
         for k,v in {'type':'cpu-cooling', 'cur_state':'2', 'max_state':'8'}.items(): write(root/k,v+'\n')

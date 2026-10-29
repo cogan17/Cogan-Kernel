@@ -2,6 +2,14 @@
 
 **CHECKPOINT owner 29 Okt ±11.15 WIB: semua pekerjaan dihentikan.** Sesi berikutnya baca `CLAUDE.md`, file ini dan `CHECKPOINT.md`, lalu lanjut **hanya setelah owner meminta**. Jangan otomatis menguji HP, menjalankan build atau menerbitkan rilis.
 
+## Bug Mulai berhenti → v2.11.2 (owner 29 Okt ±11.26 WIB, rilis DITAHAN)
+
+- **Laporan owner** (screenshot Manager v2.11.1 dan berkas investigasi read-only): Mulai di Kontrol Daya/Suhu kembali "berhenti" setelah keluar dari root manager lalu masuk lagi. Di HP terbaca AUTOSTART=1, power `run/pid` dan `daemon.lock/pid` = 26305, thermal = 27125, tanpa flag disable/remove. Cmdline kedua PID tidak tercetak. Owner: **"Untuk rilis tahan dulu!"**
+- **Penyebab (dari kode, belum dibuktikan di HP):** pekerja yang dimulai dari WebUI (`start_controller`/`start_sampler` lewat `setsid`/`nohup`) tetap berada di cgroup v2 aplikasi root manager (`uid_N/pid_M`). Saat proses aplikasi mati, system_server menulis `cgroup.kill` (AOSP `libprocessgroup/processgroup.cpp` `sendSignalToProcessGroup`, dicek 29 Okt) sehingga semua proses di cgroup itu mati, termasuk proses root. SIGKILL melewati trap EXIT, jadi PID dan lock tertinggal, sesuai bukti owner. Pekerja dari `service.sh` saat boot tidak terkena.
+- **Perbaikan v2.11.2 (versionCode 30):** `bridge.sh leave_app_cgroup` memindahkan pekerja ke `/sys/fs/cgroup/cgroup.procs`, hanya bila `/proc/$$/cgroup` berisi `::/uid_`. Dipanggil di awal `power/controller.sh` dan `thermal/sampler.sh`. Tes baru ada di `test_cogan_smart_bridge`. [Paket uji](modules/cogan-smart/rilis/v2.11.2/Cogan-Smart-Kernel-v2.11.2.zip) 164759 byte, SHA256 `559d113d1e56e4b6ad48d601d567923897e8ba064839ba564abaa0d403ebc10b` (dua kali dikemas, sama). Belum diuji di HP.
+- **Bukti di HP setelah pasang (read-only):** `su -c 'for f in /data/adb/cogan_smart/power/run/pid /data/adb/cogan_smart/thermal/run/sampler.pid; do p=$(cat $f); echo $f $p; cat /proc/$p/cgroup | grep "^0::"; done'` harus menampilkan `0::/`, bukan `0::/uid_…`. Lalu tutup root manager, buka lagi, dan status harus tetap aktif.
+- **Dampak ke PR #80 (v2.12.0):** merge `main` ke branch itu, naikkan versionCode v2.12.0 menjadi 31, dan tambahkan `leave_app_cgroup` di awal `apps/block.sh` (blokir yang dinyalakan dari WebUI punya bug yang sama).
+
 ## Sedang berjalan
 
 - **[PR #80](https://github.com/cogan17/Cogan-Kernel/pull/80) terbuka**, branch `feat/cogan-smart-tab-aplikasi`: Cogan Smart **v2.12.0** (versionCode 30), tab baru 📱 Aplikasi (pantau gerak-gerik, hapus sampai akar, blokir APK). Rincian lengkap ada di bagian v2.12.0 `checkpoint.md` di branch itu.

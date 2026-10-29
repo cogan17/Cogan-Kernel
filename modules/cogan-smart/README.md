@@ -2,7 +2,7 @@
 
 **Versi paket terbaru: v2.9.1** (`versionCode` 18): modul lebih hemat CPU, satu angka Badan HP dari HyperOS, lonjakan suhu, nama aplikasi asli, batas CPU di log, dan penyaringan sensor macet. Dampak optimisasi terakhir pada HP belum diukur. Catatan perubahan lengkap ada di [`CHANGELOG.md`](CHANGELOG.md); status publikasi ada di [Releases](https://github.com/cogan17/Cogan-Kernel/releases).
 
-**Versi pengembangan: v2.11.1** (versionCode 29): Manager memantau semua tab (📊 Ringkasan; mode diganti di tab Daya, modul dipindai di tab Modul), teks ringkas dengan saklar Mode Dev, 📖 Panduan di modul, dan sekali usap kembali untuk keluar dari WebUI. Belum diuji pada HP. Hook ZRAM v2.10.8 sudah terbukti di HP. Rilis v2.9.1 tetap tersedia.
+**Versi pengembangan: v2.11.2** (versionCode 30): perbaikan Mulai di Kontrol Daya/Suhu yang kembali berhenti setelah root manager ditutup (pekerja keluar dari cgroup aplikasi). Belum diuji pada HP. v2.11.1 dan hook ZRAM v2.10.8 sudah terbukti di HP. Rilis v2.9.1 tetap tersedia.
 
 📖 **Panduan pemakaian:** [PANDUAN.md](PANDUAN.md) · [English](PANDUAN.en.md)
 
@@ -10,6 +10,7 @@
 
 | Versi | versionCode | ZIP siap pasang | Catatan | Salinan di repo | SHA256 ZIP |
 |---|---|---|---|---|---|
+| **v2.11.2** (paket uji pekerja tetap hidup setelah root manager ditutup) | 30 | [Paket pembaruan](rilis/v2.11.2/Cogan-Smart-Kernel-v2.11.2.zip) | [What's New](rilis/v2.11.2/Cogan-Smart-v2.11.2-Whats-New-and-Fixes.txt) | [rilis/v2.11.2](rilis/v2.11.2) | `559d113d1e56e4b6ad48d601d567923897e8ba064839ba564abaa0d403ebc10b` |
 | **v2.11.1** (paket uji Manager hanya memantau, keluar sekali usap) | 29 | [Paket pembaruan](rilis/v2.11.1/Cogan-Smart-Kernel-v2.11.1.zip) | [What's New](rilis/v2.11.1/Cogan-Smart-v2.11.1-Whats-New-and-Fixes.txt) | [rilis/v2.11.1](rilis/v2.11.1) | `8961d4c5d23c0f02a1a326b9f86ff87b524a7e8b40bdc38a1fd71b54d54d3175` |
 | **v2.11.0** (paket uji Manager pusat kendali, Mode Dev, panduan) | 28 | [Paket pembaruan](rilis/v2.11.0/Cogan-Smart-Kernel-v2.11.0.zip) | [What's New](rilis/v2.11.0/Cogan-Smart-v2.11.0-Whats-New-and-Fixes.txt) | [rilis/v2.11.0](rilis/v2.11.0) | `e39523e0fa0d8a311956ac3c111979dcd844cfb91d3e553ddc6a17175e13443c` |
 | **v2.10.8** (paket uji hook ZRAM sebelum system_perf_init) | 27 | [Paket pembaruan](rilis/v2.10.8/Cogan-Smart-Kernel-v2.10.8.zip) | [What's New](rilis/v2.10.8/Cogan-Smart-v2.10.8-Whats-New-and-Fixes.txt) | [rilis/v2.10.8](rilis/v2.10.8) | `552fb6fecb65d60373289601d4ad0ae32d4be775a5fc76354e6ca47f495afbd8` |
