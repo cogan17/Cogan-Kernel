@@ -16,6 +16,7 @@
 
 MODDIR=${0%/*}; [ "$MODDIR" = "$0" ] && MODDIR=.   # started as "sh controller.sh"
 . "$MODDIR/common.sh"
+leave_app_cgroup
 
 # state VAR NAME DEFAULT: a value kept in $CP_RUN between checks into VAR (DEFAULT when missing).
 # Shell builtins only: the controller runs every 10 seconds, and each process it starts costs CPU.

@@ -9,6 +9,7 @@ Indonesia:
 - **🗑 Hapus sampai akar:** admin perangkat dilepas, aplikasi dihentikan dan dihapus dari semua pengguna (termasuk Aplikasi Ganda dan Ruang Kedua), sisa folder dan salinan APK yang sama di penyimpanan (mis. folder WhatsApp) ikut dihapus. Root manager dan aplikasi di whitelist dilindungi. Tombol nonaktifkan tidak ada.
 - **🛡️ Blokir APK dari chat & sosmed** (bawaan aktif): aplikasi chat, sosmed, email dan SMS (WhatsApp, Telegram, Signal, Instagram, Facebook, Threads, TikTok, X, Gmail, Outlook, Pesan dan lainnya) tidak bisa memasang aplikasi; izin yang dinyalakan lagi dicabut dalam beberapa detik dengan notifikasi. Browser dan file manager tetap bisa.
 - Navigasi menjadi 5 tab. Panduan (WebUI, PANDUAN.md, PANDUAN.en.md) ditambah bagian Aplikasi dan tanya jawab APK penipuan.
+- Termasuk perbaikan v2.11.2; proses blokir APK juga keluar dari cgroup aplikasi saat dinyalakan dari WebUI. versionCode 31.
 - v2.11.1 lolos uji owner di HP (29 Okt). v2.12.0 belum diuji di HP.
 
 English:
@@ -18,7 +19,24 @@ English:
 - **🗑 Remove completely:** releases the device admin, stops and removes the app for every user (Dual apps and Second space too), and deletes leftover folders and identical APK copies in storage (e.g. the WhatsApp folder). Root manager apps and whitelisted apps are protected. There is no disable button.
 - **🛡️ Block APKs from chat & social apps** (on by default): chat, social, email and SMS apps (WhatsApp, Telegram, Signal, Instagram, Facebook, Threads, TikTok, X, Gmail, Outlook, Messages and more) cannot install apps; a right turned on again is taken back within seconds, with a notification. Browsers and file managers still can.
 - Navigation has 5 tabs. The guide (WebUI, PANDUAN.md, PANDUAN.en.md) gains an Apps section and a scam APK FAQ.
+- Includes the v2.11.2 fix; the APK block loop also leaves the app cgroup when switched on from the WebUI. versionCode 31.
 - v2.11.1 passed the owner's phone test (29 Oct). v2.12.0 has not been phone-tested.
+
+## Pengendali dan pencatat tetap hidup setelah root manager ditutup / Controller and recorder survive a closed root manager — v2.11.2 (paket uji / test build)
+
+Indonesia:
+
+- Laporan owner 29 Okt: Mulai di Kontrol Daya dan Kontrol Suhu kembali menjadi "berhenti" setelah keluar dari root manager lalu membukanya lagi. PID dan lock masih tertinggal, sedangkan prosesnya tidak terbaca lagi.
+- Penyebab: pekerja yang dimulai dari WebUI berada di cgroup aplikasi root manager (`uid_N/pid_M`). Saat proses aplikasi itu mati, Android menulis `cgroup.kill` dan mematikan semua proses di cgroup tersebut, termasuk pekerja root (AOSP libprocessgroup `sendSignalToProcessGroup`). `setsid`/`nohup` tidak memindahkan cgroup. SIGKILL juga tidak menjalankan trap, jadi PID dan lock tertinggal.
+- Perbaikan: pengendali dan pencatat memindahkan dirinya ke cgroup root saat mulai, hanya bila ia berada di cgroup aplikasi. Pekerja yang dijalankan saat boot tidak diubah. Setelan, kebijakan CPU/RAM/suhu/cas dan data tidak berubah.
+- Terukur lokal: tes lolos. Belum diuji di HP. Setelah pasang, cukup tekan Mulai sekali; reboot hanya untuk memasang ZIP.
+
+English:
+
+- Owner report 29 Oct: Start in Power and Temperature controls turned back to "stopped" after leaving the root manager and opening it again; the PID and lock stayed behind while the process was gone.
+- Cause: workers started from the WebUI live in the root manager app's cgroup (`uid_N/pid_M`). When that app process dies, Android writes `cgroup.kill` and kills every process in it, root workers included (AOSP libprocessgroup `sendSignalToProcessGroup`). `setsid`/`nohup` do not leave a cgroup, and SIGKILL skips the exit trap, so the PID and lock stayed.
+- Fix: the controller and the recorder move themselves to the root cgroup when they start, only when they are in an app cgroup. Workers started at boot are untouched. Settings, CPU/RAM/temperature/charging policy and data are unchanged.
+- Measured locally: tests pass. Not phone-tested yet. After installing, press Start once; the reboot is only for installing the ZIP.
 
 ## Manager hanya memantau, keluar sekali usap / Manager only watches, one back gesture to leave — v2.11.1 (paket uji / test build)
 

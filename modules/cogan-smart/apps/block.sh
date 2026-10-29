@@ -3,6 +3,7 @@
 # One appops query every 5 seconds; the loop ends when the block is switched off.
 MODDIR=${0%/*}; [ "$MODDIR" = "$0" ] && MODDIR=.
 . "$MODDIR/common.sh"
+leave_app_cgroup
 mkdir -p "$CA_RUN" && echo $$ > "$CA_RUN/block.pid"
 while :; do
   load_config

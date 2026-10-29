@@ -131,6 +131,16 @@ cooling_json() {
     END { printf "]" }'
 }
 
+# A worker started from the root manager's WebUI inherits the app's cgroup (0::/uid_N/pid_M). When that app process
+# dies, Android SIGKILLs the whole cgroup through cgroup.kill (libprocessgroup sendSignalToProcessGroup), root
+# workers included: the owner's Start turned back to stopped (2026-10-29). setsid/nohup do not leave a cgroup, so a
+# worker moves itself to the root cgroup. Workers started at boot (service.sh, not an app) are left where they are.
+leave_app_cgroup() {
+  case "$(cat "${CB_CG_PROC:-/proc}/$$/cgroup" 2>/dev/null)" in
+    *::/uid_[0-9]*) echo $$ > "${CB_CGROUP:-/sys/fs/cgroup}/cgroup.procs" 2>/dev/null ;;
+  esac
+}
+
 safe_pid() { # PID_FILE SCRIPT_PATH: check the full script path, not a generic name.
   read_into cb_pid "$1"
   uint "$cb_pid" && [ "$cb_pid" -gt 1 ] || return 1
