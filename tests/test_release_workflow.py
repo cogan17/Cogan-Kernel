@@ -38,7 +38,7 @@ class ReleaseWorkflowTests(unittest.TestCase):
         (build / "build.env").write_text("ROOT_NAME=KernelSU Next\nLINUX_VERSION=6.1.176\n")
         (self.root / "files/1-KERNEL_fixture.zip").write_text("kernel fixture")
         (self.root / "notes.md").write_text("notes fixture\n")
-        for name in ("release_notes.py", "release_from_run.py", "telegram.py"):
+        for name in ("release_notes.py", "release_from_run.py", "telegram.py", "upstream.py"):
             shutil.copyfile(WORKFLOW.parents[2] / "kernel" / name, self.root / "kernel" / name)
         (self.root / "releases.json").write_text("[]")
         (self.root / "compare.json").write_text('{"commits": []}')
@@ -188,8 +188,8 @@ fi
             self.assertIn("BakaSU & KernelSU Next + SUSFS v2.3.0", post)
             self.assertEqual(post.count("perbaikan ZIP ARM64" if lang == "id" else "Fix the ARM64 ZIP package"), 1)
             self.assertEqual(post.count("android14-6.1-2026-09_r4 → android14-6.1-2026-09_r5"), 1)
-            self.assertIn("KernelSU Next `cccccccccccc` → `aaaaaaaaaaaa`", post)
-            self.assertIn("BakaSU `cccccccccccc` → `bbbbbbbbbbbb`", post)
+            self.assertNotIn("`cccccccccccc`", post)  # no hashes for end users (owner 2026-10-31)
+            self.assertIn("BakaSU" if lang == "en" else "BakaSU diperbarui", post)
             if lang == "en":
                 self.assertNotIn("perbaikan ZIP ARM64", post)
                 self.assertIn("Tested on my device.", post)

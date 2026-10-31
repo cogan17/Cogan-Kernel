@@ -15,8 +15,17 @@ import json
 import re
 import subprocess
 import sys
+import urllib.parse
+import urllib.request
 from pathlib import Path
 
+if __package__:  # imported as kernel.telegram
+    from . import upstream as up
+else:            # run as kernel/telegram.py (Builder summary)
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import upstream as up  # noqa: E402
+
+SUSFS_REPO = "https://gitlab.com/simonpunk/susfs4ksu"
 RELEASE_TAG = re.compile(r"^v\d{2}\.\d{2}\.\d{2}-r\d+$")  # this repository's kernels (not arsip-, cogan-smart-)
 # Reviewed translations of historical subjects. New commits can supply Release-Fix-ID/EN trailers.
 FIX_EN = {
@@ -33,24 +42,24 @@ WORDS = {
     "id": {"new": "✨ Baru", "fixes": "🔧 Perbaikan", "note": "📝 Catatan", "features": "🧩 Fitur",
            "same": "Komponen sama dengan {prev}", "first": "Rilis pertama varian ini",
            "baseline": "Dibandingkan dengan {prev}", "unknown": "Riwayat rilis belum dapat dibaca; perubahan belum dapat dibandingkan",
-           "no_fixes": "Tidak ada commit perbaikan kernel tambahan yang tercatat pada rentang ini",
+           "no_fixes": "Tidak ada perbaikan baru",
            "first_fixes": "Belum ada rilis pembanding untuk varian ini",
            "unknown_fixes": "Daftar commit perbaikan belum dapat dibaca",
            "untranslated_fix": "Perbaikan kernel tercatat dalam riwayat sumber",
-           "kernel": "Kernel ACK {old} → {new}", "root": "{name} `{old}` → `{new}`", "susfs": "SUSFS {old} → {new}",
-           "ack": "Rilis ACK {old} → {new}", "unicode": "Unicode fix WildKernel `{old}` → `{new}`",
+           "kernel": "Kernel ACK {old} → {new}", "susfs": "SUSFS {version} diperbarui",
+           "ack": "Rilis ACK {old} → {new}", "unicode": "Unicode fix WildKernel diperbarui",
            "neutron": "Neutron clang {old} → {new}",
            "nomount": "NoMount {old} → {new}", "added": "Fitur baru: {names}", "removed": "Fitur dilepas: {names}",
            "tested": "✅ Diuji di HP", "untested": "⚠️ Belum diuji di HP", "download": "⬇️ Unduh"},
     "en": {"new": "✨ New", "fixes": "🔧 Fixes", "note": "📝 Note", "features": "🧩 Features",
            "same": "Same components as {prev}", "first": "First release of this variant",
            "baseline": "Compared with {prev}", "unknown": "Release history could not be read; changes could not be compared",
-           "no_fixes": "No additional kernel fix commits recorded in this range",
+           "no_fixes": "No new fixes",
            "first_fixes": "No earlier release of this variant to compare with",
            "unknown_fixes": "The fix commit list could not be read",
            "untranslated_fix": "Kernel fix recorded in the source history; English description not supplied",
-           "kernel": "ACK kernel {old} → {new}", "root": "{name} `{old}` → `{new}`", "susfs": "SUSFS {old} → {new}",
-           "ack": "ACK release {old} → {new}", "unicode": "WildKernel Unicode fix `{old}` → `{new}`",
+           "kernel": "ACK kernel {old} → {new}", "susfs": "SUSFS {version} updated",
+           "ack": "ACK release {old} → {new}", "unicode": "WildKernel Unicode fix updated",
            "neutron": "Neutron clang {old} → {new}",
            "nomount": "NoMount {old} → {new}", "added": "New features: {names}", "removed": "Features dropped: {names}",
            "tested": "✅ Tested on the phone", "untested": "⚠️ Not tested on the phone yet", "download": "⬇️ Download"},
@@ -120,7 +129,22 @@ def fixes(commits, lang="id"):
     return found
 
 
-def whats_new(env, prev, lang, history_available=True):
+def upstream_lines(env, prev, lang, upstream=None):
+    """[(What's new line, fix line or None)] of the root manager and SUSFS when their commit changed, in plain
+    words without hashes (owner 2026-10-31). upstream: {"root"/"susfs": new commit titles, None = unreadable}."""
+    found, upstream = [], upstream or {}
+    if prev and prev.get("root") and not env.get("ROOT_COMMIT", "").startswith(prev["root"][1]):
+        # KernelSU Next: the kernel comes from the fork, its manager from KernelSU Next's own CI.
+        found.append(up.describe(env.get("ROOT_NAME", ""), upstream.get("root"), lang,
+                                 kernel_only=env.get("ROOT_NAME") == "KernelSU Next"))
+    if prev and prev.get("susfs") and not env.get("SUSFS_COMMIT", "").startswith(prev["susfs"][1]):
+        old, new = prev["susfs"][0], env.get("SUSFS_VERSION", "")
+        head = f"SUSFS {old} → {new}" if old != new else WORDS[lang]["susfs"].format(version=new)
+        found.append(up.describe("SUSFS", upstream.get("susfs"), lang, head=head))
+    return found
+
+
+def whats_new(env, prev, lang, history_available=True, upstream=None):
     w = WORDS[lang]
     if not history_available:
         return [w["unknown"]]
@@ -131,15 +155,11 @@ def whats_new(env, prev, lang, history_available=True):
         items.append(w["kernel"].format(old=prev["kernel"], new=env.get("LINUX_VERSION")))
     if prev.get("ack") and env.get("ACK_TAG") and prev["ack"] != env["ACK_TAG"]:
         items.append(w["ack"].format(old=prev["ack"], new=env["ACK_TAG"]))
-    if prev.get("root") and not env.get("ROOT_COMMIT", "").startswith(prev["root"][1]):
-        items.append(w["root"].format(name=env.get("ROOT_NAME"), old=prev["root"][1][:12], new=env.get("ROOT_COMMIT", "")[:12]))
-    if prev.get("susfs") and not env.get("SUSFS_COMMIT", "").startswith(prev["susfs"][1]):
-        items.append(w["susfs"].format(old=f"{prev['susfs'][0]} `{prev['susfs'][1][:12]}`",
-                                       new=f"{env.get('SUSFS_VERSION')} `{env.get('SUSFS_COMMIT', '')[:12]}`"))
+    items += [line for line, _ in upstream_lines(env, prev, lang, upstream)]
     if prev.get("nomount") and prev["nomount"] != env.get("NOMOUNT"):
         items.append(w["nomount"].format(old=prev["nomount"], new=env.get("NOMOUNT")))
     if prev.get("unicode") and env.get("UNICODE_FIX", "-") != "-" and not env["UNICODE_FIX"].startswith(prev["unicode"]):
-        items.append(w["unicode"].format(old=prev["unicode"], new=env["UNICODE_FIX"][:12]))
+        items.append(w["unicode"])
     if prev.get("neutron") and env.get("NEUTRON") and prev["neutron"] != env["NEUTRON"]:
         items.append(w["neutron"].format(old=prev["neutron"], new=env["NEUTRON"]))
     old, new = feature_names(prev.get("features", "")), feature_names(env.get("FEATURES", ""))
@@ -150,7 +170,15 @@ def whats_new(env, prev, lang, history_available=True):
     return items or [w["same"].format(prev=prev["tag"])]
 
 
-def fix_items(lang, prev, fix_titles, history_available=True, fixes_available=True):
+def fix_items(lang, prev, fix_titles, history_available=True, fixes_available=True, upstream_fixes=()):
+    """This repository's kernel fixes, then what the root manager and SUSFS developers fixed."""
+    items = own_fixes(lang, prev, fix_titles, history_available, fixes_available)
+    if upstream_fixes and items == [WORDS[lang]["no_fixes"]]:
+        items = []
+    return items + list(upstream_fixes)
+
+
+def own_fixes(lang, prev, fix_titles, history_available=True, fixes_available=True):
     if isinstance(fix_titles, dict):
         if fix_titles.get(lang):
             return list(fix_titles[lang])
@@ -162,7 +190,12 @@ def fix_items(lang, prev, fix_titles, history_available=True, fixes_available=Tr
     return [WORDS[lang][key]]
 
 
-def changelog_section(env, repo, prev=None, fix_titles=(), history_available=True, fixes_available=True, source_sha=""):
+def upstream_fixes(env, prev, lang, upstream=None):
+    return [fix for _, fix in upstream_lines(env, prev, lang, upstream) if fix]
+
+
+def changelog_section(env, repo, prev=None, fix_titles=(), history_available=True, fixes_available=True, source_sha="",
+                      upstream=None):
     """The same measured changes as the Telegram post, included in the published release notes."""
     lines = ["### What's New & Fixes", ""]
     for lang in ("id", "en"):
@@ -171,23 +204,25 @@ def changelog_section(env, repo, prev=None, fix_titles=(), history_available=Tru
         if prev:
             link = f"[{prev['tag']}](https://github.com/{repo}/releases/tag/{prev['tag']})"
             lines += [w["baseline"].format(prev=link), ""]
-        lines += [f"**{w['new']}**", *[f"- {item}" for item in whats_new(env, prev, lang, history_available)], "",
-                  f"**{w['fixes']}**", *[f"- {item}" for item in fix_items(lang, prev, fix_titles, history_available, fixes_available)], ""]
+        lines += [f"**{w['new']}**", *[f"- {item}" for item in whats_new(env, prev, lang, history_available, upstream)], "",
+                  f"**{w['fixes']}**", *[f"- {item}" for item in fix_items(lang, prev, fix_titles, history_available,
+                                                                          fixes_available, upstream_fixes(env, prev, lang, upstream))], ""]
     if re.fullmatch(r"[0-9a-f]{40}", source_sha):
         lines += [f"<!-- cogan-build-sha: {source_sha} -->", ""]
     return "\n".join(lines)
 
 
 def post(env, lang, prev=None, fix_titles=(), link="", tested=False, note="", history_available=True,
-         fixes_available=True, source_sha="", note_en=""):
+         fixes_available=True, source_sha="", note_en="", upstream=None):
     w = WORDS[lang]
     lines = ["🧠 Cogan Kernel · Xiaomi 14T Pro (rothko)",
              f"📦 {env.get('RELEASE', '')} · ACK {env.get('LINUX_VERSION', '')} · {env.get('ROOT_NAME', '')} + SUSFS "
              f"{env.get('SUSFS_VERSION', '')}"]
     if prev:
         lines += ["", "📌 " + w["baseline"].format(prev=prev["tag"])]
-    lines += ["", w["new"], *[f"• {item}" for item in whats_new(env, prev, lang, history_available)],
-              "", w["fixes"], *[f"• {title}" for title in fix_items(lang, prev, fix_titles, history_available, fixes_available)]]
+    lines += ["", w["new"], *[f"• {item}" for item in whats_new(env, prev, lang, history_available, upstream)],
+              "", w["fixes"], *[f"• {title}" for title in fix_items(lang, prev, fix_titles, history_available, fixes_available,
+                                                                     upstream_fixes(env, prev, lang, upstream))]]
     localized_note = note if lang == "id" else note_en
     if localized_note.strip():
         lines += ["", w["note"], *localized_note.replace("\\n", "\n").strip().splitlines()]
@@ -227,11 +262,13 @@ def release_post(builds, lang, link="", tested=False, note="", note_en=""):
     if prevs:
         same = len(prevs) == len(builds) and len({tag for _, tag in prevs}) == 1
         lines += ["", "📌 " + w["baseline"].format(prev=prevs[0][1] if same else ", ".join(f"{tag} ({label})" for label, tag in prevs))]
-    new = merged([(label, whats_new(env, measured.get("prev"), lang, measured.get("history_available", True)))
+    new = merged([(label, whats_new(env, measured.get("prev"), lang, measured.get("history_available", True),
+                                    measured.get("upstream")))
                   for label, (env, measured) in zip(labels, builds)])
     fixed = merged([(label, fix_items(lang, measured.get("prev"), measured.get("fix_titles", ()),
-                                      measured.get("history_available", True), measured.get("fixes_available", True)))
-                    for label, (_, measured) in zip(labels, builds)])
+                                      measured.get("history_available", True), measured.get("fixes_available", True),
+                                      upstream_fixes(env, measured.get("prev"), lang, measured.get("upstream"))))
+                    for label, (env, measured) in zip(labels, builds)])
     lines += ["", w["new"], *[f"• {item}" for item in new], "", w["fixes"], *[f"• {item}" for item in fixed]]
     localized_note = note if lang == "id" else note_en
     if localized_note.strip():
@@ -266,11 +303,43 @@ def summary_section(posts):
 
 
 def gh(path):
+    if path.startswith("gitlab:"):  # SUSFS lives on GitLab; its API needs no token for a public project
+        try:
+            with urllib.request.urlopen("https://gitlab.com/api/v4/" + path[len("gitlab:"):], timeout=60) as reply:
+                return json.load(reply)
+        except (OSError, ValueError):
+            return None
     try:
         result = subprocess.run(["gh", "api", path], capture_output=True, text=True, timeout=120)
         return json.loads(result.stdout) if result.returncode == 0 and result.stdout.strip() else None
     except (OSError, subprocess.TimeoutExpired, json.JSONDecodeError):
         return None
+
+
+def new_titles(api, repo_url, old, new):
+    """Titles of the commits new has and old has not, also after a force-push (the KernelSU Next fork
+    rebases), or None when the comparison cannot be read."""
+    github = re.fullmatch(r"https://github\.com/([^/]+/[^/]+?)(?:\.git)?/?", repo_url or "")
+    gitlab = re.fullmatch(r"https://gitlab\.com/(.+?)(?:\.git)?/?", repo_url or "")
+
+    def titles(base, head):
+        if github:
+            data = api(f"repos/{github[1]}/compare/{base}...{head}")
+            commits = data.get("commits") if isinstance(data, dict) else None
+            if isinstance(commits, list):
+                return [(c.get("commit") or {}).get("message", "").split("\n")[0] for c in commits]
+        elif gitlab:
+            data = api(f"gitlab:projects/{urllib.parse.quote(gitlab[1], safe='')}/repository/compare?from={base}&to={head}")
+            commits = data.get("commits") if isinstance(data, dict) else None
+            if isinstance(commits, list):
+                return [c.get("title", "") for c in commits]
+        return None
+
+    ahead = titles(old, new)
+    behind = titles(new, old) if ahead else []
+    if ahead is None or behind is None:
+        return None
+    return [title for title in ahead if title not in set(behind)]
 
 
 def changes(env, repo, sha="", api=gh):
@@ -284,8 +353,13 @@ def changes(env, repo, sha="", api=gh):
         if isinstance(comparison, dict) and isinstance(comparison.get("commits"), list) and comparison.get("status") != "behind":
             titles = {lang: fixes(comparison["commits"], lang) for lang in ("id", "en")}
             compared = True
+    upstream = {}
+    if prev and prev.get("root") and not env.get("ROOT_COMMIT", "").startswith(prev["root"][1]):
+        upstream["root"] = new_titles(api, env.get("ROOT_REPO", ""), prev["root"][1], env.get("ROOT_COMMIT", ""))
+    if prev and prev.get("susfs") and not env.get("SUSFS_COMMIT", "").startswith(prev["susfs"][1]):
+        upstream["susfs"] = new_titles(api, SUSFS_REPO, prev["susfs"][1], env.get("SUSFS_COMMIT", ""))
     return {"prev": prev, "fix_titles": titles, "history_available": available,
-            "fixes_available": compared or (available and prev is None), "source_sha": sha}
+            "fixes_available": compared or (available and prev is None), "source_sha": sha, "upstream": upstream}
 
 
 def main(argv=None, api=gh):
