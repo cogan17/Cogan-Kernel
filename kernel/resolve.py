@@ -14,7 +14,7 @@ always runs and fails closed.
 --unicode (the Unicode fix box, off by default) also takes the newest commit of WildKernel's
 kernel_patches for its unicode bypass fix; without it nothing of WildKernel is read.
 
-Usage: resolve.py --root KSUN|BSU [--sublevel lts|N|N,M|semua] [--unicode] --out FILE.json
+Usage: resolve.py --root KSUN|BSU [--sublevel lts|N|N,M|semua|""] [--unicode] --out FILE.json
 """
 import argparse
 import base64
@@ -123,8 +123,9 @@ def ack_sublevel(tag, fetch=http):
 
 def pick_ack(releases, wanted, sublevel_of=ack_sublevel):
     """[(tag, commit, sublevel)]: lts = the newest release; N or N,M = the newest release of each
-    sublevel; semua = the newest release of every sublevel since the phone's own."""
-    wanted = wanted.strip().lower() or "lts"
+    sublevel; semua or empty = the newest release of every sublevel since the phone's own (owner
+    2026-10-31: "Jika dikosongkan maka semua sublevel muncul")."""
+    wanted = wanted.strip().lower() or "semua"
     if not releases:
         raise ValueError("no android14-6.1 release found")
     if wanted == "lts":

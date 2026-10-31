@@ -72,7 +72,7 @@
 <details>
 <summary>🧩 <b>Supported sublevels</b></summary>
 
-The builder uses the official ACK `android14-6.1` releases since the phone's stock kernel; `lts` = the newest. The **Catat sublevel** (record sublevels) workflow button records the latest build in this table (✅ passed the build and the KMI gate, ⏳ waiting for an upstream update); it neither checks nor builds.
+The builder uses the official ACK `android14-6.1` releases since the phone's stock kernel; `lts` = the newest; an empty Kernel Sublevel = every sublevel. The **Catat sublevel** (record sublevels) workflow button records the latest build in this table (✅ passed the build and the KMI gate, ⏳ waiting for an upstream update); it neither checks nor builds.
 
 The **Cek pembaruan** (check for updates) button is the only check, and it builds nothing: the newest version of every component (ACK, KernelSU Next, BakaSU, simonpunk's SUSFS and sidex15's SUSFS module, NoMount, Baseband Guard, AnyKernel3, Neutron clang, Unicode fix) against the last build, with the dates of the stable and CI versions, what is new and fixed, and whom to wait for when it cannot be built yet. When something is newer, the summary suggests running the Builder.
 

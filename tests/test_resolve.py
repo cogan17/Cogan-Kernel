@@ -42,6 +42,11 @@ class AckTest(unittest.TestCase):
         self.assertEqual(r.pick_ack(self.releases, "138, 145", self.sublevel),
                          [("android14-6.1-2025-06_r11", "b" * 40, 138), ("android14-6.1-2025-09_r36", "c" * 40, 145)])
 
+    def test_an_empty_sublevel_is_every_sublevel(self):
+        # Owner 2026-10-31: "Jika dikosongkan maka semua sublevel muncul".
+        for empty in ("", "  "):
+            self.assertEqual(r.pick_ack(self.releases, empty, self.sublevel), r.pick_ack(self.releases, "semua", self.sublevel))
+
     def test_semua_is_every_sublevel_once(self):
         self.assertEqual([sub for _, _, sub in r.pick_ack(self.releases, "semua", self.sublevel)], [138, 145, 176])
         # One Makefile per month: 2026-09_r2 shares the sublevel of 2026-09_r4 and is not asked.
