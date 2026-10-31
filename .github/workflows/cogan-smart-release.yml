@@ -14,11 +14,11 @@ on:
   workflow_dispatch:
     inputs:
       versi:
-        description: "Versi modul, mis. v2.8.2 (folder modules/cogan-smart/rilis/<versi> di main)"
+        description: "Versi modul, mis. v2.8.2 (folder modules/cogan-smart/rilis/<versi> di main) / module version, e.g. v2.8.2 (folder modules/cogan-smart/rilis/<version> on main)"
         required: true
         type: string
       aksi:
-        description: "Terbitkan = rilis baru dari main; Tandai diuji = label diuji owner di HP pada rilis yang sudah ada (file dan status tidak berubah)"
+        description: "Terbitkan = rilis baru dari main; Tandai diuji = label diuji owner di HP pada rilis yang sudah ada (file dan status tidak berubah) / Terbitkan = publish a new release from main; Tandai diuji = mark an existing release as tested by the owner on the phone (files and status unchanged)"
         type: choice
         default: "Terbitkan"
         options:
@@ -26,7 +26,7 @@ on:
           - "Tandai diuji di HP"
           - "Tandai diuji di HP + HyperCharge"
       release_type:
-        description: "Untuk Terbitkan. Draft = belum tampil; Pre-release = tampil berlabel Pre-release; Release = rilis biasa (tidak menjadi Latest)"
+        description: "Untuk Terbitkan. Draft = belum tampil; Pre-release = tampil berlabel Pre-release; Release = rilis biasa (tidak menjadi Latest) / For Terbitkan. Draft = hidden; Pre-release = shown with a Pre-release label; Release = normal release (never Latest)"
         type: choice
         default: "Pre-release"
         options:
@@ -34,7 +34,7 @@ on:
           - "Pre-release"
           - "Release"
       kernel_uji:
-        description: "Untuk Tandai diuji: kernel di HP saat uji, mis. r1 (6.1.176)"
+        description: "Untuk Tandai diuji: kernel di HP saat uji, mis. r1 (6.1.176) / For Tandai diuji: the kernel on the phone during the test, e.g. r1 (6.1.176)"
         type: string
         default: "r1 (6.1.176)"
 

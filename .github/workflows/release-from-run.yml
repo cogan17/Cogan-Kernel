@@ -14,7 +14,7 @@ on:
         required: true
         type: string
       release_type:
-        description: "Pre-Release atau Release (Release = Latest)"
+        description: "Pre-Release atau / or Release (Release = Latest)"
         type: choice
         default: "Pre-Release"
         options:
@@ -25,11 +25,11 @@ on:
         type: boolean
         default: false
       catatan:
-        description: "Catatan Bahasa Indonesia (opsional; \\n = baris baru)"
+        description: "Catatan Bahasa Indonesia (opsional; \\n = baris baru) / Indonesian note (optional; \\n = new line)"
         type: string
         default: ""
       catatan_en:
-        description: "English note (optional; \\n = new line)"
+        description: "Catatan English (opsional; \\n = baris baru) / English note (optional; \\n = new line)"
         type: string
         default: ""
       teks_saja:

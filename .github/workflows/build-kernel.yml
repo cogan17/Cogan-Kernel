@@ -19,11 +19,11 @@ on:
           - "Pre-Release"
           - "Release"
       kernel_sublevel:
-        description: "Sublevel ACK: lts (terbaru / newest), angka (176), beberapa (162,172), atau kosongkan / leave empty = semua sublevel / every sublevel (bukti compile / compile proof)"
+        description: "Sublevel ACK: lts = terbaru / newest; angka / number (176); beberapa / several (162,172); kosong / empty = semua sublevel / every sublevel (bukti compile / compile proof)"
         type: string
         default: "lts"
       brand_name:
-        description: "Kernel Branding (huruf/angka/_/-, maks. 12)"
+        description: "Kernel Branding: huruf, angka, _ atau -, maks. 12 / letters, digits, _ or -, up to 12"
         type: string
         default: "Cogan"
       root_flavor:
@@ -43,11 +43,11 @@ on:
           - "Thin LTO"
           - "Tanpa LTO"
       build_revision:
-        description: "Build Revision: r + angka, mis. r10 (kosong = nomor run)"
+        description: "Build Revision: r + angka, mis. r10 (kosong = nomor run) / r + number, e.g. r10 (empty = run number)"
         type: string
         default: ""
       build_time:
-        description: "Build Time: N = sekarang / now, atau mis. Thu Jan 1 00:00:00 UTC 2026"
+        description: "Build Time: N = sekarang / now; atau tanggal, mis. / or a date, e.g. Thu Jan 1 00:00:00 UTC 2026"
         type: string
         default: "N"
       use_nomount:
