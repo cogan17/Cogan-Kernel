@@ -19,7 +19,7 @@ on:
           - "Pre-Release"
           - "Release"
       kernel_sublevel:
-        description: "Sublevel ACK: lts (terbaru / newest), angka (176), beberapa (162,172) atau semua (bukti compile / compile proof)"
+        description: "Sublevel ACK: lts (terbaru / newest), angka (176), beberapa (162,172), atau kosongkan / leave empty = semua sublevel / every sublevel (bukti compile / compile proof)"
         type: string
         default: "lts"
       brand_name:
@@ -105,7 +105,7 @@ jobs:
               || { echo "::error::Build Time: N atau mis. Thu Jan 1 00:00:00 UTC 2026"; exit 1; }
           fi
           if [ "$RELEASE_TYPE" != "CI" ]; then
-            [[ "$ROOT_FLAVOR" != *"&"* && "${SUBLEVEL,,}" != "semua" && "$SUBLEVEL" != *,* ]] \
+            [[ "$ROOT_FLAVOR" != *"&"* && -n "${SUBLEVEL// /}" && "${SUBLEVEL,,}" != *semua* && "$SUBLEVEL" != *,* ]] \
               || { echo "::error::$RELEASE_TYPE: satu root dan satu sublevel / one root and one sublevel"; exit 1; }
             [ "$GITHUB_REF_NAME" = "$DEFAULT_BRANCH" ] \
               || { echo "::error::$RELEASE_TYPE hanya dari / only from $DEFAULT_BRANCH"; exit 1; }
