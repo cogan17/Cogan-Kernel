@@ -38,7 +38,7 @@ class TelegramTest(unittest.TestCase):
         self.assertEqual(tg.whats_new(R2, prev, "en"), ["New features: Unicode fix"])
         newer = {**R2, "LINUX_VERSION": "6.1.180", "SUSFS_COMMIT": "1" * 40, "NOMOUNT": "v2.3.0"}
         self.assertEqual(tg.whats_new(newer, prev, "id")[:3], ["Kernel ACK 6.1.176 → 6.1.180",
-                                                               "SUSFS v2.3.0 `c27ebe93c68e` → v2.3.0 `111111111111`",
+                                                               "SUSFS v2.3.0 diperbarui",
                                                                "NoMount v2.2.0 → v2.3.0"])
         self.assertEqual(tg.whats_new(R1, prev, "en"), ["Same components as v26.10.23-r1"])
         self.assertEqual(tg.whats_new(R1, None, "id"), ["Rilis pertama varian ini"])
@@ -78,7 +78,7 @@ class TelegramTest(unittest.TestCase):
         english = tg.post(R2, "en", prev, link="https://x/run")
         self.assertIn("✨ New\n• New features: Unicode fix", english)
         self.assertIn("⚠️ Not tested on the phone yet", english)
-        self.assertIn("🔧 Fixes\n• No additional kernel fix commits recorded in this range", english)
+        self.assertIn("🔧 Fixes\n• No new fixes", english)
 
     def test_cli_writes_both_posts_and_survives_without_the_api(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -108,7 +108,7 @@ class TelegramTest(unittest.TestCase):
         current = {**R2, "ACK_TAG": "android14-6.1-2026-09_r5", "UNICODE_FIX": "f" * 40, "NEUTRON": "24102026"}
         text = "\n".join(tg.whats_new(current, previous, "id"))
         self.assertIn("Rilis ACK android14-6.1-2026-09_r4 → android14-6.1-2026-09_r5", text)
-        self.assertIn("Unicode fix WildKernel `fa76c90e2cb2` → `ffffffffffff`", text)
+        self.assertIn("Unicode fix WildKernel diperbarui", text)
         self.assertIn("Neutron clang 06092026 → 24102026", text)
 
     def test_old_preview_ignores_its_own_and_newer_releases(self):
@@ -135,7 +135,7 @@ class TelegramTest(unittest.TestCase):
         measured = tg.changes(R2, "r/r", "f" * 40, lambda path: RELEASES if "/releases?" in path else None)
         text = tg.post(R2, "en", **measured)
         self.assertIn("The fix commit list could not be read", text)
-        self.assertNotIn("No additional kernel fix commits", text)
+        self.assertNotIn("No new fixes", text)
 
     def test_fix_comparison_uses_the_recorded_build_commit_instead_of_the_tag_target(self):
         body = rn.notes(R1, [], "https://run", "r/r") + f"\n<!-- cogan-build-sha: {'d' * 40} -->\n"
@@ -200,7 +200,7 @@ class TelegramTest(unittest.TestCase):
 
     def test_empty_localized_fix_lists_still_report_no_recorded_fixes(self):
         english = tg.post(R2, "en", prev=tg.previous(RELEASES, R2), fix_titles={"id": [], "en": []})
-        self.assertIn("No additional kernel fix commits recorded", english)
+        self.assertIn("No new fixes", english)
         self.assertNotIn("English description not supplied", english)
 
     def test_one_build_release_post_is_the_build_post(self):
@@ -219,8 +219,8 @@ class TelegramTest(unittest.TestCase):
         text = tg.release_post(builds, "id", link="https://x/r4", tested=True, note="catatan", note_en="note")
         self.assertIn("📦 v26.10.24-r2 · ACK 6.1.176 · BakaSU & KernelSU Next + SUSFS v2.3.0", text)
         self.assertIn("📌 Dibandingkan dengan v26.10.24-r3 (BakaSU), v26.10.23-r1 (KernelSU Next)", text)
-        self.assertIn("✨ Baru\n• Fitur baru: Unicode fix\n• BakaSU `2ea131d9d44e` → `d5e9e025b8b4`\n", text)  # shared once
-        self.assertIn("🔧 Perbaikan\n• BakaSU: Tidak ada commit perbaikan kernel tambahan yang tercatat pada rentang ini\n"
+        self.assertIn("✨ Baru\n• Fitur baru: Unicode fix\n• BakaSU diperbarui ke versi terbaru dari pengembang\n", text)  # shared once
+        self.assertIn("🔧 Perbaikan\n• BakaSU: Tidak ada perbaikan baru\n"
                       "• KernelSU Next: SUSFS di ACK lama\n", text)
         self.assertIn("📝 Catatan\ncatatan\n\n🧩 Fitur: SUSFS, BBRv3", text)
         self.assertEqual((text.count("🧠"), text.count("⬇️ Unduh: https://x/r4"), text.count("✅ Diuji di HP")), (1, 1, 1))
@@ -237,6 +237,43 @@ class TelegramTest(unittest.TestCase):
         self.assertIn("📌 Compared with v26.10.23-r1 (KernelSU Next 6.1.176)", text)
         self.assertIn("• BakaSU 6.1.172: First release of this variant", text)
         self.assertIn("🧩 Features (BakaSU 6.1.172): SUSFS, Full LTO\n🧩 Features (KernelSU Next 6.1.176): SUSFS, BBRv3", text)
+
+    def test_upstream_changes_are_plain_words_without_hashes(self):
+        # Owner 2026-10-31 (r7 text): "tidak usah menggunakan angka/huruf acak", e.g. "memperbaiki selinux".
+        bsu = {**R2, "ROOT_NAME": "BakaSU", "ROOT_REPO": "https://github.com/Baka-SU/BakaSU",
+               "ROOT_COMMIT": "5785bdb80913" + "0" * 28, "SUSFS_COMMIT": "ee155a1ad421" + "0" * 28}
+        prev = {"tag": "v26.10.29-r6", "sha": "", "root": ("BakaSU main", "d5e9e025b8b4"), "susfs": ("v2.3.0", "8b2599024117")}
+        asked = []
+
+        def api(path):
+            asked.append(path)
+            if path.startswith("repos/Baka-SU/BakaSU/compare/d5e9e025b8b4...5785bdb80913"):
+                return {"commits": [{"commit": {"message": "ksud, ksuinit: block vklp_smaps_rollup"}}]}
+            if path.startswith("gitlab:projects/simonpunk%2Fsusfs4ksu/repository/compare?from=8b2599024117&to=ee155a1ad421"):
+                return {"commits": [{"title": "KernelSU: Fix compiler error"}]}
+            return [{"tag_name": "v26.10.29-r6", "body": ""}] if "/releases?" in path else {"commits": []}
+        upstream = {"root": tg.new_titles(api, bsu["ROOT_REPO"], "d5e9e025b8b4", bsu["ROOT_COMMIT"]),
+                    "susfs": tg.new_titles(api, tg.SUSFS_REPO, "8b2599024117", bsu["SUSFS_COMMIT"])}
+        self.assertIn(f"repos/Baka-SU/BakaSU/compare/{bsu['ROOT_COMMIT']}...d5e9e025b8b4", asked)  # force-push check
+        text = tg.post(bsu, "id", prev=prev, fix_titles={"id": [], "en": []}, upstream=upstream)
+        self.assertIn("✨ Baru\n• BakaSU diperbarui: meningkatkan anti deteksi lewat peta memori\n• SUSFS v2.3.0 diperbarui\n", text)
+        self.assertIn("🔧 Perbaikan\n• SUSFS: memperbaiki error saat compile\n", text)
+        self.assertNotIn("Tidak ada perbaikan baru", text)
+        english = tg.post(bsu, "en", prev=prev, fix_titles={"id": [], "en": []}, upstream=upstream)
+        self.assertIn("• BakaSU updated: improves anti-detection via memory maps", english)
+        self.assertIn("🔧 Fixes\n• SUSFS: fixes a compile error\n", english)
+        for post in (text, english):
+            self.assertNotRegex(post, r"[0-9a-f]{7,}")
+
+    def test_a_rebased_fork_only_reports_titles_it_did_not_have(self):
+        def api(path):
+            if path.endswith("/compare/old...new"):
+                return {"commits": [{"commit": {"message": t}} for t in ("kernel: selinux_hide: Even out attr/current timing",
+                                                                          "kernel: susfs: Optimize path flagging")]}
+            return {"commits": [{"commit": {"message": "kernel: susfs: Optimize path flagging"}}]}
+        self.assertEqual(tg.new_titles(api, "https://github.com/pershoot/KernelSU-Next", "old", "new"),
+                         ["kernel: selinux_hide: Even out attr/current timing"])
+        self.assertIsNone(tg.new_titles(lambda path: None, "https://github.com/pershoot/KernelSU-Next", "old", "new"))
 
 
 if __name__ == "__main__":
