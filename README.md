@@ -81,7 +81,7 @@ Tombol **Cek pembaruan** satu-satunya yang mengecek, dan tidak membangun: versi 
 <!-- sublevel:start -->
 | Sublevel | Rilis ACK | Status |
 |---|---|---|
-| **176** (`lts`) | `2026-09_r5` | ✅ KernelSU Next · BakaSU: [build + gate KMI](https://github.com/cogan17/Cogan-Kernel/actions/runs/40276957002) · r1 dan r2 diuji di HP |
+| **176** (`lts`) | `2026-09_r5` | ✅ KernelSU Next · BakaSU: [build + gate KMI](https://github.com/cogan17/Cogan-Kernel/actions/runs/40853374637) · r1 dan r2 diuji di HP |
 | 172 | `2026-06_r14` | ✅ KernelSU Next: [build + gate KMI](https://github.com/cogan17/Cogan-Kernel/actions/runs/40048269498) |
 | 162 | `2026-03_r24` | ✅ KernelSU Next: [build + gate KMI](https://github.com/cogan17/Cogan-Kernel/actions/runs/40048269498) |
 | 157 | `2025-12_r32` | ✅ KernelSU Next: [build + gate KMI](https://github.com/cogan17/Cogan-Kernel/actions/runs/40048269498) |

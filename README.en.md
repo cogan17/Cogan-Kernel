@@ -81,7 +81,7 @@ The **Cek pembaruan** (check for updates) button is the only check, and it build
 <!-- sublevel:start -->
 | Sublevel | ACK release | Status |
 |---|---|---|
-| **176** (`lts`) | `2026-09_r5` | ✅ KernelSU Next · BakaSU: [build + KMI gate](https://github.com/cogan17/Cogan-Kernel/actions/runs/40276957002) · r1 and r2 tested on the phone |
+| **176** (`lts`) | `2026-09_r5` | ✅ KernelSU Next · BakaSU: [build + KMI gate](https://github.com/cogan17/Cogan-Kernel/actions/runs/40853374637) · r1 and r2 tested on the phone |
 | 172 | `2026-06_r14` | ✅ KernelSU Next: [build + KMI gate](https://github.com/cogan17/Cogan-Kernel/actions/runs/40048269498) |
 | 162 | `2026-03_r24` | ✅ KernelSU Next: [build + KMI gate](https://github.com/cogan17/Cogan-Kernel/actions/runs/40048269498) |
 | 157 | `2025-12_r32` | ✅ KernelSU Next: [build + KMI gate](https://github.com/cogan17/Cogan-Kernel/actions/runs/40048269498) |
