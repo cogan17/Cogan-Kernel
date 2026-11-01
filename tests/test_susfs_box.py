@@ -44,7 +44,10 @@ class SusfsBoxTest(unittest.TestCase):
 
     def test_build_skips_susfs_and_records_it_when_unticked(self):
         self.assertIn('if [ "$SUSFS_ON" = true ]; then\ngroup "SUSFS', BUILD)
-        self.assertIn('[ "$SUSFS_ON" = true ] && cat "$HERE/configs/susfs.config"', BUILD)
+        # Run 41361024017: KernelSU Next's Kconfig defaults KSU_SUSFS to y, so leaving susfs.config out
+        # is not enough; the guard below stopped that build.
+        self.assertIn('if [ "$SUSFS_ON" = true ]; then cat "$HERE/configs/susfs.config"; '
+                      'else echo "# CONFIG_KSU_SUSFS is not set"; fi', BUILD)
         self.assertIn('[ "$SUSFS_ON" = true ] && required+=(CONFIG_KSU_SUSFS=y CONFIG_KSU_SUSFS_SUS_MAP=y)', BUILD)
         self.assertIn('fail "SUSFS unticked but CONFIG_KSU_SUSFS=y"', BUILD)
         self.assertIn('echo "SUSFS_COMMIT=$([ "$SUSFS_ON" = true ] && snap susfs.commit || echo -)"', BUILD)

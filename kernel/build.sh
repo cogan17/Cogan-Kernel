@@ -211,7 +211,9 @@ DEFCONFIG=arch/arm64/configs/gki_defconfig
   echo "CONFIG_KSU=y"
   [ "${BBG:-true}" = "true" ] && echo "CONFIG_BBG=y"
   [ "${NOMOUNT:-true}" = "true" ] && echo "CONFIG_NOMOUNT=y"
-  [ "$SUSFS_ON" = true ] && cat "$HERE/configs/susfs.config"
+  # SUSFS box unticked: KernelSU Next's Kconfig defaults KSU_SUSFS to y, so turn it off explicitly; its
+  # Kbuild then builds the plain (kprobes) hooks instead of the SUSFS ones.
+  if [ "$SUSFS_ON" = true ]; then cat "$HERE/configs/susfs.config"; else echo "# CONFIG_KSU_SUSFS is not set"; fi
   cat "$HERE/configs/compat.config"
   if [ "${NETWORKING:-true}" = "true" ]; then cat "$HERE/configs/custom.config"
   else sed '/^# Networking extras$/,$d' "$HERE/configs/custom.config"; fi
