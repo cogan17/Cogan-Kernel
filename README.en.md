@@ -63,8 +63,8 @@
 - ✅ **NoMount** (mountless modules, built into the kernel), **Baseband Guard**
 - ✅ **BBRv3** as the default TCP (`bbr` and `bbr3`)
 - ✅ **Cogan Bridge**: the kernel and the Cogan Smart module know each other (`/sys/kernel/cogan`)
-- ✅ Full LTO, device check in the ZIP (`rothko` only)
-- ⚙️ Optional, off by default: **Unicode fix** (WildKernel). File names with invisible characters (e.g. zero-width) on internal storage no longer count as the same name without them (the *unicode bypass* gap used to find hidden paths)
+- ✅ No LTO by default (faster builds; Thin/Full LTO can still be chosen), device check in the ZIP (`rothko` only)
+- ⚙️ Optional, ticked by default: **Unicode fix** (WildKernel). File names with invisible characters (e.g. zero-width) on internal storage no longer count as the same name without them (the *unicode bypass* gap used to find hidden paths)
 - ✅ Every build is checked automatically against the stock kernel ABI (KMI gate); failure = no ZIP
 
 </details>

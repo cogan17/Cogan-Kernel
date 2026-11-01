@@ -35,13 +35,13 @@ on:
           - "KernelSU Next & BakaSU"
           - "BakaSU"
       lto:
-        description: "LTO"
+        description: "LTO: Tanpa LTO = build tercepat, bawaan / fastest build, default; Thin/Full LTO = lebih lama / slower"
         type: choice
-        default: "Full LTO"
+        default: "Tanpa LTO"
         options:
-          - "Full LTO"
-          - "Thin LTO"
           - "Tanpa LTO"
+          - "Thin LTO"
+          - "Full LTO"
       build_revision:
         description: "Build Revision: r + angka, mis. r10 (kosong = nomor run) / r + number, e.g. r10 (empty = run number)"
         type: string
