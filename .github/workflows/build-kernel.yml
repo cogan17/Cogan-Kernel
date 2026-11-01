@@ -303,6 +303,13 @@ jobs:
           path: out/3-MANAGER-SPOOFED_*.apk
           archive: false
           retention-days: 90
+      - name: Upload E - eksperimen (kernel + manager via TWRP, artifact only)
+        if: success() && hashFiles('out/E-EKSPERIMEN_*') != ''
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          path: out/E-EKSPERIMEN_*.zip
+          archive: false
+          retention-days: 90
       - name: Upload 4 - NoMount module
         if: success() && matrix.nomount == '1' && hashFiles('out/4-NOMOUNT-MODULE_*') != ''
         uses: actions/upload-artifact@v7.0.1

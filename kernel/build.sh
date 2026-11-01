@@ -285,6 +285,27 @@ if [ "${NOMOUNT:-true}" = "true" ]; then
 fi
 echo "::endgroup::"
 
+# Eksperimen (owner 1 Nov 2026), only in the artifact and never released: the same kernel ZIP plus the
+# manager APK (file 2); flashed in TWRP it stages an update of the installed manager for the next boot
+# (anykernel/eksperimen-manager.sh). File 1 is not changed. A missing manager skips it; a manager whose
+# package name cannot be read stops the build, like every other unreadable input.
+group "Eksperimen: manager via TWRP"
+manager="$(find "$OUT" -maxdepth 1 -name '2-MANAGER_*.apk' | sort | head -n 1)"
+if [ -n "$manager" ]; then
+  package="$(python3 "$HERE/scripts/apk_package.py" "$manager")" || fail "$(basename "$manager"): package name unreadable"
+  mkdir -p "$WORK/anykernel/cogan"
+  cp "$manager" "$WORK/anykernel/cogan/manager.apk"
+  echo "$package" > "$WORK/anykernel/cogan/package"
+  cp "$HERE/anykernel/eksperimen-manager.sh" "$HERE/anykernel/cogan-manager-boot.sh" "$WORK/anykernel/cogan/"
+  sed -i 's|^## end boot install$|. $AKHOME/cogan/eksperimen-manager.sh; # Eksperimen: manager via TWRP\n&|' "$WORK/anykernel/anykernel.sh"
+  grep -q 'cogan/eksperimen-manager.sh' "$WORK/anykernel/anykernel.sh" || fail "experiment hook not added to anykernel.sh"
+  (cd "$WORK/anykernel" && zip -qr9 "$OUT/E-EKSPERIMEN_${ZIP#1-}" . -x '*.zip')
+  echo "E-EKSPERIMEN_${ZIP#1-}: ${ZIP} + $(basename "$manager") ($package)"
+else
+  echo "No manager APK in this build: no experiment ZIP"
+fi
+echo "::endgroup::"
+
 {
   echo "RELEASE=$RELEASE"
   echo "RELEASE_NAME=$NAME $RELEASE"
