@@ -66,6 +66,19 @@ WORDS = {
 }
 
 
+def with_susfs(env):
+    """False for a build with the SUSFS box unticked (owner 2026-11-02): build.env says SUSFS_COMMIT=-."""
+    return env.get("SUSFS_COMMIT", "-") not in ("", "-")
+
+
+def susfs_label(envs, lang):
+    """" + SUSFS v2.3.0" when the builds have SUSFS, "tanpa SUSFS"/"without SUSFS" when none has."""
+    versions = joined(e.get("SUSFS_VERSION") for e in envs if with_susfs(e))
+    if versions:
+        return f" + SUSFS {versions}"
+    return " · tanpa SUSFS" if lang == "id" else " · without SUSFS"
+
+
 def read_env(path):
     return dict(line.split("=", 1) for line in Path(path).read_text().splitlines() if "=" in line)
 
@@ -137,7 +150,7 @@ def upstream_lines(env, prev, lang, upstream=None):
         # KernelSU Next: the kernel comes from the fork, its manager from KernelSU Next's own CI.
         found.append(up.describe(env.get("ROOT_NAME", ""), upstream.get("root"), lang,
                                  kernel_only=env.get("ROOT_NAME") == "KernelSU Next"))
-    if prev and prev.get("susfs") and not env.get("SUSFS_COMMIT", "").startswith(prev["susfs"][1]):
+    if prev and prev.get("susfs") and with_susfs(env) and not env.get("SUSFS_COMMIT", "").startswith(prev["susfs"][1]):
         old, new = prev["susfs"][0], env.get("SUSFS_VERSION", "")
         head = f"SUSFS {old} → {new}" if old != new else WORDS[lang]["susfs"].format(version=new)
         found.append(up.describe("SUSFS", upstream.get("susfs"), lang, head=head))
@@ -216,8 +229,8 @@ def post(env, lang, prev=None, fix_titles=(), link="", tested=False, note="", hi
          fixes_available=True, source_sha="", note_en="", upstream=None):
     w = WORDS[lang]
     lines = ["🧠 Cogan Kernel · Xiaomi 14T Pro (rothko)",
-             f"📦 {env.get('RELEASE', '')} · ACK {env.get('LINUX_VERSION', '')} · {env.get('ROOT_NAME', '')} + SUSFS "
-             f"{env.get('SUSFS_VERSION', '')}"]
+             f"📦 {env.get('RELEASE', '')} · ACK {env.get('LINUX_VERSION', '')} · {env.get('ROOT_NAME', '')}"
+             f"{susfs_label([env], lang)}"]
     if prev:
         lines += ["", "📌 " + w["baseline"].format(prev=prev["tag"])]
     lines += ["", w["new"], *[f"• {item}" for item in whats_new(env, prev, lang, history_available, upstream)],
@@ -257,7 +270,7 @@ def release_post(builds, lang, link="", tested=False, note="", note_en=""):
     labels = [env.get("ROOT_NAME", "") + ("" if len(versions) == 1 else f" {env.get('LINUX_VERSION', '')}") for env in envs]
     lines = ["🧠 Cogan Kernel · Xiaomi 14T Pro (rothko)",
              f"📦 {envs[0].get('RELEASE', '')} · ACK {joined(e.get('LINUX_VERSION') for e in envs)} · "
-             f"{' & '.join(dict.fromkeys(e.get('ROOT_NAME', '') for e in envs))} + SUSFS {joined(e.get('SUSFS_VERSION') for e in envs)}"]
+             f"{' & '.join(dict.fromkeys(e.get('ROOT_NAME', '') for e in envs))}{susfs_label(envs, lang)}"]
     prevs = [(label, measured["prev"]["tag"]) for label, (_, measured) in zip(labels, builds) if measured.get("prev")]
     if prevs:
         same = len(prevs) == len(builds) and len({tag for _, tag in prevs}) == 1
@@ -356,7 +369,7 @@ def changes(env, repo, sha="", api=gh):
     upstream = {}
     if prev and prev.get("root") and not env.get("ROOT_COMMIT", "").startswith(prev["root"][1]):
         upstream["root"] = new_titles(api, env.get("ROOT_REPO", ""), prev["root"][1], env.get("ROOT_COMMIT", ""))
-    if prev and prev.get("susfs") and not env.get("SUSFS_COMMIT", "").startswith(prev["susfs"][1]):
+    if prev and prev.get("susfs") and with_susfs(env) and not env.get("SUSFS_COMMIT", "").startswith(prev["susfs"][1]):
         upstream["susfs"] = new_titles(api, SUSFS_REPO, prev["susfs"][1], env.get("SUSFS_COMMIT", ""))
     return {"prev": prev, "fix_titles": titles, "history_available": available,
             "fixes_available": compared or (available and prev is None), "source_sha": sha, "upstream": upstream}

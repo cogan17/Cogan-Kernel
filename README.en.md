@@ -59,7 +59,7 @@
 
 - ✅ Google's official kernel source (Android Common Kernel `android14-6.1`), the same family as the phone's stock kernel. Xiaomi/MediaTek vendor modules still fit
 - ✅ Always the newest versions: the ACK release, root manager, SUSFS and NoMount are taken at their newest at build time. When something does not fit yet, the build summary names the developer to wait for
-- ✅ In-kernel root + **SUSFS**, two variants: **KernelSU Next** or **BakaSU**
+- ✅ In-kernel root + **SUSFS**, two variants: **KernelSU Next** or **BakaSU**. SUSFS is ticked by default; unticked, the kernel uses the plain root manager without SUSFS (ZIP name without `+SuSFS`, no SUSFS module)
 - ✅ **NoMount** (mountless modules, built into the kernel), **Baseband Guard**
 - ✅ **BBRv3** as the default TCP (`bbr` and `bbr3`)
 - ✅ **Cogan Bridge**: the kernel and the Cogan Smart module know each other (`/sys/kernel/cogan`)

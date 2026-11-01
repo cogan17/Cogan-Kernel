@@ -97,28 +97,30 @@ fi
                 archive.writestr(name, data)
         return stream.getvalue()
 
-    def artifacts(self, roots=("KSUN", "BSU"), wrapped=False):
-        """The failed run's shape: two kernels/managers, separate metadata, duplicate NoMount."""
+    def artifacts(self, roots=("KSUN", "BSU"), wrapped=False, susfs=True):
+        """The failed run's shape: two kernels/managers, separate metadata, duplicate NoMount.
+        susfs=False: a run with the SUSFS box unticked (no SUSFS, no file 5)."""
         shutil.rmtree(self.root / "info")
         shutil.rmtree(self.root / "files")
         self.payloads = []
         self.builds = {}
         for root in roots:
             slug, name = ("KernelSU-Next", "KernelSU Next") if root == "KSUN" else ("BakaSU", "BakaSU")
-            kernel = f"1-KERNEL_Cogan-Rothko-ACK-6.1.176_{slug}+SuSFS_v26.10.24-r2.zip"
+            kernel = f"1-KERNEL_Cogan-Rothko-ACK-6.1.176_{slug}{'+SuSFS' if susfs else ''}_v26.10.24-r2.zip"
             content = self.zip_bytes({"Image": f"kernel for {root}"})
             env = dict(RELEASE="v26.10.24-r2", RELEASE_NAME="Cogan-Rothko-ACK v26.10.24-r2",
                        LINUX_VERSION="6.1.176", ACK_TAG="android14-6.1-2026-09_r5", ROOT_NAME=name,
                        ROOT_TAG="main", ROOT_COMMIT=("a" if root == "KSUN" else "b") * 40,
-                       KSU_VERSION="33405" if root == "KSUN" else "35222", SUSFS_VERSION="v2.3.0",
-                       SUSFS_COMMIT="27e0a0e4" + "0" * 32, NOMOUNT="v2.2.0", NEUTRON="24102026",
-                       FEATURES="SUSFS, NoMount", KMI_COMPAT="KMI Xiaomi 14T Pro (rothko): OK; CRC differs 0",
+                       KSU_VERSION="33405" if root == "KSUN" else "35222", SUSFS_VERSION="v2.3.0" if susfs else "-",
+                       SUSFS_COMMIT="27e0a0e4" + "0" * 32 if susfs else "-", NOMOUNT="v2.2.0", NEUTRON="24102026",
+                       FEATURES="SUSFS, NoMount" if susfs else "NoMount", KMI_COMPAT="KMI Xiaomi 14T Pro (rothko): OK; CRC differs 0",
                        ZIP=kernel, ZIP_SHA256=hashlib.sha256(content).hexdigest())
             self.builds[root] = env
             self.payloads += [(kernel, content), (f"2-MANAGER_{slug}_fixture.apk", f"manager {root}".encode()),
                               (f"3-MANAGER-SPOOFED_{slug}_fixture.apk", f"spoofed {root}".encode()),
                               ("4-NOMOUNT-MODULE_v2.2.0.zip", b"shared NoMount")]
-        self.payloads += [("5-SUSFS-MODULE-SIDEX15_v1.5.2-CI-fixture.zip", b"sidex15")]
+        if susfs:
+            self.payloads += [("5-SUSFS-MODULE-SIDEX15_v1.5.2-CI-fixture.zip", b"sidex15")]
         self.wrapped = wrapped
 
     def write_artifacts(self):
@@ -270,6 +272,26 @@ fi
     def test_missing_susfs_module_stops_the_release(self):
         self.artifacts()
         self.payloads = [(name, data) for name, data in self.payloads if not name.startswith("5-")]
+        result = self.download()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("missing NoMount/SUSFS modules", result.stderr)
+
+    def test_a_run_without_susfs_is_published_without_the_susfs_module(self):
+        # Owner 2026-11-02: the SUSFS box unticked gives the plain root manager, and it may be released.
+        self.artifacts(susfs=False)
+        result = self.download(TESTED="false")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        notes = (self.root / "notes.md").read_text()
+        self.assertIn("tanpa SUSFS / without SUSFS", notes)
+        self.assertNotIn("SIDEX15", notes)
+        for lang, word in (("id", "· tanpa SUSFS"), ("en", "· without SUSFS")):
+            post = (self.root / f"telegram/{lang}.txt").read_text()
+            self.assertIn(f"BakaSU & KernelSU Next {word}", post)
+            self.assertNotIn("+ SUSFS", post)
+
+    def test_a_susfs_module_in_a_run_without_susfs_is_refused(self):
+        self.artifacts(susfs=False)
+        self.payloads += [("5-SUSFS-MODULE-SIDEX15_v1.5.2-CI-fixture.zip", b"sidex15")]
         result = self.download()
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("missing NoMount/SUSFS modules", result.stderr)

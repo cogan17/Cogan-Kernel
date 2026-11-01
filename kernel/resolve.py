@@ -14,7 +14,10 @@ always runs and fails closed.
 --unicode (the Unicode fix box, ticked by default since 1 Nov 2026) also takes the newest commit of WildKernel's
 kernel_patches for its unicode bypass fix; without it nothing of WildKernel is read.
 
-Usage: resolve.py --root KSUN|BSU [--sublevel lts|N|N,M|semua|""] [--unicode] --out FILE.json
+--no-susfs (the SUSFS box unticked) builds the plain root manager: no SUSFS, no sidex15 module, BakaSU
+from its newest release.
+
+Usage: resolve.py --root KSUN|BSU [--sublevel lts|N|N,M|semua|""] [--unicode] [--no-susfs] --out FILE.json
 """
 import argparse
 import base64
@@ -290,17 +293,21 @@ def unicode_fix(ls_remote=ls_remote):
 
 # ---- the whole snapshot ---------------------------------------------------------------------
 
-def resolve(root, sublevel, work, unicode=False):
-    snap = {"root": root}
+def resolve(root, sublevel, work, unicode=False, susfs_box=True):
+    """susfs_box False (the SUSFS box unticked, owner 2026-11-02): the plain root manager without SUSFS;
+    no SUSFS, no sidex15 module, and BakaSU from its newest release with no SUSFS readiness check."""
+    snap = {"root": root, "susfs_box": susfs_box}
     snap["ack"] = [{"tag": tag, "commit": sha, "sublevel": sub}
                    for tag, sha, sub in pick_ack(ack_releases(ls_remote(ACK, "refs/tags/android14-6.1-*")), sublevel)]
-    susfs = ls_remote(SUSFS, f"refs/heads/{SUSFS_BRANCH}")[f"refs/heads/{SUSFS_BRANCH}"]
-    snap["susfs"] = {"repo": SUSFS, "branch": SUSFS_BRANCH, "commit": susfs}
-    snap["susfs_sidex"] = susfs_sidex()
     repo = str(work)
     run("git", "init", "-q", repo)
     run("git", "-C", repo, "config", "gc.auto", "0")
-    run("git", "-C", repo, "fetch", "-q", "--depth=1", SUSFS, f"{susfs}:refs/check/susfs")
+    susfs = None
+    if susfs_box:
+        susfs = ls_remote(SUSFS, f"refs/heads/{SUSFS_BRANCH}")[f"refs/heads/{SUSFS_BRANCH}"]
+        snap["susfs"] = {"repo": SUSFS, "branch": SUSFS_BRANCH, "commit": susfs}
+        snap["susfs_sidex"] = susfs_sidex()
+        run("git", "-C", repo, "fetch", "-q", "--depth=1", SUSFS, f"{susfs}:refs/check/susfs")
     if root == "KSUN":
         refs = ls_remote(KSUN_FORK, f"refs/heads/{KSUN_FORK_BRANCH}", "refs/heads/dev")
         head, dev = refs[f"refs/heads/{KSUN_FORK_BRANCH}"], refs["refs/heads/dev"]
@@ -312,7 +319,7 @@ def resolve(root, sublevel, work, unicode=False):
     else:
         tag, sha = newest_tag(ls_remote(BAKASU, "refs/tags/v*"))
         run("git", "-C", repo, "fetch", "-q", "--depth=1", BAKASU, f"{sha}:refs/check/bakasu")
-        problem = bakasu_ready(repo, "refs/check/bakasu", "refs/check/susfs")
+        problem = bakasu_ready(repo, "refs/check/bakasu", "refs/check/susfs") if susfs_box else None
         if problem:
             # Before the next release, BakaSU main may already take the newest SUSFS (owner 24 Okt 2026,
             # Baka-SU/BakaSU#214). Kernel and manager then come from the same main commit.
@@ -368,10 +375,11 @@ def main(argv=None):
     parser.add_argument("--sublevel", default="lts")
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--unicode", action="store_true", help="the Unicode fix box is ticked")
+    parser.add_argument("--no-susfs", action="store_true", help="the SUSFS box is unticked")
     args = parser.parse_args(argv)
     with tempfile.TemporaryDirectory(prefix="resolve-") as work:
         try:
-            snap = resolve(args.root, args.sublevel, work, args.unicode)
+            snap = resolve(args.root, args.sublevel, work, args.unicode, not args.no_susfs)
         except Wait as wait:
             args.out.write_text(json.dumps({"root": args.root, "wait": {"id": wait.id_text, "en": wait.en_text}},
                                            indent=1))

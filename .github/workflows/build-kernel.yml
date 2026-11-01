@@ -27,7 +27,7 @@ on:
         type: string
         default: "Cogan"
       root_flavor:
-        description: "Root Flavor (selalu dengan SUSFS / always with SUSFS). BakaSU dibangun bila sudah siap / BakaSU is built once it is ready"
+        description: "Root Flavor. BakaSU dibangun bila sudah siap / BakaSU is built once it is ready"
         type: choice
         default: "KernelSU Next"
         options:
@@ -50,6 +50,10 @@ on:
         description: "Build Time: N = sekarang / now; atau tanggal, mis. / or a date, e.g. Thu Jan 1 00:00:00 UTC 2026"
         type: string
         default: "N"
+      use_susfs:
+        description: "SUSFS: dicentang = root manager dengan SUSFS dan modul SUSFS sidex15 (file 5); dilepas = root manager biasa tanpa SUSFS / ticked = root manager with SUSFS and sidex15's SUSFS module (file 5); unticked = plain root manager without SUSFS"
+        type: boolean
+        default: true
       use_nomount:
         description: "NoMount: dicentang = tertanam di kernel, bukan LKM, modulnya ikut di rilis; dilepas = tanpa NoMount / ticked = built into the kernel (never an LKM), module in the release; unticked = no NoMount"
         type: boolean
@@ -93,6 +97,7 @@ jobs:
       REVISION: ${{ inputs.build_revision }}
       BUILD_TIME: ${{ inputs.build_time }}
       USE_UNICODE: ${{ inputs.use_unicode }}
+      USE_SUSFS: ${{ inputs.use_susfs }}
       DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
     steps:
       - uses: actions/checkout@v7.0.1
@@ -123,6 +128,7 @@ jobs:
           roots=()
           extra=()
           [ "$USE_UNICODE" = "true" ] && extra=(--unicode)
+          [ "$USE_SUSFS" = "true" ] || extra+=(--no-susfs)
           [[ "$ROOT_FLAVOR" == *"KernelSU Next"* ]] && roots+=(KSUN)
           [[ "$ROOT_FLAVOR" == *"BakaSU"* ]] && roots+=(BSU)
           for root in "${roots[@]}"; do
@@ -154,7 +160,8 @@ jobs:
               version = f" ({src['ksu_version']})" if src.get("ksu_version") else ""
               rows = [("ACK", ", ".join(f"`{a['tag']}` (6.1.{a['sublevel']})" for a in snap["ack"])),
                       (name, f"{ref} `{src['commit'][:12]}`{version}"),
-                      ("SUSFS", f"`{snap['susfs']['commit'][:12]}`"), ("NoMount", snap["nomount"]["tag"]),
+                      ("SUSFS", f"`{snap['susfs']['commit'][:12]}`" if "susfs" in snap else "tanpa SUSFS / without SUSFS"),
+                      ("NoMount", snap["nomount"]["tag"]),
                       ("Baseband Guard", f"`{snap['bbg']['commit'][:12]}`"),
                       ("AnyKernel3", f"`{snap['anykernel']['commit'][:12]}`"), ("Neutron clang", snap["neutron"]["tag"])]
               if "unicode" in snap:
@@ -195,6 +202,7 @@ jobs:
   susfs:
     name: Modul SUSFS / SUSFS module
     needs: resolve
+    if: ${{ inputs.use_susfs }}
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ github.token }}
@@ -352,7 +360,7 @@ jobs:
   release:
     name: Terbit / publish (${{ inputs.release_type }})
     needs: [attest, susfs]
-    if: ${{ !cancelled() && needs.attest.result == 'success' && needs.susfs.result == 'success' && inputs.release_type != 'CI' }}
+    if: ${{ !cancelled() && needs.attest.result == 'success' && (needs.susfs.result == 'success' || (needs.susfs.result == 'skipped' && !inputs.use_susfs)) && inputs.release_type != 'CI' }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
