@@ -27,7 +27,7 @@ Modul **Cogan Smart Kernel**:
 
 | Gejala | Penjelasan |
 |---|---|
-| Versi kernel di Setelan bukan `6.1.138` (mis. `6.1.170`) | Normal: SUSFS menyamarkan `uname`. Identitas asli ada di WebUI Cogan Smart atau `/sys/kernel/cogan/release` |
+| Versi kernel di Setelan tidak sama dengan versi kernel Cogan (mis. `6.1.138`) | Normal: SUSFS menyamarkan `uname`. Identitas asli ada di WebUI Cogan Smart atau `/sys/kernel/cogan/release` |
 | Flash berhenti dengan *Unsupported device* | ZIP hanya untuk `rothko`; HP lain ditolak sebelum `boot` disentuh |
 | Banyak baris `disagrees about version of symbol` di `dmesg` | Sudah diketahui: modul vendor dimuat lewat *force-load*. Diperbaiki di revisi kernel berikutnya |
 | Modul KernelSU mati semua setelah bootloop | Safe mode KernelSU. Nyalakan lagi di aplikasi root manager → Modul, lalu reboot |

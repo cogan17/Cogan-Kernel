@@ -38,8 +38,21 @@ Copy the result to a **PC or USB drive**, not only the phone. Also keep the **st
 1. Install the root manager app from the same release package (**KernelSU Next** or **BakaSU**, matching the kernel ZIP), then the **NoMount** metamodule.
    To configure SUSFS, also install the **SUSFS module** `5-SUSFS-MODULE-SIDEX15_…zip`: sidex15's module with WebUI (its newest CI build), which installs the `ksu_susfs` tool. Releases from 26–28 Oct 2026 also hold simonpunk's module (`5-…SIMONPUNK`) and number sidex15's module `6-`; install only one of them.
 2. *Optional:* the **[Cogan Smart Kernel](https://github.com/cogan17/Cogan-Kernel/blob/main/modules/cogan-smart/README.md)** module. Its development is parked (bug fixes only); the kernel runs normally without it. If you install it, reboot once, then check the module WebUI: **"Identitas asli · terverifikasi"** (real identity, verified) and **"✓ kernel dibuat untuk HP ini"** (kernel built for this phone).
+3. *Optional, to disguise the kernel from detector apps:* open the SUSFS module WebUI → **Kernel Uname**, then enter the phone's stock kernel values (read from the rothko stock `boot.img`):
+   - **Spoof Kernel Version** (tick the box next to it):
+     ```
+     6.1.138-android14-11-g6ab8c9a86a33-ab14396278
+     ```
+   - **Spoof Kernel Build** (tick the box next to it; there are **two spaces** before `5`):
+     ```
+     #1 SMP PREEMPT Wed Nov  5 15:47:39 UTC 2025
+     ```
+   - Keep **Spoof on boot** and **Execute on post-fs-data** ticked, then reboot.
+   - Check in Termux **without** `su`: `uname -a` must show both values above exactly.
 
-> 💡 The kernel version in Settings may look different (e.g. `6.1.170`). That is SUSFS spoofing `uname`. The Cogan Smart module reads the real identity through Cogan Bridge.
+   Normal apps can only read `uname`, so the kernel looks exactly like the stock kernel. Proven on the owner's phone (2 Nov 2026): Duck Detector **Kernel Check: No suspicious kernel markers**. These values belong to the current HyperOS stock kernel; if a HyperOS update changes the stock kernel, the values change too. This does not hide KernelSU's own traces (e.g. the SELinux `ksu` type), which can still be detected.
+
+> 💡 The kernel version in Settings may look different (e.g. `6.1.138`). That is SUSFS spoofing `uname`. The Cogan Smart module reads the real identity through Cogan Bridge.
 
 ---
 

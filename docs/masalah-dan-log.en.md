@@ -27,7 +27,7 @@ For a failed boot: recover the phone first ([Back to Stock](kembali-ke-stok.en.m
 
 | Symptom | Explanation |
 |---|---|
-| The kernel version in Settings is not `6.1.138` (e.g. `6.1.170`) | Normal: SUSFS spoofs `uname`. The real identity is in the Cogan Smart WebUI or `/sys/kernel/cogan/release` |
+| The kernel version in Settings differs from the Cogan kernel version (e.g. `6.1.138`) | Normal: SUSFS spoofs `uname`. The real identity is in the Cogan Smart WebUI or `/sys/kernel/cogan/release` |
 | The flash stops with *Unsupported device* | The ZIP is for `rothko` only; other phones are refused before `boot` is touched |
 | Many `disagrees about version of symbol` lines in `dmesg` | Known: vendor modules load through *force-load*. Fixed in a later kernel revision |
 | Every KernelSU module is off after a bootloop | KernelSU safe mode. Turn them back on in the root manager app → Modules, then reboot |
