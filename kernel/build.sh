@@ -216,18 +216,27 @@ DEFCONFIG=arch/arm64/configs/gki_defconfig
   # Last, so it wins: what the phone's vendor modules were built against (IPV6_SUBTREES off, HZ 250).
   cat "$HERE/configs/stock-kmi.config"
 } >> "$DEFCONFIG"
-# Kernel identity (owner 2026-11-01). Disguise off: the Cogan name. Disguise on: the GKI release
-# format (6.1.N-android14-<gen>-g<hash>-ab<num>), a generic AOSP build user/host and an Android clang
-# version string. Display only: nothing in the compiled code changes, so the KMI gate is unaffected.
-# A disguised uname still carries 6.1.N, so Cogan Bridge and the Cogan Smart module keep working; the
-# Cogan brand and revision stay in the ZIP name and build.env. Behaviour-based detectors are unaffected.
+# Kernel identity (owner 2026-11-01). Disguise off: the Cogan name. Disguise on: what the phone's own
+# stock kernel shows (configs/stock-identity.env, read from the owner's stock boot.img): the GKI release
+# format 6.1.N-android14-<gen>-g<ACK commit>-ab<num>, build-user@build-host and Google's Android clang/LLD
+# text. Display only: the compiled code does not change, so the KMI gate is unaffected. The version
+# stays the real 6.1.N, so Cogan Bridge and the Cogan Smart module keep working; the Cogan brand and
+# revision stay in the ZIP name and build.env. Behaviour-based detectors are unaffected.
 CC_TEXT=""
 if [ "${DISGUISE:-false}" = "true" ]; then
+  . "$HERE/configs/stock-identity.env"
   GEN="$(sed -n 's/^KMI_GENERATION=//p' build.config.common 2>/dev/null || true)"; GEN="${GEN:-11}"
-  LOCALVERSION="-android14-$GEN-g$(git rev-parse --short=12 HEAD)-ab$(printf '%08d' "$(( 0x$(git rev-parse --short=7 HEAD) % 100000000 ))")"
-  BUILD_USER="android-build"; BUILD_HOST="abfarm"
-  # Representative recent Android (AOSP) clang version string, not a byte-for-byte copy of stock.
-  CC_TEXT="Android (12833391, +pgo, +bolt, +lto, +mlgo, based on r536225) clang version 19.0.1 (https://android.googlesource.com/toolchain/llvm-project 7a3f165bb0e9ba0a0f2680d35c1e8b1c0a4d6c1f)"
+  ACK_ID="${ACK_COMMIT:-$(git rev-parse HEAD^)}"  # the real ACK commit, as in a Google GKI build
+  LOCALVERSION="-android14-$GEN-g${ACK_ID:0:12}-ab$(printf '%08d' "$(( 0x${ACK_ID:0:7} % 100000000 ))")"
+  BUILD_USER="$STOCK_BUILD_USER"; BUILD_HOST="$STOCK_BUILD_HOST"; CC_TEXT="$STOCK_CC_TEXT"
+  # The ", LLD x" part of /proc/version comes from scripts/mkcompile_h running "$LD -v": let it take
+  # the stock text instead; strict, the build stops if mkcompile_h is not the expected 6.1 script.
+  grep -q '^LD_VERSION=$(LC_ALL=C $LD -v' scripts/mkcompile_h || fail "Disguise: unexpected scripts/mkcompile_h"
+  sed -i '/^cat <<EOF$/i [ -z "$KBUILD_LD_VERSION_TEXT" ] || LD_VERSION=$KBUILD_LD_VERSION_TEXT' scripts/mkcompile_h
+  grep -q '^\[ -z "$KBUILD_LD_VERSION_TEXT" \] || LD_VERSION=$KBUILD_LD_VERSION_TEXT$' scripts/mkcompile_h \
+    || fail "Disguise: LLD text hook not added to scripts/mkcompile_h"
+  export KBUILD_LD_VERSION_TEXT="$STOCK_LD_TEXT"
+  log "Disguised identity: 6.1.$SUBLEVEL$LOCALVERSION ($BUILD_USER@$BUILD_HOST)"
 else
   LOCALVERSION="-$NAME-$REVISION-$(git rev-parse --short=9 HEAD)"
   BUILD_USER="cogan17"; BUILD_HOST="github-actions"
