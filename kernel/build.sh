@@ -79,6 +79,26 @@ LINUX_VERSION="$(make -s -C "$KSRC" kernelversion)"
 git -C "$KSRC" -c user.name=Cogan -c user.email=builder@localhost commit -q --allow-empty -m "ACK $ACK_TAG"
 echo "::endgroup::"
 
+# CVE-2026-53163 (owner 1 Nov 2026: automatic in every build). The CVE-2026-43499 fix (Linux 6.1.175,
+# "rtmutex: Use waiter::task instead of current in remove_waiter()") made remove_waiter() fatal for a
+# waiter that was never enqueued: an app can crash the kernel through FUTEX_CMP_REQUEUE_PI. Linux 6.1.177
+# fixes it with upstream commit 40a25d59e85b (stable 4afda3a1da02), applied here as it is. Older ACK
+# releases lack the CVE-2026-43499 fix and so this bug; a newer one already has the follow-up.
+group "CVE-2026-53163: rtmutex remove_waiter (Linux 6.1.177)"
+RTMUTEX="$KSRC/kernel/locking/rtmutex.c"
+if grep -q 'if (!waiter_task) /\* never enqueued \*/' "$RTMUTEX"; then
+  CVE_2026_53163="present"
+  log "Already in ACK $ACK_TAG: nothing to apply"
+elif grep -q 'struct task_struct \*waiter_task = waiter->task;' "$RTMUTEX"; then
+  apply "$HERE/patches/cve-2026-53163-rtmutex.patch" || fail "CVE-2026-53163 fix does not fit ACK 6.1.$SUBLEVEL"
+  CVE_2026_53163="applied"
+  log "Applied: upstream 40a25d59e85b (Linux 6.1.177)"
+else
+  CVE_2026_53163="not-needed"
+  log "ACK $ACK_TAG has no CVE-2026-43499 fix, so not its remove_waiter() regression: nothing to apply"
+fi
+echo "::endgroup::"
+
 group "Stock kernel reference of the phone (KMI gate)"
 python3 "$HERE/scripts/stock_reference.py" --device rothko "$WORK/stock"
 echo "::endgroup::"
@@ -300,6 +320,7 @@ echo "::endgroup::"
   echo "SUSFS_COMMIT=$(snap susfs.commit)"
   echo "NOMOUNT=$([ "${NOMOUNT:-true}" = "true" ] && snap nomount.tag || echo -)"
   echo "BBG_COMMIT=$([ "${BBG:-true}" = "true" ] && snap bbg.commit || echo -)"
+  echo "CVE_2026_53163=$CVE_2026_53163"
   echo "UNICODE_FIX=$([ "${UNICODE:-false}" = "true" ] && snap unicode.commit || echo -)"
   echo "ZIP=$ZIP"
   echo "ZIP_SHA256=$(sha256sum "$OUT/$ZIP" | cut -d' ' -f1)"

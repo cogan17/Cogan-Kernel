@@ -11,7 +11,7 @@ When the newest version cannot work on rothko yet, the variant is not built and 
 whom to wait for, in Indonesian and English. The KMI gate of the build is not part of this: it
 always runs and fails closed.
 
---unicode (the Unicode fix box, off by default) also takes the newest commit of WildKernel's
+--unicode (the Unicode fix box, ticked by default since 1 Nov 2026) also takes the newest commit of WildKernel's
 kernel_patches for its unicode bypass fix; without it nothing of WildKernel is read.
 
 Usage: resolve.py --root KSUN|BSU [--sublevel lts|N|N,M|semua|""] [--unicode] --out FILE.json
