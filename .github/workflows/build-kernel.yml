@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
     inputs:
       release_type:
-        description: "Release Type: CI = file di run saja / files in the run only; Pre-Release / Release = terbit setelah build dan gate hijau (satu build) / published after a green build (one build)"
+        description: "Release Type (CI = artifact saja / only)"
         type: choice
         default: "CI"
         options:
@@ -19,15 +19,15 @@ on:
           - "Pre-Release"
           - "Release"
       kernel_sublevel:
-        description: "Sublevel ACK: lts = terbaru / newest; angka / number (176); beberapa / several (162,172); kosong / empty = semua sublevel / every sublevel (bukti compile / compile proof)"
+        description: "Kernel Sublevel: lts, 176, 162,172 · kosong / empty = semua / all"
         type: string
         default: "lts"
       brand_name:
-        description: "Kernel Branding: huruf, angka, _ atau -, maks. 12 / letters, digits, _ or -, up to 12"
+        description: "Kernel Branding (maks. / max 12)"
         type: string
         default: "Cogan"
       root_flavor:
-        description: "Root Flavor. BakaSU dibangun bila sudah siap / BakaSU is built once it is ready"
+        description: "Root Flavor"
         type: choice
         default: "KernelSU Next"
         options:
@@ -35,7 +35,7 @@ on:
           - "KernelSU Next & BakaSU"
           - "BakaSU"
       lto:
-        description: "LTO: Tanpa LTO = build tercepat, bawaan / fastest build, default; Thin/Full LTO = lebih lama / slower"
+        description: "LTO"
         type: choice
         default: "Tanpa LTO"
         options:
@@ -43,19 +43,19 @@ on:
           - "Thin LTO"
           - "Full LTO"
       build_revision:
-        description: "Build Revision: r + angka, mis. r10 (kosong = nomor run) / r + number, e.g. r10 (empty = run number)"
+        description: "Build Revision: r10 · kosong / empty = nomor run / run number"
         type: string
         default: ""
       build_time:
-        description: "Build Time: N = sekarang / now; atau tanggal, mis. / or a date, e.g. Thu Jan 1 00:00:00 UTC 2026"
+        description: "Build Time: N = sekarang / now"
         type: string
         default: "N"
       use_susfs:
-        description: "SUSFS: dicentang = root manager dengan SUSFS dan modul SUSFS sidex15 (file 5); dilepas = root manager biasa tanpa SUSFS / ticked = root manager with SUSFS and sidex15's SUSFS module (file 5); unticked = plain root manager without SUSFS"
+        description: "SUSFS"
         type: boolean
         default: true
       use_nomount:
-        description: "NoMount: dicentang = tertanam di kernel, bukan LKM, modulnya ikut di rilis; dilepas = tanpa NoMount / ticked = built into the kernel (never an LKM), module in the release; unticked = no NoMount"
+        description: "NoMount"
         type: boolean
         default: true
       use_bbg:
@@ -63,15 +63,15 @@ on:
         type: boolean
         default: true
       use_net:
-        description: "Networking (BBRv3 bbr/bbr3)"
+        description: "Networking (BBRv3)"
         type: boolean
         default: true
       use_unicode:
-        description: "Unicode Fix (WildKernel): nama file dengan karakter tak terlihat tidak lagi disamakan / names with invisible characters no longer match. Dicentang otomatis / ticked by default"
+        description: "Unicode Fix (WildKernel)"
         type: boolean
         default: true
       use_disguise:
-        description: "Samarkan identitas kernel: uname & /proc/version meniru kernel bawaan HP (GKI, build-user@build-host, Android clang), bukan nama Cogan (hanya tampilan; bukan untuk deteksi berbasis perilaku). Uji HP dulu / Disguise kernel identity: uname & /proc/version mimic the stock kernel (GKI, build-user@build-host, Android clang) instead of the Cogan name (display only). Test on the phone first"
+        description: "Samarkan identitas kernel / Disguise kernel identity"
         type: boolean
         default: false
 
