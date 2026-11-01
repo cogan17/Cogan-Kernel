@@ -63,9 +63,9 @@ on:
         type: boolean
         default: true
       use_unicode:
-        description: "Unicode Fix (WildKernel): nama file dengan karakter tak terlihat tidak lagi disamakan / names with invisible characters no longer match. Uji HP dulu / test on the phone first"
+        description: "Unicode Fix (WildKernel): nama file dengan karakter tak terlihat tidak lagi disamakan / names with invisible characters no longer match. Dicentang otomatis / ticked by default"
         type: boolean
-        default: false
+        default: true
 
 permissions:
   contents: read

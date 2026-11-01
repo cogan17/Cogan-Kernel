@@ -89,7 +89,9 @@ The **Cek pembaruan** (check for updates) button is the only check, and it build
 | 138 | `2025-06_r17` | ✅ KernelSU Next: [build + KMI gate](https://github.com/cogan17/Cogan-Kernel/actions/runs/40061712549) · the phone's stock kernel; archive r5 tested on the phone |
 <!-- sublevel:end -->
 
-Unicode fix (optional) passes the build + KMI gate on 157, 162, 172 and 176, and applies cleanly on 138 and 145 ([CI](https://github.com/cogan17/Cogan-Kernel/actions/runs/40048269498)). If WildKernel's patch does not fit yet, the build stops: untick Unicode fix to build anyway.
+Unicode fix (ticked by default since 1 Nov 2026) passes the build + KMI gate on 157, 162, 172 and 176, and applies cleanly on 138 and 145 ([CI](https://github.com/cogan17/Cogan-Kernel/actions/runs/40048269498)). If WildKernel's patch does not fit yet, the build stops: untick Unicode fix to build anyway.
+
+🛡️ **CVE-2026-53163** is applied automatically in every build: the official Linux 6.1.177 fix (commit `40a25d59e85b`) for a kernel crash through futex that came with the CVE-2026-43499 fix in 6.1.175. ACK releases without the CVE-2026-43499 fix (below 175) do not have this bug, and ACK releases that already contain the fix are skipped.
 
 To publish an existing build, run **Rilis dari run** with the green Builder run ID. A run containing KernelSU Next and BakaSU becomes **one release** with both kernel ZIPs and their matching manager APKs, without rebuilding. Tick **diuji di HP** only if the owner tested every variant in that run on the phone.
 

@@ -89,7 +89,9 @@ Tombol **Cek pembaruan** satu-satunya yang mengecek, dan tidak membangun: versi 
 | 138 | `2025-06_r17` | ✅ KernelSU Next: [build + gate KMI](https://github.com/cogan17/Cogan-Kernel/actions/runs/40061712549) · kernel bawaan HP; arsip r5 diuji di HP |
 <!-- sublevel:end -->
 
-Unicode fix (opsional) lolos build + gate KMI di 157, 162, 172 dan 176, dan terpasang bersih di 138 dan 145 ([CI](https://github.com/cogan17/Cogan-Kernel/actions/runs/40048269498)). Bila patch WildKernel belum cocok, build berhenti: lepas centang Unicode fix untuk tetap build.
+Unicode fix (dicentang otomatis sejak 1 Nov 2026) lolos build + gate KMI di 157, 162, 172 dan 176, dan terpasang bersih di 138 dan 145 ([CI](https://github.com/cogan17/Cogan-Kernel/actions/runs/40048269498)). Bila patch WildKernel belum cocok, build berhenti: lepas centang Unicode fix untuk tetap build.
+
+🛡️ **CVE-2026-53163** dipasang otomatis di setiap build: perbaikan resmi Linux 6.1.177 (commit `40a25d59e85b`) untuk crash kernel lewat futex yang muncul sejak perbaikan CVE-2026-43499 di 6.1.175. ACK yang belum punya perbaikan CVE-2026-43499 (di bawah 175) tidak punya bug ini, dan ACK yang sudah berisi perbaikannya dilewati.
 
 Untuk menerbitkan build yang sudah selesai, jalankan **Rilis dari run** dengan ID run Builder yang hijau. Run yang berisi KernelSU Next dan BakaSU diterbitkan menjadi **satu rilis** dengan kedua ZIP kernel dan APK manager masing-masing, tanpa kompilasi ulang. Centang **diuji di HP** hanya bila semua varian dalam run itu sudah diuji owner.
 
