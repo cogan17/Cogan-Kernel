@@ -216,10 +216,26 @@ DEFCONFIG=arch/arm64/configs/gki_defconfig
   # Last, so it wins: what the phone's vendor modules were built against (IPV6_SUBTREES off, HZ 250).
   cat "$HERE/configs/stock-kmi.config"
 } >> "$DEFCONFIG"
-scripts/config --file "$DEFCONFIG" --set-str CONFIG_LOCALVERSION "-$NAME-$REVISION-$(git rev-parse --short=9 HEAD)" \
+# Kernel identity (owner 2026-11-01). Disguise off: the Cogan name. Disguise on: the GKI release
+# format (6.1.N-android14-<gen>-g<hash>-ab<num>), a generic AOSP build user/host and an Android clang
+# version string. Display only: nothing in the compiled code changes, so the KMI gate is unaffected.
+# A disguised uname still carries 6.1.N, so Cogan Bridge and the Cogan Smart module keep working; the
+# Cogan brand and revision stay in the ZIP name and build.env. Behaviour-based detectors are unaffected.
+CC_TEXT=""
+if [ "${DISGUISE:-false}" = "true" ]; then
+  GEN="$(sed -n 's/^KMI_GENERATION=//p' build.config.common 2>/dev/null || true)"; GEN="${GEN:-11}"
+  LOCALVERSION="-android14-$GEN-g$(git rev-parse --short=12 HEAD)-ab$(printf '%08d' "$(( 0x$(git rev-parse --short=7 HEAD) % 100000000 ))")"
+  BUILD_USER="android-build"; BUILD_HOST="abfarm"
+  # Representative recent Android (AOSP) clang version string, not a byte-for-byte copy of stock.
+  CC_TEXT="Android (12833391, +pgo, +bolt, +lto, +mlgo, based on r536225) clang version 19.0.1 (https://android.googlesource.com/toolchain/llvm-project 7a3f165bb0e9ba0a0f2680d35c1e8b1c0a4d6c1f)"
+else
+  LOCALVERSION="-$NAME-$REVISION-$(git rev-parse --short=9 HEAD)"
+  BUILD_USER="cogan17"; BUILD_HOST="github-actions"
+fi
+scripts/config --file "$DEFCONFIG" --set-str CONFIG_LOCALVERSION "$LOCALVERSION" \
   --disable CONFIG_LOCALVERSION_AUTO
 sed -i 's/echo "+"/# echo "+"/g' scripts/setlocalversion
-export KBUILD_BUILD_USER=cogan17 KBUILD_BUILD_HOST=github-actions KCFLAGS="-w"
+export KBUILD_BUILD_USER="$BUILD_USER" KBUILD_BUILD_HOST="$BUILD_HOST" KCFLAGS="-w"
 if [ "${BUILD_TIME:-N}" = "N" ]; then
   KBUILD_BUILD_TIMESTAMP="$(LC_ALL=C date -u '+%a %b %d %H:%M:%S UTC %Y')"
 else
@@ -228,6 +244,9 @@ fi
 export KBUILD_BUILD_TIMESTAMP
 MAKE=(make -j"$(nproc)" O="$KOUT" ARCH=arm64 LLVM=1 LLVM_IAS=1 CROSS_COMPILE=aarch64-linux-gnu-
       CROSS_COMPILE_COMPAT=arm-linux-gnueabi- CC="ccache clang")
+# Disguise: the /proc/version compiler string (CONFIG_CC_VERSION_TEXT). Overriding the make variable
+# wins over its Kconfig default, so olddefconfig does not reset it back to the real clang.
+[ -z "$CC_TEXT" ] || MAKE+=(CC_VERSION_TEXT="$CC_TEXT")
 "${MAKE[@]}" gki_defconfig
 for line in CONFIG_KSU=y CONFIG_KSU_SUSFS=y CONFIG_KSU_SUSFS_SUS_MAP=y CONFIG_COGAN_BRIDGE=y CONFIG_HZ=250; do
   grep -qx "$line" "$KOUT/.config" || fail "$line missing from the resolved config"
@@ -321,6 +340,7 @@ echo "::endgroup::"
   echo "NOMOUNT=$([ "${NOMOUNT:-true}" = "true" ] && snap nomount.tag || echo -)"
   echo "BBG_COMMIT=$([ "${BBG:-true}" = "true" ] && snap bbg.commit || echo -)"
   echo "CVE_2026_53163=$CVE_2026_53163"
+  echo "DISGUISE=$([ "${DISGUISE:-false}" = "true" ] && echo on || echo off)"
   echo "UNICODE_FIX=$([ "${UNICODE:-false}" = "true" ] && snap unicode.commit || echo -)"
   echo "ZIP=$ZIP"
   echo "ZIP_SHA256=$(sha256sum "$OUT/$ZIP" | cut -d' ' -f1)"

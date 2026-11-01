@@ -65,6 +65,7 @@
 - ✅ **Cogan Bridge**: kernel dan modul Cogan Smart saling mengenal (`/sys/kernel/cogan`)
 - ✅ Tanpa LTO sebagai bawaan (build lebih cepat; Thin/Full LTO tetap bisa dipilih), cek perangkat di ZIP (hanya `rothko`)
 - ⚙️ Opsional, dicentang secara default: **Unicode fix** (WildKernel). Nama file berisi karakter tak terlihat (mis. zero-width) di penyimpanan internal tidak lagi dianggap sama dengan nama tanpa karakter itu (celah *unicode bypass* untuk menemukan path yang disembunyikan)
+- ⚙️ Opsional, **mati secara default**: **Samarkan identitas kernel**. `uname` dan `/proc/version` memakai format GKI bawaan (`6.1.176-android14-11-g…-ab…`), bukan nama `Cogan`. Hanya tampilan, bukan penyembunyian berbasis perilaku
 - ✅ Tiap build dicek otomatis terhadap ABI kernel bawaan (gate KMI); gagal = tidak ada ZIP
 
 </details>
@@ -92,6 +93,8 @@ Tombol **Cek pembaruan** satu-satunya yang mengecek, dan tidak membangun: versi 
 Unicode fix (dicentang otomatis sejak 1 Nov 2026) lolos build + gate KMI di 157, 162, 172 dan 176, dan terpasang bersih di 138 dan 145 ([CI](https://github.com/cogan17/Cogan-Kernel/actions/runs/40048269498)). Bila patch WildKernel belum cocok, build berhenti: lepas centang Unicode fix untuk tetap build.
 
 🛡️ **CVE-2026-53163** dipasang otomatis di setiap build: perbaikan resmi Linux 6.1.177 (commit `40a25d59e85b`) untuk crash kernel lewat futex yang muncul sejak perbaikan CVE-2026-43499 di 6.1.175. ACK yang belum punya perbaikan CVE-2026-43499 (di bawah 175) tidak punya bug ini, dan ACK yang sudah berisi perbaikannya dilewati.
+
+🫥 **Samarkan identitas kernel** (centang, mati secara default): `uname` dan `/proc/version` ditulis dalam format GKI bawaan Google (string versi, pembuat `android-build@abfarm`, dan versi Android clang), bukan nama `Cogan`. Ini hanya mengubah tampilan, tidak mengubah kode kernel, jadi gate KMI tidak terpengaruh. String versi tetap memuat `6.1.176`, jadi Cogan Bridge dan modul Cogan Smart tetap jalan; nama `Cogan` dan nomor rilis tetap ada di nama file ZIP dan catatan rilis. Ini **tidak** melawan deteksi berbasis perilaku (jejak root, mount, properti) maupun pengecekan lewat chip keamanan HP (Play Integrity). Uji HP dulu.
 
 Untuk menerbitkan build yang sudah selesai, jalankan **Rilis dari run** dengan ID run Builder yang hijau. Run yang berisi KernelSU Next dan BakaSU diterbitkan menjadi **satu rilis** dengan kedua ZIP kernel dan APK manager masing-masing, tanpa kompilasi ulang. Centang **diuji di HP** hanya bila semua varian dalam run itu sudah diuji owner.
 

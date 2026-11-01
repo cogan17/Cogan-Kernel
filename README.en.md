@@ -65,6 +65,7 @@
 - ✅ **Cogan Bridge**: the kernel and the Cogan Smart module know each other (`/sys/kernel/cogan`)
 - ✅ No LTO by default (faster builds; Thin/Full LTO can still be chosen), device check in the ZIP (`rothko` only)
 - ⚙️ Optional, ticked by default: **Unicode fix** (WildKernel). File names with invisible characters (e.g. zero-width) on internal storage no longer count as the same name without them (the *unicode bypass* gap used to find hidden paths)
+- ⚙️ Optional, **off by default**: **Disguise kernel identity**. `uname` and `/proc/version` use the stock GKI format (`6.1.176-android14-11-g…-ab…`) instead of the `Cogan` name. Display only, not behaviour-based hiding
 - ✅ Every build is checked automatically against the stock kernel ABI (KMI gate); failure = no ZIP
 
 </details>
@@ -92,6 +93,8 @@ The **Cek pembaruan** (check for updates) button is the only check, and it build
 Unicode fix (ticked by default since 1 Nov 2026) passes the build + KMI gate on 157, 162, 172 and 176, and applies cleanly on 138 and 145 ([CI](https://github.com/cogan17/Cogan-Kernel/actions/runs/40048269498)). If WildKernel's patch does not fit yet, the build stops: untick Unicode fix to build anyway.
 
 🛡️ **CVE-2026-53163** is applied automatically in every build: the official Linux 6.1.177 fix (commit `40a25d59e85b`) for a kernel crash through futex that came with the CVE-2026-43499 fix in 6.1.175. ACK releases without the CVE-2026-43499 fix (below 175) do not have this bug, and ACK releases that already contain the fix are skipped.
+
+🫥 **Disguise kernel identity** (checkbox, off by default): `uname` and `/proc/version` are written in Google's stock GKI format (the version string, builder `android-build@abfarm`, and an Android clang version), instead of the `Cogan` name. This only changes what is shown, not the compiled code, so the KMI gate is unaffected. The version string still carries `6.1.176`, so Cogan Bridge and the Cogan Smart module keep working; the `Cogan` name and revision stay in the ZIP name and release notes. It does **not** defeat behaviour-based detection (root traces, mounts, properties) or the phone's security-chip checks (Play Integrity). Test on the phone first.
 
 To publish an existing build, run **Rilis dari run** with the green Builder run ID. A run containing KernelSU Next and BakaSU becomes **one release** with both kernel ZIPs and their matching manager APKs, without rebuilding. Tick **diuji di HP** only if the owner tested every variant in that run on the phone.
 

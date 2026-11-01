@@ -66,6 +66,10 @@ on:
         description: "Unicode Fix (WildKernel): nama file dengan karakter tak terlihat tidak lagi disamakan / names with invisible characters no longer match. Dicentang otomatis / ticked by default"
         type: boolean
         default: true
+      use_disguise:
+        description: "Samarkan identitas kernel: uname & /proc/version memakai format GKI bawaan, bukan nama Cogan (hanya tampilan; bukan untuk deteksi berbasis perilaku). Uji HP dulu / Disguise kernel identity: uname & /proc/version use the stock GKI format instead of the Cogan name (display only). Test on the phone first"
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -275,6 +279,7 @@ jobs:
           BBG: ${{ inputs.use_bbg }}
           NETWORKING: ${{ inputs.use_net }}
           UNICODE: ${{ inputs.use_unicode }}
+          DISGUISE: ${{ inputs.use_disguise }}
           OUT: ${{ github.workspace }}/out
           WORK: ${{ runner.temp }}/work
           GH_TOKEN: ${{ github.token }}
