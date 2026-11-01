@@ -91,8 +91,6 @@ The **Cek pembaruan** (check for updates) button is the only check, and it build
 
 Unicode fix (optional) passes the build + KMI gate on 157, 162, 172 and 176, and applies cleanly on 138 and 145 ([CI](https://github.com/cogan17/Cogan-Kernel/actions/runs/40048269498)). If WildKernel's patch does not fit yet, the build stops: untick Unicode fix to build anyway.
 
-🧪 **Experiment** (artifact only, never released): `E-EKSPERIMEN_KERNEL_….zip` holds the same kernel as file 1 plus the manager APK. Flashed in TWRP, it stages an update of the **already installed** manager so it matches the kernel; the update happens at boot (log: `/data/adb/cogan-manager/log.txt`). The first manager install is still done in Android. Not tested on the phone yet.
-
 To publish an existing build, run **Rilis dari run** with the green Builder run ID. A run containing KernelSU Next and BakaSU becomes **one release** with both kernel ZIPs and their matching manager APKs, without rebuilding. Tick **diuji di HP** only if the owner tested every variant in that run on the phone.
 
 Release notes include **What's New & Fixes**, compared with the previous release of the same root manager. The run's **Summary** provides **one Telegram post ready to copy** for the whole release (KernelSU Next and BakaSU in one text) in Indonesian and English, each in a code block with a copy button. Changes from the root manager and SUSFS developers are written in plain words (e.g. "fixes SELinux hiding"), without commit codes. Tick **teks_saja** to generate only notes and Telegram posts, including for an already published version; this mode does not publish or change a release.

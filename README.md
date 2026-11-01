@@ -91,8 +91,6 @@ Tombol **Cek pembaruan** satu-satunya yang mengecek, dan tidak membangun: versi 
 
 Unicode fix (opsional) lolos build + gate KMI di 157, 162, 172 dan 176, dan terpasang bersih di 138 dan 145 ([CI](https://github.com/cogan17/Cogan-Kernel/actions/runs/40048269498)). Bila patch WildKernel belum cocok, build berhenti: lepas centang Unicode fix untuk tetap build.
 
-🧪 **Eksperimen** (hanya di artifact, tidak dirilis): `E-EKSPERIMEN_KERNEL_….zip` berisi kernel yang sama dengan file 1 plus APK manager. Di-flash lewat TWRP, ia menyiapkan pembaruan manager yang **sudah terpasang** supaya sama versi dengan kernel; pembaruan terjadi saat HP menyala (log: `/data/adb/cogan-manager/log.txt`). Pemasangan manager pertama kali tetap dari Android. Belum diuji di HP.
-
 Untuk menerbitkan build yang sudah selesai, jalankan **Rilis dari run** dengan ID run Builder yang hijau. Run yang berisi KernelSU Next dan BakaSU diterbitkan menjadi **satu rilis** dengan kedua ZIP kernel dan APK manager masing-masing, tanpa kompilasi ulang. Centang **diuji di HP** hanya bila semua varian dalam run itu sudah diuji owner.
 
 Catatan rilis memuat **What's New & Fixes**, dibandingkan dengan rilis sebelumnya dari root manager yang sama. Di halaman **Summary** run, **satu Teks Telegram siap salin** tersedia untuk seluruh rilis (KernelSU Next dan BakaSU dalam satu teks) dalam Bahasa Indonesia dan English, masing-masing dalam kotak kode dengan tombol salin. Perubahan dari pengembang root manager dan SUSFS ditulis dengan kata-kata biasa (mis. "memperbaiki penyembunyian SELinux"), tanpa kode commit. Centang **teks_saja** bila hanya ingin membuat catatan dan teks Telegram, termasuk untuk versi yang sudah terbit; mode ini tidak menerbitkan atau mengubah rilis.
