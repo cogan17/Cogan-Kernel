@@ -208,7 +208,7 @@ DEFCONFIG=arch/arm64/configs/gki_defconfig
   cat "$HERE/configs/susfs.config" "$HERE/configs/compat.config"
   if [ "${NETWORKING:-true}" = "true" ]; then cat "$HERE/configs/custom.config"
   else sed '/^# Networking extras$/,$d' "$HERE/configs/custom.config"; fi
-  case "${LTO:-full}" in
+  case "${LTO:-none}" in  # the Builder form defaults to Tanpa LTO (owner 2026-11-01)
     full) printf 'CONFIG_LTO_NONE=n\nCONFIG_LTO_CLANG_FULL=y\n' ;;
     thin) printf 'CONFIG_LTO_NONE=n\nCONFIG_LTO_CLANG_THIN=y\n' ;;
   esac
