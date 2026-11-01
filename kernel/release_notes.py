@@ -25,13 +25,19 @@ def read_env(path):
     return dict(line.split("=", 1) for line in Path(path).read_text().splitlines() if "=" in line)
 
 
+def has_susfs(env):
+    """False for a build with the SUSFS box unticked (owner 2026-11-02): build.env says SUSFS_COMMIT=-."""
+    return env.get("SUSFS_COMMIT", "-") not in ("", "-")
+
+
 def component_lines(env):
     """Keep the component format readable by older release-history readers."""
     root = env["ROOT_NAME"] + (f" {env['ROOT_TAG']}" if env.get("ROOT_TAG") else "") + f" `{env['ROOT_COMMIT'][:12]}`"
     if env.get("KSU_VERSION"):
         root += f" ({env['KSU_VERSION']})"
     return [f"- Kernel: `{env['LINUX_VERSION']}` (ACK `{env['ACK_TAG']}`)",
-             f"- Root: {root} + SUSFS {env['SUSFS_VERSION']} `{env['SUSFS_COMMIT'][:12]}`",
+             f"- Root: {root} + SUSFS {env['SUSFS_VERSION']} `{env['SUSFS_COMMIT'][:12]}`" if has_susfs(env)
+             else f"- Root: {root} · tanpa SUSFS / without SUSFS",
              f"- NoMount: {env['NOMOUNT']} · Neutron clang {env['NEUTRON']}",
              f"- Fitur / features: {env['FEATURES']}",
              *([f"- Unicode fix: WildKernel `{env['UNICODE_FIX'][:12]}`"] if env.get("UNICODE_FIX", "-") != "-" else []),

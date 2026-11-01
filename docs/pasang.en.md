@@ -36,7 +36,7 @@ Copy the result to a **PC or USB drive**, not only the phone. Also keep the **st
 ## 3. After it boots
 
 1. Install the root manager app from the same release package (**KernelSU Next** or **BakaSU**, matching the kernel ZIP), then the **NoMount** metamodule.
-   To configure SUSFS, also install the **SUSFS module** `5-SUSFS-MODULE-SIDEX15_…zip`: sidex15's module with WebUI (its newest CI build), which installs the `ksu_susfs` tool. Releases from 26–28 Oct 2026 also hold simonpunk's module (`5-…SIMONPUNK`) and number sidex15's module `6-`; install only one of them.
+   If the kernel ZIP is named `…+SuSFS…` and you want to configure SUSFS, also install the **SUSFS module** `5-SUSFS-MODULE-SIDEX15_…zip`: sidex15's module with WebUI (its newest CI build), which installs the `ksu_susfs` tool. Releases from 26–28 Oct 2026 also hold simonpunk's module (`5-…SIMONPUNK`) and number sidex15's module `6-`; install only one of them.
 2. *Optional:* the **[Cogan Smart Kernel](https://github.com/cogan17/Cogan-Kernel/blob/main/modules/cogan-smart/README.md)** module. Its development is parked (bug fixes only); the kernel runs normally without it. If you install it, reboot once, then check the module WebUI: **"Identitas asli · terverifikasi"** (real identity, verified) and **"✓ kernel dibuat untuk HP ini"** (kernel built for this phone).
 3. *Optional, to disguise the kernel from detector apps:* open the SUSFS module WebUI → **Kernel Uname**, then enter the phone's stock kernel values (read from the rothko stock `boot.img`):
    - **Spoof Kernel Version** (tick the box next to it):

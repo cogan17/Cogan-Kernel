@@ -40,11 +40,14 @@ apply() {  # strict: the patch applies as it is, or the build stops
 }
 
 ROOT="$(snap root)"
+# The SUSFS box (owner 2026-11-02, ticked by default): unticked builds the plain root manager.
+SUSFS_ON=true; snap susfs.commit >/dev/null 2>&1 || SUSFS_ON=false
 case "$ROOT" in
-  KSUN) VARIANT="KernelSU-Next+SuSFS"; ROOT_NAME="KernelSU Next" ;;
-  BSU) VARIANT="BakaSU+SuSFS"; ROOT_NAME="BakaSU" ;;
+  KSUN) VARIANT="KernelSU-Next"; ROOT_NAME="KernelSU Next" ;;
+  BSU) VARIANT="BakaSU"; ROOT_NAME="BakaSU" ;;
   *) fail "Unknown root $ROOT" ;;
 esac
+[ "$SUSFS_ON" = true ] && VARIANT="$VARIANT+SuSFS"
 [[ "${BRAND:-Cogan}" =~ ^[A-Za-z0-9_-]{1,12}$ ]] || fail "Kernel Branding: up to 12 letters, digits, _ or -"
 REVISION="${REVISION:-r${RUN_NUMBER:-0}}"
 [[ "$REVISION" =~ ^r[0-9]+$ ]] || fail "Build Revision: r followed by digits (e.g. r10)"
@@ -173,6 +176,8 @@ else
 fi
 echo "::endgroup::"
 
+SUSFS_VERSION="-"
+if [ "$SUSFS_ON" = true ]; then
 group "SUSFS $(snap susfs.commit | cut -c1-12)"
 git clone -q --filter=blob:none -b "$(snap susfs.branch)" "$(snap susfs.repo)" "$WORK/susfs"
 git -C "$WORK/susfs" checkout -q "$(snap susfs.commit)"
@@ -188,6 +193,7 @@ patch -p1 --fuzz=3 --no-backup-if-mismatch < "$WORK/susfs.patch" \
               "Wait for simonpunk to update SUSFS: its newest kernel patch does not fit ACK 6.1.$SUBLEVEL."
 SUSFS_VERSION="$(sed -n 's/^#define SUSFS_VERSION "\(.*\)"/\1/p' include/linux/susfs.h)"
 echo "::endgroup::"
+fi
 
 if [ "${NOMOUNT:-true}" = "true" ]; then
   group "NoMount $(snap nomount.tag)"
@@ -205,7 +211,8 @@ DEFCONFIG=arch/arm64/configs/gki_defconfig
   echo "CONFIG_KSU=y"
   [ "${BBG:-true}" = "true" ] && echo "CONFIG_BBG=y"
   [ "${NOMOUNT:-true}" = "true" ] && echo "CONFIG_NOMOUNT=y"
-  cat "$HERE/configs/susfs.config" "$HERE/configs/compat.config"
+  [ "$SUSFS_ON" = true ] && cat "$HERE/configs/susfs.config"
+  cat "$HERE/configs/compat.config"
   if [ "${NETWORKING:-true}" = "true" ]; then cat "$HERE/configs/custom.config"
   else sed '/^# Networking extras$/,$d' "$HERE/configs/custom.config"; fi
   case "${LTO:-none}" in  # the Builder form defaults to Tanpa LTO (owner 2026-11-01)
@@ -257,9 +264,12 @@ MAKE=(make -j"$(nproc)" O="$KOUT" ARCH=arm64 LLVM=1 LLVM_IAS=1 CROSS_COMPILE=aar
 # wins over its Kconfig default, so olddefconfig does not reset it back to the real clang.
 [ -z "$CC_TEXT" ] || MAKE+=(CC_VERSION_TEXT="$CC_TEXT")
 "${MAKE[@]}" gki_defconfig
-for line in CONFIG_KSU=y CONFIG_KSU_SUSFS=y CONFIG_KSU_SUSFS_SUS_MAP=y CONFIG_COGAN_BRIDGE=y CONFIG_HZ=250; do
+required=(CONFIG_KSU=y CONFIG_COGAN_BRIDGE=y CONFIG_HZ=250)
+[ "$SUSFS_ON" = true ] && required+=(CONFIG_KSU_SUSFS=y CONFIG_KSU_SUSFS_SUS_MAP=y)
+for line in "${required[@]}"; do
   grep -qx "$line" "$KOUT/.config" || fail "$line missing from the resolved config"
 done
+[ "$SUSFS_ON" = true ] || ! grep -qx 'CONFIG_KSU_SUSFS=y' "$KOUT/.config" || fail "SUSFS unticked but CONFIG_KSU_SUSFS=y"
 ! grep -qx 'CONFIG_IPV6_SUBTREES=y' "$KOUT/.config" || fail "CONFIG_IPV6_SUBTREES must stay off (vendor KMI)"
 echo "::endgroup::"
 
@@ -345,7 +355,7 @@ echo "::endgroup::"
   echo "ROOT_TAG=$(snap root_source.tag 2>/dev/null || snap root_source.branch)"
   echo "KSU_VERSION=$KSU_VERSION"
   echo "SUSFS_VERSION=$SUSFS_VERSION"
-  echo "SUSFS_COMMIT=$(snap susfs.commit)"
+  echo "SUSFS_COMMIT=$([ "$SUSFS_ON" = true ] && snap susfs.commit || echo -)"
   echo "NOMOUNT=$([ "${NOMOUNT:-true}" = "true" ] && snap nomount.tag || echo -)"
   echo "BBG_COMMIT=$([ "${BBG:-true}" = "true" ] && snap bbg.commit || echo -)"
   echo "CVE_2026_53163=$CVE_2026_53163"

@@ -59,7 +59,7 @@
 
 - ✅ Sumber kernel resmi Google (Android Common Kernel `android14-6.1`), sekeluarga dengan kernel bawaan HP. Modul vendor Xiaomi/MediaTek tetap cocok
 - ✅ Selalu versi terbaru: rilis ACK, root manager, SUSFS dan NoMount diambil terbaru saat build. Bila ada yang belum cocok, ringkasan build menyebut pengembang mana yang perlu ditunggu
-- ✅ Root bawaan kernel + **SUSFS**, dua varian: **KernelSU Next** atau **BakaSU**
+- ✅ Root bawaan kernel + **SUSFS**, dua varian: **KernelSU Next** atau **BakaSU**. SUSFS dicentang secara default; bila centangnya dilepas, kernel memakai root manager biasa tanpa SUSFS (nama ZIP tanpa `+SuSFS`, tanpa modul SUSFS)
 - ✅ **NoMount** (modul tanpa mount, tertanam di kernel), **Baseband Guard**
 - ✅ **BBRv3** sebagai TCP bawaan (`bbr` dan `bbr3`)
 - ✅ **Cogan Bridge**: kernel dan modul Cogan Smart saling mengenal (`/sys/kernel/cogan`)
