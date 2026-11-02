@@ -233,10 +233,44 @@ class TelegramTest(unittest.TestCase):
     def test_combined_post_names_what_differs(self):
         first = {**R2, "ROOT_NAME": "BakaSU", "LINUX_VERSION": "6.1.172", "FEATURES": "SUSFS, Full LTO"}
         text = tg.release_post([(first, {}), (R2, {"prev": tg.previous(RELEASES, R2)})], "en")
-        self.assertIn("ACK 6.1.172 / 6.1.176 · BakaSU & KernelSU Next", text)
-        self.assertIn("📌 Compared with v26.10.23-r1 (KernelSU Next 6.1.176)", text)
-        self.assertIn("• BakaSU 6.1.172: First release of this variant", text)
-        self.assertIn("🧩 Features (BakaSU 6.1.172): SUSFS, Full LTO\n🧩 Features (KernelSU Next 6.1.176): SUSFS, BBRv3", text)
+        self.assertIn("📦 v26.10.24-r2 · BakaSU & KernelSU Next + SUSFS v2.3.0\n"
+                      "🐧 2 kernel choices: 6.1.172, 6.1.176 (6.1.176 = newest)", text)
+        self.assertIn("📌 Compared with v26.10.23-r1 (KernelSU Next)", text)
+        self.assertIn("• BakaSU: First release of this variant", text)
+        self.assertIn("🧩 Features (BakaSU): SUSFS, Full LTO\n🧩 Features (KernelSU Next): SUSFS, BBRv3", text)
+
+    def test_many_sublevels_make_a_short_post(self):
+        # Owner 2026-11-02, r8 (7 sublevels x 2 root managers): one line per sublevel was far too long.
+        prev_ksun = {**tg.previous(RELEASES, R2), "tag": "v26.10.31-r7"}
+        prev_bsu = {**prev_ksun, "root": ("BakaSU main", "2ea131d9d44e")}
+        fix_titles = {"id": ["Menutup celah"], "en": ["Closes a hole"]}
+        builds = [({**R2, "RELEASE": "v26.11.02-r8", "ROOT_NAME": root, "LINUX_VERSION": f"6.1.{sub}",
+                    "ACK_TAG": f"android14-6.1-x_{sub}", "ROOT_COMMIT": "f" * 40, "SUSFS_COMMIT": "1" * 40},
+                   {"prev": prev, "fix_titles": fix_titles, "upstream": {"root": ["fix: selinux hide"], "susfs": []}})
+                  for root, prev in (("BakaSU", prev_bsu), ("KernelSU Next", prev_ksun)) for sub in (176, 138, 141, 172)]
+        text = tg.release_post(builds, "id", link="https://x/r8", tested=True)
+        self.assertIn("🐧 4 pilihan kernel: 6.1.138, 6.1.141, 6.1.172, 6.1.176 (6.1.176 = terbaru)", text)
+        self.assertIn("📌 Dibandingkan dengan v26.10.31-r7\n", text)
+        self.assertIn("✨ Baru\n• Pilihan kernel baru: 6.1.138, 6.1.141, 6.1.172\n", text)
+        self.assertNotIn("Kernel ACK", text)
+        self.assertNotIn("Rilis ACK", text)
+        self.assertNotIn("6.1.138:", text)            # no line per sublevel
+        self.assertEqual(text.count("Menutup celah"), 1)
+        self.assertEqual(text.count("BakaSU: memperbaiki penyembunyian SELinux"), 1)
+        self.assertLess(len(text.splitlines()), 25)
+        english = tg.release_post(builds, "en", link="https://x/r8")
+        self.assertIn("🐧 4 kernel choices: 6.1.138, 6.1.141, 6.1.172, 6.1.176 (6.1.176 = newest)", english)
+        self.assertIn("• New kernel choices: 6.1.138, 6.1.141, 6.1.172", english)
+        self.assertEqual(english.count("Closes a hole"), 1)
+
+    def test_fixes_use_plain_words_for_end_users(self):
+        message = ("fix(kernel): vendor hook stok untuk ACK 6.1.141 (Issue #105) (#113)\n\n"
+                   "Release-Fix-EN: ACK 6.1.141 now carries the stock scheduler vendor hooks")
+        self.assertEqual(tg.fixes([message], "id"), ["Kernel 6.1.141 kini cocok dengan driver bawaan HP"])
+        self.assertEqual(tg.fixes([message], "en"), ["Kernel 6.1.141 now fits the phone's own drivers"])
+        # No plain entry: the subject without its issue and PR numbers, and the English trailer.
+        other = "fix(kernel): sesuatu yang baru (Issue #9) (#120)\n\nRelease-Fix-EN: something new"
+        self.assertEqual((tg.fixes([other], "id"), tg.fixes([other], "en")), (["sesuatu yang baru"], ["something new"]))
 
     def test_features_turned_off_are_not_new_features(self):
         prev = {"tag": "v26.10.31-r7", "features": "SUSFS, BBRv3 (default, also bbr3), BBG, NoMount, Cogan Bridge, No LTO"}
