@@ -38,6 +38,23 @@ FIX_EN = {
     "ccache di ~/.ccache supaya cache tersimpan":
         "Store ccache in ~/.ccache so the build cache is saved",
 }
+# Plain words for end users (owner 2026-11-02: "Buat agar end user yg awam mudah memahami"), reviewed per
+# commit subject; they win over the subject and its Release-Fix trailers. New fix(kernel...) commits should
+# get plain Release-Fix-ID/EN trailers instead of an entry here.
+FIX_PLAIN = {
+    "BBRv3 untuk ACK 6.1.141": {
+        "id": "Internet BBRv3 kini jalan di kernel 6.1.141",
+        "en": "BBRv3 networking now works on kernel 6.1.141"},
+    "vendor hook stok untuk ACK 6.1.141": {
+        "id": "Kernel 6.1.141 kini cocok dengan driver bawaan HP",
+        "en": "Kernel 6.1.141 now fits the phone's own drivers"},
+    "BakaSU tidak lagi mengambil rilis yang masih ReSukiSU": {
+        "id": "BakaSU kini benar-benar BakaSU (bukan ReSukiSU versi lama)",
+        "en": "BakaSU is now really BakaSU (not the old ReSukiSU)"},
+    "perbaiki crash kernel lewat futex (CVE-2026-53163)": {
+        "id": "Menutup celah yang bisa membuat HP restart sendiri (CVE-2026-53163)",
+        "en": "Closes a hole that could make the phone restart by itself (CVE-2026-53163)"},
+}
 WORDS = {
     "id": {"new": "✨ Baru", "fixes": "🔧 Perbaikan", "note": "📝 Catatan", "features": "🧩 Fitur",
            "same": "Komponen sama dengan {prev}", "first": "Rilis pertama varian ini",
@@ -50,6 +67,8 @@ WORDS = {
            "ack": "Rilis ACK {old} → {new}", "unicode": "Unicode fix WildKernel diperbarui",
            "neutron": "Neutron clang {old} → {new}",
            "nomount": "NoMount {old} → {new}", "added": "Fitur baru: {names}", "removed": "Fitur dilepas: {names}",
+           "choices": "🐧 {n} pilihan kernel: {versions} ({newest} = terbaru)",
+           "kernel_new": "Pilihan kernel baru: {versions}",
            "tested": "✅ Diuji di HP", "untested": "⚠️ Belum diuji di HP", "download": "⬇️ Unduh"},
     "en": {"new": "✨ New", "fixes": "🔧 Fixes", "note": "📝 Note", "features": "🧩 Features",
            "same": "Same components as {prev}", "first": "First release of this variant",
@@ -62,6 +81,8 @@ WORDS = {
            "ack": "ACK release {old} → {new}", "unicode": "WildKernel Unicode fix updated",
            "neutron": "Neutron clang {old} → {new}",
            "nomount": "NoMount {old} → {new}", "added": "New features: {names}", "removed": "Features dropped: {names}",
+           "choices": "🐧 {n} kernel choices: {versions} ({newest} = newest)",
+           "kernel_new": "New kernel choices: {versions}",
            "tested": "✅ Tested on the phone", "untested": "⚠️ Not tested on the phone yet", "download": "⬇️ Download"},
 }
 
@@ -130,10 +151,11 @@ def fixes(commits, lang="id"):
     for commit in commits:
         message = commit["commit"]["message"] if isinstance(commit, dict) else commit
         title = message.splitlines()[0] if message else ""
-        match = re.match(r"fix\(kernel[^)]*\):\s*(.+?)(?:\s*\(#\d+\))?$", title)
+        match = re.match(r"fix\(kernel[^)]*\):\s*(.+?)(?:\s*\((?:Issue )?#\d+\))*$", title)
         if match:
             localized = re.search(rf"^Release-Fix-{lang.upper()}:[ \t]*(.+)$", message, re.MULTILINE)
-            text = localized[1].strip() if localized else match[1] if lang == "id" else FIX_EN.get(match[1])
+            text = (FIX_PLAIN.get(match[1], {}).get(lang) or (localized[1].strip() if localized else None)
+                    or (match[1] if lang == "id" else FIX_EN.get(match[1])))
             if not text:
                 text = WORDS[lang]["untranslated_fix"]
                 if isinstance(commit, dict) and re.fullmatch(r"[0-9a-f]{40}", commit.get("sha", "")):
@@ -269,6 +291,8 @@ def release_post(builds, lang, link="", tested=False, note="", note_en=""):
     w = WORDS[lang]
     envs = [env for env, _ in builds]
     versions = {env.get("LINUX_VERSION") for env in envs}
+    if len(versions) > 1:
+        return sublevels_post(builds, lang, link, tested, note, note_en)
     labels = [env.get("ROOT_NAME", "") + ("" if len(versions) == 1 else f" {env.get('LINUX_VERSION', '')}") for env in envs]
     lines = ["🧠 Cogan Kernel · Xiaomi 14T Pro (rothko)",
              f"📦 {envs[0].get('RELEASE', '')} · ACK {joined(e.get('LINUX_VERSION') for e in envs)} · "
@@ -294,6 +318,71 @@ def release_post(builds, lang, link="", tested=False, note="", note_en=""):
         lines.append(f"{w['features']}: {envs[0].get('FEATURES', '')}")
     else:
         lines += [f"{w['features']} ({label}): {env.get('FEATURES', '')}" for label, env in zip(labels, envs)]
+    lines.append(w["tested"] if tested else w["untested"])
+    if link:
+        lines.append(f"{w['download']}: {link}")
+    return "\n".join(lines) + "\n"
+
+
+def sublevel_key(version):
+    return tuple(int(n) for n in re.findall(r"\d+", version or "0"))
+
+
+def unique(items):
+    return list(dict.fromkeys(items))
+
+
+def sublevels_post(builds, lang, link="", tested=False, note="", note_en=""):
+    """A release with several ACK sublevels, short enough for end users (owner 2026-11-02, r8: one line per
+    sublevel and root manager was far too long). The kernel versions are named once at the top; every
+    change is written once per root manager, or once for all when every root manager has it."""
+    w = WORDS[lang]
+    envs = [env for env, _ in builds]
+    versions = sorted(unique(e.get("LINUX_VERSION", "") for e in envs if e.get("LINUX_VERSION")), key=sublevel_key)
+    roots = unique(e.get("ROOT_NAME", "") for e in envs)
+    lines = ["🧠 Cogan Kernel · Xiaomi 14T Pro (rothko)",
+             f"📦 {envs[0].get('RELEASE', '')} · {' & '.join(roots)}{susfs_label(envs, lang)}",
+             w["choices"].format(n=len(versions), versions=", ".join(versions), newest=versions[-1])]
+    prevs = {}
+    for env, measured in builds:
+        if measured.get("prev"):
+            prevs.setdefault(env.get("ROOT_NAME", ""), measured["prev"])
+    if prevs:
+        tags = unique(prev["tag"] for prev in prevs.values())
+        same = len(prevs) == len(roots) and len(tags) == 1
+        lines += ["", "📌 " + w["baseline"].format(prev=tags[0] if same else
+                                                   ", ".join(f"{prev['tag']} ({root})" for root, prev in prevs.items()))]
+    new_by_root, fixed_by_root = {}, {}
+    for env, measured in builds:
+        prev = measured.get("prev")
+        # The kernel and ACK release lines are left out per build: the versions are named at the top.
+        same_kernel = {**env, "LINUX_VERSION": prev.get("kernel", env.get("LINUX_VERSION")),
+                       "ACK_TAG": prev.get("ack", env.get("ACK_TAG"))} if prev else env
+        root = env.get("ROOT_NAME", "")
+        new_by_root.setdefault(root, []).extend(
+            whats_new(same_kernel, prev, lang, measured.get("history_available", True), measured.get("upstream")))
+        fixed_by_root.setdefault(root, []).extend(
+            fix_items(lang, prev, measured.get("fix_titles", ()), measured.get("history_available", True),
+                      measured.get("fixes_available", True), upstream_fixes(env, prev, lang, measured.get("upstream"))))
+    known = {prev.get("kernel") for prev in prevs.values()}
+    fresh = [version for version in versions if version not in known]
+    new = merged([(root, unique(items)) for root, items in new_by_root.items()])
+    if prevs and fresh:
+        new = [w["kernel_new"].format(versions=", ".join(fresh))] + [item for item in new if not item.startswith(w["same"][:12])]
+    fixed = merged([(root, unique(items)) for root, items in fixed_by_root.items()])
+    lines += ["", w["new"], *[f"• {item}" for item in new], "", w["fixes"], *[f"• {item}" for item in fixed]]
+    localized_note = note if lang == "id" else note_en
+    if localized_note.strip():
+        lines += ["", w["note"], *localized_note.replace("\\n", "\n").strip().splitlines()]
+    features = unique(env.get("FEATURES", "") for env in envs)
+    lines.append("")
+    if len(features) == 1:
+        lines.append(f"{w['features']}: {features[0]}")
+    else:
+        by_root = {}
+        for env in envs:
+            by_root.setdefault(env.get("ROOT_NAME", ""), []).append(env.get("FEATURES", ""))
+        lines += [f"{w['features']} ({root}): {feature}" for root, values in by_root.items() for feature in unique(values)]
     lines.append(w["tested"] if tested else w["untested"])
     if link:
         lines.append(f"{w['download']}: {link}")
