@@ -64,7 +64,7 @@ class SusfsBoxTest(unittest.TestCase):
             r.main(["--root", "BSU", "--out", str(Path(tmp, "s.json"))])
             self.assertIs(seen["susfs_box"], True)
 
-    def test_unticked_resolve_takes_bakasu_release_without_susfs(self):
+    def unticked_bakasu(self, release_is_bakasu):
         calls = []
 
         def ls_remote(url, *patterns):
@@ -72,7 +72,7 @@ class SusfsBoxTest(unittest.TestCase):
             if url == r.ACK:
                 return {}
             if url == r.BAKASU:
-                return {"refs/tags/v1.2.3": "b" * 40}
+                return {"refs/tags/v4.2.0-rc3": "b" * 40}
             if url == r.NOMOUNT:
                 return {"refs/tags/v2.2.0": "c" * 40}
             if url == r.BBG:
@@ -81,20 +81,47 @@ class SusfsBoxTest(unittest.TestCase):
 
         def api(path):
             if "Baka-SU" in path:
-                return {"assets": [{"name": "BakaSU_v1.2.3-arm64.apk", "browser_download_url": "https://x/m.apk"}]}
+                return {"assets": [{"name": "BakaSU_v4.2.0-arm64.apk", "browser_download_url": "https://x/m.apk"}]}
             if "nomount" in path:
                 return {"assets": [{"name": "nomount.zip", "browser_download_url": "https://x/n.zip"}]}
             return {"tag_name": "06092026"}
+        main = ("9" * 40, {"repo": "Baka-SU/BakaSU", "run": 1, "url": "https://x/run", "manager": 2})
         with tempfile.TemporaryDirectory() as tmp, \
                 mock.patch.multiple(r, ls_remote=ls_remote, api=api, run=lambda *a, **k: "",
                                     ack_releases=lambda refs: [], pick_ack=lambda releases, wanted: [],
+                                    is_bakasu=lambda repo, ref: release_is_bakasu or ref.endswith("-main"),
+                                    bakasu_main=lambda: main,
                                     bakasu_ready=mock.Mock(side_effect=AssertionError("no SUSFS check")),
                                     susfs_sidex=mock.Mock(side_effect=AssertionError("no sidex15 module"))):
             snap = r.resolve("BSU", "lts", tmp, susfs_box=False)
         self.assertNotIn("susfs", snap)
         self.assertNotIn("susfs_sidex", snap)
-        self.assertEqual(snap["root_source"], {"repo": r.BAKASU, "tag": "v1.2.3", "commit": "b" * 40})
         self.assertNotIn(r.SUSFS, calls)
+        return snap
+
+    def test_unticked_resolve_takes_a_bakasu_release_without_susfs(self):
+        snap = self.unticked_bakasu(release_is_bakasu=True)
+        self.assertEqual(snap["root_source"], {"repo": r.BAKASU, "tag": "v4.2.0-rc3", "commit": "b" * 40})
+
+    def test_a_release_from_before_the_rename_is_resukisu_so_main_is_used(self):
+        # Owner 2 Nov 2026, run 41361024017: "ini bukan bakasu tapi resukisu". v4.2.0-rc3 predates the
+        # rename (BakaSU 97c102ba), so BakaSU comes from main with its official CI manager.
+        snap = self.unticked_bakasu(release_is_bakasu=False)
+        self.assertEqual(snap["root_source"], {"repo": r.BAKASU, "branch": "main", "commit": "9" * 40})
+        self.assertEqual(snap["manager"]["kind"], "ci")
+
+    def test_is_bakasu_reads_the_kernel_kconfig(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            subprocess.run(["git", "init", "-q", tmp], check=True)
+            Path(tmp, "kernel").mkdir()
+            git = ["git", "-C", tmp, "-c", "user.name=t", "-c", "user.email=t@t"]
+            for name, ref in (("ReSukiSU", "refs/check/old"), ("BakaSU", "refs/check/new")):
+                Path(tmp, "kernel/Kconfig").write_text(f'menu "{name}"\nconfig KSU\n')
+                subprocess.run([*git, "add", "-A"], check=True)
+                subprocess.run([*git, "commit", "-qm", name], check=True)
+                subprocess.run([*git, "update-ref", ref, "HEAD"], check=True)
+            self.assertFalse(r.is_bakasu(tmp, "refs/check/old"))
+            self.assertTrue(r.is_bakasu(tmp, "refs/check/new"))
 
     def test_telegram_names_a_build_without_susfs(self):
         env = {"RELEASE": "v26.11.02-r18", "LINUX_VERSION": "6.1.176", "ROOT_NAME": "BakaSU",

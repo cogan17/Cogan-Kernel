@@ -285,6 +285,14 @@ def bakasu_ready(repo, bakasu_ref, susfs_ref):
     return ", ".join(problems) or None
 
 
+def is_bakasu(repo, ref):
+    """True when the tree at ref is BakaSU, not yet ReSukiSU: the project was renamed in BakaSU main
+    97c102ba (5 Oct 2026, "treewide: rename project"), which also changed the manager signature. Release
+    v4.2.0-rc3 (23 Sep 2026) predates it, so it is ReSukiSU (owner 2 Nov 2026, run 41361024017)."""
+    return subprocess.run(["git", "-C", repo, "grep", "-q", "-i", "-F", "bakasu", ref, "--", "kernel/Kconfig"],
+                          capture_output=True).returncode == 0
+
+
 def unicode_fix(ls_remote=ls_remote):
     """The newest WildKernel unicode bypass fix (Unicode fix box)."""
     return {"repo": UNICODE_FIX, "commit": ls_remote(UNICODE_FIX, "refs/heads/main")["refs/heads/main"],
@@ -319,17 +327,24 @@ def resolve(root, sublevel, work, unicode=False, susfs_box=True):
     else:
         tag, sha = newest_tag(ls_remote(BAKASU, "refs/tags/v*"))
         run("git", "-C", repo, "fetch", "-q", "--depth=1", BAKASU, f"{sha}:refs/check/bakasu")
-        problem = bakasu_ready(repo, "refs/check/bakasu", "refs/check/susfs") if susfs_box else None
+        if not is_bakasu(repo, "refs/check/bakasu"):
+            problem = (f"rilis {tag} masih ReSukiSU, sebelum ganti nama ke BakaSU / "
+                       f"release {tag} is still ReSukiSU, from before the rename to BakaSU")
+        else:
+            problem = bakasu_ready(repo, "refs/check/bakasu", "refs/check/susfs") if susfs_box else None
         if problem:
             # Before the next release, BakaSU main may already take the newest SUSFS (owner 24 Okt 2026,
             # Baka-SU/BakaSU#214). Kernel and manager then come from the same main commit.
             try:
                 main, manager = bakasu_main()
                 run("git", "-C", repo, "fetch", "-q", "--depth=1", BAKASU, f"{main}:refs/check/bakasu-main")
-                main_problem = bakasu_ready(repo, "refs/check/bakasu-main", "refs/check/susfs")
+                main_problem = bakasu_ready(repo, "refs/check/bakasu-main", "refs/check/susfs") if susfs_box else None
                 main_id = main_en = f"main `{main[:12]}`: {main_problem}"
             except Wait as wait:
                 main, main_problem, main_id, main_en = None, True, wait.id_text, wait.en_text
+            if main_problem and not susfs_box:
+                raise Wait(f"Tunggu pengembang BakaSU: rilis terbaru {tag} belum bisa dipakai ({problem}); {main_id}.",
+                           f"Wait for the BakaSU developer: the newest release {tag} cannot be used ({problem}); {main_en}.")
             if main_problem:
                 raise Wait(f"Tunggu pengembang BakaSU: rilis terbaru {tag} belum siap untuk SUSFS terbaru "
                            f"`{susfs[:12]}` ({problem}); {main_id}. Atau tunggu simonpunk menyesuaikan SUSFS.",
