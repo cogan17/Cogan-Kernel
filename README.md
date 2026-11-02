@@ -58,6 +58,7 @@ Modul yang dipakai owner di HP-nya bersama Cogan Kernel. Klik nama modul untuk m
 | 🙈 [HMA-OSS](https://github.com/frknkrc44/HMA-OSS) | Menyembunyikan daftar aplikasi dari aplikasi lain | frknkrc44 |
 | ✅ [Play Integrity Fix [INJECT]](https://github.com/KOWX712/PlayIntegrityFix) | Memperbaiki Play Integrity | KOWX712 |
 | 🔑 [Tricky Store OSS](https://github.com/beakthoven/TrickyStoreOSS) | Atestasi kunci untuk Play Integrity | beakthoven |
+| 🔐 [TEESimulator](https://github.com/JingMatrix/TEESimulator) | Simulasi TEE untuk atestasi kunci, pengganti Tricky Store (pasang salah satu); targetkan hanya Layanan Google Play dan Play Store dari aplikasi sistem | JingMatrix |
 | ➕ [Tricky Addon](https://github.com/KOWX712/Tricky-Addon-Update-Target-List) | WebUI untuk mengatur daftar aplikasi target Tricky Store (`target.txt`) | KOWX712 |
 | 🕵️ [Stealth Debug](https://github.com/sp11xy/StealthDebug) | Menyembunyikan USB/developer debugging dari aplikasi | sp11xy |
 | 🌐 [TCP Optimiser](https://github.com/fatalcoder524/TCP_Optimiser_Module) | Mengatur TCP congestion control | fatalcoder524 |
