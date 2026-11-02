@@ -53,7 +53,7 @@ Modules the owner runs on their phone together with Cogan Kernel. Click a module
 | 🧬 [Zygisk Next](https://github.com/Dr-TSNG/ZygiskNext) | Zygisk for KernelSU (needed by the Zygisk modules below) | Dr-TSNG |
 | 🧩 [Vector](https://github.com/JingMatrix/Vector) | Xposed framework (LSPosed successor) | JingMatrix |
 | 🔌 [AdbHide](https://github.com/enchantedglycerin/AdbHide) | Vector/LSPosed module: hides ADB and developer options from apps, USB debugging keeps working | enchantedglycerin |
-| 🔓 [Core Patch](https://github.com/LSPosed/CorePatch) | Vector/LSPosed module: allows app downgrades and skips APK signature checks | LSPosed |
+| 🔓 [Core Patch](https://github.com/LSPosed/CorePatch) | Vector/LSPosed module: allows app downgrades and skips APK signature checks | CoderStory, LSPosed |
 | 📁 [FuseHide](https://github.com/XiaoTong6666/FuseHide) | Vector/LSPosed module: hides storage folders (e.g. root traces) from selected apps | XiaoTong6666 |
 | 🙈 [HMA-OSS](https://github.com/frknkrc44/HMA-OSS) | Hides your app list from other apps | frknkrc44 |
 | ✅ [Play Integrity Fix [INJECT]](https://github.com/KOWX712/PlayIntegrityFix) | Fixes Play Integrity | KOWX712 |

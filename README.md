@@ -53,7 +53,7 @@ Modul yang dipakai owner di HP-nya bersama Cogan Kernel. Klik nama modul untuk m
 | 🧬 [Zygisk Next](https://github.com/Dr-TSNG/ZygiskNext) | Zygisk untuk KernelSU (dibutuhkan modul Zygisk di bawah) | Dr-TSNG |
 | 🧩 [Vector](https://github.com/JingMatrix/Vector) | Framework Xposed (penerus LSPosed) | JingMatrix |
 | 🔌 [AdbHide](https://github.com/enchantedglycerin/AdbHide) | Modul Vector/LSPosed: menyembunyikan ADB dan opsi pengembang dari aplikasi, USB debugging tetap jalan | enchantedglycerin |
-| 🔓 [Core Patch](https://github.com/LSPosed/CorePatch) | Modul Vector/LSPosed: izinkan *downgrade* aplikasi dan lewati cek tanda tangan APK | LSPosed |
+| 🔓 [Core Patch](https://github.com/LSPosed/CorePatch) | Modul Vector/LSPosed: izinkan *downgrade* aplikasi dan lewati cek tanda tangan APK | CoderStory, LSPosed |
 | 📁 [FuseHide](https://github.com/XiaoTong6666/FuseHide) | Modul Vector/LSPosed: menyembunyikan folder penyimpanan (mis. jejak root) dari aplikasi tertentu | XiaoTong6666 |
 | 🙈 [HMA-OSS](https://github.com/frknkrc44/HMA-OSS) | Menyembunyikan daftar aplikasi dari aplikasi lain | frknkrc44 |
 | ✅ [Play Integrity Fix [INJECT]](https://github.com/KOWX712/PlayIntegrityFix) | Memperbaiki Play Integrity | KOWX712 |
