@@ -238,6 +238,13 @@ class TelegramTest(unittest.TestCase):
         self.assertIn("• BakaSU 6.1.172: First release of this variant", text)
         self.assertIn("🧩 Features (BakaSU 6.1.172): SUSFS, Full LTO\n🧩 Features (KernelSU Next 6.1.176): SUSFS, BBRv3", text)
 
+    def test_features_turned_off_are_not_new_features(self):
+        prev = {"tag": "v26.10.31-r7", "features": "SUSFS, BBRv3 (default, also bbr3), BBG, NoMount, Cogan Bridge, No LTO"}
+        env = {**R1, "FEATURES": "No SUSFS, BBRv3 (default, also bbr3), BBG, NoMount, Cogan Bridge, No LTO"}
+        self.assertEqual(tg.feature_names(env["FEATURES"]), ["BBRv3", "BBG", "NoMount", "Cogan Bridge"])
+        self.assertIn("Fitur dilepas: SUSFS", tg.whats_new(env, prev, "id"))
+        self.assertFalse(any("No SUSFS" in item for item in tg.whats_new(env, prev, "id")))
+
     def test_upstream_changes_are_plain_words_without_hashes(self):
         # Owner 2026-10-31 (r7 text): "tidak usah menggunakan angka/huruf acak", e.g. "memperbaiki selinux".
         bsu = {**R2, "ROOT_NAME": "BakaSU", "ROOT_REPO": "https://github.com/Baka-SU/BakaSU",
