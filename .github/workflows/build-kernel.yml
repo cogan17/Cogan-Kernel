@@ -19,7 +19,7 @@ on:
           - "Pre-Release"
           - "Release"
       kernel_sublevel:
-        description: "Kernel Sublevel: lts, 176, 162,172 · kosong / empty = semua / all"
+        description: "Kernel Sublevel: lts, 176, 162,172, semua / all"
         type: string
         default: "lts"
       brand_name:

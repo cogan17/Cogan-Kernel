@@ -7,6 +7,13 @@ from pathlib import Path
 
 from kernel import resolve as r
 
+try:
+    import yaml
+except ImportError:
+    yaml = None
+
+WORKFLOW = Path(__file__).resolve().parents[1] / ".github/workflows/build-kernel.yml"
+
 REFS = {
     "refs/tags/android14-6.1-2025-05_r9": "a" * 40,  # before the phone's own release: never picked
     "refs/tags/android14-6.1-2025-06_r11": "b" * 40,
@@ -46,6 +53,17 @@ class AckTest(unittest.TestCase):
         # Owner 2026-10-31: "Jika dikosongkan maka semua sublevel muncul".
         for empty in ("", "  "):
             self.assertEqual(r.pick_ack(self.releases, empty, self.sublevel), r.pick_ack(self.releases, "semua", self.sublevel))
+
+    def test_all_is_semua(self):
+        self.assertEqual(r.pick_ack(self.releases, "all", self.sublevel), r.pick_ack(self.releases, "semua", self.sublevel))
+
+    @unittest.skipUnless(yaml, "PyYAML")
+    def test_form_names_semua_not_an_empty_field(self):
+        # GitHub replaces an emptied field with its default (run 41377075131 got lts), so the form says semua.
+        box = yaml.safe_load(WORKFLOW.read_text())[True]["workflow_dispatch"]["inputs"]["kernel_sublevel"]
+        self.assertEqual(box["default"], "lts")
+        self.assertIn("semua", box["description"])
+        self.assertNotIn("kosong", box["description"])
 
     def test_semua_is_every_sublevel_once(self):
         self.assertEqual([sub for _, _, sub in r.pick_ack(self.releases, "semua", self.sublevel)], [138, 145, 176])
