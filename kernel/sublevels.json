@@ -61,12 +61,12 @@
  "141": {
   "tag": "android14-6.1-2025-07_r13",
   "KSUN": {
-   "status": "gagal",
-   "run": 41377913431
+   "status": "ok",
+   "run": 41384518511
   },
   "BSU": {
-   "status": "gagal",
-   "run": 41377913431
+   "status": "ok",
+   "run": 41384518511
   }
  },
  "138": {

@@ -87,6 +87,7 @@ The **Cek pembaruan** (check for updates) button is the only check, and it build
 | 162 | `2026-03_r25` | ✅ KernelSU Next · BakaSU: [build + KMI gate](https://github.com/cogan17/Cogan-Kernel/actions/runs/41377913431) |
 | 157 | `2025-12_r32` | ✅ KernelSU Next · BakaSU: [build + KMI gate](https://github.com/cogan17/Cogan-Kernel/actions/runs/41377913431) |
 | 145 | `2025-09_r36` | ✅ KernelSU Next · BakaSU: [build + KMI gate](https://github.com/cogan17/Cogan-Kernel/actions/runs/41377913431) |
+| 141 | `2025-07_r13` | ✅ KernelSU Next · BakaSU: [build + KMI gate](https://github.com/cogan17/Cogan-Kernel/actions/runs/41384518511) |
 | 138 | `2025-06_r17` | ✅ KernelSU Next · BakaSU: [build + KMI gate](https://github.com/cogan17/Cogan-Kernel/actions/runs/41377913431) · the phone's stock kernel; archive r5 tested on the phone |
 <!-- sublevel:end -->
 
