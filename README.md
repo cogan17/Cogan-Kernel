@@ -82,13 +82,12 @@ Tombol **Cek pembaruan** satu-satunya yang mengecek, dan tidak membangun: versi 
 <!-- sublevel:start -->
 | Sublevel | Rilis ACK | Status |
 |---|---|---|
-| **176** (`lts`) | `2026-09_r5` | ✅ KernelSU Next · BakaSU: [build + gate KMI](https://github.com/cogan17/Cogan-Kernel/actions/runs/40853374637) · r1 dan r2 diuji di HP |
-| 172 | `2026-06_r14` | ✅ KernelSU Next: [build + gate KMI](https://github.com/cogan17/Cogan-Kernel/actions/runs/40048269498) |
-| 162 | `2026-03_r24` | ✅ KernelSU Next: [build + gate KMI](https://github.com/cogan17/Cogan-Kernel/actions/runs/40048269498) |
-| 157 | `2025-12_r32` | ✅ KernelSU Next: [build + gate KMI](https://github.com/cogan17/Cogan-Kernel/actions/runs/40048269498) |
-| 145 | `2025-09_r36` | ✅ KernelSU Next: [build + gate KMI](https://github.com/cogan17/Cogan-Kernel/actions/runs/40061712549) |
-| 141 | `2025-07_r13` | ✅ KernelSU Next · BakaSU: [build + gate KMI](https://github.com/cogan17/Cogan-Kernel/actions/runs/41384518511) |
-| 138 | `2025-06_r17` | ✅ KernelSU Next: [build + gate KMI](https://github.com/cogan17/Cogan-Kernel/actions/runs/40061712549) · kernel bawaan HP; arsip r5 diuji di HP |
+| **176** (`lts`) | `2026-09_r5` | ✅ KernelSU Next · BakaSU: [build + gate KMI](https://github.com/cogan17/Cogan-Kernel/actions/runs/41377913431) · r1 dan r2 diuji di HP |
+| 172 | `2026-06_r17` | ✅ KernelSU Next · BakaSU: [build + gate KMI](https://github.com/cogan17/Cogan-Kernel/actions/runs/41377913431) |
+| 162 | `2026-03_r25` | ✅ KernelSU Next · BakaSU: [build + gate KMI](https://github.com/cogan17/Cogan-Kernel/actions/runs/41377913431) |
+| 157 | `2025-12_r32` | ✅ KernelSU Next · BakaSU: [build + gate KMI](https://github.com/cogan17/Cogan-Kernel/actions/runs/41377913431) |
+| 145 | `2025-09_r36` | ✅ KernelSU Next · BakaSU: [build + gate KMI](https://github.com/cogan17/Cogan-Kernel/actions/runs/41377913431) |
+| 138 | `2025-06_r17` | ✅ KernelSU Next · BakaSU: [build + gate KMI](https://github.com/cogan17/Cogan-Kernel/actions/runs/41377913431) · kernel bawaan HP; arsip r5 diuji di HP |
 <!-- sublevel:end -->
 
 Unicode fix (dicentang otomatis sejak 1 Nov 2026) lolos build + gate KMI di 157, 162, 172 dan 176, dan terpasang bersih di 138 dan 145 ([CI](https://github.com/cogan17/Cogan-Kernel/actions/runs/40048269498)). Bila patch WildKernel belum cocok, build berhenti: lepas centang Unicode fix untuk tetap build.
