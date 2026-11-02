@@ -45,12 +45,18 @@ class ReleaseWorkflowTests(unittest.TestCase):
         gh = self.root / "bin/gh"
         gh.write_text('''#!/bin/bash
 if [[ "$1 $2" == "release view" ]]; then
-  [[ "$CASE" == exists ]] && exit 0
+  [[ "$CASE" == exists || "$CASE" == denied-exists ]] && exit 0
   exit 1
+elif [[ "$1 $2" == "release delete" ]]; then
+  printf '%s\\n' "$@" > deleted.txt
+elif [[ "$1 $2 $3" == "api -X DELETE" ]]; then
+  printf '%s\\n' "$@" > tag-deleted.txt
+  [[ "$TAG_DELETE" == denied ]] && { echo 'HTTP 403' >&2; exit 1; }
+  exit 0
 elif [[ "$1 $2" == "release create" ]]; then
   printf '%s\\n' "$@" > called.txt
   case "$CASE" in
-    denied) echo 'HTTP 403: Resource not accessible by integration' >&2; exit 1;;
+    denied|denied-exists) echo 'HTTP 403: Resource not accessible by integration' >&2; exit 1;;
     server-error) echo 'HTTP 500: server error' >&2; exit 1;;
   esac
   echo 'https://github.com/cogan17/Cogan-Kernel/releases/tag/v26.10.24-r2'
@@ -79,7 +85,7 @@ fi
                         WORKFLOWS_AT_SOURCE="tree1", WORKFLOWS_AT_MAIN="tree1",
                         GITHUB_STEP_SUMMARY=str(self.root / "summary.md"),
                         RELEASE_TYPE="Pre-Release", TESTED="true", NOTE="Diuji di perangkat saya.",
-                        NOTE_EN="Tested on my device.", TEXT_ONLY="false")
+                        NOTE_EN="Tested on my device.", TEXT_ONLY="false", REPLACE="false")
 
     def run_step(self, name, **env):
         return subprocess.run(["bash", "-euo", "pipefail", "-c", script(name)], cwd=self.root,
@@ -340,7 +346,54 @@ fi
     def test_existing_release_is_not_overwritten(self):
         result = self.run_step("Terbitkan / publish", CASE="exists")
         self.assertEqual(result.returncode, 1)
+        self.assertIn("Centang timpa", result.stdout)
         self.assertFalse((self.root / "called.txt").exists())
+        self.assertFalse((self.root / "deleted.txt").exists())
+
+    def test_timpa_replaces_an_existing_release(self):
+        # Owner 2026-11-02: the owner's rN and the run numbers of CI builds can meet on the same day.
+        result = self.run_step("Terbitkan / publish", CASE="exists", REPLACE="true")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("v26.10.24-r2", (self.root / "deleted.txt").read_text().splitlines())
+        self.assertIn("repos/cogan17/Cogan-Kernel/git/refs/tags/v26.10.24-r2",
+                      (self.root / "tag-deleted.txt").read_text().splitlines())
+        args = (self.root / "called.txt").read_text().splitlines()
+        self.assertEqual(args[args.index("--target") + 1], SOURCE_SHA)
+        self.assertIn("menimpa rilis lama", self.summary())
+        self.assertIn("replaced the old release", self.summary())
+
+    def test_timpa_keeps_an_undeletable_tag_and_still_publishes(self):
+        result = self.run_step("Terbitkan / publish", CASE="exists", REPLACE="true", TAG_DELETE="denied")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("Tag v26.10.24-r2 lama tetap dipakai", result.stdout)
+        self.assertTrue((self.root / "called.txt").exists())
+
+    def test_timpa_without_an_existing_release_publishes_normally(self):
+        result = self.run_step("Terbitkan / publish", REPLACE="true")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertFalse((self.root / "deleted.txt").exists())
+        self.assertNotIn("menimpa", self.summary())
+
+    def test_timpa_never_touches_other_tags(self):
+        (self.root / "info/release.env").write_text("RELEASE=arsip-v26.10.22-r5\nRELEASE_NAME=Arsip\n")
+        result = self.run_step("Terbitkan / publish", CASE="exists", REPLACE="true")
+        self.assertEqual(result.returncode, 1)
+        self.assertFalse((self.root / "deleted.txt").exists())
+        self.assertFalse((self.root / "called.txt").exists())
+
+    def test_failure_after_replacing_says_the_old_release_is_gone(self):
+        result = self.run_step("Terbitkan / publish", CASE="denied-exists", REPLACE="true")
+        self.assertEqual(result.returncode, 1)
+        self.run_step("Ringkasan bila gagal / summary on failure")
+        self.assertIn("Rilis lama dengan tag yang sama sudah dihapus", self.summary())
+        self.assertIn("old release with the same tag was already deleted", self.summary())
+
+    def test_timpa_box_is_off_by_default(self):
+        text = WORKFLOW.read_text()
+        box = text.split("      timpa:\n", 1)[1].split("      teks_saja:", 1)[0]
+        self.assertIn("type: boolean", box)
+        self.assertIn("default: false", box)
+        self.assertIn("REPLACE: ${{ inputs.timpa }}", text)
 
     def test_different_workflows_tag_this_run_commit(self):
         result = self.run_step("Terbitkan / publish", WORKFLOWS_AT_MAIN="tree2")
