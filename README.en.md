@@ -58,6 +58,7 @@ Modules the owner runs on their phone together with Cogan Kernel. Click a module
 | 🙈 [HMA-OSS](https://github.com/frknkrc44/HMA-OSS) | Hides your app list from other apps | frknkrc44 |
 | ✅ [Play Integrity Fix [INJECT]](https://github.com/KOWX712/PlayIntegrityFix) | Fixes Play Integrity | KOWX712 |
 | 🔑 [Tricky Store OSS](https://github.com/beakthoven/TrickyStoreOSS) | Key attestation for Play Integrity | beakthoven |
+| 🔐 [TEESimulator](https://github.com/JingMatrix/TEESimulator) | TEE simulation for key attestation, replaces Tricky Store (install one of them); of the system apps, target only Google Play services and the Play Store | JingMatrix |
 | ➕ [Tricky Addon](https://github.com/KOWX712/Tricky-Addon-Update-Target-List) | WebUI to manage the Tricky Store target app list (`target.txt`) | KOWX712 |
 | 🕵️ [Stealth Debug](https://github.com/sp11xy/StealthDebug) | Hides USB/developer debugging from apps | sp11xy |
 | 🌐 [TCP Optimiser](https://github.com/fatalcoder524/TCP_Optimiser_Module) | Tunes TCP congestion control | fatalcoder524 |
