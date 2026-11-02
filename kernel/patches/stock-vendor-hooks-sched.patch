@@ -1,0 +1,115 @@
+Stock vendor hooks for ACK releases that lack them (Issue #105, 6.1.141 android14-6.1-2025-07_r13).
+
+The phone's stock kernel (ACK android14-6.1-2025-06_r11, 6.1.138) carries two ACK commits that were
+picked into the 2025-06 and 2025-09 release branches in September 2025, but never into 2025-07:
+
+  8148058f689d ANDROID: vendor_hooks: add hooks in cpu_cgroup subsystem
+               (android_vh_sched_move_task, android_vh_cpu_cgroup_css_alloc[_early],
+                android_vh_cpu_cgroup_css_free; EXPORT_SYMBOL_GPL(cpu_cgrp_subsys))
+  9667c70358a5 ANDROID: vendor_hooks: Add hooks in reweight_entity (android_vh_reweight_entity)
+
+The vendor modules use android_vh_sched_move_task and android_vh_reweight_entity (KMI gate, run
+41381698735: "stock vendor hooks missing but used by vendor modules"). Both commits as they are, in
+one diff for the 2025-07 context; with them include/trace/hooks/sched.h and kernel/sched/vendor_hooks.c
+equal the stock kernel's.
+
+diff --git a/include/trace/hooks/sched.h b/include/trace/hooks/sched.h
+index af49cae..a2f5594 100644
+--- a/include/trace/hooks/sched.h
++++ b/include/trace/hooks/sched.h
+@@ -466,6 +466,23 @@ DECLARE_HOOK(android_vh_set_task_comm,
+ 	TP_PROTO(struct task_struct *p),
+ 	TP_ARGS(p));
+ 
++struct cgroup_subsys_state;
++DECLARE_HOOK(android_vh_sched_move_task,
++	TP_PROTO(struct task_struct *tsk),
++	TP_ARGS(tsk));
++DECLARE_HOOK(android_vh_cpu_cgroup_css_alloc,
++	TP_PROTO(struct task_group *tg, struct cgroup_subsys_state *parent_css),
++	TP_ARGS(tg, parent_css));
++DECLARE_HOOK(android_vh_cpu_cgroup_css_alloc_early,
++	TP_PROTO(struct task_group *parent),
++	TP_ARGS(parent));
++DECLARE_HOOK(android_vh_cpu_cgroup_css_free,
++	TP_PROTO(struct cgroup_subsys_state *css),
++	TP_ARGS(css));
++DECLARE_HOOK(android_vh_reweight_entity,
++	TP_PROTO(struct sched_entity *se),
++	TP_ARGS(se));
++
+ #endif /* _TRACE_HOOK_SCHED_H */
+ /* This part must be outside protection */
+ #include <trace/define_trace.h>
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 2174dd3..651fa46 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -10529,6 +10529,7 @@ void sched_move_task(struct task_struct *tsk)
+ 	struct rq_flags rf;
+ 	struct rq *rq;
+ 
++	trace_android_vh_sched_move_task(tsk);
+ 	rq = task_rq_lock(tsk, &rf);
+ 	update_rq_clock(rq);
+ 
+@@ -10569,6 +10570,7 @@ cpu_cgroup_css_alloc(struct cgroup_subsys_state *parent_css)
+ 	struct task_group *tg;
+ 
+ 	if (!parent) {
++		trace_android_vh_cpu_cgroup_css_alloc_early(parent);
+ 		/* This is early initialization for the top cgroup */
+ 		return &root_task_group.css;
+ 	}
+@@ -10577,6 +10579,8 @@ cpu_cgroup_css_alloc(struct cgroup_subsys_state *parent_css)
+ 	if (IS_ERR(tg))
+ 		return ERR_PTR(-ENOMEM);
+ 
++	trace_android_vh_cpu_cgroup_css_alloc(tg, parent_css);
++
+ 	return &tg->css;
+ }
+ 
+@@ -10617,6 +10621,8 @@ static void cpu_cgroup_css_free(struct cgroup_subsys_state *css)
+ 	 * Relies on the RCU grace period between css_released() and this.
+ 	 */
+ 	sched_unregister_group(tg);
++
++	trace_android_vh_cpu_cgroup_css_free(css);
+ }
+ 
+ #ifdef CONFIG_RT_GROUP_SCHED
+@@ -11511,7 +11517,7 @@ struct cgroup_subsys cpu_cgrp_subsys = {
+ 	.early_init	= true,
+ 	.threaded	= true,
+ };
+-
++EXPORT_SYMBOL_GPL(cpu_cgrp_subsys);
+ #endif	/* CONFIG_CGROUP_SCHED */
+ 
+ void dump_cpu_task(int cpu)
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index b1b2d25..b2f9c77 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -3329,6 +3329,7 @@ static void reweight_entity(struct cfs_rq *cfs_rq, struct sched_entity *se,
+ 
+ 	update_load_set(&se->load, weight);
+ 
++	trace_android_vh_reweight_entity(se);
+ #ifdef CONFIG_SMP
+ 	do {
+ 		u32 divider = get_pelt_divider(&se->avg);
+diff --git a/kernel/sched/vendor_hooks.c b/kernel/sched/vendor_hooks.c
+index 89a4a41..ee58325 100644
+--- a/kernel/sched/vendor_hooks.c
++++ b/kernel/sched/vendor_hooks.c
+@@ -117,3 +117,8 @@ EXPORT_TRACEPOINT_SYMBOL_GPL(android_rvh_update_rt_rq_load_avg);
+ EXPORT_TRACEPOINT_SYMBOL_GPL(android_vh_prio_inheritance);
+ EXPORT_TRACEPOINT_SYMBOL_GPL(android_vh_prio_restore);
+ EXPORT_TRACEPOINT_SYMBOL_GPL(android_vh_set_task_comm);
++EXPORT_TRACEPOINT_SYMBOL_GPL(android_vh_sched_move_task);
++EXPORT_TRACEPOINT_SYMBOL_GPL(android_vh_cpu_cgroup_css_alloc_early);
++EXPORT_TRACEPOINT_SYMBOL_GPL(android_vh_cpu_cgroup_css_alloc);
++EXPORT_TRACEPOINT_SYMBOL_GPL(android_vh_cpu_cgroup_css_free);
++EXPORT_TRACEPOINT_SYMBOL_GPL(android_vh_reweight_entity);

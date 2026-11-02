@@ -102,6 +102,24 @@ else
 fi
 echo "::endgroup::"
 
+# Stock vendor hooks (Issue #105). The phone's stock kernel (ACK 2025-06_r11) has two ACK commits that
+# add scheduler vendor hooks the vendor modules use; the 2025-06 and 2025-09 release branches got them in
+# September 2025, the 2025-07 branch (6.1.141) never did. Applied as they are when missing, strictly;
+# a release with only part of them stops the build. The KMI gate below still checks every hook.
+group "Stock vendor hooks: cpu_cgroup and reweight_entity (ACK 8148058f689d, 9667c70358a5)"
+SCHED_HOOKS="$KSRC/include/trace/hooks/sched.h"
+if grep -q 'android_vh_reweight_entity' "$SCHED_HOOKS" && grep -q 'android_vh_sched_move_task' "$SCHED_HOOKS"; then
+  STOCK_VENDOR_HOOKS="present"
+  log "Already in ACK $ACK_TAG: nothing to apply"
+elif grep -q 'android_vh_reweight_entity\|android_vh_sched_move_task\|android_vh_cpu_cgroup_css' "$SCHED_HOOKS"; then
+  fail "ACK $ACK_TAG has only part of the stock scheduler vendor hooks"
+else
+  apply "$HERE/patches/stock-vendor-hooks-sched.patch" || fail "Stock vendor hooks do not fit ACK 6.1.$SUBLEVEL"
+  STOCK_VENDOR_HOOKS="applied"
+  log "Applied: ACK 8148058f689d and 9667c70358a5 (as in the stock kernel)"
+fi
+echo "::endgroup::"
+
 group "Stock kernel reference of the phone (KMI gate)"
 python3 "$HERE/scripts/stock_reference.py" --device rothko "$WORK/stock"
 echo "::endgroup::"
@@ -361,6 +379,7 @@ echo "::endgroup::"
   echo "NOMOUNT=$([ "${NOMOUNT:-true}" = "true" ] && snap nomount.tag || echo -)"
   echo "BBG_COMMIT=$([ "${BBG:-true}" = "true" ] && snap bbg.commit || echo -)"
   echo "CVE_2026_53163=$CVE_2026_53163"
+  echo "STOCK_VENDOR_HOOKS=$STOCK_VENDOR_HOOKS"
   echo "DISGUISE=$([ "${DISGUISE:-false}" = "true" ] && echo on || echo off)"
   echo "UNICODE_FIX=$([ "${UNICODE:-false}" = "true" ] && snap unicode.commit || echo -)"
   echo "ZIP=$ZIP"
