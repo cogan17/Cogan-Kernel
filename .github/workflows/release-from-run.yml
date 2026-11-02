@@ -3,7 +3,9 @@ name: Rilis dari run
 # Publishes one green Cogan Kernel Builder run of main as a release (like WildKernel's Release From
 # Run), including both root managers together. Keep each build's metadata separate and check every
 # KMI gate and kernel digest. Tick "diuji di HP" only if the owner tested every included variant.
-# Every version keeps its own release; an existing tag stops the run. Artifacts last 90 days.
+# Every version keeps its own release. An existing tag stops the run unless "timpa" is ticked (owner
+# 2026-11-02: the owner's rN and the run numbers of CI builds can meet): then that release and its tag
+# are replaced by this run's files. Artifacts last 90 days.
 # GITHUB_TOKEN only; the tag rule in Terbitkan avoids the 403 on builds with other workflow files.
 
 on:
@@ -32,6 +34,10 @@ on:
         description: "Catatan English (opsional; \\n = baris baru) / English note (optional; \\n = new line)"
         type: string
         default: ""
+      timpa:
+        description: "Timpa rilis bila tag yang sama sudah ada (rilis lama dan file-nya diganti) / replace the release if the same tag exists (old release and files are replaced)"
+        type: boolean
+        default: false
       teks_saja:
         description: "Buat catatan & teks Telegram saja, tanpa menerbitkan rilis / notes and Telegram text only"
         type: boolean
@@ -57,6 +63,7 @@ jobs:
       NOTE: ${{ inputs.catatan }}
       NOTE_EN: ${{ inputs.catatan_en }}
       TEXT_ONLY: ${{ inputs.teks_saja }}
+      REPLACE: ${{ inputs.timpa }}
     steps:
       - uses: actions/checkout@v7.0.1
         with:
@@ -119,9 +126,16 @@ jobs:
           set -euo pipefail
           tag="$(sed -n 's/^RELEASE=//p' info/release.env)"
           title="$(sed -n 's/^RELEASE_NAME=//p' info/release.env)"
+          replaced=false
           if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            echo "::error::Rilis $tag sudah ada; rilis tidak pernah ditimpa / release $tag exists and is never replaced"
-            exit 1
+            if [ "$REPLACE" != "true" ]; then
+              echo "::error::Rilis $tag sudah ada. Centang timpa untuk menggantinya / release $tag exists; tick timpa to replace it"
+              exit 1
+            fi
+            # Only kernel releases (vYY.MM.DD-rN) can be replaced; archives and Cogan Smart never.
+            [[ "$tag" =~ ^v[0-9]{2}\.[0-9]{2}\.[0-9]{2}-r[0-9]+$ ]] \
+              || { echo "::error::$tag bukan tag rilis kernel vYY.MM.DD-rN, tidak ditimpa / not a kernel release tag, not replaced"; exit 1; }
+            replaced=true
           fi
           sha="$(python3 -c 'import json; print(json.load(open("run.json"))["head_sha"])')"
           # GITHUB_TOKEN cannot tag a commit whose .github/workflows differ from this run's (HTTP 403):
@@ -132,12 +146,20 @@ jobs:
           target="$sha"; [ -n "$there" ] && [ "$there" = "$here" ] || target="$GITHUB_SHA"
           (cd files && sha256sum -- * > checksums.txt)
           mode=(--prerelease); [ "$RELEASE_TYPE" = "Release" ] && mode=(--latest)
+          # Replace only now, after every check passed and the files are ready.
+          if [ "$replaced" = true ]; then
+            gh release delete "$tag" --repo "$GITHUB_REPOSITORY" --yes
+            touch replaced-old-release
+            # A tag that cannot be deleted stays; the new release then uses it (its target is ignored).
+            gh api -X DELETE "repos/$GITHUB_REPOSITORY/git/refs/tags/$tag" >/dev/null \
+              || echo "::warning::Tag $tag lama tetap dipakai / the old tag $tag is kept"
+          fi
           gh release create "$tag" files/* --repo "$GITHUB_REPOSITORY" --target "$target" "${mode[@]}" \
             --title "$title" --notes-file notes.md
           {
             echo "## Rilis dari run / release from run"
-            echo "- 🇮🇩 Terbit: [$tag]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/tag/$tag) ($RELEASE_TYPE)$([ "$TESTED" = "true" ] && echo ", diuji di HP")"
-            echo "- 🇬🇧 Published: [$tag]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/tag/$tag) ($RELEASE_TYPE)$([ "$TESTED" = "true" ] && echo ", tested on the phone")"
+            echo "- 🇮🇩 Terbit: [$tag]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/tag/$tag) ($RELEASE_TYPE)$([ "$TESTED" = "true" ] && echo ", diuji di HP")$([ "$replaced" = true ] && echo ", menimpa rilis lama")"
+            echo "- 🇬🇧 Published: [$tag]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/tag/$tag) ($RELEASE_TYPE)$([ "$TESTED" = "true" ] && echo ", tested on the phone")$([ "$replaced" = true ] && echo ", replaced the old release")"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Catatan dan teks Telegram / notes and Telegram text
@@ -166,4 +188,8 @@ jobs:
             echo
             echo "- 🇮🇩 Tidak ada rilis yang diterbitkan. Alasannya ada di pesan error di atas (langkah merah pertama)."
             echo "- 🇬🇧 No release was published. The reason is in the error message above (the first red step)."
+            if [ -e replaced-old-release ]; then
+              echo "- 🇮🇩 Rilis lama dengan tag yang sama sudah dihapus. Jalankan ulang Rilis dari run dengan timpa dicentang; file build masih ada di artifact run."
+              echo "- 🇬🇧 The old release with the same tag was already deleted. Run Rilis dari run again with timpa ticked; the build files are still in the run's artifacts."
+            fi
           } >> "$GITHUB_STEP_SUMMARY"

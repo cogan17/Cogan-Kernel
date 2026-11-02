@@ -49,7 +49,7 @@ Nama repo **`cogan17/Cogan-Kernel`** sejak 24 Okt 2026 (owner; sebelumnya `cogan
 - **Diagnosa dengan bukti, bukan keyakinan.** Bandingkan artefak yang berhasil dengan yang rusak sebelum mengubah kode. Tulis jelas mana yang terukur lokal, mana yang sudah dibuktikan CI, dan mana yang sudah dibuktikan di HP.
 - **Gate gagal, bukan lolos diam-diam.** Gate KMI dan patch yang tidak bisa dipasang menghentikan build. Jangan pernah mengubahnya jadi peringatan.
 - **Jalur darurat tetap aman.** Tidak pernah wipe data, tidak pernah `flash_all_lock`. Bootloop dipulihkan lewat TWRP atau `boot` stok ([kembali ke stok](docs/kembali-ke-stok.md)). Flash selalu keputusan owner.
-- **Setiap versi punya rilis sendiri dan tidak dihapus.** Artifact Actions bertahan 90 hari (batas GitHub untuk repo publik, owner 24 Okt 2026); yang permanen hanya file rilis. Changelog ID dan EN memakai versi yang sama.
+- **Setiap versi punya rilis sendiri dan tidak dihapus.** Pengecualian (owner 2 Nov 2026, "Buat manual rilis dari run bisa menimpa!"): nomor rN owner dan nomor run build CI tanpa Build Revision bisa bertemu, jadi *Rilis dari run* punya centang **timpa** (mati secara default): bila tag `vYY.MM.DD-rN` yang sama sudah ada, rilis lama dan tag-nya diganti build dari run itu, setelah semua cek lolos; tanpa centang, rilis berhenti. Arsip dan Cogan Smart tidak pernah ditimpa. Artifact Actions bertahan 90 hari (batas GitHub untuk repo publik, owner 24 Okt 2026); yang permanen hanya file rilis. Changelog ID dan EN memakai versi yang sama.
 - **Instruksi yang bisa dibaca dua arah: tanya dulu.**
 
 ## Hemat run workflow (owner, 23 Okt 2026)
