@@ -40,6 +40,32 @@
 ---
 
 <details>
+<summary>🧰 <b>Modul yang dipakai owner</b></summary>
+
+Modul yang dipakai owner di HP-nya bersama Cogan Kernel. Klik nama modul untuk membuka repositorinya. Tidak wajib: kernel berjalan tanpa modul ini, pasang sesuai kebutuhan.
+
+| Modul | Fungsi | Pembuat |
+|---|---|---|
+| 🛡️ [SUSFS-FOR-KERNELSU](https://github.com/sidex15/susfs4ksu-module) | Pengaturan SUSFS lewat WebUI (sudah ada di rilis sebagai file 5) | sidex15 |
+| 📂 [NoMount](https://github.com/maxsteeel/nomount) | Pemasangan modul tanpa *mount* (sudah ada di kernel) | maxsteeel |
+| 🧠 [Cogan Smart Kernel](modules/cogan-smart/README.md) | Mode daya, suhu, penjaga modul | Cogan17 |
+| 🔁 [AshReXcue BootLoop Protector](https://github.com/RipperHybrid/AshLooper) | Mematikan modul otomatis saat bootloop | RipperHybrid |
+| 🧬 [Zygisk Next](https://github.com/Dr-TSNG/ZygiskNext) | Zygisk untuk KernelSU (dibutuhkan modul Zygisk di bawah) | Dr-TSNG |
+| 🧩 [Vector](https://github.com/JingMatrix/Vector) | Framework Xposed (penerus LSPosed) | JingMatrix |
+| 🙈 [HMA-OSS](https://github.com/frknkrc44/HMA-OSS) | Menyembunyikan daftar aplikasi dari aplikasi lain | frknkrc44 |
+| ✅ [Play Integrity Fix [INJECT]](https://github.com/KOWX712/PlayIntegrityFix) | Memperbaiki Play Integrity | KOWX712 |
+| 🔑 [Tricky Store OSS](https://github.com/beakthoven/TrickyStoreOSS) | Atestasi kunci untuk Play Integrity | beakthoven |
+| 🕵️ [Stealth Debug](https://github.com/sp11xy/StealthDebug) | Menyembunyikan USB/developer debugging dari aplikasi | sp11xy |
+| 🌐 [TCP Optimiser](https://github.com/fatalcoder524/TCP_Optimiser_Module) | Mengatur TCP congestion control | fatalcoder524 |
+| 📱 [HyperUnlocked](https://github.com/ukriu/HyperUnlocked) | Membuka fitur HyperOS yang tersembunyi | ukriu |
+| 👆 [NavTweaks](https://github.com/DanGLVK/Hide-Navbar) | Menyembunyikan *navigation bar* gestur | DanGLVK |
+| ▶️ [YouTube Morphe](https://github.com/MorpheApp/morphe-manager) | YouTube termodifikasi, dipasang root lewat Morphe Manager | MorpheApp |
+| 🚫 [zygisk-detach](https://github.com/j-hc/zygisk-detach) | Melepas aplikasi dari pembaruan Play Store | j-hc |
+| 📶 [WiFi Password Viewer](https://github.com/Googlers-Repo/wpd) | Melihat sandi Wi-Fi tersimpan (untuk MMRL) | Googlers-Repo |
+
+</details>
+
+<details>
 <summary>📱 <b>Spesifikasi perangkat</b></summary>
 
 | Item | Detail |
