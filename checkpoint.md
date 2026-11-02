@@ -4,7 +4,7 @@ Checkpoint ini sebagai pengingat pekerjaan 31 Okt – 2 Nov dan penanda pekerjaa
 
 ## Sedang berjalan
 
-- Tidak ada: tidak ada PR terbuka, run workflow atau draf yang berjalan. Issue terbuka hanya #105 (opsional).
+- Tidak ada: tidak ada PR terbuka, run workflow, draf atau issue terbuka.
 
 ## Sudah selesai (31 Okt – 2 Nov)
 
@@ -22,6 +22,9 @@ Checkpoint ini sebagai pengingat pekerjaan 31 Okt – 2 Nov dan penanda pekerjaa
 | #104 | 2 Nov 06.52 | Keterangan form Builder diringkas. Form Rilis dari run dan Cogan Smart Release **jangan diringkas** (owner) |
 | #106 | 2 Nov 08.14 | BakaSU tidak lagi mengambil rilis yang masih ReSukiSU (`v4.2.0-rc3`); diambil dari `main` |
 | #107 | 2 Nov 08.22 | Baris fitur menyebut fitur yang mati: `No SUSFS`, `No NoMount`, dst.; `Disguise` bila dicentang |
+| #110 | 2 Nov 09.25 | Kernel Sublevel: ketik `semua`/`all` (isian kosong diganti GitHub dengan `lts`) |
+| #111 | 2 Nov 10.02 | APK manager diunggah sekali per root manager |
+| #112, #113 | 2 Nov 10.11 / 10.42 | **Issue #105 selesai:** BBRv3 141 (set patch sendiri) dan vendor hook stok (`8148058f689d`, `9667c70358a5`) untuk ACK 2025-07; [run #26](https://github.com/cogan17/Cogan-Kernel/actions/runs/41384518511) KSUN + BakaSU 141 lolos build + gate KMI; tabel README kini memuat 138–176 untuk kedua root manager |
 | #108 | 2 Nov 08.55 | Rilis dari run: centang **timpa** (mati secara default) untuk tag `vYY.MM.DD-rN` yang sudah ada. Builder dan artifact **tetap apa adanya** (owner) |
 
 Keputusan owner yang perlu diingat:
@@ -43,13 +46,12 @@ Rilis kernel terakhir tetap [`v26.10.31-r7`](https://github.com/cogan17/Cogan-Ke
 
 ## Tertunda (keputusan owner)
 
-- **Issue #105** (opsional, "Tidak wajib"): patch agar 6.1.141 (ACK `2025-07_r13`) lolos build. Owner akan menjalankan CI semua sublevel sendiri; kerjakan dari link run yang dikirim owner.
 - **Rilis r8** (run #20) atau build baru: hanya bila owner meminta dan setelah uji HP owner. Build sesudah #107 menulis baris fitur baru.
 - Bila kernel bawaan HyperOS berubah: perbarui `kernel/configs/stock-identity.env` dan panduan spoof uname bersama-sama.
 
 ## Langkah pertama berikutnya
 
-- Tunggu instruksi owner. Bila owner mengirim link run CI semua sublevel, mulai dari Issue #105 (baca log 141 dulu, perbaiki sekali dengan benar).
+- Tunggu instruksi owner.
 
 ## Checkpoint sebelumnya — 29 Okt 2026 (WIB)
 

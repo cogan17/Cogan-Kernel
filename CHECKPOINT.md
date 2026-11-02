@@ -4,7 +4,8 @@ Catatan terbaru: **[checkpoint.md](checkpoint.md)** — 2 Nov 2026, 09.04 WIB. T
 
 - Selesai 31 Okt – 2 Nov: PR #91–#108 (centang SUSFS, BakaSU dari `main` bukan ReSukiSU, baris fitur `No …`, samarkan identitas, CVE-2026-53163, Tanpa LTO bawaan, centang timpa di Rilis dari run).
 - KSUN r19 dan BakaSU r21 tanpa SUSFS lolos uji HP owner; percobaan, tetap di artifact, tidak dirilis.
-- Tertunda: Issue #105 (opsional, 6.1.141); rilis r8 (run #20) hanya atas permintaan owner.
+- Issue #105 selesai (PR #112, #113): 141 lolos build + gate KMI untuk KSUN dan BakaSU.
+- Tertunda: rilis r8 (run #20) hanya atas permintaan owner.
 - Baca `CLAUDE.md` dan `checkpoint.md`, lalu tunggu instruksi owner.
 
 Riwayat 29 Okt:
