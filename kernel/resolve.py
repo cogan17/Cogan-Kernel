@@ -3,7 +3,8 @@
 
 No lock, pin or frozen tree (owner 2026-10-23): every run takes the newest official ACK
 android14-6.1 release, the newest KernelSU Next (pershoot dev-susfs) or BakaSU release (BakaSU main
-while its newest release does not take the newest SUSFS yet), the newest SUSFS, NoMount release,
+while its newest release does not take the newest SUSFS yet) or official KernelSU (tiann, main: the
+newest commit its CI built a manager for), the newest SUSFS, NoMount release,
 Baseband Guard, AnyKernel3 and Neutron clang. The commits found here are
 the run's snapshot, passed to every build job so they all build the same thing.
 
@@ -17,7 +18,7 @@ kernel_patches for its unicode bypass fix; without it nothing of WildKernel is r
 --no-susfs (the SUSFS box unticked) builds the plain root manager: no SUSFS, no sidex15 module, BakaSU
 from its newest release.
 
-Usage: resolve.py --root KSUN|BSU [--sublevel lts|N|N,M|semua|""] [--unicode] [--no-susfs] --out FILE.json
+Usage: resolve.py --root KSUN|BSU|KSU [--sublevel lts|N|N,M|semua|""] [--unicode] [--no-susfs] --out FILE.json
 """
 import argparse
 import base64
@@ -41,6 +42,12 @@ KSUN_CI = ("KernelSU-Next/KernelSU-Next", "build-manager-ci.yml", {"manager": "m
 BAKASU = "https://github.com/Baka-SU/BakaSU"
 # BakaSU's official CI builds the manager of every main commit with its release key, like its releases.
 BAKASU_CI = ("Baka-SU/BakaSU", "build-manager.yml", {"manager": "Manager-release", "spoofed": "Spoofed-Manager-release"})
+# Official KernelSU (owner 2026-11-02, "integrasi dengan ksu (induk segala induk)"): SUSFS ships its own
+# patch for it, written against KernelSU main, so kernel and manager come from the newest main commit
+# the official CI built a manager for (signed with the official key, like a release).
+KSU = "https://github.com/tiann/KernelSU"
+KSU_CI = ("tiann/KernelSU", "build-manager.yml", {"manager": "manager"})
+SUSFS_KSU_PATCH = "kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch"
 SUSFS = "https://gitlab.com/simonpunk/susfs4ksu"
 SUSFS_BRANCH = "gki-android14-6.1"
 SUSFS_PATCH = "kernel_patches/50_add_susfs_in_gki-android14-6.1.patch"
@@ -303,6 +310,27 @@ def unicode_fix(ls_remote=ls_remote):
 
 # ---- the whole snapshot ---------------------------------------------------------------------
 
+def ksu_main(api=api):
+    """(commit, manager) of the newest official KernelSU main commit the CI built a manager for."""
+    repo, workflow, _ = KSU_CI
+    runs = api(f"repos/{repo}/actions/workflows/{workflow}/runs?branch=main&event=push&status=success&per_page=5")
+    for ci in runs.get("workflow_runs", []):
+        found = ci_manager(KSU_CI, ci, api)
+        if found:
+            return ci["head_sha"], found
+    raise Wait("Tunggu build CI resmi manager KernelSU di main (belum ada atau artifact-nya sudah kedaluwarsa).",
+               "Wait for the official KernelSU CI manager build on main (none yet, or its artifact expired).")
+
+
+def patch_fits(repo, ref, patch_text):
+    """True when patch_text applies as it is to the tree of ref (checked on a scratch index, no checkout)."""
+    with tempfile.TemporaryDirectory() as tmp:
+        env = {**os.environ, "GIT_INDEX_FILE": str(Path(tmp, "index"))}
+        subprocess.run(["git", "-C", repo, "read-tree", ref], env=env, check=True, capture_output=True)
+        return subprocess.run(["git", "-C", repo, "apply", "--cached", "--check", "-"], input=patch_text,
+                              env=env, text=True, capture_output=True).returncode == 0
+
+
 def resolve(root, sublevel, work, unicode=False, susfs_box=True):
     """susfs_box False (the SUSFS box unticked, owner 2026-11-02): the plain root manager without SUSFS;
     no SUSFS, no sidex15 module, and BakaSU from its newest release with no SUSFS readiness check."""
@@ -326,6 +354,16 @@ def resolve(root, sublevel, work, unicode=False, susfs_box=True):
         snap["root_source"] = {"repo": KSUN_FORK, "branch": KSUN_FORK_BRANCH, "commit": head,
                                "base": base, "ksu_version": version}
         snap["manager"] = {"kind": "ksun-ci", **ksun_manager(base)}
+    elif root == "KSU":
+        main, manager = ksu_main()
+        run("git", "-C", repo, "fetch", "-q", "--depth=1", KSU, f"{main}:refs/check/ksu")
+        if susfs_box and not patch_fits(repo, "refs/check/ksu", run("git", "-C", repo, "show", f"refs/check/susfs:{SUSFS_KSU_PATCH}")):
+            raise Wait(f"Tunggu simonpunk menyesuaikan SUSFS `{susfs[:12]}` dengan KernelSU main terbaru `{main[:12]}` "
+                       "(patch SUSFS untuk KernelSU belum cocok).",
+                       f"Wait for simonpunk to adapt SUSFS `{susfs[:12]}` to the newest KernelSU main `{main[:12]}` "
+                       "(the SUSFS patch for KernelSU does not fit yet).")
+        snap["root_source"] = {"repo": KSU, "branch": "main", "commit": main}
+        snap["manager"] = {"kind": "ci", **manager}
     else:
         tag, sha = newest_tag(ls_remote(BAKASU, "refs/tags/v*"))
         run("git", "-C", repo, "fetch", "-q", "--depth=1", BAKASU, f"{sha}:refs/check/bakasu")
@@ -388,7 +426,7 @@ def resolve(root, sublevel, work, unicode=False, susfs_box=True):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--root", choices=["KSUN", "BSU"], required=True)
+    parser.add_argument("--root", choices=["KSUN", "BSU", "KSU"], required=True)
     parser.add_argument("--sublevel", default="lts")
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--unicode", action="store_true", help="the Unicode fix box is ticked")

@@ -111,20 +111,22 @@ fi
         self.payloads = []
         self.builds = {}
         for root in roots:
-            slug, name = ("KernelSU-Next", "KernelSU Next") if root == "KSUN" else ("BakaSU", "BakaSU")
+            slug, name = {"KSUN": ("KernelSU-Next", "KernelSU Next"), "BSU": ("BakaSU", "BakaSU"),
+                          "KSU": ("KernelSU", "KernelSU")}[root]
             kernel = f"1-KERNEL_Cogan-Rothko-ACK-6.1.176_{slug}{'+SuSFS' if susfs else ''}_v26.10.24-r2.zip"
             content = self.zip_bytes({"Image": f"kernel for {root}"})
             env = dict(RELEASE="v26.10.24-r2", RELEASE_NAME="Cogan-Rothko-ACK v26.10.24-r2",
                        LINUX_VERSION="6.1.176", ACK_TAG="android14-6.1-2026-09_r5", ROOT_NAME=name,
-                       ROOT_TAG="main", ROOT_COMMIT=("a" if root == "KSUN" else "b") * 40,
+                       ROOT_TAG="main", ROOT_COMMIT={"KSUN": "a", "BSU": "b", "KSU": "c"}[root] * 40,
                        KSU_VERSION="33405" if root == "KSUN" else "35222", SUSFS_VERSION="v2.3.0" if susfs else "-",
                        SUSFS_COMMIT="27e0a0e4" + "0" * 32 if susfs else "-", NOMOUNT="v2.2.0", NEUTRON="24102026",
                        FEATURES="SUSFS, NoMount" if susfs else "NoMount", KMI_COMPAT="KMI Xiaomi 14T Pro (rothko): OK; CRC differs 0",
                        ZIP=kernel, ZIP_SHA256=hashlib.sha256(content).hexdigest())
             self.builds[root] = env
             self.payloads += [(kernel, content), (f"2-MANAGER_{slug}_fixture.apk", f"manager {root}".encode()),
-                              (f"3-MANAGER-SPOOFED_{slug}_fixture.apk", f"spoofed {root}".encode()),
                               ("4-NOMOUNT-MODULE_v2.2.0.zip", b"shared NoMount")]
+            if root != "KSU":   # official KernelSU has no spoofed manager
+                self.payloads.append((f"3-MANAGER-SPOOFED_{slug}_fixture.apk", f"spoofed {root}".encode()))
         if susfs:
             self.payloads += [("5-SUSFS-MODULE-SIDEX15_v1.5.2-CI-fixture.zip", b"sidex15")]
         self.wrapped = wrapped
@@ -146,6 +148,19 @@ fi
     def download(self, **env):
         self.write_artifacts()
         return self.run_step("Unduh file / download the files", **env)
+
+    def test_kernelsu_and_kernelsu_next_keep_their_own_managers(self):
+        # Official KernelSU (owner 2026-11-02): "2-MANAGER_KernelSU_" must not take KernelSU Next's APK.
+        self.artifacts(roots=("KSUN", "KSU"))
+        result = self.download(TESTED="false")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        notes = unquote((self.root / "notes.md").read_text())
+        ksu = next(line for line in notes.splitlines() if line.startswith("| **KernelSU**"))
+        ksun = next(line for line in notes.splitlines() if line.startswith("| **KSUN**"))
+        self.assertIn("2-MANAGER_KernelSU_fixture.apk", ksu)
+        self.assertNotIn("KernelSU-Next", ksu)
+        self.assertIn("2-MANAGER_KernelSU-Next_fixture.apk", ksun)
+        self.assertIn("3-MANAGER-SPOOFED_KernelSU-Next_fixture.apk", ksun)
 
     def test_both_root_managers_publish_together_without_mixing_metadata(self):
         self.artifacts()

@@ -7,7 +7,7 @@
 # gate against the phone's own stock kernel (6.1.138) and the Xiaomi BSP always runs and fails closed.
 #
 # Environment:
-#   SNAPSHOT     resolve.py JSON of the root (KSUN or BSU)
+#   SNAPSHOT     resolve.py JSON of the root (KSUN, BSU or KSU)
 #   ACK_TAG ACK_COMMIT SUBLEVEL   the ACK release of this job
 #   BRAND REVISION RUN_NUMBER LTO(full|thin|none) BUILD_TIME(N or a date)
 #   NOMOUNT BBG NETWORKING UNICODE (true|false)   OUT (results)   GH_TOKEN
@@ -45,6 +45,7 @@ SUSFS_ON=true; snap susfs.commit >/dev/null 2>&1 || SUSFS_ON=false
 case "$ROOT" in
   KSUN) VARIANT="KernelSU-Next"; ROOT_NAME="KernelSU Next" ;;
   BSU) VARIANT="BakaSU"; ROOT_NAME="BakaSU" ;;
+  KSU) VARIANT="KernelSU"; ROOT_NAME="KernelSU" ;;   # official KernelSU (tiann), owner 2026-11-02
   *) fail "Unknown root $ROOT" ;;
 esac
 [ "$SUSFS_ON" = true ] && VARIANT="$VARIANT+SuSFS"
@@ -186,6 +187,13 @@ if [ "$ROOT" = "KSUN" ]; then
   git -C KernelSU-Next checkout -q -B "$BRANCH" "$ROOT_COMMIT"
   [ "$(git -C KernelSU-Next rev-parse HEAD)" = "$ROOT_COMMIT" ] || fail "KernelSU Next checkout is not $ROOT_COMMIT"
   KSU_VERSION="$(snap root_source.ksu_version)"
+elif [ "$ROOT" = "KSU" ]; then
+  # Official KernelSU: a main commit its CI built a manager for (resolve.py); full clone, so its Kbuild
+  # counts KSU_VERSION from git like the official manager of that commit.
+  curl -fsSL "https://raw.githubusercontent.com/tiann/KernelSU/$ROOT_COMMIT/kernel/setup.sh" -o "$WORK/root-setup.sh"
+  bash "$WORK/root-setup.sh" "$ROOT_COMMIT"
+  [ "$(git -C KernelSU rev-parse HEAD)" = "$ROOT_COMMIT" ] || fail "KernelSU checkout is not $ROOT_COMMIT"
+  KSU_VERSION=""
 else
   curl -fsSL "https://raw.githubusercontent.com/Baka-SU/BakaSU/$ROOT_COMMIT/kernel/setup.sh" -o "$WORK/root-setup.sh"
   bash "$WORK/root-setup.sh" "$ROOT_COMMIT"   # a release tag's commit, or a main commit (resolve.py)
@@ -209,6 +217,12 @@ notes="$(python3 "$HERE/scripts/susfs_context.py" "$WORK/susfs/kernel_patches/50
 patch -p1 --fuzz=3 --no-backup-if-mismatch < "$WORK/susfs.patch" \
   || wait_for "Tunggu simonpunk memperbarui SUSFS: patch kernel terbaru tidak cocok dengan ACK 6.1.$SUBLEVEL." \
               "Wait for simonpunk to update SUSFS: its newest kernel patch does not fit ACK 6.1.$SUBLEVEL."
+if [ "$ROOT" = "KSU" ]; then
+  # Official KernelSU takes SUSFS through simonpunk's own patch for it, applied as it is.
+  git -C KernelSU apply --whitespace=nowarn "$WORK/susfs/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch" \
+    || wait_for "Tunggu simonpunk menyesuaikan SUSFS dengan KernelSU main $(echo "$ROOT_COMMIT" | cut -c1-12)." \
+                "Wait for simonpunk to adapt SUSFS to KernelSU main $(echo "$ROOT_COMMIT" | cut -c1-12)."
+fi
 SUSFS_VERSION="$(sed -n 's/^#define SUSFS_VERSION "\(.*\)"/\1/p' include/linux/susfs.h)"
 echo "::endgroup::"
 fi
@@ -341,7 +355,7 @@ download_digest() {  # url, file, sha256:digest (from the release API)
 if [ "$(snap manager.kind)" = "release" ]; then
   download_digest "$(snap manager.url)" "$OUT/2-MANAGER_BakaSU_$(snap root_source.tag).apk" "$(snap manager.digest)"
 else
-  # The official CI build of the kernel's own commit: KernelSU Next, or BakaSU main.
+  # The official CI build of the kernel's own commit: KernelSU Next, BakaSU main or KernelSU main.
   for kind in manager spoofed; do
     id="$(snap "manager.$kind" 2>/dev/null)" || continue
     curl -fsSL -H "Authorization: Bearer $GH_TOKEN" \
@@ -353,6 +367,8 @@ else
     if [ "$ROOT" = "KSUN" ]; then
       label="$(echo "$apk" | sed -E 's/^KernelSU_Next_//; s/-spoofed//; s/-release\.apk$//; s/\.apk$//')"
       mv "$WORK/$kind.apk" "$OUT/${prefix}_KernelSU-Next_${label}.apk"
+    elif [ "$ROOT" = "KSU" ]; then
+      mv "$WORK/$kind.apk" "$OUT/${prefix}_KernelSU_main-$(echo "$ROOT_COMMIT" | cut -c1-8).apk"
     else
       mv "$WORK/$kind.apk" "$OUT/${prefix}_BakaSU_main-$(echo "$ROOT_COMMIT" | cut -c1-8).apk"
     fi

@@ -13,6 +13,7 @@ REPO = "cogan17/Cogan-Kernel"
 A, D, M = "a" * 40, "d" * 40, "m" * 40
 SUSFS_OLD, SUSFS_NEW = "c27ebe93c68e953c248b11bb747ef220ea648373", "27e0a0e42745991ba09d6f96a97bf4b83f41a012"
 BAKA_REL, BAKA_MAIN = "b" * 40, "e" * 40
+KSU_MAIN = "k" * 40
 SNAP = {"root": "KSUN", "ack": [{"tag": "android14-6.1-2025-09_r36", "commit": "4" * 40, "sublevel": 145},
                                 {"tag": "android14-6.1-2026-09_r4", "commit": "1" * 40, "sublevel": 176}],
         "susfs": {"repo": r.SUSFS, "branch": r.SUSFS_BRANCH, "commit": SUSFS_OLD},
@@ -30,8 +31,10 @@ class FakeNet:
         return []
 
     def __init__(self, *, runs=True, ack="android14-6.1-2026-10_r2", susfs=SUSFS_NEW, nomount="v2.3.0",
-                 bakasu=("SUSFS diblokir di BakaSU / SUSFS blocked in BakaSU", None), manager=True, sidex="6" * 40):
+                 bakasu=("SUSFS diblokir di BakaSU / SUSFS blocked in BakaSU", None), manager=True, sidex="6" * 40,
+                 ksu_fits=True):
         self.runs, self.ack, self.susfs, self.nomount, self.bakasu, self.manager = runs, ack, susfs, nomount, bakasu, manager
+        self.ksu_fits_value = ksu_fits
         self.apis = {
             f"repos/{REPO}/actions/workflows/build-kernel.yml/runs?branch=main&status=completed&per_page=30":
                 {"workflow_runs": [{"id": 11, "run_number": 6, "html_url": "https://run/11", "created_at": "2026-10-24T01:00:00Z"}]
@@ -68,6 +71,13 @@ class FakeNet:
                 {"artifacts": [{"name": "release-1.5.2+_6666666", "id": 9, "expired": False}]},
             "repos/sidex15/susfs4ksu-module/compare/" + "5" * 40 + "..." + "6" * 40: {"commits": [
                 commit("6" * 40, "2026-10-17T05:03:21Z", "scripts: customize: Implement hot-install")]},
+            "repos/tiann/KernelSU/actions/workflows/build-manager.yml/runs?branch=main&event=push&status=success&per_page=5":
+                {"workflow_runs": [{"id": 88, "head_sha": KSU_MAIN, "html_url": "https://ksu/run/88"}]},
+            "repos/tiann/KernelSU/actions/runs/88/artifacts?per_page=100":
+                {"artifacts": [{"name": "manager", "id": 3, "expired": False}]},
+            f"repos/tiann/KernelSU/commits/{KSU_MAIN}": commit(KSU_MAIN, "2026-11-01T06:00:00Z", "kernel: fix selinux"),
+            "repos/tiann/KernelSU/releases/latest": {"tag_name": "v3.3.1", "published_at": "2026-10-12T00:00:00Z",
+                                                     "html_url": "https://ksu/v3.3.1", "body": "KernelSU v3.3.1"},
             "repos/WildKernels/kernel_patches/commits?path=common/unicode_bypass_fix_6.1%2B.patch&per_page=5":
                 [commit("u" * 40, "2026-10-10T00:00:00Z", "unicode fix")],
         }
@@ -121,6 +131,9 @@ class FakeNet:
     def bakasu_ready(self, release, main, susfs):
         return self.bakasu
 
+    def ksu_fits(self, main, susfs):
+        return self.ksu_fits_value
+
 
 class UpdatesTest(unittest.TestCase):
     def run_check(self, **kwargs):
@@ -132,7 +145,7 @@ class UpdatesTest(unittest.TestCase):
         self.assertEqual(builds["KSUN"]["run"], 6)
         self.assertNotIn("BSU", builds)                                    # its snapshot only waited
         statuses = {k: e["status"] for k, e in found.items()}
-        self.assertEqual(statuses, {"ack": "new", "susfs": "new", "sidex": "new", "ksun": "same", "bakasu": "unknown", "nomount": "new",
+        self.assertEqual(statuses, {"ack": "new", "susfs": "new", "sidex": "new", "ksun": "same", "bakasu": "unknown", "ksu": "off", "nomount": "new",
                                     "bbg": "same", "anykernel": "same", "neutron": "same", "unicode": "off"})
         self.assertIn("🆕 **Ada pembaruan: ACK android14-6.1, SUSFS (simonpunk), SUSFS modul (sidex15), NoMount.** "
                       "Silakan jalankan **Cogan Kernel Builder**", text)
