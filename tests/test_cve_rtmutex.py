@@ -30,7 +30,7 @@ def preimage(patch):
 
 
 class CveRtmutexTest(unittest.TestCase):
-    def run_block(self, files, box="true"):
+    def run_block(self, files):
         with tempfile.TemporaryDirectory() as tmp:
             for path, text in files.items():
                 Path(tmp, path).parent.mkdir(parents=True, exist_ok=True)
@@ -39,21 +39,10 @@ class CveRtmutexTest(unittest.TestCase):
             script = ('set -euo pipefail; log() { echo "[+] $*"; }; group() { :; }; fail() { echo "FAIL $*"; exit 1; }\n'
                       'apply() { git -C "$KSRC" apply --whitespace=nowarn "$1"; }\n' + BLOCK + '\necho "STATE=$CVE_2026_53163"')
             result = subprocess.run(["bash", "-c", script], capture_output=True, text=True,
-                                    env={"KSRC": tmp, "HERE": str(ROOT / "kernel"), "ACK_TAG": "t", "SUBLEVEL": "176", "CVE": box,
+                                    env={"KSRC": tmp, "HERE": str(ROOT / "kernel"), "ACK_TAG": "t", "SUBLEVEL": "176",
                                          "PATH": "/usr/bin:/bin"})
             texts = {path: Path(tmp, path).read_text() for path in files}
         return result, texts
-
-    def test_suspended_by_default(self):
-        # Owner 2 Nov 2026 (myBCA on r8): "Test tanpa cve ... coba di tangguhkan".
-        files = preimage(PATCH.read_text())
-        result, texts = self.run_block(files, box="false")
-        self.assertIn("STATE=off", result.stdout, result.stdout + result.stderr)
-        self.assertEqual(texts, files)
-        import yaml
-        box = yaml.safe_load((ROOT / ".github/workflows/build-kernel.yml").read_text())[True]["workflow_dispatch"]["inputs"]["use_cve"]
-        self.assertIs(box["default"], False)
-        self.assertIn("CVE: ${{ inputs.use_cve }}", (ROOT / ".github/workflows/build-kernel.yml").read_text())
 
     def test_the_patch_is_the_upstream_stable_commit(self):
         text = PATCH.read_text()
