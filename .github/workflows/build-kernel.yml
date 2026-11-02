@@ -70,6 +70,10 @@ on:
         description: "Unicode Fix (WildKernel)"
         type: boolean
         default: true
+      use_cve:
+        description: "CVE-2026-53163 (ditangguhkan / suspended)"
+        type: boolean
+        default: false
       use_disguise:
         description: "Samarkan identitas kernel / Disguise kernel identity"
         type: boolean
@@ -292,6 +296,7 @@ jobs:
           NETWORKING: ${{ inputs.use_net }}
           UNICODE: ${{ inputs.use_unicode }}
           DISGUISE: ${{ inputs.use_disguise }}
+          CVE: ${{ inputs.use_cve }}
           OUT: ${{ github.workspace }}/out
           WORK: ${{ runner.temp }}/work
           GH_TOKEN: ${{ github.token }}

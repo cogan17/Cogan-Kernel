@@ -87,9 +87,14 @@ echo "::endgroup::"
 # waiter that was never enqueued: an app can crash the kernel through FUTEX_CMP_REQUEUE_PI. Linux 6.1.177
 # fixes it with upstream commit 40a25d59e85b (stable 4afda3a1da02), applied here as it is. Older ACK
 # releases lack the CVE-2026-43499 fix and so this bug; a newer one already has the follow-up.
+# Suspended by default (owner 2 Nov 2026, myBCA on r8: "Test tanpa cve ... coba di tangguhkan"): the
+# form box turns it on again; unticked records CVE_2026_53163=off and changes nothing.
 group "CVE-2026-53163: rtmutex remove_waiter (Linux 6.1.177)"
 RTMUTEX="$KSRC/kernel/locking/rtmutex.c"
-if grep -q 'if (!waiter_task) /\* never enqueued \*/' "$RTMUTEX"; then
+if [ "${CVE:-false}" != "true" ]; then
+  CVE_2026_53163="off"
+  log "Suspended (form box CVE-2026-53163 unticked): nothing applied"
+elif grep -q 'if (!waiter_task) /\* never enqueued \*/' "$RTMUTEX"; then
   CVE_2026_53163="present"
   log "Already in ACK $ACK_TAG: nothing to apply"
 elif grep -q 'struct task_struct \*waiter_task = waiter->task;' "$RTMUTEX"; then
