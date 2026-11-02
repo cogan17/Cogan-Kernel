@@ -40,6 +40,32 @@
 ---
 
 <details>
+<summary>🧰 <b>Modules the owner uses</b></summary>
+
+Modules the owner runs on their phone together with Cogan Kernel. Click a module name to open its repository. None are required: the kernel works without them, install what you need.
+
+| Module | Purpose | Author |
+|---|---|---|
+| 🛡️ [SUSFS-FOR-KERNELSU](https://github.com/sidex15/susfs4ksu-module) | SUSFS settings through a WebUI (already in the release as file 5) | sidex15 |
+| 📂 [NoMount](https://github.com/maxsteeel/nomount) | Mountless module loading (already in the kernel) | maxsteeel |
+| 🧠 [Cogan Smart Kernel](modules/cogan-smart/README.md) | Power modes, thermals, module guard | Cogan17 |
+| 🔁 [AshReXcue BootLoop Protector](https://github.com/RipperHybrid/AshLooper) | Disables modules automatically on bootloop | RipperHybrid |
+| 🧬 [Zygisk Next](https://github.com/Dr-TSNG/ZygiskNext) | Zygisk for KernelSU (needed by the Zygisk modules below) | Dr-TSNG |
+| 🧩 [Vector](https://github.com/JingMatrix/Vector) | Xposed framework (LSPosed successor) | JingMatrix |
+| 🙈 [HMA-OSS](https://github.com/frknkrc44/HMA-OSS) | Hides your app list from other apps | frknkrc44 |
+| ✅ [Play Integrity Fix [INJECT]](https://github.com/KOWX712/PlayIntegrityFix) | Fixes Play Integrity | KOWX712 |
+| 🔑 [Tricky Store OSS](https://github.com/beakthoven/TrickyStoreOSS) | Key attestation for Play Integrity | beakthoven |
+| 🕵️ [Stealth Debug](https://github.com/sp11xy/StealthDebug) | Hides USB/developer debugging from apps | sp11xy |
+| 🌐 [TCP Optimiser](https://github.com/fatalcoder524/TCP_Optimiser_Module) | Tunes TCP congestion control | fatalcoder524 |
+| 📱 [HyperUnlocked](https://github.com/ukriu/HyperUnlocked) | Unlocks hidden HyperOS features | ukriu |
+| 👆 [NavTweaks](https://github.com/DanGLVK/Hide-Navbar) | Hides the gesture navigation bar | DanGLVK |
+| ▶️ [YouTube Morphe](https://github.com/MorpheApp/morphe-manager) | Modded YouTube, root-installed through Morphe Manager | MorpheApp |
+| 🚫 [zygisk-detach](https://github.com/j-hc/zygisk-detach) | Detaches apps from Play Store updates | j-hc |
+| 📶 [WiFi Password Viewer](https://github.com/Googlers-Repo/wpd) | Shows saved Wi-Fi passwords (for MMRL) | Googlers-Repo |
+
+</details>
+
+<details>
 <summary>📱 <b>Device specifications</b></summary>
 
 | Item | Detail |
@@ -115,32 +141,6 @@ Release notes include **What's New & Fixes**, compared with the previous release
 | `archive r5` (ACK 6.1.138 · KernelSU Next) | ✅ Tested on the phone; the proven fallback |
 
 `r1` and `r2` are this repository's releases; the other three are archived releases from the predecessor repository. Full history: [Release Notes](CHANGELOG.en.md).
-
-</details>
-
-<details>
-<summary>🧰 <b>Modules the owner uses</b></summary>
-
-Modules the owner runs on their phone together with Cogan Kernel. Click a module name to open its repository. None are required: the kernel works without them, install what you need.
-
-| Module | Purpose | Author |
-|---|---|---|
-| 🛡️ [SUSFS-FOR-KERNELSU](https://github.com/sidex15/susfs4ksu-module) | SUSFS settings through a WebUI (already in the release as file 5) | sidex15 |
-| 📂 [NoMount](https://github.com/maxsteeel/nomount) | Mountless module loading (already in the kernel) | maxsteeel |
-| 🧠 [Cogan Smart Kernel](modules/cogan-smart/README.md) | Power modes, thermals, module guard | Cogan17 |
-| 🔁 [AshReXcue BootLoop Protector](https://github.com/RipperHybrid/AshLooper) | Disables modules automatically on bootloop | RipperHybrid |
-| 🧬 [Zygisk Next](https://github.com/Dr-TSNG/ZygiskNext) | Zygisk for KernelSU (needed by the Zygisk modules below) | Dr-TSNG |
-| 🧩 [Vector](https://github.com/JingMatrix/Vector) | Xposed framework (LSPosed successor) | JingMatrix |
-| 🙈 [HMA-OSS](https://github.com/frknkrc44/HMA-OSS) | Hides your app list from other apps | frknkrc44 |
-| ✅ [Play Integrity Fix [INJECT]](https://github.com/KOWX712/PlayIntegrityFix) | Fixes Play Integrity | KOWX712 |
-| 🔑 [Tricky Store OSS](https://github.com/beakthoven/TrickyStoreOSS) | Key attestation for Play Integrity | beakthoven |
-| 🕵️ [Stealth Debug](https://github.com/sp11xy/StealthDebug) | Hides USB/developer debugging from apps | sp11xy |
-| 🌐 [TCP Optimiser](https://github.com/fatalcoder524/TCP_Optimiser_Module) | Tunes TCP congestion control | fatalcoder524 |
-| 📱 [HyperUnlocked](https://github.com/ukriu/HyperUnlocked) | Unlocks hidden HyperOS features | ukriu |
-| 👆 [NavTweaks](https://github.com/DanGLVK/Hide-Navbar) | Hides the gesture navigation bar | DanGLVK |
-| ▶️ [YouTube Morphe](https://github.com/MorpheApp/morphe-manager) | Modded YouTube, root-installed through Morphe Manager | MorpheApp |
-| 🚫 [zygisk-detach](https://github.com/j-hc/zygisk-detach) | Detaches apps from Play Store updates | j-hc |
-| 📶 [WiFi Password Viewer](https://github.com/Googlers-Repo/wpd) | Shows saved Wi-Fi passwords (for MMRL) | Googlers-Repo |
 
 </details>
 
