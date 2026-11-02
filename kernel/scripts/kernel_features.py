@@ -13,8 +13,14 @@ so the line cannot claim a feature the build lacks:
                    decomposition before it moves on (WildKernel's unicode bypass fix)
   Cogan Bridge     CONFIG_COGAN_BRIDGE=y
   LTO              Full / Thin / No LTO
+  Disguise         CONFIG_LOCALVERSION in the stock GKI format (the "Samarkan identitas kernel" box)
 
-Prints one line such as "SUSFS, BBRv3 (default), BBG, NoMount, Full LTO".
+A feature that is on by default and was turned off is named too, "No <feature>" like "No LTO"
+(owner 2026-11-02: "lebih bagus lagi dilaporkannya tidak ada susfs/no susfs"), so the flasher and the
+release notes say what the kernel lacks. An off-by-default extra (Disguise) is named only when on.
+
+Prints one line such as "SUSFS, BBRv3 (default), BBG, NoMount, Full LTO" or
+"No SUSFS, BBRv3 (default), BBG, No NoMount, Unicode fix, Cogan Bridge, No LTO".
 
 Usage: kernel_features.py CONFIG KERNEL_SOURCE [--github-env FILE]
 """
@@ -25,6 +31,7 @@ from pathlib import Path
 
 BBR_V3 = re.compile(r"^#define\s+BBR_VERSION\s+3\b", re.MULTILINE)
 BBR3_NAME = re.compile(r'tcp_bbr3_cong_ops\.name,\s*"bbr3"')
+DISGUISE = re.compile(r'^"-android\d+-\d+-g[0-9a-f]{12}-ab\d+"$')
 UNICODE_FIX = re.compile(r"ccc == DECOMPOSE\)\s*\{(?:\s*//[^\n]*)?\s*if \(\*LEAF_STR\(leaf\) == '\\0'\)")
 
 
@@ -43,27 +50,26 @@ def features(config_text, bbr_source="", unicode_source=""):
     config = read_config(config_text)
     on = lambda key: config.get(key) == "y"  # noqa: E731
     found = []
-    if on("CONFIG_KSU_SUSFS"):
-        found.append("SUSFS")
+    found.append("SUSFS" if on("CONFIG_KSU_SUSFS") else "No SUSFS")
     if on("CONFIG_TCP_CONG_BBR"):
         name = "BBRv3" if BBR_V3.search(bbr_source) else "BBR"
         notes = (["default"] if config.get("CONFIG_DEFAULT_TCP_CONG") == '"bbr"' else []) + \
             (["also bbr3"] if name == "BBRv3" and BBR3_NAME.search(bbr_source) else [])
         found.append(name + (f" ({', '.join(notes)})" if notes else ""))
-    if on("CONFIG_BBG"):
-        found.append("BBG")
-    if on("CONFIG_NOMOUNT"):
-        found.append("NoMount")
-    if on("CONFIG_UNICODE") and UNICODE_FIX.search(unicode_source):
-        found.append("Unicode fix")
-    if on("CONFIG_COGAN_BRIDGE"):
-        found.append("Cogan Bridge")
+    else:
+        found.append("No BBR")
+    found.append("BBG" if on("CONFIG_BBG") else "No BBG")
+    found.append("NoMount" if on("CONFIG_NOMOUNT") else "No NoMount")
+    found.append("Unicode fix" if on("CONFIG_UNICODE") and UNICODE_FIX.search(unicode_source) else "No Unicode fix")
+    found.append("Cogan Bridge" if on("CONFIG_COGAN_BRIDGE") else "No Cogan Bridge")
     if on("CONFIG_LTO_CLANG_FULL"):
         found.append("Full LTO")
     elif on("CONFIG_LTO_CLANG_THIN"):
         found.append("Thin LTO")
     else:
         found.append("No LTO")
+    if DISGUISE.match(config.get("CONFIG_LOCALVERSION", "")):
+        found.append("Disguise")
     return found
 
 

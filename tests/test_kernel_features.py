@@ -35,18 +35,18 @@ UTF8_FIXED = """\t\t} else if (ccc == DECOMPOSE) {
 class KernelFeaturesTests(unittest.TestCase):
     def test_full_ksun_susfs_build(self):
         self.assertEqual(kf.features(FULL, BBR_V3_SOURCE),
-                         ["SUSFS", "BBRv3 (default)", "BBG", "NoMount", "Full LTO"])
+                         ["SUSFS", "BBRv3 (default)", "BBG", "NoMount", "No Unicode fix", "No Cogan Bridge", "Full LTO"])
 
     def test_unicode_fix_is_read_from_the_source(self):
         config = FULL + "CONFIG_UNICODE=y\n"
         self.assertEqual(kf.features(config, BBR_V3_SOURCE, UTF8_FIXED),
-                         ["SUSFS", "BBRv3 (default)", "BBG", "NoMount", "Unicode fix", "Full LTO"])
+                         ["SUSFS", "BBRv3 (default)", "BBG", "NoMount", "Unicode fix", "No Cogan Bridge", "Full LTO"])
         self.assertNotIn("Unicode fix", kf.features(config, BBR_V3_SOURCE, UTF8_STOCK))
         self.assertNotIn("Unicode fix", kf.features(FULL, BBR_V3_SOURCE, UTF8_FIXED))  # no CONFIG_UNICODE
 
     def test_cogan_bridge_is_reported(self):
         self.assertEqual(kf.features(FULL + "CONFIG_COGAN_BRIDGE=y\n", BBR_V3_SOURCE),
-                         ["SUSFS", "BBRv3 (default)", "BBG", "NoMount", "Cogan Bridge", "Full LTO"])
+                         ["SUSFS", "BBRv3 (default)", "BBG", "NoMount", "No Unicode fix", "Cogan Bridge", "Full LTO"])
 
     def test_bbr3_name_is_reported(self):
         source = BBR_V3_SOURCE + '\tstrscpy(tcp_bbr3_cong_ops.name, "bbr3", sizeof(tcp_bbr3_cong_ops.name));\n'
@@ -66,8 +66,21 @@ class KernelFeaturesTests(unittest.TestCase):
 
     def test_networking_off_vanilla_thin_lto(self):
         config = "# CONFIG_TCP_CONG_BBR is not set\nCONFIG_LTO_CLANG_THIN=y\n"
-        self.assertEqual(kf.features(config, BBR_V3_SOURCE), ["Thin LTO"])
-        self.assertEqual(kf.features("", ""), ["No LTO"])
+        off = ["No SUSFS", "No BBR", "No BBG", "No NoMount", "No Unicode fix", "No Cogan Bridge"]
+        self.assertEqual(kf.features(config, BBR_V3_SOURCE), off + ["Thin LTO"])
+        self.assertEqual(kf.features("", ""), off + ["No LTO"])
+
+    def test_features_turned_off_are_named(self):
+        # Owner 2026-11-02 (r19 flashed without SUSFS): "lebih bagus lagi dilaporkannya tidak ada susfs".
+        config = FULL.replace("CONFIG_KSU_SUSFS=y", "# CONFIG_KSU_SUSFS is not set") + "CONFIG_COGAN_BRIDGE=y\n"
+        line = ", ".join(kf.features(config, BBR_V3_SOURCE))
+        self.assertTrue(line.startswith("No SUSFS, BBRv3 (default), BBG, NoMount"), line)
+
+    def test_disguise_is_named_only_when_on(self):
+        disguised = FULL + 'CONFIG_LOCALVERSION="-android14-11-g6d8630162a37-ab14844417"\n'
+        self.assertEqual(kf.features(disguised, BBR_V3_SOURCE)[-1], "Disguise")
+        cogan = FULL + 'CONFIG_LOCALVERSION="-Cogan-Rothko-ACK-r19-10951defe"\n'
+        self.assertNotIn("Disguise", kf.features(cogan, BBR_V3_SOURCE))
 
     def test_cli_writes_github_env(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -79,7 +92,8 @@ class KernelFeaturesTests(unittest.TestCase):
             self.assertEqual(kf.main([str(directory / ".config"), str(directory / "src"),
                                       "--github-env", str(env)]), 0)
             self.assertEqual(env.read_text(),
-                             "KERNEL_FEATURES=SUSFS, BBRv3 (default), BBG, NoMount, Full LTO\n")
+                             "KERNEL_FEATURES=SUSFS, BBRv3 (default), BBG, NoMount, No Unicode fix, "
+                             "No Cogan Bridge, Full LTO\n")
             self.assertEqual(kf.main([str(directory / "missing"), str(directory / "src")]), 1)
 
 

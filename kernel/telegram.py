@@ -84,8 +84,10 @@ def read_env(path):
 
 
 def feature_names(text):
-    """'SUSFS, BBRv3 (default, also bbr3), BBG' -> ['SUSFS', 'BBRv3', 'BBG']."""
-    return [name.strip() for name in re.sub(r"\([^)]*\)", "", text).split(",") if name.strip()]
+    """'SUSFS, BBRv3 (default, also bbr3), BBG' -> ['SUSFS', 'BBRv3', 'BBG']. "No X" marks a feature that is
+    off (owner 2026-11-02), so it is left out: turning SUSFS off reads "Fitur dilepas: SUSFS"."""
+    names = [name.strip() for name in re.sub(r"\([^)]*\)", "", text).split(",") if name.strip()]
+    return [name for name in names if not name.startswith("No ")]
 
 
 def parse_release(body):
