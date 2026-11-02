@@ -127,8 +127,10 @@ def ack_sublevel(tag, fetch=http):
 def pick_ack(releases, wanted, sublevel_of=ack_sublevel):
     """[(tag, commit, sublevel)]: lts = the newest release; N or N,M = the newest release of each
     sublevel; semua or empty = the newest release of every sublevel since the phone's own (owner
-    2026-10-31: "Jika dikosongkan maka semua sublevel muncul")."""
+    2026-10-31: "Jika dikosongkan maka semua sublevel muncul"). The form cannot send an empty value: GitHub
+    replaces it with the default lts (run 41377075131), so the form says semua (owner 2026-11-02)."""
     wanted = wanted.strip().lower() or "semua"
+    wanted = "semua" if wanted == "all" else wanted
     if not releases:
         raise ValueError("no android14-6.1 release found")
     if wanted == "lts":
