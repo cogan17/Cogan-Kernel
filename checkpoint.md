@@ -22,8 +22,8 @@ Checkpoint ini sebagai pengingat pekerjaan 31 Okt – 2 Nov dan penanda pekerjaa
 | #104 | 2 Nov 06.52 | Keterangan form Builder diringkas. Form Rilis dari run dan Cogan Smart Release **jangan diringkas** (owner) |
 | #106 | 2 Nov 08.14 | BakaSU tidak lagi mengambil rilis yang masih ReSukiSU (`v4.2.0-rc3`); diambil dari `main` |
 | #107 | 2 Nov 08.22 | Baris fitur menyebut fitur yang mati: `No SUSFS`, `No NoMount`, dst.; `Disguise` bila dicentang |
-| #110 | 2 Nov 09.4x | Kernel Sublevel: ketik `semua`/`all` (isian kosong diganti GitHub dengan `lts`) |
-| #111 | 2 Nov 10.0x | APK manager diunggah sekali per root manager |
+| #110 | 2 Nov 09.25 | Kernel Sublevel: ketik `semua`/`all` (isian kosong diganti GitHub dengan `lts`) |
+| #111 | 2 Nov 10.02 | APK manager diunggah sekali per root manager |
 | #112, #113 | 2 Nov 10.11 / 10.42 | **Issue #105 selesai:** BBRv3 141 (set patch sendiri) dan vendor hook stok (`8148058f689d`, `9667c70358a5`) untuk ACK 2025-07; [run #26](https://github.com/cogan17/Cogan-Kernel/actions/runs/41384518511) KSUN + BakaSU 141 lolos build + gate KMI; tabel README kini memuat 138–176 untuk kedua root manager |
 | #108 | 2 Nov 08.55 | Rilis dari run: centang **timpa** (mati secara default) untuk tag `vYY.MM.DD-rN` yang sudah ada. Builder dan artifact **tetap apa adanya** (owner) |
 
