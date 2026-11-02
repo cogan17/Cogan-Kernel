@@ -148,13 +148,17 @@ jobs:
               if "wait" in snap:
                   waits.append((name, snap["wait"]))
                   continue
+              # Every build of a root manager fetches the same manager APK; only its newest sublevel uploads it,
+              # so the run shows one per root manager (owner 2026-11-02: run 41377913431 listed six of each).
+              carrier = max(ack["sublevel"] for ack in snap["ack"])
               for ack in snap["ack"]:
                   # Every build fetches the same NoMount module; only the first build of each NoMount version
                   # uploads it, so the run shows it once (owner 2026-10-29: run 40853374637 listed it twice).
                   first = snap["nomount"]["tag"] not in nomount
                   nomount.add(snap["nomount"]["tag"])
                   include.append({"root": root, "name": f"{name} 6.1.{ack['sublevel']}", "tag": ack["tag"],
-                                  "commit": ack["commit"], "sublevel": str(ack["sublevel"]), "nomount": "1" if first else ""})
+                                  "commit": ack["commit"], "sublevel": str(ack["sublevel"]), "nomount": "1" if first else "",
+                                  "manager": "1" if ack["sublevel"] == carrier else ""})
               src = snap["root_source"]
               ref = src.get("tag") or src.get("branch")
               version = f" ({src['ksu_version']})" if src.get("ksu_version") else ""
@@ -303,14 +307,14 @@ jobs:
           archive: false
           retention-days: 90
       - name: Upload 2 - manager
-        if: success() && hashFiles('out/2-MANAGER_*') != ''
+        if: success() && matrix.manager == '1' && hashFiles('out/2-MANAGER_*') != ''
         uses: actions/upload-artifact@v7.0.1
         with:
           path: out/2-MANAGER_*.apk
           archive: false
           retention-days: 90
       - name: Upload 3 - spoofed manager
-        if: success() && hashFiles('out/3-MANAGER-SPOOFED_*') != ''
+        if: success() && matrix.manager == '1' && hashFiles('out/3-MANAGER-SPOOFED_*') != ''
         uses: actions/upload-artifact@v7.0.1
         with:
           path: out/3-MANAGER-SPOOFED_*.apk

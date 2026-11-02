@@ -71,6 +71,19 @@ class NoMountOnceTest(unittest.TestCase):
         builds = self.plan([self.snap("BSU", "v2.2.0", 176), self.snap("KSUN", "v2.3.0", 176)])
         self.assertEqual([b["nomount"] for b in builds], ["1", "1"])   # two versions: each one is needed
 
+    def test_the_newest_sublevel_of_each_root_manager_uploads_its_manager(self):
+        # Owner 2026-11-02, run 41377913431: "semua" uploaded the same manager APK once per sublevel.
+        builds = self.plan([self.snap("BSU", "v2.2.0", 176, 138, 162), self.snap("KSUN", "v2.2.0", 172, 176)])
+        self.assertEqual([(b["root"], b["sublevel"], b["manager"]) for b in builds],
+                         [("BSU", "176", "1"), ("BSU", "138", ""), ("BSU", "162", ""),
+                          ("KSUN", "172", ""), ("KSUN", "176", "1")])
+        self.assertEqual([b["manager"] for b in self.plan([self.snap("KSUN", "v2.2.0", 145)])], ["1"])
+
+    def test_manager_uploads_follow_the_plan(self):
+        for name in ("Upload 2 - manager", "Upload 3 - spoofed manager"):
+            step = next(step for where, _, step in steps() if step.get("name") == name)
+            self.assertIn("matrix.manager == '1'", step["if"])
+
     def test_the_upload_step_follows_the_plan(self):
         step = next(step for where, _, step in steps() if step.get("name") == "Upload 4 - NoMount module")
         self.assertIn("matrix.nomount == '1'", step["if"])
