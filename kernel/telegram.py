@@ -126,6 +126,17 @@ def parse_release(body):
     return found
 
 
+ROOT_NAMES = ("KernelSU Next", "BakaSU", "KernelSU")
+
+
+def root_name(text):
+    """The root manager a "Root:" line names. Exact: "KernelSU" is also the start of "KernelSU Next"."""
+    for name in sorted(ROOT_NAMES, key=len, reverse=True):
+        if text == name or text.startswith(name + " "):
+            return name
+    return None
+
+
 def previous(releases, env):
     """Newest earlier kernel release of the same root manager, or None."""
     for release in releases:  # the API lists the newest first
@@ -140,7 +151,7 @@ def previous(releases, env):
         # Read the matching section so BakaSU never inherits KernelSU Next's component versions.
         for section in re.split(r"(?=^## )", release.get("body") or "", flags=re.MULTILINE):
             parsed = parse_release(section)
-            if parsed.get("root", ("",))[0].startswith(env.get("ROOT_NAME", "?")):
+            if root_name(parsed.get("root", ("",))[0]) == env.get("ROOT_NAME", "?"):
                 return {"tag": release["tag_name"], "sha": release.get("target_commitish", ""), **parsed}
     return None
 

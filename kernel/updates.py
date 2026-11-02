@@ -40,6 +40,8 @@ else:            # run as kernel/updates.py
 WIB = timezone(timedelta(hours=7))
 GITLAB = "https://gitlab.com/api/v4/projects/simonpunk%2Fsusfs4ksu"
 KSUN_UPSTREAM = "KernelSU-Next/KernelSU-Next"
+ROOT_KEYS = ("KSUN", "BSU", "KSU")
+ROOT_NAMES = {"KSUN": "KernelSU Next", "BSU": "BakaSU", "KSU": "KernelSU"}
 FIX = re.compile(r"\b(fix(e[sd])?|bug|crash|revert|regression|leak|panic|hotfix)\b|^fix[(:]", re.I)
 MONTHS_ID = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"]
 MONTHS_EN = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
@@ -176,6 +178,14 @@ class Net:
             r.fetch_history(repo, r.KSUN_FORK, f"{head}:refs/check/ksun", f"{dev}:refs/check/ksun-dev")
             return r.ksun_version(repo, "refs/check/ksun", "refs/check/ksun-dev")
 
+    def ksu_fits(self, main, susfs):
+        """True when SUSFS's patch for official KernelSU (at susfs) applies to KernelSU main commit main."""
+        with tempfile.TemporaryDirectory(prefix="updates-ksu-", ignore_cleanup_errors=True) as repo:
+            self.git_dir(repo)
+            r.run("git", "-C", repo, "fetch", "-q", "--depth=1", r.SUSFS, f"{susfs}:refs/check/susfs")
+            r.run("git", "-C", repo, "fetch", "-q", "--depth=1", r.KSU, f"{main}:refs/check/ksu")
+            return r.patch_fits(repo, "refs/check/ksu", r.run("git", "-C", repo, "show", f"refs/check/susfs:{r.SUSFS_KSU_PATCH}"))
+
     def bakasu_ready(self, release, main, susfs):
         """(problem of the release, problem of main) against SUSFS commit susfs; None = ready."""
         with tempfile.TemporaryDirectory(prefix="updates-bakasu-", ignore_cleanup_errors=True) as repo:
@@ -244,9 +254,9 @@ def legacy_builds(net, repo, run):
             snaps = [json.loads(archive.read(name)) for name in archive.namelist() if name.endswith(".json")]
     for snap in snaps:
         root = snap.get("root")
-        if root not in ("KSUN", "BSU") or "wait" in snap:
+        if root not in ROOT_KEYS or "wait" in snap:
             continue
-        tag = "KernelSU-Next" if root == "KSUN" else "BakaSU"
+        tag = {"KSUN": "KernelSU-Next", "BSU": "BakaSU", "KSU": "KernelSU"}[root]
         built = [a for a in snap.get("ack", []) if any(f"6.1.{a['sublevel']}_{tag}+" in name for name in kernels)]
         if not built:
             continue
@@ -258,7 +268,7 @@ def legacy_builds(net, repo, run):
 
 def base_of(builds, *path):
     """A value of the newest last build's snapshot (KSUN first), e.g. base_of(builds, "susfs", "commit")."""
-    for root in ("KSUN", "BSU"):
+    for root in ROOT_KEYS:
         value = builds.get(root, {}).get("snap")
         for key in path:
             value = value.get(key) if isinstance(value, dict) else None
@@ -431,6 +441,39 @@ def check_bakasu(net, builds, susfs_head):
                 lines=lines, notes={"tag": tag, "text": excerpt(release.get("body", ""))} if release else None)
 
 
+def check_ksu(net, builds, susfs_head):
+    """Official KernelSU (owner 2026-11-02): the Builder takes the newest main commit its CI built a manager
+    for; with SUSFS, only while simonpunk's patch for KernelSU fits that commit."""
+    snap = builds.get("KSU", {}).get("snap", {})
+    base = snap.get("root_source", {})
+    repo = r.KSU.removeprefix("https://github.com/")
+    wait, lines = None, []
+    try:
+        main, _ = r.ksu_main(net.api)
+        info = github_commit(net, repo, main)
+    except r.Wait as missing:
+        main, info = None, None
+        wait = {"id": missing.id_text, "en": missing.en_text}
+    if main and susfs_head:
+        fits = net.ksu_fits(main, susfs_head)
+        lines.append({"id": f"SUSFS `{short(susfs_head)}` untuk KernelSU main `{main[:8]}`: " + ("cocok" if fits else "belum cocok"),
+                      "en": f"SUSFS `{short(susfs_head)}` for KernelSU main `{main[:8]}`: " + ("fits" if fits else "does not fit yet")})
+        if not fits:
+            wait = {"id": f"Tunggu simonpunk menyesuaikan SUSFS dengan KernelSU main `{main[:8]}`.",
+                    "en": f"Wait for simonpunk to adapt SUSFS to KernelSU main `{main[:8]}`."}
+    try:
+        stable = github_release(net, repo)
+    except OSError:
+        stable = None
+    # Never built yet: an optional root manager, "not used" rather than "history unavailable".
+    status = "wait" if wait else "off" if not base else "same" if base.get("commit") == main else "new"
+    return item("ksu", "KernelSU", base={"label": f"main `{short(base.get('commit'))}`"} if base else None,
+                stable={"label": stable["tag"], "date": stable["date"], "url": stable["url"]} if stable else None,
+                ci={"label": f"main `{short(main)}`", "date": info["date"], "sha": main} if info else None,
+                changes=github_changes(net, repo, base.get("commit"), main) if main else [], status=status,
+                wait=wait, lines=lines, notes={"tag": stable["tag"], "text": stable["notes"]} if stable else None)
+
+
 def check_nomount(net, builds):
     base = base_of(builds, "nomount", "tag")
     repo = r.NOMOUNT.removeprefix("https://github.com/")
@@ -504,17 +547,18 @@ def gather(net, repo):
         builds = last_builds(net, repo)
     except Exception as exc:  # noqa: BLE001 - the newest versions are still worth showing
         builds = {"error": str(exc)}
-    clean = {k: v for k, v in builds.items() if k in ("KSUN", "BSU")}
+    clean = {k: v for k, v in builds.items() if k in ROOT_KEYS}
     found = []
     susfs_head = None
     checks = [("ack", lambda: check_ack(net, clean)), ("susfs", lambda: check_susfs(net, clean)),
               ("sidex", lambda: check_sidex(net, clean)), ("ksun", lambda: check_ksun(net, clean)), ("bakasu", lambda: check_bakasu(net, clean, susfs_head)),
+              ("ksu", lambda: check_ksu(net, clean, susfs_head)),
               ("nomount", lambda: check_nomount(net, clean)),
               ("bbg", lambda: check_branch(net, clean, "bbg", "Baseband Guard", r.BBG)),
               ("anykernel", lambda: check_anykernel(net, clean)),
               ("neutron", lambda: check_neutron(net, clean)), ("unicode", lambda: check_unicode(net, clean))]
     names = {"ack": "ACK android14-6.1", "susfs": "SUSFS (simonpunk)", "sidex": "SUSFS modul (sidex15)",
-             "ksun": "KernelSU Next", "bakasu": "BakaSU",
+             "ksun": "KernelSU Next", "bakasu": "BakaSU", "ksu": "KernelSU",
              "nomount": "NoMount", "bbg": "Baseband Guard", "anykernel": "AnyKernel3", "neutron": "Neutron clang",
              "unicode": "Unicode fix (WildKernel)"}
     for key, check in checks:
@@ -576,7 +620,7 @@ def change_lines(entry, lang):
 
 
 def summary(builds, found):
-    roots = {k: v for k, v in builds.items() if k in ("KSUN", "BSU")}
+    roots = {k: v for k, v in builds.items() if k in ROOT_KEYS}
     news = [e["name"] for e in found if e["status"] == "new"]
     waits = [e for e in found if e.get("wait")]
     out = ["## 🔎 Cek pembaruan / Check for updates", ""]
@@ -589,8 +633,8 @@ def summary(builds, found):
         if waits:
             out += ["", t["waits"], *[f"- {e['name']}: {e['wait'][lang]}" for e in waits]]
         if roots:
-            runs = ", ".join(f"{'KernelSU Next' if k == 'KSUN' else 'BakaSU'} [run #{v['run']}]({v.get('record_url', v['url'])}) ({when(v['date'], lang)})"
-                             for k, v in sorted(roots.items(), key=lambda kv: kv[0] != "KSUN"))
+            runs = ", ".join(f"{ROOT_NAMES[k]} [run #{v['run']}]({v.get('record_url', v['url'])}) ({when(v['date'], lang)})"
+                             for k, v in sorted(roots.items(), key=lambda kv: ROOT_KEYS.index(kv[0])))
             out += ["", t["lastrun"].format(roots=runs)]
         else:
             out += [t["norun"]]
