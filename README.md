@@ -87,6 +87,7 @@ Tombol **Cek pembaruan** satu-satunya yang mengecek, dan tidak membangun: versi 
 | 162 | `2026-03_r24` | ✅ KernelSU Next: [build + gate KMI](https://github.com/cogan17/Cogan-Kernel/actions/runs/40048269498) |
 | 157 | `2025-12_r32` | ✅ KernelSU Next: [build + gate KMI](https://github.com/cogan17/Cogan-Kernel/actions/runs/40048269498) |
 | 145 | `2025-09_r36` | ✅ KernelSU Next: [build + gate KMI](https://github.com/cogan17/Cogan-Kernel/actions/runs/40061712549) |
+| 141 | `2025-07_r13` | ✅ KernelSU Next · BakaSU: [build + gate KMI](https://github.com/cogan17/Cogan-Kernel/actions/runs/41384518511) |
 | 138 | `2025-06_r17` | ✅ KernelSU Next: [build + gate KMI](https://github.com/cogan17/Cogan-Kernel/actions/runs/40061712549) · kernel bawaan HP; arsip r5 diuji di HP |
 <!-- sublevel:end -->
 
