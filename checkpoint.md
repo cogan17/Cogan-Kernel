@@ -1,12 +1,65 @@
-# Checkpoint — 29 Okt 2026 (WIB)
+# Checkpoint — 2 Nov 2026, 09.04 WIB
 
-Cogan Smart **v2.12.4** (versionCode 35) **lulus uji owner di HP** (29 Okt 21.36 WIB, kernel r6 6.1.176 No LTO) dan **terbit sebagai Release** [`cogan-smart-v2.12.4`](https://github.com/cogan17/Cogan-Kernel/releases/tag/cogan-smart-v2.12.4) dengan label diuji di HP (29 Okt ±21.47 WIB). Penahanan rilis sudah dicabut owner untuk versi ini. Sesi berikutnya baca `CLAUDE.md`, file ini dan `CHECKPOINT.md`, lalu tunggu instruksi owner. Jangan otomatis menguji HP, menjalankan build atau menerbitkan rilis.
+Checkpoint ini sebagai pengingat pekerjaan 31 Okt – 2 Nov dan penanda pekerjaan berikutnya. Sesi berikutnya baca `CLAUDE.md` dan file ini, lalu **tunggu instruksi owner**. Jangan otomatis menjalankan build, menguji HP atau menerbitkan rilis.
 
 ## Sedang berjalan
 
+- Tidak ada: tidak ada PR terbuka, run workflow atau draf yang berjalan. Issue terbuka hanya #105 (opsional).
+
+## Sudah selesai (31 Okt – 2 Nov)
+
+| PR | Digabung (WIB) | Isi |
+|---|---|---|
+| #91 | 31 Okt 10.33 | Asisten wajib berbahasa Indonesia ke owner |
+| #92 | 31 Okt 18.27 | Kernel Sublevel dikosongkan = semua sublevel |
+| #93, #94 | 31 Okt 19.14–19.17 | Teks rilis tanpa hash, perubahan hulu dengan kata-kata biasa; keterangan form dua bahasa |
+| #95, #96 | 1 Nov 21.34 / 22.11 | Eksperimen manager lewat TWRP, lalu **dibatalkan owner** (jangan diajukan lagi) |
+| #97 | 1 Nov 22.24 | CVE-2026-53163 otomatis di setiap build; Unicode fix dicentang otomatis |
+| #98 | 1 Nov 22.30 | Tanpa LTO jadi pilihan bawaan |
+| #99, #100 | 1 Nov 22.53 / 23.06 | Centang Samarkan identitas kernel (mati secara default), memakai identitas boot.img stok rothko |
+| #101 | 2 Nov 00.05 | Panduan spoof uname SUSFS dengan nilai stok (Duck Detector Kernel Check bersih di HP owner) |
+| #102, #103 | 2 Nov 00.20 / 06.30 | Centang SUSFS (dicentang default; dilepas = root manager tanpa SUSFS); perbaikan `CONFIG_KSU_SUSFS` tetap y di KSUN |
+| #104 | 2 Nov 06.52 | Keterangan form Builder diringkas. Form Rilis dari run dan Cogan Smart Release **jangan diringkas** (owner) |
+| #106 | 2 Nov 08.14 | BakaSU tidak lagi mengambil rilis yang masih ReSukiSU (`v4.2.0-rc3`); diambil dari `main` |
+| #107 | 2 Nov 08.22 | Baris fitur menyebut fitur yang mati: `No SUSFS`, `No NoMount`, dst.; `Disguise` bila dicentang |
+| #108 | 2 Nov 08.55 | Rilis dari run: centang **timpa** (mati secara default) untuk tag `vYY.MM.DD-rN` yang sudah ada. Builder dan artifact **tetap apa adanya** (owner) |
+
+Keputusan owner yang perlu diingat:
+
+- **Re-Kernel tidak dipasang** (1 Nov).
+- **Build tanpa SUSFS hanya proyek percobaan** (2 Nov): tetap di artifact, **tidak dirilis**. Centang SUSFS tetap ada untuk dipakai suatu saat.
+- **Penomoran rN:** nomor owner (r1…r8) dan nomor run build CI tanpa Build Revision (r16, r17, r19, r21) berbeda. Tag memuat tanggal, jadi bentrok hanya bila nomor sama di hari yang sama; untuk itu ada centang timpa di Rilis dari run.
+
+Build dan bukti:
+
+| Run | Mulai (WIB) | Isi | Status |
+|---|---|---|---|
+| [#19](https://github.com/cogan17/Cogan-Kernel/actions/runs/41362423993) | 2 Nov 06.30 | KSUN tanpa SUSFS, 6.1.176 (r19) | ✅ Diuji di HP owner: jalan, hook Tracepoint. Percobaan, tidak dirilis |
+| [#20](https://github.com/cogan17/Cogan-Kernel/actions/runs/41364882538) | 2 Nov 07.00 | KSUN + BakaSU dengan SUSFS, 6.1.176, Build Revision **r8** (BakaSU `main` `516d3e87`) | ✅ CI hijau. Belum diterbitkan; uji HP belum tercatat di sini |
+| [#21](https://github.com/cogan17/Cogan-Kernel/actions/runs/41371483482) | 2 Nov 08.15 | BakaSU tanpa SUSFS, 6.1.176 (r21), `main` `516d3e87` | ✅ Diuji di HP owner 08.44 WIB: BakaSU berfungsi, Tracepoint Syscall Redirect, SELinux Enforcing. Percobaan, tidak dirilis |
+| #18 | 2 Nov 06.13 | KSUN/BakaSU tanpa SUSFS sebelum #103/#106 | ❌ Jangan dipakai: KSUN gagal, "BakaSU"-nya ReSukiSU |
+
+Rilis kernel terakhir tetap [`v26.10.31-r7`](https://github.com/cogan17/Cogan-Kernel/releases/tag/v26.10.31-r7).
+
+## Tertunda (keputusan owner)
+
+- **Issue #105** (opsional, "Tidak wajib"): patch agar 6.1.141 (ACK `2025-07_r13`) lolos build. Owner akan menjalankan CI semua sublevel sendiri; kerjakan dari link run yang dikirim owner.
+- **Rilis r8** (run #20) atau build baru: hanya bila owner meminta dan setelah uji HP owner. Build sesudah #107 menulis baris fitur baru.
+- Bila kernel bawaan HyperOS berubah: perbarui `kernel/configs/stock-identity.env` dan panduan spoof uname bersama-sama.
+
+## Langkah pertama berikutnya
+
+- Tunggu instruksi owner. Bila owner mengirim link run CI semua sublevel, mulai dari Issue #105 (baca log 141 dulu, perbaiki sekali dengan benar).
+
+## Checkpoint sebelumnya — 29 Okt 2026 (WIB)
+
+Cogan Smart **v2.12.4** (versionCode 35) **lulus uji owner di HP** (29 Okt 21.36 WIB, kernel r6 6.1.176 No LTO) dan **terbit sebagai Release** [`cogan-smart-v2.12.4`](https://github.com/cogan17/Cogan-Kernel/releases/tag/cogan-smart-v2.12.4) dengan label diuji di HP (29 Okt ±21.47 WIB). Penahanan rilis sudah dicabut owner untuk versi ini. Sesi berikutnya baca `CLAUDE.md`, file ini dan `CHECKPOINT.md`, lalu tunggu instruksi owner. Jangan otomatis menguji HP, menjalankan build atau menerbitkan rilis.
+
+### Sedang berjalan
+
 - Tidak ada: tidak ada PR terbuka, run workflow atau draf yang berjalan.
 
-## Sudah selesai (sesi 28–29 Okt)
+### Sudah selesai (sesi 28–29 Okt)
 
 - Rilis [`cogan-smart-v2.12.4`](https://github.com/cogan17/Cogan-Kernel/releases/tag/cogan-smart-v2.12.4) (Release, tidak menjadi Latest): [run Terbitkan 40894753629](https://github.com/cogan17/Cogan-Kernel/actions/runs/40894753629), lalu [run Tandai diuji di HP 40894958955](https://github.com/cogan17/Cogan-Kernel/actions/runs/40894958955) dengan kernel `r6 (6.1.176)`. ZIP sama dengan paket uji (SHA256 `c32130a0…`).
 - PR #89 `6104ed5` (21.45 WIB): catatan rilis lengkap v2.9.1 → v2.12.4 (ID + EN) dengan uji HP owner. Label diuji di HP tidak lagi menulis "ditulis sebelum uji HP ini" bila catatan sudah mencatat uji HP.
@@ -26,21 +79,21 @@ Cogan Smart **v2.12.4** (versionCode 35) **lulus uji owner di HP** (29 Okt 21.36
 - PR #72–#75 (28 Okt): hook init ZRAM v2.10.6 → v2.10.7 → v2.10.8; v2.10.8 diuji owner di HP 23.23 WIB (`zram0: zstd`).
 - PR #70–#71 (28 Okt): deteksi DRAM MediaTek v2.10.5 dan checkpoint.
 
-## Tertunda (keputusan owner)
+### Tertunda (keputusan owner)
 
 - Tidak ada pekerjaan Cogan Smart yang tertunda. Rilis berikutnya tetap atas permintaan owner lewat workflow Cogan Smart Release.
 
-## Langkah pertama berikutnya
+### Langkah pertama berikutnya
 
 - Tunggu instruksi owner. Bila owner melaporkan bug v2.12.4, perbaiki dari screenshot sebagai v2.12.5.
 
-## v2.12.4 — Cari aplikasi (owner 29 Okt ±13.55 WIB, rilis tetap DITAHAN)
+### v2.12.4 — Cari aplikasi (owner 29 Okt ±13.55 WIB, rilis tetap DITAHAN)
 
 - **Permintaan owner** (screenshot daftar panjang dengan Pindai ulang di bawah): "Disebelah pindai bisa tambah cari ga? … ada saran peletakan yg tepat?" Saran yang dipakai: kotak cari di atas daftar (di atas filter) dan sticky, bukan di sebelah Pindai ulang yang ada di paling bawah.
 - `apps.html`: `#appSearch` (`.find` sticky). `query` mencocokkan label atau nama paket; saat ada isian, mencari di semua aplikasi tanpa memedulikan filter. Pesan "Tidak ada aplikasi yang cocok dengan …" bila kosong. Ditambah i18n, Panduan (WebUI, PANDUAN.md/.en.md) dan tes Node (nama, paket, tidak cocok).
 - [Paket uji](modules/cogan-smart/rilis/v2.12.4/Cogan-Smart-Kernel-v2.12.4.zip) 190463 byte, SHA256 `c32130a038a9dca1f676dd6c2bd3408846b2d6e65b1fc59e04e424a53587e47b` (dua kali dikemas, sama). Terukur lokal: semua tes lolos; Playwright 412 px tanpa error, kotak tetap di atas saat digeser. Belum diuji di HP.
 
-## v2.12.3 — Percaya dan blokir langsung (owner 29 Okt ±13.45 WIB, rilis tetap DITAHAN)
+### v2.12.3 — Percaya dan blokir langsung (owner 29 Okt ±13.45 WIB, rilis tetap DITAHAN)
 
 - ✅ **v2.12.2 diuji di HP:** owner 29 Okt 13.44–13.45 WIB, screenshot tab Aplikasi terisi (Swift Backup, WhatsApp, Hunter, SpotiFLAC, dll.): "Berjalan dengan baik." Pindai lewat pipa terbukti. Gerak-gerik, internet dan baterai terbaca.
 - **Laporan owner:** Menambah ke whitelist sekitar 40 detik ("bisa salah bisa benar"). Penyebab (kode v2.12.2): handler `trust`/`untrust`/`remove` di `apps.html` menjalankan `await scan()` sesudah aksi, dan klien `api` mengantrekan perintah di belakang pindai yang sedang berjalan. Backend `trust` hanya mengedit file whitelist, tetapi menunggu `api.lock`.
@@ -48,7 +101,7 @@ Cogan Smart **v2.12.4** (versionCode 35) **lulus uji owner di HP** (29 Okt 21.36
 - **Cek acak owner 13.49 WIB:** Netflix "Dipasang: 1999-12-31" (sumber toko aplikasi, 37 hari tidak dipakai). Tanggal itu `firstInstallTime` dari Android, bukan hitungan modul; dugaan: aplikasi bawaan Xiaomi dengan tanggal tetap dari image sistem (belum dibuktikan di HP). WebUI kini memberi keterangan untuk tanggal sebelum 2008-09-23.
 - [Paket uji](modules/cogan-smart/rilis/v2.12.3/Cogan-Smart-Kernel-v2.12.3.zip) 189659 byte, SHA256 `3079c3577a8bb2a9a042f9c5f0f3b3d726f8ebbe67650bddbabee6c78adc3d60` (dua kali dikemas, sama). Terukur lokal: semua tes lolos (mksh, dash, BusyBox ash). Belum diuji di HP.
 
-## Bug pindai di HP + audit v2.12.1 → v2.12.2 (owner 29 Okt ±12.57 WIB, rilis tetap DITAHAN)
+### Bug pindai di HP + audit v2.12.1 → v2.12.2 (owner 29 Okt ±12.57 WIB, rilis tetap DITAHAN)
 
 - **Bukti HP (screenshot owner, v2.12.1):** tab Aplikasi "Pemindaian gagal pada daftar aplikasi: cmd: Failure calling service package: Failed transaction (2147483646)", berulang setelah Pindai ulang. Kedua tombol blokir aktif walau status tidak terbaca.
 - **Audit v2.12.1 owner** menarik sendiri temuan IFS lama (byte `27 09 27`). Owner meminta: "Jangan langsung ditelan mentah-mentah. Pastikan kebenaran terlebih dahulu."
@@ -59,7 +112,7 @@ Cogan Smart **v2.12.4** (versionCode 35) **lulus uji owner di HP** (29 Okt 21.36
 - **v2.12.2 (versionCode 33):** [paket uji](modules/cogan-smart/rilis/v2.12.2/Cogan-Smart-Kernel-v2.12.2.zip) 188377 byte, SHA256 `f3c5ccf16f6bfa5f6ef696dac73a3a98b7591dfd7c6c42c3c6b6816496f3a700` (dua kali dikemas, sama). Terukur lokal: semua tes lolos (mksh, dash, BusyBox ash, one-true-awk, BusyBox awk), cek Node lolos. Belum diuji di HP.
 - **Cek opsional di HP (read-only; membuat lalu menghapus satu file sementara di folder data modul):** `su -c 'f=/data/adb/cogan_smart/apps/t; pm list packages -3 > $f 2>&1; echo file rc=$?; head -c 100 $f; echo; pm list packages -3 | head -n 1; rm -f $f'`. Harapan: baris file gagal "Failed transaction", baris pipa menampilkan satu paket.
 
-## Audit v2.12.0 → v2.12.1 (owner 29 Okt, rilis tetap DITAHAN)
+### Audit v2.12.0 → v2.12.1 (owner 29 Okt, rilis tetap DITAHAN)
 
 - Owner mengirim audit read-only atas ZIP v2.12.0 (SHA `7acc2022…6d47`). Hasil cek:
   - **P1 IFS jurnal restore: tidak terbukti.** `manager/report.sh` baris 96 berisi TAB asli (`od -c` menunjukkan `\t` satu byte). Baris yang sama di mksh, dash dan BusyBox ash membaca 4 kolom utuh. Reproduksi audit mengetik `IFS='\t'` secara harfiah. `test_cpu_restore_preserves_other_controllers` sudah memulihkan governor lewat jurnal. Hanya ditambah komentar.
@@ -70,7 +123,7 @@ Cogan Smart **v2.12.4** (versionCode 35) **lulus uji owner di HP** (29 Okt 21.36
   - **Catatan cgroup:** `leave_app_cgroup` kini membaca ulang dan menulis ke logcat (`CoganSmart`) bila ditolak.
 - **v2.12.1 (versionCode 32):** [paket uji](modules/cogan-smart/rilis/v2.12.1/Cogan-Smart-Kernel-v2.12.1.zip) SHA256 `4568aeb4b1fe0e8c85f33b9cb13d47d7572898799e9226e4653d0dc42669a8e8` (dua kali dikemas, sama). Terukur lokal: semua tes lolos, termasuk 4 tes regresi baru di `test_cogan_smart_apps` (manager berganti nama, host tidak dikenal, readback gagal, dua pekerja) yang diulang di dash dan BusyBox ash. Belum diuji di HP.
 
-## Bug Mulai berhenti → v2.11.2 (owner 29 Okt ±11.26 WIB, rilis DITAHAN)
+### Bug Mulai berhenti → v2.11.2 (owner 29 Okt ±11.26 WIB, rilis DITAHAN)
 
 - **Laporan owner** (screenshot Manager v2.11.1 dan berkas investigasi read-only): Mulai di Kontrol Daya/Suhu kembali "berhenti" setelah keluar dari root manager lalu masuk lagi. Di HP terbaca AUTOSTART=1, power `run/pid` dan `daemon.lock/pid` = 26305, thermal = 27125, tanpa flag disable/remove. Cmdline kedua PID tidak tercetak. Owner: **"Untuk rilis tahan dulu!"**
 - **Penyebab (dari kode, belum dibuktikan di HP):** pekerja yang dimulai dari WebUI (`start_controller`/`start_sampler` lewat `setsid`/`nohup`) tetap berada di cgroup v2 aplikasi root manager (`uid_N/pid_M`). Saat proses aplikasi mati, system_server menulis `cgroup.kill` (AOSP `libprocessgroup/processgroup.cpp` `sendSignalToProcessGroup`, dicek 29 Okt) sehingga semua proses di cgroup itu mati, termasuk proses root. SIGKILL melewati trap EXIT, jadi PID dan lock tertinggal, sesuai bukti owner. Pekerja dari `service.sh` saat boot tidak terkena.
@@ -79,7 +132,7 @@ Cogan Smart **v2.12.4** (versionCode 35) **lulus uji owner di HP** (29 Okt 21.36
 - **Cara cek (read-only):** `su -c 'for f in /data/adb/cogan_smart/power/run/pid /data/adb/cogan_smart/thermal/run/sampler.pid; do p=$(cat $f); echo $f $p; cat /proc/$p/cgroup | grep "^0::"; done'` harus menampilkan `0::/`, bukan `0::/uid_…`. Lalu tutup root manager, buka lagi, dan status harus tetap aktif.
 - **Dampak ke PR #80 (v2.12.0):** sudah dikerjakan atas "Lanjutkan" owner (lihat bagian v2.12.0).
 
-## v2.12.0 — tab Aplikasi (versionCode 31)
+### v2.12.0 — tab Aplikasi (versionCode 31)
 
 - **Permintaan owner (29 Okt, dengan screenshot kartu Aplikasi jarang dipakai):** ganti fungsinya jadi bisa melihat semua gerak-gerik aplikasi dan menghapus sampai ke akar, termasuk APK scam/virus kiriman WA/sosmed; fungsi nonaktifkan tidak usah ada. Pilihan owner lewat pertanyaan: **tab baru 📱 Aplikasi** (Manager hanya ringkasan), **hapus manual + konfirmasi**, **blokir APK dari chat & sosmed** (saklar, bawaan aktif), pantau **akses sensitif, izin berbahaya, sumber & waktu instal, data internet & baterai**.
 - **Backend `apps/`:** `report.sh` (scan, trust/untrust, remove, block on|off, boot, stop), `apps.awk` (gabungan dump), `block.sh` (loop 5 detik), `common.sh` (daftar sumber chat/sosmed, blokir, notifikasi). Pemindai lama Manager (`manager/report.sh scan|app`, `manager/apps.awk`) dihapus; tesnya pindah ke `tests/test_cogan_smart_apps.py`.
@@ -89,14 +142,14 @@ Cogan Smart **v2.12.4** (versionCode 35) **lulus uji owner di HP** (29 Okt 21.36
 - **Sesudah checkpoint (owner "Lanjutkan", 29 Okt):** blokir APK ditambah sosmed lain, email dan SMS (33 paket; Gmail dan Pesan adalah aplikasi sistem, jadi "Terpasang" dibaca dari semua paket); `main` (v2.11.2) di-merge; versionCode 31; `apps/block.sh` memanggil `leave_app_cgroup` (blokir yang dinyalakan dari WebUI tidak mati bersama root manager).
 - **Belum diuji di HP dan belum dirilis.** Yang paling mungkin berbeda di HyperOS 3: format dump appops/netstats/batterystats, dan apakah pemasang paket Xiaomi menghormati izin sumber yang dicabut (mode disimpan per paket atau per UID).
 
-## v2.10.4 — initrc ZRAM (versionCode 23)
+### v2.10.4 — initrc ZRAM (versionCode 23)
 
 - Integrasi init ZRAM Cogan Smart **v2.10.4 / versionCode 23** sudah masuk `main`: [PR #68](https://github.com/cogan17/Cogan-Kernel/pull/68), commit `0386eed3f4952a837a81c36da80a22644083c563`; [Validate 40693190837](https://github.com/cogan17/Cogan-Kernel/actions/runs/40693190837) dengan **251 tes lolos**. [Paket uji v2.10.4](modules/cogan-smart/rilis/v2.10.4/Cogan-Smart-Kernel-v2.10.4.zip) SHA256 `73abbc48992235ffcb7a2705eda6f561e892d09420713add514ed9651e262f90`. Tidak ada GitHub Release baru; rilis publik terakhir v2.9.1.
 - v2.10.4 menggunakan dukungan `initrc` KernelSU Next/BakaSU pada Cogan r5 untuk memilih kompresor sebelum ZRAM diinisialisasi. Tidak menambah governor DRAM, tidak reset ZRAM dan tidak swapoff.
 - Screenshot HP owner menunjukkan **v2.10.4 terpasang**, `zram0: lz4 · swap aktif`, opsi LZ4 terpilih, status “initrc tersiapkan untuk boot berikutnya”, dan `bw_hwmon` abu-abu. Bacaan LZ4/swap aktif terbukti, tetapi tidak membuktikan modul yang mengganti LZ4. Belum ada bukti hasil ZSTD atau hasil eksekusi hook initrc pada HP.
 - Owner menjalankan pembacaan root `/sys/class/devfreq/*`. Hasilnya: `112b0000.ufshci` → driver `ufshcd-mtk`, governor `simple_ondemand`; `13000000.mali` → driver `mali`, governor `dummy`; **`mtk-dvfsrc-devfreq` → driver `mtk-dvfsrc-devfreq`, governor `userspace`**. Ketiganya menampilkan daftar sama: `dummy apupassive-pe apuconstrain apuuser apupassive userspace powersave performance simple_ondemand`. **Tidak ada `bw_hwmon`.** `available_governors` devfreq dapat bersifat global; daftar UFS/GPU bukan bukti dukungan DRAM. `userspace` adalah governor aktif DRAM, bukan bukti ZRAM gagal. Jangan mengganti ke `simple_ondemand` atau port governor Qualcomm dengan asumsi.
 
-## v2.11.1 — Manager hanya memantau, keluar sekali usap (versionCode 29)
+### v2.11.1 — Manager hanya memantau, keluar sekali usap (versionCode 29)
 
 - **Revisi owner (29 Okt, dengan screenshot tombol mode dan Pindai modul di Manager):** mode diatur tab Daya dan pindai modul oleh tab Modul; Manager hanya memantau. "Sisanya tidak perlu diubah": kartu Prosesor, RAM, Kontrol Daya/Suhu dan Aplikasi di Manager tetap.
 - **Manager:** tiga tombol mode diganti satu baris `#modeLine` (nama mode + keterangan dari setelan tab Daya); tombol Pindai modul dihapus, `#guardLine` membaca pindaian terakhir tab Modul (`guard.cached('scan')`, tab Modul memindai otomatis bila hasil > 2 menit).
@@ -105,7 +158,7 @@ Cogan Smart **v2.12.4** (versionCode 35) **lulus uji owner di HP** (29 Okt 21.36
 - Terukur lokal: tes Python + cek WebUI lolos. [Paket uji](modules/cogan-smart/rilis/v2.11.1/Cogan-Smart-Kernel-v2.11.1.zip) 41 file, 163739 byte, SHA256 `8961d4c5d23c0f02a1a326b9f86ff87b524a7e8b40bdc38a1fd71b54d54d3175` (dua kali dikemas, sama).
 - **Belum diuji di HP dan belum dirilis.**
 
-## v2.11.0 — Manager pusat kendali, Mode Dev, Panduan (versionCode 28)
+### v2.11.0 — Manager pusat kendali, Mode Dev, Panduan (versionCode 28)
 
 - **Permintaan owner (29 Okt):** Manager hierarkinya di atas tab lain (lihat semua statistik/grafik, terapkan/paksa perubahan); teks terlalu baku dan panjang, perlu versi user ringkas dan versi Dev/debug; buku panduan. Pilihan owner lewat pertanyaan: **pusat kendali** (Manager ringkasan + semua tombol, tab lain untuk detail dan pilihannya sendiri), **satu saklar Mode Dev** di Tentang, **panduan di modul + repo**, log **cukup dianalisa**.
 - **Manager:** kartu 📊 Ringkasan (suhu Badan HP/baterai/prosesor, pengendali, pencatat, tombol mode, grafik 1 jam + waktu panas + penyebab utama, hasil pindai modul + tombol Pindai modul). Grafik dipindah ke `client.js` (`UI.chart`) dan dipakai tab Suhu juga. Aksi per modul (percaya, nonaktifkan, hapus) tetap di tab Modul karena per item.
@@ -116,7 +169,7 @@ Cogan Smart **v2.12.4** (versionCode 35) **lulus uji owner di HP** (29 Okt 21.36
 - Terukur lokal: semua tes Python + cek WebUI lolos; halaman dimuat Playwright tanpa error di mode pengguna dan Dev. [Paket uji](modules/cogan-smart/rilis/v2.11.0/Cogan-Smart-Kernel-v2.11.0.zip) 41 file, 163348 byte, SHA256 `e39523e0fa0d8a311956ac3c111979dcd844cfb91d3e553ddc6a17175e13443c` (dua kali dikemas, sama).
 - **Sudah di `main`:** PR #77, commit `61dbf3c`, 29 Okt 09.55 WIB. **Belum diuji di HP dan belum dirilis.**
 
-## v2.10.8 — hook ZRAM sebelum system_perf_init (versionCode 27)
+### v2.10.8 — hook ZRAM sebelum system_perf_init (versionCode 27)
 
 - **v2.10.7 di HP (28 Okt, 22.52 WIB):** `Hook boot ini: zstd boot-completed pending`, `zram0: lz4`. Saat boot selesai ZRAM sudah aktif; tahap boot-completed v2.10.7 terlambat.
 - **Bukti di HP (root, 22.53–22.56 WIB):**
@@ -127,7 +180,7 @@ Cogan Smart **v2.12.4** (versionCode 35) **lulus uji owner di HP** (29 Okt 21.36
 - Terukur lokal: tes Manager lolos. [Paket uji](modules/cogan-smart/rilis/v2.10.8/Cogan-Smart-Kernel-v2.10.8.zip) 40 file, 151578 byte, SHA256 `552fb6fecb65d60373289601d4ad0ae32d4be775a5fc76354e6ca47f495afbd8` (dua kali dikemas, sama).
 - ✅ **Diuji di HP:** Uji HP owner 28 Okt, 23.23 WIB: `zram0: zstd · swap aktif` dan `Hook boot ini: zstd load-bpf-programs matching`. Pilihan ZSTD kini benar-benar dipakai saat ZRAM dinyalakan. Dampak ke performa/baterai belum diukur. **Belum dirilis**: GitHub Release lewat workflow Cogan Smart Release adalah keputusan owner.
 
-## v2.10.7 — pilihan ZRAM bertahan sampai swap aktif (versionCode 26)
+### v2.10.7 — pilihan ZRAM bertahan sampai swap aktif (versionCode 26)
 
 - **v2.10.6 di HP (28 Okt, 22.41 WIB):** `Hook boot ini: zstd post-fs matching`, jadi perbaikan hook v2.10.6 terbukti bekerja. Tetapi `zram0` kembali `lz4`.
 - **Penyebab, terbaca di HP (root):** `/vendor/etc/init/hw/init.mt6989.rc` baris 192 `write /sys/block/zram0/comp_algorithm lz4` di `on post-fs-data` (baris 180), dan baris 1138 `swapon_all /vendor/etc/fstab.enableswap` di `on property:sys.boot_completed=1` (baris 1122). fstab: `/dev/block/zram0 none swap defaults zramsize=100%,swapprio=10`. `mmd.enabled_aconfig=false`. Hanya baris 192 yang menulis `comp_algorithm` di semua folder init.
@@ -135,7 +188,7 @@ Cogan Smart **v2.12.4** (versionCode 35) **lulus uji owner di HP** (29 Okt 21.36
 - Terukur lokal: tes Manager lolos. [Paket uji](modules/cogan-smart/rilis/v2.10.7/Cogan-Smart-Kernel-v2.10.7.zip) 40 file, 150996 byte, SHA256 `4546ec64b2d06fa32f39be4e789827f2a5f40fa1e5c8f6e87d85277ccec14720` (dua kali dikemas, sama).
 - **Belum diuji di HP dan belum dirilis.** Uji: pasang v2.10.7, reboot, tunggu boot selesai, buka Manager. Harapan: `zram0: zstd` dan `Hook boot ini: zstd boot-completed matching`.
 
-## v2.10.6 — perbaikan hook init ZRAM (versionCode 25)
+### v2.10.6 — perbaikan hook init ZRAM (versionCode 25)
 
 - **Bukti HP owner, 28 Okt sekitar 22.18–22.26 WIB (v2.10.5 terpasang):** bagian DRAM tampil benar (`DRAM MediaTek · mtk-dvfsrc-devfreq: userspace`, tanpa dropdown BW). Setelah memilih ZSTD dan restart, `zram0` tetap `[lz4]` (zstd tersedia) dan penanda `/dev/.cogan_smart_zram_init` tidak ada. Root: rc modul punya 3 blok `on` dengan `exec u:r:ksu:s0`; cache `/metadata/vold/ksu/modules.rc` berisi aturan Cogan; dmesg `KernelSU: module rc: loaded 4024 bytes`; config `RAM=heavy BOOT=1`, `init.state=ready`. Kesimpulan: hook v2.10.4–v2.10.5 tidak pernah berjalan.
 - **Penyebab, dari kode init AOSP (mirror GitHub `aosp-mirror/platform_system_core`, `init/tokenizer.cpp`, `action.cpp`, `service.cpp`, `util.cpp`):** di dalam `"..."` tokenizer init tidak mengenal escape, jadi `\"` di program menutup kutipan dan baris exec terpotong. Argumen `exec` diekspansi dua kali (`RunBuiltinFunction`, lalu `ExpandArgsAndExecv` saat proses dimulai), dan `$` tunggal sesudah ekspansi pertama memicu `LOG(FATAL)` "deprecated syntax". Bukti `dmesg` untuk pesan itu belum terbaca: perintahnya tertelan karena ditempel sebelum prompt root muncul.
@@ -144,7 +197,7 @@ Cogan Smart **v2.12.4** (versionCode 35) **lulus uji owner di HP** (29 Okt 21.36
 - **Belum diuji di HP dan belum dirilis.** Risiko berikutnya: `zram.ko` adalah modul (GKI `CONFIG_ZRAM=m`); bila belum dimuat pada tahap init/early-fs/post-fs, penanda akan berbunyi `missing`, dan itu masalah waktu muat yang perlu langkah lain.
 - Uji HP berikutnya (keputusan owner): pasang ZIP v2.10.6, reboot, buka Manager. Harapan: `zram0: zstd` dan baris `Hook boot ini: zstd post-fs matching`.
 
-## v2.10.5 — paket uji deteksi DRAM MediaTek (versionCode 24)
+### v2.10.5 — paket uji deteksi DRAM MediaTek (versionCode 24)
 
 - **Sudah di `main`:** [PR #70](https://github.com/cogan17/Cogan-Kernel/pull/70), commit `8b1fe721a22aa5ed1d4ec24c98794cad8489a8bd`, digabung 28 Okt sekitar 22.11 WIB. [Validate 40713132298](https://github.com/cogan17/Cogan-Kernel/actions/runs/40713132298) lolos (tes, YAML, shell; 22.10 WIB). Branch draf `fix/cogan-smart-dram-detection` tidak diperlukan lagi.
 - Draf dari branch `fix/cogan-smart-dram-detection` diperiksa dan diselesaikan. DRAM dikenali dari ikatan driver `mtk-dvfsrc-devfreq`; Manager menampilkan governor aktual; UFS/GPU tidak lagi menjadi target BW walau daftar governor-nya sama; dropdown BW disembunyikan bila tidak ada pilihan yang bisa dipakai, kecuali untuk mengembalikan pilihan lama ke DRAM Sistem.
@@ -155,7 +208,7 @@ Cogan Smart **v2.12.4** (versionCode 35) **lulus uji owner di HP** (29 Okt 21.36
 
 [Checkpoint sebelumnya](https://github.com/cogan17/Cogan-Kernel/blob/f8312e007c6cca8829aec01bc3d251334e467135/checkpoint.md) memuat riwayat v2.10.0–v2.10.3, pemindai aplikasi dan rilis v2.9.1. Gunakan identitas git Cogan, PR ke main, catatan ID/EN dan hemat Actions sesuai `CLAUDE.md`.
 
-## English state summary
+### English state summary
 
 29 Oct, end of the session's work: v2.12.4 (versionCode 35) is on `main` (PR #86, 14.03 WIB). It contains:
 
