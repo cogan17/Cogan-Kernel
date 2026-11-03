@@ -52,6 +52,16 @@ Salin hasilnya ke **PC atau flashdisk**, jangan hanya di HP. Simpan juga `boot.i
 
    Aplikasi biasa hanya bisa membaca `uname`, jadi kernel tampil persis seperti kernel bawaan. Terbukti di HP owner (2 Nov 2026): Duck Detector **Kernel Check: No suspicious kernel markers**. Nilai ini milik kernel bawaan HyperOS saat ini; bila HyperOS diperbarui dan kernel bawaannya berubah, nilainya ikut diganti. Ini tidak menyembunyikan jejak KernelSU itu sendiri (mis. tipe SELinux `ksu`), yang tetap bisa terdeteksi.
 
+   **Cara melihat kernel yang asli** (Termux; ketik satu per satu, izinkan root bila diminta):
+
+   | Perintah | Yang tampil |
+   |---|---|
+   | `su -c cat /sys/kernel/cogan/banner` | Identitas Cogan asli: versi kernel, nomor rilis (mis. `r33`), pembuat dan tanggal build. Paling pasti, tidak ikut disamarkan |
+   | `su -c cat /proc/version` | Versi kernel yang benar-benar berjalan (mis. `6.1.176`, bukan `6.1.138`) |
+   | `uname -a` (tanpa `su`) | Yang dilihat aplikasi biasa: nilai samaran `6.1.138-android14-11-g6ab8c9a86a33-ab14396278` |
+
+   Bila perintah pertama menunjukkan Cogan, perintah kedua versi aslinya, dan `uname -a` menunjukkan `6.1.138`, semuanya bekerja benar: kernel aslinya Cogan, aplikasi melihat kernel bawaan.
+
 > 💡 Versi kernel di Setelan bisa tampil lain (mis. `6.1.138`). Itu SUSFS yang menyamarkan `uname`. Identitas asli dibaca modul Cogan Smart lewat Cogan Bridge.
 
 ---

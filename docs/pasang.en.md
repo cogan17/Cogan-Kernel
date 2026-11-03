@@ -52,6 +52,16 @@ Copy the result to a **PC or USB drive**, not only the phone. Also keep the **st
 
    Normal apps can only read `uname`, so the kernel looks exactly like the stock kernel. Proven on the owner's phone (2 Nov 2026): Duck Detector **Kernel Check: No suspicious kernel markers**. These values belong to the current HyperOS stock kernel; if a HyperOS update changes the stock kernel, the values change too. This does not hide KernelSU's own traces (e.g. the SELinux `ksu` type), which can still be detected.
 
+   **How to see the real kernel** (Termux; type them one by one, allow root when asked):
+
+   | Command | What it shows |
+   |---|---|
+   | `su -c cat /sys/kernel/cogan/banner` | The real Cogan identity: kernel version, release number (e.g. `r33`), builder and build date. The surest check, never spoofed |
+   | `su -c cat /proc/version` | The kernel version actually running (e.g. `6.1.176`, not `6.1.138`) |
+   | `uname -a` (without `su`) | What normal apps see: the spoofed `6.1.138-android14-11-g6ab8c9a86a33-ab14396278` |
+
+   If the first shows Cogan, the second the real version, and `uname -a` shows `6.1.138`, everything works: the real kernel is Cogan, apps see the stock kernel.
+
 > 💡 The kernel version in Settings may look different (e.g. `6.1.138`). That is SUSFS spoofing `uname`. The Cogan Smart module reads the real identity through Cogan Bridge.
 
 ---
