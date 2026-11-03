@@ -51,22 +51,22 @@ The old releases of [cogan17/Kernel-14t-pro](https://github.com/cogan17/Kernel-1
 
 | Who | Contribution |
 |---|---|
-| **Cogan17** | Maintainer: Cogan Rothko kernel, Cogan Bridge, Cogan Smart Kernel module, build engine, CI and releases |
+| **[Cogan17](https://github.com/cogan17)** | Maintainer: Cogan Rothko kernel, Cogan Bridge, Cogan Smart Kernel module, build engine, CI and releases |
 | **[Google](https://android.googlesource.com/kernel/common/)** | Android Common Kernel `android14-6.1` (source of the rothko stock kernel), BBRv3 |
-| **Xiaomi & MediaTek** | rothko BSP source (symbol and config reference), vendor modules and firmware; property of their owners |
-| **[KernelSU](https://github.com/tiann/KernelSU)** (tiann) | The base of in-kernel root |
-| **[KernelSU Next](https://github.com/KernelSU-Next/KernelSU-Next)** (rifsxd) | The KernelSU Next root variant; the manager app in releases is the official CI build |
+| **[Xiaomi & MediaTek](https://github.com/MiCode/Xiaomi_Kernel_OpenSource/tree/bsp-rothko-u-oss)** | rothko BSP source (symbol and config reference), vendor modules and firmware; property of their owners |
+| **[KernelSU](https://github.com/tiann/KernelSU)** ([tiann](https://github.com/tiann)) | The base of in-kernel root |
+| **[KernelSU Next](https://github.com/KernelSU-Next/KernelSU-Next)** ([rifsxd](https://github.com/rifsxd)) | The KernelSU Next root variant; the manager app in releases is the official CI build |
 | **[pershoot](https://github.com/pershoot/KernelSU-Next)** | KernelSU Next fork `dev-susfs` that joins KernelSU Next with SUSFS |
-| **[SukiSU Ultra](https://github.com/SukiSU-Ultra/SukiSU-Ultra)** (ShirkNeko) | The SukiSU root variant; its `builtin` branch carries SUSFS, the manager app in releases is its official release |
+| **[SukiSU Ultra](https://github.com/SukiSU-Ultra/SukiSU-Ultra)** ([ShirkNeko](https://github.com/ShirkNeko)) | The SukiSU root variant; its `builtin` branch carries SUSFS, the manager app in releases is its official release |
 | **[BakaSU](https://github.com/Baka-SU/BakaSU)** | The BakaSU root variant (formerly ReSukiSU) |
-| **[SUSFS](https://gitlab.com/simonpunk/susfs4ksu)** (simonpunk) | Hides root traces |
-| **[NoMount](https://github.com/maxsteeel/nomount)** (maxsteeel) | Mountless metamodule, built into the kernel; the module in releases is its official release |
-| **[Baseband Guard](https://github.com/vc-teahouse/Baseband-guard)** (vc-teahouse) | Partition protection |
-| **[AnyKernel3](https://github.com/osm0sis/AnyKernel3)** (osm0sis) | Kernel ZIP installer |
+| **[SUSFS](https://gitlab.com/simonpunk/susfs4ksu)** ([simonpunk](https://gitlab.com/simonpunk)) | Hides root traces |
+| **[NoMount](https://github.com/maxsteeel/nomount)** ([maxsteeel](https://github.com/maxsteeel)) | Mountless metamodule, built into the kernel; the module in releases is its official release |
+| **[Baseband Guard](https://github.com/vc-teahouse/Baseband-guard)** ([vc-teahouse](https://github.com/vc-teahouse)) | Partition protection |
+| **[AnyKernel3](https://github.com/osm0sis/AnyKernel3)** ([osm0sis](https://github.com/osm0sis)) | Kernel ZIP installer |
 | **[Neutron Clang](https://github.com/Neutron-Toolchains)** | Kernel compiler |
-| **[Kernel Flasher](https://github.com/fatalcoder524/KernelFlasher)** (fatalcoder524) | Flashing and `boot` backup app |
+| **[Kernel Flasher](https://github.com/fatalcoder524/KernelFlasher)** ([fatalcoder524](https://github.com/fatalcoder524)) | Flashing and `boot` backup app |
 | **[WildKernels](https://github.com/WildKernels/GKI_KernelSU_SUSFS)** | Inspiration for the build workflow form and Validate; the optional Unicode fix patch from [kernel_patches](https://github.com/WildKernels/kernel_patches) |
-| **GKI-Duchamp · AK3-GKID** (Ahmed Al-Nassif) | Base of the early kernel experiments (no longer used) |
+| **[GKI-Duchamp](https://github.com/ahmed-alnassif/GKI-Duchamp-6.1) · [AK3-GKID](https://github.com/ahmed-alnassif/AK3-GKID)** ([Ahmed Al-Nassif](https://github.com/ahmed-alnassif)) | Base of the early kernel experiments (no longer used) |
 | **[cogan17/Cogan](https://github.com/cogan17/Cogan)** | Origin of the build engine |
 
 Sister project: **[TWRP Xiaomi 14T Pro](https://github.com/cogan17/TWRP-14T-PRO)** · predecessor repository: **[Kernel-14t-pro](https://github.com/cogan17/Kernel-14t-pro)**.

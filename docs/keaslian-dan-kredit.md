@@ -51,22 +51,22 @@ Rilis lama dari [cogan17/Kernel-14t-pro](https://github.com/cogan17/Kernel-14t-p
 
 | Siapa | Kontribusi |
 |---|---|
-| **Cogan17** | Maintainer: kernel Cogan Rothko, Cogan Bridge, modul Cogan Smart Kernel, mesin build, CI dan rilis |
+| **[Cogan17](https://github.com/cogan17)** | Maintainer: kernel Cogan Rothko, Cogan Bridge, modul Cogan Smart Kernel, mesin build, CI dan rilis |
 | **[Google](https://android.googlesource.com/kernel/common/)** | Android Common Kernel `android14-6.1` (sumber kernel bawaan rothko), BBRv3 |
-| **Xiaomi & MediaTek** | Sumber BSP rothko (acuan simbol dan konfigurasi), modul vendor dan firmware; hak milik masing-masing |
-| **[KernelSU](https://github.com/tiann/KernelSU)** (tiann) | Dasar root di dalam kernel |
-| **[KernelSU Next](https://github.com/KernelSU-Next/KernelSU-Next)** (rifsxd) | Root manager varian KernelSU Next; aplikasi manager di rilis adalah build CI resmi |
+| **[Xiaomi & MediaTek](https://github.com/MiCode/Xiaomi_Kernel_OpenSource/tree/bsp-rothko-u-oss)** | Sumber BSP rothko (acuan simbol dan konfigurasi), modul vendor dan firmware; hak milik masing-masing |
+| **[KernelSU](https://github.com/tiann/KernelSU)** ([tiann](https://github.com/tiann)) | Dasar root di dalam kernel |
+| **[KernelSU Next](https://github.com/KernelSU-Next/KernelSU-Next)** ([rifsxd](https://github.com/rifsxd)) | Root manager varian KernelSU Next; aplikasi manager di rilis adalah build CI resmi |
 | **[pershoot](https://github.com/pershoot/KernelSU-Next)** | Fork KernelSU Next `dev-susfs` yang menyatukan KernelSU Next dengan SUSFS |
-| **[SukiSU Ultra](https://github.com/SukiSU-Ultra/SukiSU-Ultra)** (ShirkNeko) | Root manager varian SukiSU; cabang `builtin` membawa SUSFS, aplikasi manager di rilis adalah rilis resminya |
+| **[SukiSU Ultra](https://github.com/SukiSU-Ultra/SukiSU-Ultra)** ([ShirkNeko](https://github.com/ShirkNeko)) | Root manager varian SukiSU; cabang `builtin` membawa SUSFS, aplikasi manager di rilis adalah rilis resminya |
 | **[BakaSU](https://github.com/Baka-SU/BakaSU)** | Root manager varian BakaSU (dulu ReSukiSU) |
-| **[SUSFS](https://gitlab.com/simonpunk/susfs4ksu)** (simonpunk) | Menyembunyikan jejak root |
-| **[NoMount](https://github.com/maxsteeel/nomount)** (maxsteeel) | Metamodule tanpa mount, tertanam di kernel; modul di rilis adalah rilis resminya |
-| **[Baseband Guard](https://github.com/vc-teahouse/Baseband-guard)** (vc-teahouse) | Perlindungan partisi |
-| **[AnyKernel3](https://github.com/osm0sis/AnyKernel3)** (osm0sis) | Installer ZIP kernel |
+| **[SUSFS](https://gitlab.com/simonpunk/susfs4ksu)** ([simonpunk](https://gitlab.com/simonpunk)) | Menyembunyikan jejak root |
+| **[NoMount](https://github.com/maxsteeel/nomount)** ([maxsteeel](https://github.com/maxsteeel)) | Metamodule tanpa mount, tertanam di kernel; modul di rilis adalah rilis resminya |
+| **[Baseband Guard](https://github.com/vc-teahouse/Baseband-guard)** ([vc-teahouse](https://github.com/vc-teahouse)) | Perlindungan partisi |
+| **[AnyKernel3](https://github.com/osm0sis/AnyKernel3)** ([osm0sis](https://github.com/osm0sis)) | Installer ZIP kernel |
 | **[Neutron Clang](https://github.com/Neutron-Toolchains)** | Compiler kernel |
-| **[Kernel Flasher](https://github.com/fatalcoder524/KernelFlasher)** (fatalcoder524) | Aplikasi flash dan cadangan `boot` |
+| **[Kernel Flasher](https://github.com/fatalcoder524/KernelFlasher)** ([fatalcoder524](https://github.com/fatalcoder524)) | Aplikasi flash dan cadangan `boot` |
 | **[WildKernels](https://github.com/WildKernels/GKI_KernelSU_SUSFS)** | Inspirasi tampilan form workflow build dan Validate; patch Unicode fix opsional dari [kernel_patches](https://github.com/WildKernels/kernel_patches) |
-| **GKI-Duchamp · AK3-GKID** (Ahmed Al-Nassif) | Dasar percobaan kernel awal (tidak dipakai lagi) |
+| **[GKI-Duchamp](https://github.com/ahmed-alnassif/GKI-Duchamp-6.1) · [AK3-GKID](https://github.com/ahmed-alnassif/AK3-GKID)** ([Ahmed Al-Nassif](https://github.com/ahmed-alnassif)) | Dasar percobaan kernel awal (tidak dipakai lagi) |
 | **[cogan17/Cogan](https://github.com/cogan17/Cogan)** | Asal mesin build |
 
 Proyek saudara: **[TWRP Xiaomi 14T Pro](https://github.com/cogan17/TWRP-14T-PRO)** · repo pendahulu: **[Kernel-14t-pro](https://github.com/cogan17/Kernel-14t-pro)**.
