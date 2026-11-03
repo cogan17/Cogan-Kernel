@@ -128,19 +128,22 @@ class WorkflowTest(unittest.TestCase):
         wf = yaml.safe_load(WORKFLOW.read_text())
         box = wf[True]["workflow_dispatch"]["inputs"]["root_flavor"]
         self.assertEqual(box["default"], "KernelSU Next")
-        self.assertEqual(box["options"], ["KernelSU Next", "KernelSU Next & BakaSU", "BakaSU", "KernelSU",
-                                          "KernelSU Next & KernelSU", "SukiSU", "KernelSU Next & SukiSU", "Semua / All"])
+        self.assertEqual(box["options"], ["KernelSU Next", "KernelSU", "SukiSU", "BakaSU", "KernelSU Next & KernelSU",
+                                          "KernelSU Next & SukiSU", "KernelSU & SukiSU", "KernelSU Next & KernelSU & SukiSU"])
+        # BakaSU only on its own while it has a problem (owner 2026-11-03).
+        self.assertFalse([o for o in box["options"] if "&" in o and "BakaSU" in o])
         plan = next(s["run"] for s in wf["jobs"]["resolve"]["steps"] if s.get("id") == "plan")
         case = re.search(r'case "\$ROOT_FLAVOR" in\n(.*?)esac', plan, re.S)[1]
         for flavor, roots in (("KernelSU Next", "roots=(KSUN)"), ("BakaSU", "roots=(BSU)"), ("KernelSU", "roots=(KSU)"),
                               ("KernelSU Next & KernelSU", "roots=(KSUN KSU)"), ("SukiSU", "roots=(SUKI)"),
-                              ("KernelSU Next & SukiSU", "roots=(KSUN SUKI)"), ("Semua / All", "roots=(KSUN BSU KSU SUKI)")):
+                              ("KernelSU Next & SukiSU", "roots=(KSUN SUKI)"), ("KernelSU & SukiSU", "roots=(KSU SUKI)"),
+                              ("KernelSU Next & KernelSU & SukiSU", "roots=(KSUN KSU SUKI)")):
             self.assertIn(f'"{flavor}") {roots} ;;', case)
         self.assertNotIn('== *"KernelSU', plan)   # "KernelSU" must not match "KernelSU Next"
 
     def test_a_release_needs_one_root(self):
         wf = WORKFLOW.read_text()
-        self.assertIn('[[ "$ROOT_FLAVOR" != *"&"* && "$ROOT_FLAVOR" != Semua* && -n "${SUBLEVEL// /}"', wf)
+        self.assertIn('[[ "$ROOT_FLAVOR" != *"&"* && -n "${SUBLEVEL// /}"', wf)
 
 
 class ReportsTest(unittest.TestCase):
