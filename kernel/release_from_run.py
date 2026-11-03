@@ -9,7 +9,7 @@ from pathlib import Path
 from kernel.release_notes import compact_notes, read_env
 from kernel import telegram as tg
 
-ROOTS = {"KernelSU Next": "KernelSU-Next", "BakaSU": "BakaSU", "KernelSU": "KernelSU"}
+ROOTS = {"KernelSU Next": "KernelSU-Next", "BakaSU": "BakaSU", "KernelSU": "KernelSU", "SukiSU": "SukiSU"}
 REQUIRED = ("RELEASE", "RELEASE_NAME", "LINUX_VERSION", "ACK_TAG", "ROOT_NAME", "ROOT_COMMIT",
             "SUSFS_VERSION", "SUSFS_COMMIT", "NOMOUNT", "NEUTRON", "FEATURES", "KMI_COMPAT", "ZIP", "ZIP_SHA256")
 

@@ -90,7 +90,7 @@ Modules the owner runs on their phone together with Cogan Kernel. Click a module
 
 - ✅ Google's official kernel source (Android Common Kernel `android14-6.1`), the same family as the phone's stock kernel. Xiaomi/MediaTek vendor modules still fit
 - ✅ Always the newest versions: the ACK release, root manager, SUSFS and NoMount are taken at their newest at build time. When something does not fit yet, the build summary names the developer to wait for
-- ✅ In-kernel root + **SUSFS**, three variants: **KernelSU Next**, **BakaSU**, or official **KernelSU** (tiann, a fallback; kernel and manager from the newest `main` commit with an official CI manager build). SUSFS is ticked by default; unticked, the kernel uses the plain root manager without SUSFS (ZIP name without `+SuSFS`, no SUSFS module)
+- ✅ In-kernel root + **SUSFS**, four variants: **KernelSU Next**, **BakaSU**, official **KernelSU** (tiann, a fallback; kernel and manager from the newest `main` commit with an official CI manager build), or **SukiSU** Ultra (with SUSFS the kernel comes from its `builtin` branch, which has SUSFS built in, without SUSFS from the newest release; the manager always from the newest release; no KPM). SUSFS is ticked by default; unticked, the kernel uses the plain root manager without SUSFS (ZIP name without `+SuSFS`, no SUSFS module)
 - ✅ **NoMount** (mountless modules, built into the kernel), **Baseband Guard**
 - ✅ **BBRv3** as the default TCP (`bbr` and `bbr3`)
 - ✅ **Cogan Bridge**: the kernel and the Cogan Smart module know each other (`/sys/kernel/cogan`)
@@ -106,7 +106,7 @@ Modules the owner runs on their phone together with Cogan Kernel. Click a module
 
 The builder uses the official ACK `android14-6.1` releases since the phone's stock kernel; `lts` = the newest; type `semua` (or `all`) in Kernel Sublevel for every sublevel (GitHub replaces an empty field with its default, `lts`). The **Catat sublevel** (record sublevels) workflow button records the latest build in this table (✅ passed the build and the KMI gate, ⏳ waiting for an upstream update); it neither checks nor builds.
 
-The **Cek pembaruan** (check for updates) button is the only check, and it builds nothing: the newest version of every component (ACK, KernelSU Next, BakaSU, KernelSU, simonpunk's SUSFS and sidex15's SUSFS module, NoMount, Baseband Guard, AnyKernel3, Neutron clang, Unicode fix) against the last build, with the dates of the stable and CI versions, what is new and fixed, and whom to wait for when it cannot be built yet. When something is newer, the summary suggests running the Builder.
+The **Cek pembaruan** (check for updates) button is the only check, and it builds nothing: the newest version of every component (ACK, KernelSU Next, BakaSU, KernelSU, SukiSU, simonpunk's SUSFS and sidex15's SUSFS module, NoMount, Baseband Guard, AnyKernel3, Neutron clang, Unicode fix) against the last build, with the dates of the stable and CI versions, what is new and fixed, and whom to wait for when it cannot be built yet. When something is newer, the summary suggests running the Builder.
 
 **[Build history](kernel/history/)** is saved automatically by the Builder as Markdown documents. **Last build** and **Status** remain comparable after Actions logs, artifacts or runs are deleted; **Delete old run logs** works as before.
 
@@ -128,7 +128,7 @@ Unicode fix (ticked by default since 1 Nov 2026) passes the build + KMI gate on 
 
 🫥 **Disguise kernel identity** (checkbox, off by default): `uname` and `/proc/version` mimic the phone's own stock kernel (taken from the rothko stock boot.img): the GKI format `6.1.176-android14-11-g<ACK commit>-ab…`, builder `build-user@build-host`, and Google's Android clang 17.0.2 / LLD 17.0.2 text, instead of the `Cogan` name and Neutron clang. The version stays the real one (e.g. 6.1.176). This only changes what is shown, not the compiled code, so the KMI gate is unaffected. Cogan Bridge and the Cogan Smart module keep working; the `Cogan` name and revision stay in the ZIP name and release notes. It does **not** defeat behaviour-based detection (root traces, mounts, properties) or the phone's security-chip checks (Play Integrity). Test on the phone first.
 
-To publish an existing build, run **Rilis dari run** with the green Builder run ID. A run containing several root managers (KernelSU Next, BakaSU, KernelSU) becomes **one release** with all kernel ZIPs and their matching manager APKs, without rebuilding. Tick **diuji di HP** only if the owner tested every variant in that run on the phone. If the same tag already exists (e.g. `v26.11.02-r21`: the owner's rN and the run number of a CI build can meet on the same day), the release stops; tick **timpa** to replace that old release and its files with this run's build. Only kernel releases `vYY.MM.DD-rN` can be replaced; archives and Cogan Smart cannot.
+To publish an existing build, run **Rilis dari run** with the green Builder run ID. A run containing several root managers (KernelSU Next, BakaSU, KernelSU, SukiSU) becomes **one release** with all kernel ZIPs and their matching manager APKs, without rebuilding. Tick **diuji di HP** only if the owner tested every variant in that run on the phone. If the same tag already exists (e.g. `v26.11.02-r21`: the owner's rN and the run number of a CI build can meet on the same day), the release stops; tick **timpa** to replace that old release and its files with this run's build. Only kernel releases `vYY.MM.DD-rN` can be replaced; archives and Cogan Smart cannot.
 
 Release notes include **What's New & Fixes**, compared with the previous release of the same root manager. The run's **Summary** provides **one Telegram post ready to copy** for the whole release (KernelSU Next and BakaSU in one text) in Indonesian and English, each in a code block with a copy button. Changes from the root manager and SUSFS developers are written in plain words (e.g. "fixes SELinux hiding"), without commit codes. Tick **teks_saja** to generate only notes and Telegram posts, including for an already published version; this mode does not publish or change a release.
 
@@ -152,7 +152,7 @@ Release notes include **What's New & Fixes**, compared with the previous release
 ---
 
 <p align="center">
-  Maintainer <b>Cogan17</b> &nbsp;·&nbsp; source <b>Android Common Kernel</b> &nbsp;·&nbsp; <b>KernelSU Next</b> &nbsp;·&nbsp; <b>BakaSU</b> &nbsp;·&nbsp; <b>KernelSU</b> &nbsp;·&nbsp; <b>SUSFS</b>
+  Maintainer <b>Cogan17</b> &nbsp;·&nbsp; source <b>Android Common Kernel</b> &nbsp;·&nbsp; <b>KernelSU Next</b> &nbsp;·&nbsp; <b>BakaSU</b> &nbsp;·&nbsp; <b>KernelSU</b> &nbsp;·&nbsp; <b>SukiSU</b> &nbsp;·&nbsp; <b>SUSFS</b>
   <br><a href="docs/keaslian-dan-kredit.en.md">🔏 Authenticity & full credits</a>
 </p>
 

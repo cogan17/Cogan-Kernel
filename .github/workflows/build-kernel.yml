@@ -2,7 +2,7 @@ name: Cogan Kernel Builder
 
 # Cogan Kernel for the Xiaomi 14T Pro (rothko), from the official ACK android14-6.1 source only.
 # Form inspired by WildKernel (owner 2026-10-23). No lock, pin or frozen tree: every run takes the
-# newest ACK release, KernelSU Next (pershoot dev-susfs), BakaSU release or official KernelSU main, SUSFS, NoMount, Baseband
+# newest ACK release, KernelSU Next (pershoot dev-susfs), BakaSU release, official KernelSU main or SukiSU, SUSFS, NoMount, Baseband
 # Guard, AnyKernel3 and Neutron clang (kernel/resolve.py). A newest version that does not fit yet is
 # not built; the summary says whom to wait for. The KMI gate against the phone's stock kernel always
 # runs and fails closed. Summaries are in Indonesian and English.
@@ -36,6 +36,8 @@ on:
           - "BakaSU"
           - "KernelSU"
           - "KernelSU Next & KernelSU"
+          - "SukiSU"
+          - "KernelSU Next & SukiSU"
           - "Semua / All"
       lto:
         description: "LTO"
@@ -139,7 +141,9 @@ jobs:
             "KernelSU") roots=(KSU) ;;
             "KernelSU Next & BakaSU") roots=(KSUN BSU) ;;
             "KernelSU Next & KernelSU") roots=(KSUN KSU) ;;
-            "Semua / All") roots=(KSUN BSU KSU) ;;
+            "SukiSU") roots=(SUKI) ;;
+            "KernelSU Next & SukiSU") roots=(KSUN SUKI) ;;
+            "Semua / All") roots=(KSUN BSU KSU SUKI) ;;
             *) echo "::error::Root Flavor: $ROOT_FLAVOR"; exit 1 ;;
           esac
           for root in "${roots[@]}"; do
@@ -155,7 +159,7 @@ jobs:
           for path in sorted(Path("snapshots").glob("*.json")):
               snap = json.loads(path.read_text())
               root = snap["root"]
-              name = {"KSUN": "KernelSU Next", "BSU": "BakaSU", "KSU": "KernelSU"}[root]
+              name = {"KSUN": "KernelSU Next", "BSU": "BakaSU", "KSU": "KernelSU", "SUKI": "SukiSU"}[root]
               if "wait" in snap:
                   waits.append((name, snap["wait"]))
                   continue
@@ -173,6 +177,8 @@ jobs:
               src = snap["root_source"]
               ref = src.get("tag") or src.get("branch")
               version = f" ({src['ksu_version']})" if src.get("ksu_version") else ""
+              if src.get("manager_tag"):  # SukiSU with SUSFS: builtin kernel, manager of the newest release
+                  version += f" · manager {src['manager_tag']}"
               rows = [("ACK", ", ".join(f"`{a['tag']}` (6.1.{a['sublevel']})" for a in snap["ack"])),
                       (name, f"{ref} `{src['commit'][:12]}`{version}"),
                       ("SUSFS", f"`{snap['susfs']['commit'][:12]}`" if "susfs" in snap else "tanpa SUSFS / without SUSFS"),

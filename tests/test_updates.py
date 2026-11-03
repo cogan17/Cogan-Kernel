@@ -14,6 +14,7 @@ A, D, M = "a" * 40, "d" * 40, "m" * 40
 SUSFS_OLD, SUSFS_NEW = "c27ebe93c68e953c248b11bb747ef220ea648373", "27e0a0e42745991ba09d6f96a97bf4b83f41a012"
 BAKA_REL, BAKA_MAIN = "b" * 40, "e" * 40
 KSU_MAIN = "k" * 40
+SUKI_REL, SUKI_BUILTIN = "s" * 40, "t" * 40
 SNAP = {"root": "KSUN", "ack": [{"tag": "android14-6.1-2025-09_r36", "commit": "4" * 40, "sublevel": 145},
                                 {"tag": "android14-6.1-2026-09_r4", "commit": "1" * 40, "sublevel": 176}],
         "susfs": {"repo": r.SUSFS, "branch": r.SUSFS_BRANCH, "commit": SUSFS_OLD},
@@ -78,6 +79,11 @@ class FakeNet:
             f"repos/tiann/KernelSU/commits/{KSU_MAIN}": commit(KSU_MAIN, "2026-11-01T06:00:00Z", "kernel: fix selinux"),
             "repos/tiann/KernelSU/releases/latest": {"tag_name": "v3.3.1", "published_at": "2026-10-12T00:00:00Z",
                                                      "html_url": "https://ksu/v3.3.1", "body": "KernelSU v3.3.1"},
+            "repos/SukiSU-Ultra/SukiSU-Ultra/releases/tags/v4.3.0":
+                {"tag_name": "v4.3.0", "published_at": "2026-10-29T07:28:09Z", "html_url": "https://suki/v4.3.0",
+                 "body": "SukiSU v4.3.0"},
+            f"repos/SukiSU-Ultra/SukiSU-Ultra/commits/{SUKI_BUILTIN}":
+                commit(SUKI_BUILTIN, "2026-11-01T15:59:33Z", "kernel: Fix mount_hide crash"),
             "repos/WildKernels/kernel_patches/commits?path=common/unicode_bypass_fix_6.1%2B.patch&per_page=5":
                 [commit("u" * 40, "2026-10-10T00:00:00Z", "unicode fix")],
         }
@@ -112,6 +118,8 @@ class FakeNet:
             r.NOMOUNT: {f"refs/tags/{self.nomount}": "n" * 40, "refs/tags/v2.2.0": "o" * 40, "HEAD": "h" * 40},
             r.BBG: {"refs/heads/main": "f" * 40},
             r.ANYKERNEL: {"HEAD": "9" * 40, "refs/heads/arm64-tools": "8" * 40},
+            r.SUKISU: {"refs/tags/v4.3.0": SUKI_REL, "refs/tags/v4.2.1-r2": "0" * 40,
+                       f"refs/heads/{r.SUKISU_BUILTIN}": SUKI_BUILTIN},
         }[url]
         return {k: v for k, v in table.items() if k in patterns or any(p.endswith("*") and k.startswith(p[:-1]) for p in patterns)}
 
@@ -134,6 +142,9 @@ class FakeNet:
     def ksu_fits(self, main, susfs):
         return self.ksu_fits_value
 
+    def sukisu_ready(self, builtin, susfs):
+        return None
+
 
 class UpdatesTest(unittest.TestCase):
     def run_check(self, **kwargs):
@@ -145,7 +156,7 @@ class UpdatesTest(unittest.TestCase):
         self.assertEqual(builds["KSUN"]["run"], 6)
         self.assertNotIn("BSU", builds)                                    # its snapshot only waited
         statuses = {k: e["status"] for k, e in found.items()}
-        self.assertEqual(statuses, {"ack": "new", "susfs": "new", "sidex": "new", "ksun": "same", "bakasu": "unknown", "ksu": "off", "nomount": "new",
+        self.assertEqual(statuses, {"ack": "new", "susfs": "new", "sidex": "new", "ksun": "same", "bakasu": "unknown", "ksu": "off", "sukisu": "off", "nomount": "new",
                                     "bbg": "same", "anykernel": "same", "neutron": "same", "unicode": "off"})
         self.assertIn("🆕 **Ada pembaruan: ACK android14-6.1, SUSFS (simonpunk), SUSFS modul (sidex15), NoMount.** "
                       "Silakan jalankan **Cogan Kernel Builder**", text)

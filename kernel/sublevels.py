@@ -2,7 +2,7 @@
 """Supported ACK sublevels: record build results, write the README table.
 
 kernel/sublevels.json is a record of what the Cogan Kernel Builder proved, not a lock: no build
-reads it. Per sublevel: the ACK release tag, and per root manager (KSUN, BSU, KSU) the result of the
+reads it. Per sublevel: the ACK release tag, and per root manager (KSUN, BSU, KSU, SUKI) the result of the
 newest run that built it (ok, gagal, tunggu with whom to wait for). "pendahulu" marks sublevels
 proven only in the predecessor repository. The README row follows the newest result here: built,
 waiting for an upstream update, or (nothing built here yet) proven in the predecessor; a sublevel
@@ -23,7 +23,7 @@ HERE = Path(__file__).resolve().parent
 RECORD = HERE / "sublevels.json"
 READMES = {"id": HERE.parent / "README.md", "en": HERE.parent / "README.en.md"}
 START, END = "<!-- sublevel:start -->", "<!-- sublevel:end -->"
-ROOTS = {"KSUN": "KernelSU Next", "BSU": "BakaSU", "KSU": "KernelSU"}
+ROOTS = {"KSUN": "KernelSU Next", "BSU": "BakaSU", "KSU": "KernelSU", "SUKI": "SukiSU"}
 WORDS = {"id": {"head": "| Sublevel | Rilis ACK | Status |", "ok": "✅ {roots}: [build + gate KMI]({url})",
                 "tunggu": "⏳ {roots}: [{why}]({url})", "pendahulu": "🧪 lolos build + gate KMI di repo pendahulu"},
          "en": {"head": "| Sublevel | ACK release | Status |", "ok": "✅ {roots}: [build + KMI gate]({url})",
@@ -67,7 +67,7 @@ def record_run(record, info, run_id, tags=None):
     """Update the record from one Builder run's build-info-<root>-<sublevel> folders."""
     changed = []
     for folder in sorted(info.glob("build-info-*-*")):
-        match = re.fullmatch(r"build-info-(KSUN|BSU|KSU)-(\d+)", folder.name)
+        match = re.fullmatch(r"build-info-(KSUN|BSU|KSU|SUKI)-(\d+)", folder.name)
         if not match:
             continue
         root, sublevel = match[1], match[2]

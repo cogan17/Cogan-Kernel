@@ -40,8 +40,8 @@ else:            # run as kernel/updates.py
 WIB = timezone(timedelta(hours=7))
 GITLAB = "https://gitlab.com/api/v4/projects/simonpunk%2Fsusfs4ksu"
 KSUN_UPSTREAM = "KernelSU-Next/KernelSU-Next"
-ROOT_KEYS = ("KSUN", "BSU", "KSU")
-ROOT_NAMES = {"KSUN": "KernelSU Next", "BSU": "BakaSU", "KSU": "KernelSU"}
+ROOT_KEYS = ("KSUN", "BSU", "KSU", "SUKI")
+ROOT_NAMES = {"KSUN": "KernelSU Next", "BSU": "BakaSU", "KSU": "KernelSU", "SUKI": "SukiSU"}
 FIX = re.compile(r"\b(fix(e[sd])?|bug|crash|revert|regression|leak|panic|hotfix)\b|^fix[(:]", re.I)
 MONTHS_ID = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"]
 MONTHS_EN = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
@@ -186,6 +186,14 @@ class Net:
             r.run("git", "-C", repo, "fetch", "-q", "--depth=1", r.KSU, f"{main}:refs/check/ksu")
             return r.patch_fits(repo, "refs/check/ksu", r.run("git", "-C", repo, "show", f"refs/check/susfs:{r.SUSFS_KSU_PATCH}"))
 
+    def sukisu_ready(self, builtin, susfs):
+        """None when SukiSU's builtin branch at builtin compiles with SUSFS commit susfs, else what is missing."""
+        with tempfile.TemporaryDirectory(prefix="updates-sukisu-", ignore_cleanup_errors=True) as repo:
+            self.git_dir(repo)
+            r.run("git", "-C", repo, "fetch", "-q", "--depth=1", r.SUSFS, f"{susfs}:refs/check/susfs")
+            r.run("git", "-C", repo, "fetch", "-q", "--depth=1", r.SUKISU, f"{builtin}:refs/check/sukisu")
+            return r.sukisu_ready(repo, "refs/check/sukisu", "refs/check/susfs")
+
     def bakasu_ready(self, release, main, susfs):
         """(problem of the release, problem of main) against SUSFS commit susfs; None = ready."""
         with tempfile.TemporaryDirectory(prefix="updates-bakasu-", ignore_cleanup_errors=True) as repo:
@@ -256,7 +264,7 @@ def legacy_builds(net, repo, run):
         root = snap.get("root")
         if root not in ROOT_KEYS or "wait" in snap:
             continue
-        tag = {"KSUN": "KernelSU-Next", "BSU": "BakaSU", "KSU": "KernelSU"}[root]
+        tag = {"KSUN": "KernelSU-Next", "BSU": "BakaSU", "KSU": "KernelSU", "SUKI": "SukiSU"}[root]
         built = [a for a in snap.get("ack", []) if any(f"6.1.{a['sublevel']}_{tag}+" in name for name in kernels)]
         if not built:
             continue
@@ -474,6 +482,46 @@ def check_ksu(net, builds, susfs_head):
                 wait=wait, lines=lines, notes={"tag": stable["tag"], "text": stable["notes"]} if stable else None)
 
 
+def check_sukisu(net, builds, susfs_head=None):
+    """SukiSU Ultra (owner 2026-11-02): the Builder takes the newest builtin commit (SUSFS built in) and the
+    manager of the newest release; a last build without SUSFS is compared with that release's own commit."""
+    snap = builds.get("SUKI", {}).get("snap", {})
+    base = snap.get("root_source", {})
+    repo = r.SUKISU.removeprefix("https://github.com/")
+    tag, tag_sha = r.newest_tag(net.ls_remote(r.SUKISU, "refs/tags/v*"))
+    builtin = net.ls_remote(r.SUKISU, f"refs/heads/{r.SUKISU_BUILTIN}")[f"refs/heads/{r.SUKISU_BUILTIN}"]
+    target = tag_sha if base and not base.get("branch") else builtin
+    try:
+        stable = github_release(net, repo, tag)
+    except OSError:
+        stable = None
+    info = github_commit(net, repo, builtin)
+    lines = [{"id": f"Manager: rilis {tag}; kernel dengan SUSFS: cabang {r.SUKISU_BUILTIN} `{builtin[:8]}`",
+              "en": f"Manager: release {tag}; kernel with SUSFS: branch {r.SUKISU_BUILTIN} `{builtin[:8]}`"}]
+    wait = None
+    if susfs_head:
+        problem = net.sukisu_ready(builtin, susfs_head)
+        lines.append({"id": f"SUSFS `{short(susfs_head)}` untuk {r.SUKISU_BUILTIN} `{builtin[:8]}`: "
+                            + (f"belum cocok ({problem})" if problem else "cocok"),
+                      "en": f"SUSFS `{short(susfs_head)}` for {r.SUKISU_BUILTIN} `{builtin[:8]}`: "
+                            + (f"does not fit yet ({problem})" if problem else "fits")})
+        if problem:
+            wait = {"id": f"Tunggu pengembang SukiSU menyesuaikan cabang {r.SUKISU_BUILTIN} dengan SUSFS terbaru "
+                          f"(belum mengenal {problem}). Tanpa SUSFS tetap bisa dibangun.",
+                    "en": f"Wait for the SukiSU developer to adapt branch {r.SUKISU_BUILTIN} to the newest SUSFS "
+                          f"(it does not know {problem} yet). It still builds without SUSFS."}
+    built_manager = base.get("manager_tag") or base.get("tag")
+    # Never built yet: an optional root manager, "not used" rather than "history unavailable".
+    status = ("wait" if wait else "off" if not base
+              else "same" if base.get("commit") == target and built_manager == tag else "new")
+    label = f"{base.get('branch') or base.get('tag')} `{short(base.get('commit'))}`" if base else None
+    return item("sukisu", "SukiSU", base={"label": label} if base else None,
+                stable={"label": stable["tag"], "date": stable["date"], "url": stable["url"]} if stable else None,
+                ci={"label": f"{r.SUKISU_BUILTIN} `{short(builtin)}`", "date": info["date"], "sha": builtin},
+                changes=github_changes(net, repo, base.get("commit"), target) if base else [], status=status,
+                wait=wait, lines=lines, notes={"tag": stable["tag"], "text": stable["notes"]} if stable else None)
+
+
 def check_nomount(net, builds):
     base = base_of(builds, "nomount", "tag")
     repo = r.NOMOUNT.removeprefix("https://github.com/")
@@ -552,13 +600,13 @@ def gather(net, repo):
     susfs_head = None
     checks = [("ack", lambda: check_ack(net, clean)), ("susfs", lambda: check_susfs(net, clean)),
               ("sidex", lambda: check_sidex(net, clean)), ("ksun", lambda: check_ksun(net, clean)), ("bakasu", lambda: check_bakasu(net, clean, susfs_head)),
-              ("ksu", lambda: check_ksu(net, clean, susfs_head)),
+              ("ksu", lambda: check_ksu(net, clean, susfs_head)), ("sukisu", lambda: check_sukisu(net, clean, susfs_head)),
               ("nomount", lambda: check_nomount(net, clean)),
               ("bbg", lambda: check_branch(net, clean, "bbg", "Baseband Guard", r.BBG)),
               ("anykernel", lambda: check_anykernel(net, clean)),
               ("neutron", lambda: check_neutron(net, clean)), ("unicode", lambda: check_unicode(net, clean))]
     names = {"ack": "ACK android14-6.1", "susfs": "SUSFS (simonpunk)", "sidex": "SUSFS modul (sidex15)",
-             "ksun": "KernelSU Next", "bakasu": "BakaSU", "ksu": "KernelSU",
+             "ksun": "KernelSU Next", "bakasu": "BakaSU", "ksu": "KernelSU", "sukisu": "SukiSU",
              "nomount": "NoMount", "bbg": "Baseband Guard", "anykernel": "AnyKernel3", "neutron": "Neutron clang",
              "unicode": "Unicode fix (WildKernel)"}
     for key, check in checks:
