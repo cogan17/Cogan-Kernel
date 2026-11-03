@@ -32,13 +32,14 @@ on:
         default: "KernelSU Next"
         options:
           - "KernelSU Next"
-          - "KernelSU Next & BakaSU"
-          - "BakaSU"
           - "KernelSU"
-          - "KernelSU Next & KernelSU"
           - "SukiSU"
+          - "BakaSU"
+          # Combinations of two or three, without BakaSU while it has a problem (owner 2026-11-03).
+          - "KernelSU Next & KernelSU"
           - "KernelSU Next & SukiSU"
-          - "Semua / All"
+          - "KernelSU & SukiSU"
+          - "KernelSU Next & KernelSU & SukiSU"
       lto:
         description: "LTO"
         type: choice
@@ -119,7 +120,7 @@ jobs:
               || { echo "::error::Build Time: N atau mis. Thu Jan 1 00:00:00 UTC 2026"; exit 1; }
           fi
           if [ "$RELEASE_TYPE" != "CI" ]; then
-            [[ "$ROOT_FLAVOR" != *"&"* && "$ROOT_FLAVOR" != Semua* && -n "${SUBLEVEL// /}" && "${SUBLEVEL,,}" != *semua* && "$SUBLEVEL" != *,* ]] \
+            [[ "$ROOT_FLAVOR" != *"&"* && -n "${SUBLEVEL// /}" && "${SUBLEVEL,,}" != *semua* && "$SUBLEVEL" != *,* ]] \
               || { echo "::error::$RELEASE_TYPE: satu root dan satu sublevel / one root and one sublevel"; exit 1; }
             [ "$GITHUB_REF_NAME" = "$DEFAULT_BRANCH" ] \
               || { echo "::error::$RELEASE_TYPE hanya dari / only from $DEFAULT_BRANCH"; exit 1; }
@@ -139,11 +140,11 @@ jobs:
             "KernelSU Next") roots=(KSUN) ;;
             "BakaSU") roots=(BSU) ;;
             "KernelSU") roots=(KSU) ;;
-            "KernelSU Next & BakaSU") roots=(KSUN BSU) ;;
-            "KernelSU Next & KernelSU") roots=(KSUN KSU) ;;
             "SukiSU") roots=(SUKI) ;;
+            "KernelSU Next & KernelSU") roots=(KSUN KSU) ;;
             "KernelSU Next & SukiSU") roots=(KSUN SUKI) ;;
-            "Semua / All") roots=(KSUN BSU KSU SUKI) ;;
+            "KernelSU & SukiSU") roots=(KSU SUKI) ;;
+            "KernelSU Next & KernelSU & SukiSU") roots=(KSUN KSU SUKI) ;;
             *) echo "::error::Root Flavor: $ROOT_FLAVOR"; exit 1 ;;
           esac
           for root in "${roots[@]}"; do
