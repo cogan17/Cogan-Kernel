@@ -53,7 +53,7 @@ The old releases of [cogan17/Kernel-14t-pro](https://github.com/cogan17/Kernel-1
 |---|---|
 | **[Cogan17](https://github.com/cogan17)** | Maintainer: Cogan Rothko kernel, Cogan Bridge, Cogan Smart Kernel module, build engine, CI and releases |
 | **[Google](https://android.googlesource.com/kernel/common/)** | Android Common Kernel `android14-6.1` (source of the rothko stock kernel), BBRv3 |
-| **[Xiaomi & MediaTek](https://github.com/MiCode/Xiaomi_Kernel_OpenSource/tree/bsp-rothko-u-oss)** | rothko BSP source (symbol and config reference), vendor modules and firmware; property of their owners |
+| **[Xiaomi & MediaTek](https://github.com/MiCode/Xiaomi_Kernel_OpenSource/tree/bsp-rothko-u-oss)** | rothko BSP source (6.1.57, Android 14; symbol and config reference), vendor modules and firmware; property of their owners |
 | **[KernelSU](https://github.com/tiann/KernelSU)** ([tiann](https://github.com/tiann)) | The base of in-kernel root |
 | **[KernelSU Next](https://github.com/KernelSU-Next/KernelSU-Next)** ([rifsxd](https://github.com/rifsxd)) | The KernelSU Next root variant; the manager app in releases is the official CI build |
 | **[pershoot](https://github.com/pershoot/KernelSU-Next)** | KernelSU Next fork `dev-susfs` that joins KernelSU Next with SUSFS |
