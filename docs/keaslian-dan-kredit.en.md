@@ -57,6 +57,7 @@ The old releases of [cogan17/Kernel-14t-pro](https://github.com/cogan17/Kernel-1
 | **[KernelSU](https://github.com/tiann/KernelSU)** (tiann) | The base of in-kernel root |
 | **[KernelSU Next](https://github.com/KernelSU-Next/KernelSU-Next)** (rifsxd) | The KernelSU Next root variant; the manager app in releases is the official CI build |
 | **[pershoot](https://github.com/pershoot/KernelSU-Next)** | KernelSU Next fork `dev-susfs` that joins KernelSU Next with SUSFS |
+| **[SukiSU Ultra](https://github.com/SukiSU-Ultra/SukiSU-Ultra)** (ShirkNeko) | The SukiSU root variant; its `builtin` branch carries SUSFS, the manager app in releases is its official release |
 | **[BakaSU](https://github.com/Baka-SU/BakaSU)** | The BakaSU root variant (formerly ReSukiSU) |
 | **[SUSFS](https://gitlab.com/simonpunk/susfs4ksu)** (simonpunk) | Hides root traces |
 | **[NoMount](https://github.com/maxsteeel/nomount)** (maxsteeel) | Mountless metamodule, built into the kernel; the module in releases is its official release |

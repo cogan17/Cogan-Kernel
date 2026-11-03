@@ -129,11 +129,12 @@ class WorkflowTest(unittest.TestCase):
         box = wf[True]["workflow_dispatch"]["inputs"]["root_flavor"]
         self.assertEqual(box["default"], "KernelSU Next")
         self.assertEqual(box["options"], ["KernelSU Next", "KernelSU Next & BakaSU", "BakaSU", "KernelSU",
-                                          "KernelSU Next & KernelSU", "Semua / All"])
+                                          "KernelSU Next & KernelSU", "SukiSU", "KernelSU Next & SukiSU", "Semua / All"])
         plan = next(s["run"] for s in wf["jobs"]["resolve"]["steps"] if s.get("id") == "plan")
         case = re.search(r'case "\$ROOT_FLAVOR" in\n(.*?)esac', plan, re.S)[1]
         for flavor, roots in (("KernelSU Next", "roots=(KSUN)"), ("BakaSU", "roots=(BSU)"), ("KernelSU", "roots=(KSU)"),
-                              ("KernelSU Next & KernelSU", "roots=(KSUN KSU)"), ("Semua / All", "roots=(KSUN BSU KSU)")):
+                              ("KernelSU Next & KernelSU", "roots=(KSUN KSU)"), ("SukiSU", "roots=(SUKI)"),
+                              ("KernelSU Next & SukiSU", "roots=(KSUN SUKI)"), ("Semua / All", "roots=(KSUN BSU KSU SUKI)")):
             self.assertIn(f'"{flavor}") {roots} ;;', case)
         self.assertNotIn('== *"KernelSU', plan)   # "KernelSU" must not match "KernelSU Next"
 

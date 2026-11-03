@@ -7,7 +7,7 @@
 # gate against the phone's own stock kernel (6.1.138) and the Xiaomi BSP always runs and fails closed.
 #
 # Environment:
-#   SNAPSHOT     resolve.py JSON of the root (KSUN, BSU or KSU)
+#   SNAPSHOT     resolve.py JSON of the root (KSUN, BSU, KSU or SUKI)
 #   ACK_TAG ACK_COMMIT SUBLEVEL   the ACK release of this job
 #   BRAND REVISION RUN_NUMBER LTO(full|thin|none) BUILD_TIME(N or a date)
 #   NOMOUNT BBG NETWORKING UNICODE (true|false)   OUT (results)   GH_TOKEN
@@ -46,6 +46,7 @@ case "$ROOT" in
   KSUN) VARIANT="KernelSU-Next"; ROOT_NAME="KernelSU Next" ;;
   BSU) VARIANT="BakaSU"; ROOT_NAME="BakaSU" ;;
   KSU) VARIANT="KernelSU"; ROOT_NAME="KernelSU" ;;   # official KernelSU (tiann), owner 2026-11-02
+  SUKI) VARIANT="SukiSU"; ROOT_NAME="SukiSU" ;;       # SukiSU Ultra, owner 2026-11-02
   *) fail "Unknown root $ROOT" ;;
 esac
 [ "$SUSFS_ON" = true ] && VARIANT="$VARIANT+SuSFS"
@@ -194,6 +195,14 @@ elif [ "$ROOT" = "KSU" ]; then
   bash "$WORK/root-setup.sh" "$ROOT_COMMIT"
   [ "$(git -C KernelSU rev-parse HEAD)" = "$ROOT_COMMIT" ] || fail "KernelSU checkout is not $ROOT_COMMIT"
   KSU_VERSION=""
+elif [ "$ROOT" = "SUKI" ]; then
+  # SukiSU Ultra: with SUSFS its builtin branch (SUSFS built into the root driver), without SUSFS the
+  # newest release's commit (resolve.py). Its setup.sh clones the whole repository, so both are there;
+  # its checkout falls back silently, hence the check. KPM stays off (owner 2026-11-02).
+  curl -fsSL "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/$ROOT_COMMIT/kernel/setup.sh" -o "$WORK/root-setup.sh"
+  bash "$WORK/root-setup.sh" "$ROOT_COMMIT"
+  [ "$(git -C KernelSU rev-parse HEAD)" = "$ROOT_COMMIT" ] || fail "SukiSU checkout is not $ROOT_COMMIT"
+  KSU_VERSION=""
 else
   curl -fsSL "https://raw.githubusercontent.com/Baka-SU/BakaSU/$ROOT_COMMIT/kernel/setup.sh" -o "$WORK/root-setup.sh"
   bash "$WORK/root-setup.sh" "$ROOT_COMMIT"   # a release tag's commit, or a main commit (resolve.py)
@@ -241,6 +250,7 @@ python3 "$HERE/scripts/install_cogan_bridge.py" "$KSRC" --device rothko
 DEFCONFIG=arch/arm64/configs/gki_defconfig
 {
   echo "CONFIG_KSU=y"
+  [ "$ROOT" = "SUKI" ] && echo "# CONFIG_KPM is not set"
   [ "${BBG:-true}" = "true" ] && echo "CONFIG_BBG=y"
   [ "${NOMOUNT:-true}" = "true" ] && echo "CONFIG_NOMOUNT=y"
   # SUSFS box unticked: KernelSU Next's Kconfig defaults KSU_SUSFS to y, so turn it off explicitly; its
@@ -304,6 +314,7 @@ for line in "${required[@]}"; do
   grep -qx "$line" "$KOUT/.config" || fail "$line missing from the resolved config"
 done
 [ "$SUSFS_ON" = true ] || ! grep -qx 'CONFIG_KSU_SUSFS=y' "$KOUT/.config" || fail "SUSFS unticked but CONFIG_KSU_SUSFS=y"
+! grep -qx 'CONFIG_KPM=y' "$KOUT/.config" || fail "CONFIG_KPM must stay off (owner 2026-11-02)"
 ! grep -qx 'CONFIG_IPV6_SUBTREES=y' "$KOUT/.config" || fail "CONFIG_IPV6_SUBTREES must stay off (vendor KMI)"
 echo "::endgroup::"
 
@@ -352,7 +363,10 @@ download_digest() {  # url, file, sha256:digest (from the release API)
   curl -fsSL --retry 3 "$1" -o "$2"
   [ -z "$3" ] || [ "sha256:$(sha256sum "$2" | cut -d' ' -f1)" = "$3" ] || fail "$(basename "$2"): SHA256 differs from its release"
 }
-if [ "$(snap manager.kind)" = "release" ]; then
+if [ "$ROOT" = "SUKI" ]; then
+  # The newest SukiSU release's manager (with SUSFS the kernel is its builtin branch, which has none).
+  download_digest "$(snap manager.url)" "$OUT/2-MANAGER_SukiSU_$(snap manager.tag).apk" "$(snap manager.digest)"
+elif [ "$(snap manager.kind)" = "release" ]; then
   download_digest "$(snap manager.url)" "$OUT/2-MANAGER_BakaSU_$(snap root_source.tag).apk" "$(snap manager.digest)"
 else
   # The official CI build of the kernel's own commit: KernelSU Next, BakaSU main or KernelSU main.

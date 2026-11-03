@@ -4,7 +4,8 @@
 No lock, pin or frozen tree (owner 2026-10-23): every run takes the newest official ACK
 android14-6.1 release, the newest KernelSU Next (pershoot dev-susfs) or BakaSU release (BakaSU main
 while its newest release does not take the newest SUSFS yet) or official KernelSU (tiann, main: the
-newest commit its CI built a manager for), the newest SUSFS, NoMount release,
+newest commit its CI built a manager for) or SukiSU Ultra (builtin branch with SUSFS, the newest release
+without; manager from the newest release), the newest SUSFS, NoMount release,
 Baseband Guard, AnyKernel3 and Neutron clang. The commits found here are
 the run's snapshot, passed to every build job so they all build the same thing.
 
@@ -18,7 +19,7 @@ kernel_patches for its unicode bypass fix; without it nothing of WildKernel is r
 --no-susfs (the SUSFS box unticked) builds the plain root manager: no SUSFS, no sidex15 module, BakaSU
 from its newest release.
 
-Usage: resolve.py --root KSUN|BSU|KSU [--sublevel lts|N|N,M|semua|""] [--unicode] [--no-susfs] --out FILE.json
+Usage: resolve.py --root KSUN|BSU|KSU|SUKI [--sublevel lts|N|N,M|semua|""] [--unicode] [--no-susfs] --out FILE.json
 """
 import argparse
 import base64
@@ -48,6 +49,12 @@ BAKASU_CI = ("Baka-SU/BakaSU", "build-manager.yml", {"manager": "Manager-release
 KSU = "https://github.com/tiann/KernelSU"
 KSU_CI = ("tiann/KernelSU", "build-manager.yml", {"manager": "manager"})
 SUSFS_KSU_PATCH = "kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch"
+# SukiSU Ultra (owner 2026-11-02): SUSFS lives only in its kernel-only `builtin` branch (built in, so no
+# patch for the root driver; simonpunk's kernel patch is still applied). Without SUSFS the kernel is the
+# newest release's own commit. The manager is always the newest release's APK, as the owner chose: with
+# SUSFS, kernel and manager therefore do not come from the same commit (the builtin branch has no manager).
+SUKISU = "https://github.com/SukiSU-Ultra/SukiSU-Ultra"
+SUKISU_BUILTIN = "builtin"
 SUSFS = "https://gitlab.com/simonpunk/susfs4ksu"
 SUSFS_BRANCH = "gki-android14-6.1"
 SUSFS_PATCH = "kernel_patches/50_add_susfs_in_gki-android14-6.1.patch"
@@ -322,6 +329,64 @@ def ksu_main(api=api):
                "Wait for the official KernelSU CI manager build on main (none yet, or its artifact expired).")
 
 
+def sukisu_manager(tag, api=api):
+    """The manager APK of SukiSU release tag: the universal (or arm64) one, never the spoofed one."""
+    release = api(f"repos/{SUKISU.removeprefix('https://github.com/')}/releases/tags/{tag}")
+    apks = [a for a in release.get("assets", []) if a["name"].endswith(".apk") and "spoofed" not in a["name"].lower()]
+    if not apks:
+        raise Wait(f"Tunggu pengembang SukiSU menerbitkan APK manager untuk {tag}.",
+                   f"Wait for the SukiSU developer to publish the manager APK of {tag}.")
+    arch = re.compile(r"arm64-v8a|armeabi-v7a|x86_64|riscv64")
+    apk = (next((a for a in apks if not arch.search(a["name"])), None)
+           or next((a for a in apks if "arm64-v8a" in a["name"]), None) or apks[0])
+    return {"kind": "release", "tag": tag, "name": apk["name"], "url": apk["browser_download_url"],
+            "digest": apk.get("digest", "")}
+
+
+SUSFS_HEADER = "kernel_patches/include/linux/susfs.h"
+
+
+def guarded_functions(header):
+    """{susfs function: CONFIG symbol} of the functions susfs.h declares only under an #ifdef CONFIG_..."""
+    found, guard = {}, None
+    for line in header.splitlines():
+        match = re.match(r"\s*#\s*ifdef\s+CONFIG_(\w+)", line)
+        if match:
+            guard = match[1]
+        elif re.match(r"\s*#\s*endif", line):
+            guard = None
+        elif guard:
+            for name in re.findall(r"\b(susfs_\w+)\s*\(", line):
+                found[name] = guard
+    return found
+
+
+def sukisu_ready(repo, sukisu_ref, susfs_ref):
+    """None when SukiSU's builtin SUSFS at sukisu_ref compiles with SUSFS at susfs_ref, else what is missing:
+    a SUSFS function SukiSU calls whose CONFIG symbol SUSFS added but SukiSU's Kconfig does not define yet
+    (SUSFS f06acf7, 2 Nov 2026: priority_uid_filter became CONFIG_KSU_SUSFS_PRIORITY_UID_FILTER)."""
+    def grep(*args):
+        return subprocess.run(["git", "-C", repo, "grep", *args, sukisu_ref, "--", "kernel"],
+                              capture_output=True, text=True).stdout
+    defined = set(re.findall(r"^config\s+(\w+)\s*$", grep("-h", "-E", r"^config\s"), re.M))
+    missing = set()
+    for name, symbol in guarded_functions(run("git", "-C", repo, "show", f"{susfs_ref}:{SUSFS_HEADER}")).items():
+        if symbol in defined:
+            continue
+        for path in grep("-l", "-w", name).splitlines():
+            path = path.split(":", 1)[-1]
+            text = run("git", "-C", repo, "show", f"{sukisu_ref}:{path}")
+            if f"CONFIG_{symbol}" not in text:   # called outside any guard of that symbol
+                missing.add(f"CONFIG_{symbol}")
+    return ", ".join(sorted(missing)) or None
+
+
+def has_builtin_susfs(repo, ref):
+    """True when SukiSU at ref carries SUSFS for the root driver (config KSU_SUSFS in its Kconfig)."""
+    return subprocess.run(["git", "-C", repo, "grep", "-q", "-E", r"^config KSU_SUSFS$", ref, "--", "kernel/Kconfig"],
+                          capture_output=True).returncode == 0
+
+
 def patch_fits(repo, ref, patch_text):
     """True when patch_text applies as it is to the tree of ref (checked on a scratch index, no checkout)."""
     with tempfile.TemporaryDirectory() as tmp:
@@ -364,6 +429,24 @@ def resolve(root, sublevel, work, unicode=False, susfs_box=True):
                        "(the SUSFS patch for KernelSU does not fit yet).")
         snap["root_source"] = {"repo": KSU, "branch": "main", "commit": main}
         snap["manager"] = {"kind": "ci", **manager}
+    elif root == "SUKI":
+        tag, sha = newest_tag(ls_remote(SUKISU, "refs/tags/v*"))
+        snap["manager"] = sukisu_manager(tag, api)
+        if susfs_box:
+            builtin = ls_remote(SUKISU, f"refs/heads/{SUKISU_BUILTIN}")[f"refs/heads/{SUKISU_BUILTIN}"]
+            run("git", "-C", repo, "fetch", "-q", "--depth=1", SUKISU, f"{builtin}:refs/check/sukisu")
+            if not has_builtin_susfs(repo, "refs/check/sukisu"):
+                raise Wait(f"Tunggu pengembang SukiSU: cabang {SUKISU_BUILTIN} `{builtin[:12]}` tidak lagi membawa SUSFS.",
+                           f"Wait for the SukiSU developer: branch {SUKISU_BUILTIN} `{builtin[:12]}` no longer carries SUSFS.")
+            problem = sukisu_ready(repo, "refs/check/sukisu", "refs/check/susfs")
+            if problem:
+                raise Wait(f"Tunggu pengembang SukiSU menyesuaikan cabang {SUKISU_BUILTIN} `{builtin[:12]}` dengan SUSFS "
+                           f"terbaru `{susfs[:12]}` (belum mengenal {problem}). Atau lepas centang SUSFS.",
+                           f"Wait for the SukiSU developer to adapt branch {SUKISU_BUILTIN} `{builtin[:12]}` to the newest "
+                           f"SUSFS `{susfs[:12]}` (it does not know {problem} yet). Or untick SUSFS.")
+            snap["root_source"] = {"repo": SUKISU, "branch": SUKISU_BUILTIN, "commit": builtin, "manager_tag": tag}
+        else:
+            snap["root_source"] = {"repo": SUKISU, "tag": tag, "commit": sha}
     else:
         tag, sha = newest_tag(ls_remote(BAKASU, "refs/tags/v*"))
         run("git", "-C", repo, "fetch", "-q", "--depth=1", BAKASU, f"{sha}:refs/check/bakasu")
@@ -426,7 +509,7 @@ def resolve(root, sublevel, work, unicode=False, susfs_box=True):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--root", choices=["KSUN", "BSU", "KSU"], required=True)
+    parser.add_argument("--root", choices=["KSUN", "BSU", "KSU", "SUKI"], required=True)
     parser.add_argument("--sublevel", default="lts")
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--unicode", action="store_true", help="the Unicode fix box is ticked")
