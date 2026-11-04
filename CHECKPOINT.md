@@ -3,13 +3,13 @@
 ## 4 Nov 2026 (checkpoint owner)
 
 **Sedang berjalan**
-- Tidak ada PR/run/draf berjalan. Diagnosa CoganSU r36 selesai (di bawah); perbaikannya menunggu izin owner (repo CoganSU).
+- Menunggu owner mengirim APK CoganSU yang benar-benar terpasang (`su -c 'cp /data/app/*/com.cogan.su-*/base.apk /sdcard/cogansu-terpasang.apk'`) untuk memastikan sertifikatnya. Akar "Tidak terpasang" belum pasti.
 
-**Run #36 dicek: build lolos, manager CoganSU "Tidak terpasang" (bug sertifikat)**
-- Run #36 ([41773264948](https://github.com/cogan17/Cogan-Kernel/actions/runs/41773264948)) lolos: artifact `1-KERNEL_…CoganSU+SuSFS…v26.11.04-r36`, `2-MANAGER_CoganSU_v26.11.04-r1.apk`, NoMount v2.2.0, modul SUSFS sidex15. Owner flash r36 di HP 4 Nov ±11.55 WIB: boot dan root/su jalan.
-- **Tapi manager CoganSU "Tidak terpasang".** Bukti (APK + Image r36 + dmesg owner): kernel menemukan APK (`Found manager com.cogan.su …, is_manager: 0`) lalu menolaknya. APK benar — paket `com.cogan.su`, sertifikat ukuran `0x04ed` hash `b0fb06ca…` (= `cogansu.mk`). Kernel r36 memuat nama paket benar, tetapi `b0fb06ca` tidak ada di Image: identitas sertifikat yang dikompilasi bukan dari `cogansu.mk`, masih sertifikat KernelSU bawaan.
-- Akar: di `Kbuild` CoganSU `KSU_PACKAGE_NAME ?=` berlaku (paket benar), tetapi `KSU_EXPECTED_SIZE/HASH ?=` tidak — keduanya sudah ter-set dari environment `make` sebelum `?=`. Sumber env belum ketemu di tiga repo secara static; perlu dilihat saat build jalan.
-- Perbaikan diusulkan: paksa `cogansu.mk` otoritatif (`override KSU_EXPECTED_SIZE/HASH := …` di `Kbuild` CoganSU), lalu Build CoganSU r37 untuk uji. **Menunggu izin owner** (repo `cogan17/CoganSU`).
+**Run #36 dicek: build BENAR, manager "Tidak terpasang" — akar belum pasti**
+- Run #36 ([41773264948](https://github.com/cogan17/Cogan-Kernel/actions/runs/41773264948)) lolos. ZIP kernel r36 yang owner kirim = artifact run #36 (SHA256 `cdcc301b…` cocok). Owner flash r36 di HP 4 Nov ±11.55 WIB: boot dan root/su jalan.
+- **Koreksi (catatan "bug sertifikat" di PR #134 SALAH):** kernel r36 tidak salah sertifikat. Log build run #36 (Kbuild `$(info)`) mencetak `signature size: 0x04ed`, `signature hash: b0fb06ca…` — identitas CoganSU yang benar dari `cogansu.mk`. Analisis `strings` pada Image sebelumnya menyesatkan (hash tidak muncul sebagai teks biasa, bukan berarti salah); jangan ambil kesimpulan dari `strings` Image lagi.
+- Jadi kernel r36 (menuntut `b0fb06ca`) + APK rilis r1 (sertifikat `0x04ed`/`b0fb06ca`, terbukti `cogansu_cert.py`) **seharusnya cocok**. Tapi dmesg HP: `Found manager com.cogan.su …, is_manager: 0`, tanpa baris `expected:` → gagal sebelum banding hash (tahap baca struktur/ukuran sertifikat APK).
+- Dugaan terkuat: **APK yang terpasang di HP bukan rilis r1** (ukuran sertifikat ≠ 0x04ed). Belum dipastikan.
 
 **Selesai 3–4 Nov**
 - PR #119–#123: modul yang dipakai owner di README (20 modul + TEESimulator).
@@ -23,13 +23,14 @@
 - PR #132: aturan gaya jawaban di CLAUDE.md.
 
 **Tertunda**
-- Perbaiki identitas sertifikat CoganSU (di atas), lalu Build CoganSU r37 untuk uji HP. Menunggu izin owner.
+- Pastikan sertifikat APK CoganSU yang terpasang (menunggu file dari owner). Bila ≠ rilis r1 → pasang `2-MANAGER_CoganSU_v26.11.04-r1.apk` yang benar. Bila = r1 tapi tetap ditolak → selidiki parsing `apk_sign` kernel r36, perbaiki + build r37 (owner sudah setuju perbaiki + build bila memang bug).
 - Penyebab NoMount menolak aturan di SukiSU (telusuri kode, tanpa HP).
 - CoganSU di kombinasi root bila owner mau.
 - Rilis r8 (run #20) hanya atas permintaan owner.
 
 **Langkah pertama berikutnya**
-- Setelah izin owner: perbaiki `Kbuild` CoganSU agar `EXPECTED_SIZE/HASH` memakai `cogansu.mk`, jalankan Build CoganSU r37, lalu minta owner cek manager jadi "Berfungsi". Lanjut hanya setelah owner meminta.
+- Owner kirim `cogansu-terpasang.apk`; hitung sertifikatnya (`scratchpad/cogansu/scripts/cogansu_cert.py apk`), bandingkan dengan `b0fb06ca`. Bila beda → pasang APK rilis r1 yang benar. Bila sama → selidiki `apk_sign` kernel r36, perbaiki + Build r37. Lanjut hanya setelah owner meminta.
+- Repo CoganSU (`cogan17/CoganSU`) sudah ter-attach sesi ini (untuk perbaikan bila terbukti bug kernel).
 
 ## 2 Nov 2026
 
