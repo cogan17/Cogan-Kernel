@@ -9,6 +9,10 @@ Nama repo **`cogan17/Cogan-Kernel`** sejak 24 Okt 2026 (owner; sebelumnya `cogan
 - **Semua komunikasi asisten ke owner wajib bahasa Indonesia** (owner, 31 Okt 2026: "saya hanya mengerti bahasa ibu saya"). Ini mencakup balasan chat, penjelasan, ringkasan, pertanyaan, deskripsi PR, dan pesan commit. Jangan membalas owner dalam bahasa Inggris.
 - **Deliverable untuk pengguna akhir tetap dua bahasa (Indonesia lalu English)**: catatan rilis, teks Telegram, summary workflow, README, dan PANDUAN. Aturan dua bahasa di bawah tidak dibatalkan; bagian English tetap ada karena untuk pengunduh rilis, dan bagian Indonesia yang menjadi acuan owner.
 
+## Gaya jawaban (owner, 4 Nov 2026)
+
+- Jawab langsung pada intinya di kalimat pertama. Dilarang menggunakan kalimat pembuka, sapaan, atau kesimpulan di akhir. Dilarang menggunakan kata atau frasa klise AI (seperti delve, tapestry, testament, seamless, crucial). Gunakan bahasa yang ringkas, kasual, dan konkret. Jangan merangkum jawaban.
+
 ## Tanpa atribusi AI
 
 - Author dan committer memakai identitas owner: `git config user.name Cogan` dan `git config user.email 79615344+cogan17@users.noreply.github.com`.
