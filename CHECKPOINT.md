@@ -3,7 +3,13 @@
 ## 4 Nov 2026 (checkpoint owner)
 
 **Sedang berjalan**
-- Run bukti CoganSU #36 ([41773264948](https://github.com/cogan17/Cogan-Kernel/actions/runs/41773264948)): CoganSU rilis `v26.11.04-r1` (commit `8baa513e`), 6.1.176, SUSFS aktif, Release Type CI. Tahap cari versi lolos (rilis + APK ditemukan); build dan modul SUSFS masih jalan saat checkpoint. Hasil build dan gate KMI belum dicek.
+- Tidak ada PR/run/draf berjalan. Diagnosa CoganSU r36 selesai (di bawah); perbaikannya menunggu izin owner (repo CoganSU).
+
+**Run #36 dicek: build lolos, manager CoganSU "Tidak terpasang" (bug sertifikat)**
+- Run #36 ([41773264948](https://github.com/cogan17/Cogan-Kernel/actions/runs/41773264948)) lolos: artifact `1-KERNEL_…CoganSU+SuSFS…v26.11.04-r36`, `2-MANAGER_CoganSU_v26.11.04-r1.apk`, NoMount v2.2.0, modul SUSFS sidex15. Owner flash r36 di HP 4 Nov ±11.55 WIB: boot dan root/su jalan.
+- **Tapi manager CoganSU "Tidak terpasang".** Bukti (APK + Image r36 + dmesg owner): kernel menemukan APK (`Found manager com.cogan.su …, is_manager: 0`) lalu menolaknya. APK benar — paket `com.cogan.su`, sertifikat ukuran `0x04ed` hash `b0fb06ca…` (= `cogansu.mk`). Kernel r36 memuat nama paket benar, tetapi `b0fb06ca` tidak ada di Image: identitas sertifikat yang dikompilasi bukan dari `cogansu.mk`, masih sertifikat KernelSU bawaan.
+- Akar: di `Kbuild` CoganSU `KSU_PACKAGE_NAME ?=` berlaku (paket benar), tetapi `KSU_EXPECTED_SIZE/HASH ?=` tidak — keduanya sudah ter-set dari environment `make` sebelum `?=`. Sumber env belum ketemu di tiga repo secara static; perlu dilihat saat build jalan.
+- Perbaikan diusulkan: paksa `cogansu.mk` otoritatif (`override KSU_EXPECTED_SIZE/HASH := …` di `Kbuild` CoganSU), lalu Build CoganSU r37 untuk uji. **Menunggu izin owner** (repo `cogan17/CoganSU`).
 
 **Selesai 3–4 Nov**
 - PR #119–#123: modul yang dipakai owner di README (20 modul + TEESimulator).
@@ -17,12 +23,13 @@
 - PR #132: aturan gaya jawaban di CLAUDE.md.
 
 **Tertunda**
-- Cek hasil run #36; bila lolos, CoganSU siap diuji HP owner (flash keputusan owner).
+- Perbaiki identitas sertifikat CoganSU (di atas), lalu Build CoganSU r37 untuk uji HP. Menunggu izin owner.
 - Penyebab NoMount menolak aturan di SukiSU (telusuri kode, tanpa HP).
 - CoganSU di kombinasi root bila owner mau.
+- Rilis r8 (run #20) hanya atas permintaan owner.
 
 **Langkah pertama berikutnya**
-- Baca `CLAUDE.md`, lalu cek run #36 (`gh api repos/cogan17/Cogan-Kernel/actions/runs/41773264948/jobs`) dan laporkan ke owner. Lanjut hanya setelah owner meminta.
+- Setelah izin owner: perbaiki `Kbuild` CoganSU agar `EXPECTED_SIZE/HASH` memakai `cogansu.mk`, jalankan Build CoganSU r37, lalu minta owner cek manager jadi "Berfungsi". Lanjut hanya setelah owner meminta.
 
 ## 2 Nov 2026
 
