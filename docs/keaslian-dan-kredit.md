@@ -58,6 +58,7 @@ Rilis lama dari [cogan17/Kernel-14t-pro](https://github.com/cogan17/Kernel-14t-p
 | **[KernelSU Next](https://github.com/KernelSU-Next/KernelSU-Next)** ([rifsxd](https://github.com/rifsxd)) | Root manager varian KernelSU Next; aplikasi manager di rilis adalah build CI resmi |
 | **[pershoot](https://github.com/pershoot/KernelSU-Next)** | Fork KernelSU Next `dev-susfs` yang menyatukan KernelSU Next dengan SUSFS |
 | **[SukiSU Ultra](https://github.com/SukiSU-Ultra/SukiSU-Ultra)** ([ShirkNeko](https://github.com/ShirkNeko)) | Root manager varian SukiSU; cabang `builtin` membawa SUSFS, aplikasi manager di rilis adalah rilis resminya |
+| **[CoganSU](https://github.com/cogan17/CoganSU)** ([Cogan17](https://github.com/cogan17)) | Root manager khusus Cogan Kernel berbasis KernelSU; kernel dan aplikasi manager dari rilis CoganSU yang sama |
 | **[BakaSU](https://github.com/Baka-SU/BakaSU)** | Root manager varian BakaSU (dulu ReSukiSU) |
 | **[SUSFS](https://gitlab.com/simonpunk/susfs4ksu)** ([simonpunk](https://gitlab.com/simonpunk)) | Menyembunyikan jejak root |
 | **[NoMount](https://github.com/maxsteeel/nomount)** ([maxsteeel](https://github.com/maxsteeel)) | Metamodule tanpa mount, tertanam di kernel; modul di rilis adalah rilis resminya |

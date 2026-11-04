@@ -2,7 +2,7 @@ name: Cogan Kernel Builder
 
 # Cogan Kernel for the Xiaomi 14T Pro (rothko), from the official ACK android14-6.1 source only.
 # Form inspired by WildKernel (owner 2026-10-23). No lock, pin or frozen tree: every run takes the
-# newest ACK release, KernelSU Next (pershoot dev-susfs), BakaSU release, official KernelSU main or SukiSU, SUSFS, NoMount, Baseband
+# newest ACK release, KernelSU Next (pershoot dev-susfs), BakaSU release, official KernelSU main, SukiSU or CoganSU, SUSFS, NoMount, Baseband
 # Guard, AnyKernel3 and Neutron clang (kernel/resolve.py). A newest version that does not fit yet is
 # not built; the summary says whom to wait for. The KMI gate against the phone's stock kernel always
 # runs and fails closed. Summaries are in Indonesian and English.
@@ -34,6 +34,7 @@ on:
           - "KernelSU Next"
           - "KernelSU"
           - "SukiSU"
+          - "CoganSU"
           - "BakaSU"
           # Combinations of two or three, without BakaSU while it has a problem (owner 2026-11-03).
           - "KernelSU Next & KernelSU"
@@ -141,6 +142,7 @@ jobs:
             "BakaSU") roots=(BSU) ;;
             "KernelSU") roots=(KSU) ;;
             "SukiSU") roots=(SUKI) ;;
+            "CoganSU") roots=(CSU) ;;
             "KernelSU Next & KernelSU") roots=(KSUN KSU) ;;
             "KernelSU Next & SukiSU") roots=(KSUN SUKI) ;;
             "KernelSU & SukiSU") roots=(KSU SUKI) ;;
@@ -160,7 +162,7 @@ jobs:
           for path in sorted(Path("snapshots").glob("*.json")):
               snap = json.loads(path.read_text())
               root = snap["root"]
-              name = {"KSUN": "KernelSU Next", "BSU": "BakaSU", "KSU": "KernelSU", "SUKI": "SukiSU"}[root]
+              name = {"KSUN": "KernelSU Next", "BSU": "BakaSU", "KSU": "KernelSU", "SUKI": "SukiSU", "CSU": "CoganSU"}[root]
               if "wait" in snap:
                   waits.append((name, snap["wait"]))
                   continue

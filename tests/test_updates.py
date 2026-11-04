@@ -84,6 +84,9 @@ class FakeNet:
                  "body": "SukiSU v4.3.0"},
             f"repos/SukiSU-Ultra/SukiSU-Ultra/commits/{SUKI_BUILTIN}":
                 commit(SUKI_BUILTIN, "2026-11-01T15:59:33Z", "kernel: Fix mount_hide crash"),
+            "repos/cogan17/CoganSU/releases/tags/v26.11.04-r1":
+                {"tag_name": "v26.11.04-r1", "published_at": "2026-11-04T01:00:00Z", "html_url": "https://cogansu/r1",
+                 "body": "CoganSU r1"},
             "repos/WildKernels/kernel_patches/commits?path=common/unicode_bypass_fix_6.1%2B.patch&per_page=5":
                 [commit("u" * 40, "2026-10-10T00:00:00Z", "unicode fix")],
         }
@@ -118,6 +121,7 @@ class FakeNet:
             r.NOMOUNT: {f"refs/tags/{self.nomount}": "n" * 40, "refs/tags/v2.2.0": "o" * 40, "HEAD": "h" * 40},
             r.BBG: {"refs/heads/main": "f" * 40},
             r.ANYKERNEL: {"HEAD": "9" * 40, "refs/heads/arm64-tools": "8" * 40},
+            r.COGANSU: {"refs/tags/v26.11.04-r1": "c" * 40, "refs/heads/main": "c" * 40},
             r.SUKISU: {"refs/tags/v4.3.0": SUKI_REL, "refs/tags/v4.2.1-r2": "0" * 40,
                        f"refs/heads/{r.SUKISU_BUILTIN}": SUKI_BUILTIN},
         }[url]
@@ -156,7 +160,7 @@ class UpdatesTest(unittest.TestCase):
         self.assertEqual(builds["KSUN"]["run"], 6)
         self.assertNotIn("BSU", builds)                                    # its snapshot only waited
         statuses = {k: e["status"] for k, e in found.items()}
-        self.assertEqual(statuses, {"ack": "new", "susfs": "new", "sidex": "new", "ksun": "same", "bakasu": "unknown", "ksu": "off", "sukisu": "off", "nomount": "new",
+        self.assertEqual(statuses, {"ack": "new", "susfs": "new", "sidex": "new", "ksun": "same", "bakasu": "unknown", "ksu": "off", "sukisu": "off", "cogansu": "off", "nomount": "new",
                                     "bbg": "same", "anykernel": "same", "neutron": "same", "unicode": "off"})
         self.assertIn("🆕 **Ada pembaruan: ACK android14-6.1, SUSFS (simonpunk), SUSFS modul (sidex15), NoMount.** "
                       "Silakan jalankan **Cogan Kernel Builder**", text)

@@ -19,7 +19,7 @@ import re
 import sys
 from pathlib import Path
 
-ROOTS = {"KSUN": "KernelSU Next", "BSU": "BakaSU", "KSU": "KernelSU", "SUKI": "SukiSU"}
+ROOTS = {"KSUN": "KernelSU Next", "BSU": "BakaSU", "KSU": "KernelSU", "SUKI": "SukiSU", "CSU": "CoganSU"}
 TEXT = {
     "id": {"flag": "🇮🇩 Bahasa Indonesia", "build": "Build", "result": "Hasil", "detail": "Keterangan",
            "ok": "✅ Berhasil", "fail": "❌ Gagal", "wait": "⏳ Tidak dibangun",
