@@ -1,5 +1,31 @@
 # Checkpoint
 
+## 4 Nov 2026 (checkpoint owner)
+
+**Sedang berjalan**
+- Run bukti CoganSU #36 ([41773264948](https://github.com/cogan17/Cogan-Kernel/actions/runs/41773264948)): CoganSU rilis `v26.11.04-r1` (commit `8baa513e`), 6.1.176, SUSFS aktif, Release Type CI. Tahap cari versi lolos (rilis + APK ditemukan); build dan modul SUSFS masih jalan saat checkpoint. Hasil build dan gate KMI belum dicek.
+
+**Selesai 3–4 Nov**
+- PR #119–#123: modul yang dipakai owner di README (20 modul + TEESimulator).
+- PR #124: SukiSU (root `SUKI`). Dengan SUSFS menunggu pengembang SukiSU (`CONFIG_KSU_SUSFS_PRIORITY_UID_FILTER`). Run #33 tanpa SUSFS lolos build + gate KMI; uji HP: NoMount menolak aturan (kode 1, penyebab belum ketemu). Owner kembali ke r11 KernelSU. SukiSU tidak dirilis.
+- PR #125: kombinasi root dua/tiga, BakaSU hanya sendiri.
+- PR #126: cara melihat kernel asli lewat Termux di panduan pasang.
+- PR #127: hasil uji HP SukiSU di CLAUDE.md.
+- PR #128, #129: semua nama Kredit bertautan, sumber BSP Xiaomi (6.1.57, Android 14).
+- PR #130: form Stabil Dev Utama dibatalkan owner (branch `feat/stabil-dev-utama` masih ada; hapus lewat GitHub, sesi ini tidak bisa).
+- PR #131: CoganSU (root `CSU`, `cogan17/CoganSU`): kernel dan manager dari rilis CoganSU terbaru yang sama.
+- PR #132: aturan gaya jawaban di CLAUDE.md.
+
+**Tertunda**
+- Cek hasil run #36; bila lolos, CoganSU siap diuji HP owner (flash keputusan owner).
+- Penyebab NoMount menolak aturan di SukiSU (telusuri kode, tanpa HP).
+- CoganSU di kombinasi root bila owner mau.
+
+**Langkah pertama berikutnya**
+- Baca `CLAUDE.md`, lalu cek run #36 (`gh api repos/cogan17/Cogan-Kernel/actions/runs/41773264948/jobs`) dan laporkan ke owner. Lanjut hanya setelah owner meminta.
+
+## 2 Nov 2026
+
 Catatan terbaru: **[checkpoint.md](checkpoint.md)** — 2 Nov 2026, 09.04 WIB. Tidak ada PR atau workflow yang berjalan.
 
 - Selesai 31 Okt – 2 Nov: PR #91–#108 (centang SUSFS, BakaSU dari `main` bukan ReSukiSU, baris fitur `No …`, samarkan identitas, CVE-2026-53163, Tanpa LTO bawaan, centang timpa di Rilis dari run).
