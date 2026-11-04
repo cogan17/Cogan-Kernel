@@ -18,7 +18,7 @@ from pathlib import Path
 
 DIRECTORY = Path(__file__).resolve().parent / "history"
 START, END = "<!-- cogan-history:start -->", "<!-- cogan-history:end -->"
-ROOTS = {"KSUN": "KernelSU Next", "BSU": "BakaSU", "KSU": "KernelSU", "SUKI": "SukiSU"}
+ROOTS = {"KSUN": "KernelSU Next", "BSU": "BakaSU", "KSU": "KernelSU", "SUKI": "SukiSU", "CSU": "CoganSU"}
 IDENTITY = {"name": "Cogan", "email": "79615344+cogan17@users.noreply.github.com"}
 
 

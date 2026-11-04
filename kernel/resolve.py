@@ -19,7 +19,10 @@ kernel_patches for its unicode bypass fix; without it nothing of WildKernel is r
 --no-susfs (the SUSFS box unticked) builds the plain root manager: no SUSFS, no sidex15 module, BakaSU
 from its newest release.
 
-Usage: resolve.py --root KSUN|BSU|KSU|SUKI [--sublevel lts|N|N,M|semua|""] [--unicode] [--no-susfs] --out FILE.json
+CoganSU (owner 2026-11-04, cogan17/CoganSU, "dibuat khusus untuk cogan kernel"): KernelSU with Cogan's own
+manager identity; kernel and manager from the same newest CoganSU release.
+
+Usage: resolve.py --root KSUN|BSU|KSU|SUKI|CSU [--sublevel lts|N|N,M|semua|""] [--unicode] [--no-susfs] --out FILE.json
 """
 import argparse
 import base64
@@ -55,6 +58,12 @@ SUSFS_KSU_PATCH = "kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch"
 # SUSFS, kernel and manager therefore do not come from the same commit (the builtin branch has no manager).
 SUKISU = "https://github.com/SukiSU-Ultra/SukiSU-Ultra"
 SUKISU_BUILTIN = "builtin"
+# CoganSU (owner 2026-11-04): KernelSU with Cogan's own manager (package com.cogan.su, its own release key,
+# kernel/cogansu.mk). Kernel and manager come from the same newest CoganSU release (vYY.MM.DD-rN), which its
+# Build CoganSU form only publishes once kernel/cogansu.mk carries the release key's certificate. SUSFS
+# through simonpunk's patch for KernelSU, exactly as for official KernelSU.
+COGANSU = "https://github.com/cogan17/CoganSU"
+COGANSU_TAG = re.compile(r"v(\d+)\.(\d+)\.(\d+)-r(\d+)")
 SUSFS = "https://gitlab.com/simonpunk/susfs4ksu"
 SUSFS_BRANCH = "gki-android14-6.1"
 SUSFS_PATCH = "kernel_patches/50_add_susfs_in_gki-android14-6.1.patch"
@@ -329,18 +338,40 @@ def ksu_main(api=api):
                "Wait for the official KernelSU CI manager build on main (none yet, or its artifact expired).")
 
 
-def sukisu_manager(tag, api=api):
-    """The manager APK of SukiSU release tag: the universal (or arm64) one, never the spoofed one."""
-    release = api(f"repos/{SUKISU.removeprefix('https://github.com/')}/releases/tags/{tag}")
+def release_manager(url, who, tag, api=api):
+    """The manager APK of release tag of the repository at url: the universal (or arm64) one, never spoofed."""
+    release = api(f"repos/{url.removeprefix('https://github.com/')}/releases/tags/{tag}")
     apks = [a for a in release.get("assets", []) if a["name"].endswith(".apk") and "spoofed" not in a["name"].lower()]
     if not apks:
-        raise Wait(f"Tunggu pengembang SukiSU menerbitkan APK manager untuk {tag}.",
-                   f"Wait for the SukiSU developer to publish the manager APK of {tag}.")
+        raise Wait(f"Tunggu pengembang {who} menerbitkan APK manager untuk {tag}.",
+                   f"Wait for the {who} developer to publish the manager APK of {tag}.")
     arch = re.compile(r"arm64-v8a|armeabi-v7a|x86_64|riscv64")
     apk = (next((a for a in apks if not arch.search(a["name"])), None)
            or next((a for a in apks if "arm64-v8a" in a["name"]), None) or apks[0])
     return {"kind": "release", "tag": tag, "name": apk["name"], "url": apk["browser_download_url"],
             "digest": apk.get("digest", "")}
+
+
+def sukisu_manager(tag, api=api):
+    """The manager APK of SukiSU release tag."""
+    return release_manager(SUKISU, "SukiSU", tag, api)
+
+
+def cogansu_release(refs):
+    """(tag, commit) of the newest CoganSU release vYY.MM.DD-rN, or None."""
+    tags = []
+    for ref, sha in refs.items():
+        match = COGANSU_TAG.fullmatch(ref.removeprefix("refs/tags/"))
+        if match:
+            tags.append((tuple(int(n) for n in match.groups()), ref.removeprefix("refs/tags/"), sha))
+    return max(tags)[1:] if tags else None
+
+
+def cogansu_identity(repo, ref):
+    """True when kernel/cogansu.mk at ref carries the manager certificate (size and hash)."""
+    text = subprocess.run(["git", "-C", repo, "show", f"{ref}:kernel/cogansu.mk"], capture_output=True, text=True).stdout
+    values = dict(re.findall(r"^(COGANSU_EXPECTED_(?:SIZE|HASH))[ \t]*:=[ \t]*(\S*)[ \t]*$", text, re.M))
+    return bool(values.get("COGANSU_EXPECTED_SIZE")) and bool(values.get("COGANSU_EXPECTED_HASH"))
 
 
 SUSFS_HEADER = "kernel_patches/include/linux/susfs.h"
@@ -429,6 +460,25 @@ def resolve(root, sublevel, work, unicode=False, susfs_box=True):
                        "(the SUSFS patch for KernelSU does not fit yet).")
         snap["root_source"] = {"repo": KSU, "branch": "main", "commit": main}
         snap["manager"] = {"kind": "ci", **manager}
+    elif root == "CSU":
+        found = cogansu_release(ls_remote(COGANSU, "refs/tags/v*"))
+        if not found:
+            raise Wait("Tunggu rilis CoganSU pertama: jalankan Build CoganSU dengan Release Type Pre-Release/Release "
+                       "setelah kernel/cogansu.mk diisi (lihat docs/kunci.md di CoganSU).",
+                       "Wait for the first CoganSU release: run Build CoganSU with Release Type Pre-Release/Release "
+                       "once kernel/cogansu.mk is filled in (see docs/kunci.en.md in CoganSU).")
+        tag, sha = found
+        run("git", "-C", repo, "fetch", "-q", "--depth=1", COGANSU, f"{sha}:refs/check/cogansu")
+        if not cogansu_identity(repo, "refs/check/cogansu"):
+            raise Wait(f"Tunggu CoganSU: kernel/cogansu.mk di rilis {tag} belum berisi sertifikat manager.",
+                       f"Wait for CoganSU: kernel/cogansu.mk of release {tag} carries no manager certificate yet.")
+        if susfs_box and not patch_fits(repo, "refs/check/cogansu", run("git", "-C", repo, "show", f"refs/check/susfs:{SUSFS_KSU_PATCH}")):
+            raise Wait(f"Tunggu simonpunk menyesuaikan SUSFS `{susfs[:12]}` dengan CoganSU {tag} "
+                       "(patch SUSFS untuk KernelSU belum cocok).",
+                       f"Wait for simonpunk to adapt SUSFS `{susfs[:12]}` to CoganSU {tag} "
+                       "(the SUSFS patch for KernelSU does not fit yet).")
+        snap["root_source"] = {"repo": COGANSU, "tag": tag, "commit": sha}
+        snap["manager"] = release_manager(COGANSU, "CoganSU", tag, api)
     elif root == "SUKI":
         tag, sha = newest_tag(ls_remote(SUKISU, "refs/tags/v*"))
         snap["manager"] = sukisu_manager(tag, api)
@@ -509,7 +559,7 @@ def resolve(root, sublevel, work, unicode=False, susfs_box=True):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--root", choices=["KSUN", "BSU", "KSU", "SUKI"], required=True)
+    parser.add_argument("--root", choices=["KSUN", "BSU", "KSU", "SUKI", "CSU"], required=True)
     parser.add_argument("--sublevel", default="lts")
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--unicode", action="store_true", help="the Unicode fix box is ticked")

@@ -40,8 +40,8 @@ else:            # run as kernel/updates.py
 WIB = timezone(timedelta(hours=7))
 GITLAB = "https://gitlab.com/api/v4/projects/simonpunk%2Fsusfs4ksu"
 KSUN_UPSTREAM = "KernelSU-Next/KernelSU-Next"
-ROOT_KEYS = ("KSUN", "BSU", "KSU", "SUKI")
-ROOT_NAMES = {"KSUN": "KernelSU Next", "BSU": "BakaSU", "KSU": "KernelSU", "SUKI": "SukiSU"}
+ROOT_KEYS = ("KSUN", "BSU", "KSU", "SUKI", "CSU")
+ROOT_NAMES = {"KSUN": "KernelSU Next", "BSU": "BakaSU", "KSU": "KernelSU", "SUKI": "SukiSU", "CSU": "CoganSU"}
 FIX = re.compile(r"\b(fix(e[sd])?|bug|crash|revert|regression|leak|panic|hotfix)\b|^fix[(:]", re.I)
 MONTHS_ID = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"]
 MONTHS_EN = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
@@ -264,7 +264,7 @@ def legacy_builds(net, repo, run):
         root = snap.get("root")
         if root not in ROOT_KEYS or "wait" in snap:
             continue
-        tag = {"KSUN": "KernelSU-Next", "BSU": "BakaSU", "KSU": "KernelSU", "SUKI": "SukiSU"}[root]
+        tag = {"KSUN": "KernelSU-Next", "BSU": "BakaSU", "KSU": "KernelSU", "SUKI": "SukiSU", "CSU": "CoganSU"}[root]
         built = [a for a in snap.get("ack", []) if any(f"6.1.{a['sublevel']}_{tag}+" in name for name in kernels)]
         if not built:
             continue
@@ -522,6 +522,30 @@ def check_sukisu(net, builds, susfs_head=None):
                 wait=wait, lines=lines, notes={"tag": stable["tag"], "text": stable["notes"]} if stable else None)
 
 
+def check_cogansu(net, builds):
+    """CoganSU (owner 2026-11-04): the Builder takes kernel and manager from the newest CoganSU release."""
+    snap = builds.get("CSU", {}).get("snap", {})
+    base = snap.get("root_source", {})
+    repo = r.COGANSU.removeprefix("https://github.com/")
+    found = r.cogansu_release(net.ls_remote(r.COGANSU, "refs/tags/v*"))
+    if not found:
+        wait = {"id": "Tunggu rilis CoganSU pertama (Build CoganSU dengan Release Type Pre-Release/Release).",
+                "en": "Wait for the first CoganSU release (Build CoganSU with Release Type Pre-Release/Release)."}
+        return item("cogansu", "CoganSU", base={"label": f"{base.get('tag')} `{short(base.get('commit'))}`"} if base else None,
+                    status="wait", wait=wait)
+    tag, sha = found
+    try:
+        stable = github_release(net, repo, tag)
+    except OSError:
+        stable = None
+    # Never built yet: an optional root manager, "not used" rather than "history unavailable".
+    status = "off" if not base else "same" if base.get("commit") == sha else "new"
+    return item("cogansu", "CoganSU", base={"label": f"{base.get('tag')} `{short(base.get('commit'))}`"} if base else None,
+                stable={"label": tag, "date": stable["date"], "url": stable["url"]} if stable else {"label": tag},
+                changes=github_changes(net, repo, base.get("commit"), sha) if base else [], status=status,
+                notes={"tag": tag, "text": stable["notes"]} if stable else None)
+
+
 def check_nomount(net, builds):
     base = base_of(builds, "nomount", "tag")
     repo = r.NOMOUNT.removeprefix("https://github.com/")
@@ -601,12 +625,13 @@ def gather(net, repo):
     checks = [("ack", lambda: check_ack(net, clean)), ("susfs", lambda: check_susfs(net, clean)),
               ("sidex", lambda: check_sidex(net, clean)), ("ksun", lambda: check_ksun(net, clean)), ("bakasu", lambda: check_bakasu(net, clean, susfs_head)),
               ("ksu", lambda: check_ksu(net, clean, susfs_head)), ("sukisu", lambda: check_sukisu(net, clean, susfs_head)),
+              ("cogansu", lambda: check_cogansu(net, clean)),
               ("nomount", lambda: check_nomount(net, clean)),
               ("bbg", lambda: check_branch(net, clean, "bbg", "Baseband Guard", r.BBG)),
               ("anykernel", lambda: check_anykernel(net, clean)),
               ("neutron", lambda: check_neutron(net, clean)), ("unicode", lambda: check_unicode(net, clean))]
     names = {"ack": "ACK android14-6.1", "susfs": "SUSFS (simonpunk)", "sidex": "SUSFS modul (sidex15)",
-             "ksun": "KernelSU Next", "bakasu": "BakaSU", "ksu": "KernelSU", "sukisu": "SukiSU",
+             "ksun": "KernelSU Next", "bakasu": "BakaSU", "ksu": "KernelSU", "sukisu": "SukiSU", "cogansu": "CoganSU",
              "nomount": "NoMount", "bbg": "Baseband Guard", "anykernel": "AnyKernel3", "neutron": "Neutron clang",
              "unicode": "Unicode fix (WildKernel)"}
     for key, check in checks:

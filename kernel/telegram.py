@@ -126,7 +126,7 @@ def parse_release(body):
     return found
 
 
-ROOT_NAMES = ("KernelSU Next", "BakaSU", "KernelSU", "SukiSU")
+ROOT_NAMES = ("KernelSU Next", "BakaSU", "KernelSU", "SukiSU", "CoganSU")
 
 
 def root_name(text):

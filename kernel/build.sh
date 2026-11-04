@@ -7,7 +7,7 @@
 # gate against the phone's own stock kernel (6.1.138) and the Xiaomi BSP always runs and fails closed.
 #
 # Environment:
-#   SNAPSHOT     resolve.py JSON of the root (KSUN, BSU, KSU or SUKI)
+#   SNAPSHOT     resolve.py JSON of the root (KSUN, BSU, KSU, SUKI or CSU)
 #   ACK_TAG ACK_COMMIT SUBLEVEL   the ACK release of this job
 #   BRAND REVISION RUN_NUMBER LTO(full|thin|none) BUILD_TIME(N or a date)
 #   NOMOUNT BBG NETWORKING UNICODE (true|false)   OUT (results)   GH_TOKEN
@@ -47,6 +47,7 @@ case "$ROOT" in
   BSU) VARIANT="BakaSU"; ROOT_NAME="BakaSU" ;;
   KSU) VARIANT="KernelSU"; ROOT_NAME="KernelSU" ;;   # official KernelSU (tiann), owner 2026-11-02
   SUKI) VARIANT="SukiSU"; ROOT_NAME="SukiSU" ;;       # SukiSU Ultra, owner 2026-11-02
+  CSU) VARIANT="CoganSU"; ROOT_NAME="CoganSU" ;;      # cogan17/CoganSU, owner 2026-11-04
   *) fail "Unknown root $ROOT" ;;
 esac
 [ "$SUSFS_ON" = true ] && VARIANT="$VARIANT+SuSFS"
@@ -195,6 +196,14 @@ elif [ "$ROOT" = "KSU" ]; then
   bash "$WORK/root-setup.sh" "$ROOT_COMMIT"
   [ "$(git -C KernelSU rev-parse HEAD)" = "$ROOT_COMMIT" ] || fail "KernelSU checkout is not $ROOT_COMMIT"
   KSU_VERSION=""
+elif [ "$ROOT" = "CSU" ]; then
+  # CoganSU: KernelSU with Cogan's own manager identity (its kernel/cogansu.mk, read by its Kbuild), the
+  # commit of the newest CoganSU release, the same as its manager (resolve.py). Folder KernelSU/, so the
+  # SUSFS patch for KernelSU applies as it is.
+  curl -fsSL "https://raw.githubusercontent.com/cogan17/CoganSU/$ROOT_COMMIT/kernel/setup.sh" -o "$WORK/root-setup.sh"
+  bash "$WORK/root-setup.sh" "$ROOT_COMMIT"
+  [ "$(git -C KernelSU rev-parse HEAD)" = "$ROOT_COMMIT" ] || fail "CoganSU checkout is not $ROOT_COMMIT"
+  KSU_VERSION=""
 elif [ "$ROOT" = "SUKI" ]; then
   # SukiSU Ultra: with SUSFS its builtin branch (SUSFS built into the root driver), without SUSFS the
   # newest release's commit (resolve.py). Its setup.sh clones the whole repository, so both are there;
@@ -226,11 +235,11 @@ notes="$(python3 "$HERE/scripts/susfs_context.py" "$WORK/susfs/kernel_patches/50
 patch -p1 --fuzz=3 --no-backup-if-mismatch < "$WORK/susfs.patch" \
   || wait_for "Tunggu simonpunk memperbarui SUSFS: patch kernel terbaru tidak cocok dengan ACK 6.1.$SUBLEVEL." \
               "Wait for simonpunk to update SUSFS: its newest kernel patch does not fit ACK 6.1.$SUBLEVEL."
-if [ "$ROOT" = "KSU" ]; then
-  # Official KernelSU takes SUSFS through simonpunk's own patch for it, applied as it is.
+if [ "$ROOT" = "KSU" ] || [ "$ROOT" = "CSU" ]; then
+  # Official KernelSU (and CoganSU, built on it) takes SUSFS through simonpunk's own patch for it, as it is.
   git -C KernelSU apply --whitespace=nowarn "$WORK/susfs/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch" \
-    || wait_for "Tunggu simonpunk menyesuaikan SUSFS dengan KernelSU main $(echo "$ROOT_COMMIT" | cut -c1-12)." \
-                "Wait for simonpunk to adapt SUSFS to KernelSU main $(echo "$ROOT_COMMIT" | cut -c1-12)."
+    || wait_for "Tunggu simonpunk menyesuaikan SUSFS dengan $ROOT_NAME $(echo "$ROOT_COMMIT" | cut -c1-12)." \
+                "Wait for simonpunk to adapt SUSFS to $ROOT_NAME $(echo "$ROOT_COMMIT" | cut -c1-12)."
 fi
 SUSFS_VERSION="$(sed -n 's/^#define SUSFS_VERSION "\(.*\)"/\1/p' include/linux/susfs.h)"
 echo "::endgroup::"
@@ -366,6 +375,9 @@ download_digest() {  # url, file, sha256:digest (from the release API)
 if [ "$ROOT" = "SUKI" ]; then
   # The newest SukiSU release's manager (with SUSFS the kernel is its builtin branch, which has none).
   download_digest "$(snap manager.url)" "$OUT/2-MANAGER_SukiSU_$(snap manager.tag).apk" "$(snap manager.digest)"
+elif [ "$ROOT" = "CSU" ]; then
+  # The CoganSU release the kernel comes from: same commit, same manager identity.
+  download_digest "$(snap manager.url)" "$OUT/2-MANAGER_CoganSU_$(snap manager.tag).apk" "$(snap manager.digest)"
 elif [ "$(snap manager.kind)" = "release" ]; then
   download_digest "$(snap manager.url)" "$OUT/2-MANAGER_BakaSU_$(snap root_source.tag).apk" "$(snap manager.digest)"
 else

@@ -118,7 +118,7 @@ class BuildTest(unittest.TestCase):
         self.assertIn('curl -fsSL "https://raw.githubusercontent.com/tiann/KernelSU/$ROOT_COMMIT/kernel/setup.sh"', BUILD)
         self.assertIn('[ "$(git -C KernelSU rev-parse HEAD)" = "$ROOT_COMMIT" ] || fail "KernelSU checkout is not $ROOT_COMMIT"', BUILD)
         self.assertIn('git -C KernelSU apply --whitespace=nowarn "$WORK/susfs/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch"', BUILD)
-        self.assertIn('|| wait_for "Tunggu simonpunk menyesuaikan SUSFS dengan KernelSU main', BUILD)
+        self.assertIn('|| wait_for "Tunggu simonpunk menyesuaikan SUSFS dengan $ROOT_NAME', BUILD)
         self.assertIn('mv "$WORK/$kind.apk" "$OUT/${prefix}_KernelSU_main-$(echo "$ROOT_COMMIT" | cut -c1-8).apk"', BUILD)
 
 
@@ -128,7 +128,7 @@ class WorkflowTest(unittest.TestCase):
         wf = yaml.safe_load(WORKFLOW.read_text())
         box = wf[True]["workflow_dispatch"]["inputs"]["root_flavor"]
         self.assertEqual(box["default"], "KernelSU Next")
-        self.assertEqual(box["options"], ["KernelSU Next", "KernelSU", "SukiSU", "BakaSU", "KernelSU Next & KernelSU",
+        self.assertEqual(box["options"], ["KernelSU Next", "KernelSU", "SukiSU", "CoganSU", "BakaSU", "KernelSU Next & KernelSU",
                                           "KernelSU Next & SukiSU", "KernelSU & SukiSU", "KernelSU Next & KernelSU & SukiSU"])
         # BakaSU only on its own while it has a problem (owner 2026-11-03).
         self.assertFalse([o for o in box["options"] if "&" in o and "BakaSU" in o])
