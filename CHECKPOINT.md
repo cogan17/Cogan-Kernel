@@ -1,5 +1,25 @@
 # Checkpoint
 
+## 4 Nov 2026 malam (checkpoint owner)
+
+**Sedang berjalan**
+- Tidak ada workflow yang berjalan.
+
+**Selesai**
+- Akar CoganSU "Tidak terpasang" di r36 ketemu: sertifikat kunci rilis CoganSU (RSA 4096) 1261 byte, melebihi batas 1024 byte `kernel/manager/apk_sign.c` hulu. Owner memilih opsi B: CoganSU PR #8 (`5ef9ac2`), batas 2048 + buffer `kmalloc`. Compile lokal driver lolos; patch SUSFS tetap cocok.
+- Kartu Cogan Kernel di CoganSU menulis "bukan Cogan Kernel": `ShellUtils.fastCmd` hanya mengembalikan baris terakhir. CoganSU PR #9 (`f26b1b9`), semua baris dibaca lewat `newJob()`.
+- Rilis CoganSU `v26.11.04-r2` (Pre-Release, run #3) dan `v26.11.04-r3` (Pre-Release, run #4; job Terbit diulang sekali karena GitHub 502).
+- Builder r37 (run 41815461522, CoganSU r2) dan **r38** (run [41819469210](https://github.com/cogan17/Cogan-Kernel/actions/runs/41819469210), CoganSU r3, 6.1.176, SUSFS, gate KMI OK). **r38 diuji di HP owner 4 Nov ±18.37 WIB**: CoganSU Berfungsi (`v3.3.1-49-gf26b1b9e`), kartu Cogan Kernel `6.1.176-Cogan-Rothko-ACK-r38-5be85323d` · SUSFS · NoMount · BBG.
+
+**Tertunda**
+- Terbitkan r38 lewat Rilis dari run (`run_id` 41819469210, centang diuji di HP) dan jadikan CoganSU r3 Release, bila owner meminta.
+- CoganSU di kombinasi root bila owner mau.
+- Penyebab NoMount menolak aturan di SukiSU (telusuri kode, tanpa HP).
+- Branch `feat/stabil-dev-utama` di GitHub (hapus manual).
+
+**Langkah pertama berikutnya**
+- Baca `CLAUDE.md`, lalu tunggu instruksi owner (kemungkinan: rilis r38).
+
 ## 4 Nov 2026 (checkpoint owner)
 
 **Sedang berjalan**
