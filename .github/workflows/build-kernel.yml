@@ -36,11 +36,9 @@ on:
           - "SukiSU"
           - "CoganSU"
           - "BakaSU"
-          # Combinations of two or three, without BakaSU while it has a problem (owner 2026-11-03).
-          - "KernelSU Next & KernelSU"
-          - "KernelSU Next & SukiSU"
-          - "KernelSU & SukiSU"
-          - "KernelSU Next & KernelSU & SukiSU"
+          # One combination only (owner 2026-11-05): KernelSU family + CoganSU. BakaSU stays alone
+          # (detected by banking), SukiSU stays alone (waiting for its update), so neither joins a combination.
+          - "KernelSU Next & KernelSU & CoganSU"
       lto:
         description: "LTO"
         type: choice
@@ -143,10 +141,7 @@ jobs:
             "KernelSU") roots=(KSU) ;;
             "SukiSU") roots=(SUKI) ;;
             "CoganSU") roots=(CSU) ;;
-            "KernelSU Next & KernelSU") roots=(KSUN KSU) ;;
-            "KernelSU Next & SukiSU") roots=(KSUN SUKI) ;;
-            "KernelSU & SukiSU") roots=(KSU SUKI) ;;
-            "KernelSU Next & KernelSU & SukiSU") roots=(KSUN KSU SUKI) ;;
+            "KernelSU Next & KernelSU & CoganSU") roots=(KSUN KSU CSU) ;;
             *) echo "::error::Root Flavor: $ROOT_FLAVOR"; exit 1 ;;
           esac
           for root in "${roots[@]}"; do

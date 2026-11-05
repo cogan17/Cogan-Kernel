@@ -128,16 +128,15 @@ class WorkflowTest(unittest.TestCase):
         wf = yaml.safe_load(WORKFLOW.read_text())
         box = wf[True]["workflow_dispatch"]["inputs"]["root_flavor"]
         self.assertEqual(box["default"], "KernelSU Next")
-        self.assertEqual(box["options"], ["KernelSU Next", "KernelSU", "SukiSU", "CoganSU", "BakaSU", "KernelSU Next & KernelSU",
-                                          "KernelSU Next & SukiSU", "KernelSU & SukiSU", "KernelSU Next & KernelSU & SukiSU"])
-        # BakaSU only on its own while it has a problem (owner 2026-11-03).
-        self.assertFalse([o for o in box["options"] if "&" in o and "BakaSU" in o])
+        self.assertEqual(box["options"], ["KernelSU Next", "KernelSU", "SukiSU", "CoganSU", "BakaSU",
+                                          "KernelSU Next & KernelSU & CoganSU"])
+        # BakaSU (banking) and SukiSU (waiting for its update) only on their own: no combination has them (owner 2026-11-05).
+        self.assertFalse([o for o in box["options"] if "&" in o and ("BakaSU" in o or "SukiSU" in o)])
         plan = next(s["run"] for s in wf["jobs"]["resolve"]["steps"] if s.get("id") == "plan")
         case = re.search(r'case "\$ROOT_FLAVOR" in\n(.*?)esac', plan, re.S)[1]
         for flavor, roots in (("KernelSU Next", "roots=(KSUN)"), ("BakaSU", "roots=(BSU)"), ("KernelSU", "roots=(KSU)"),
-                              ("KernelSU Next & KernelSU", "roots=(KSUN KSU)"), ("SukiSU", "roots=(SUKI)"),
-                              ("KernelSU Next & SukiSU", "roots=(KSUN SUKI)"), ("KernelSU & SukiSU", "roots=(KSU SUKI)"),
-                              ("KernelSU Next & KernelSU & SukiSU", "roots=(KSUN KSU SUKI)")):
+                              ("SukiSU", "roots=(SUKI)"), ("CoganSU", "roots=(CSU)"),
+                              ("KernelSU Next & KernelSU & CoganSU", "roots=(KSUN KSU CSU)")):
             self.assertIn(f'"{flavor}") {roots} ;;', case)
         self.assertNotIn('== *"KernelSU', plan)   # "KernelSU" must not match "KernelSU Next"
 

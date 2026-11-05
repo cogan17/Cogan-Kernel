@@ -107,13 +107,15 @@ class BuildTest(unittest.TestCase):
 
 @unittest.skipUnless(yaml, "PyYAML")
 class WorkflowTest(unittest.TestCase):
-    def test_form_offers_cogansu_on_its_own(self):
+    def test_form_offers_cogansu_alone_and_in_the_one_combination(self):
         wf = yaml.safe_load(WORKFLOW.read_text())
         options = wf[True]["workflow_dispatch"]["inputs"]["root_flavor"]["options"]
         self.assertIn("CoganSU", options)
-        self.assertFalse([o for o in options if "&" in o and "CoganSU" in o])
+        # CoganSU joins only the single combination (owner 2026-11-05).
+        self.assertEqual([o for o in options if "&" in o and "CoganSU" in o], ["KernelSU Next & KernelSU & CoganSU"])
         plan = next(s["run"] for s in wf["jobs"]["resolve"]["steps"] if s.get("id") == "plan")
         self.assertIn('"CoganSU") roots=(CSU) ;;', plan)
+        self.assertIn('"KernelSU Next & KernelSU & CoganSU") roots=(KSUN KSU CSU) ;;', plan)
         self.assertIn('"CSU": "CoganSU"', plan)
 
 
