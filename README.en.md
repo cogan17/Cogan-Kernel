@@ -100,7 +100,7 @@ Modules the owner runs on their phone together with Cogan Kernel. Click a module
 | RAM | 12 / 16 GB |
 | Display | 1220 × 2712 |
 | Released | September 2024 (Android 14) |
-| Stock kernel | `6.1.138-android14-11` (HyperOS `OS3.0.301.0.WNNIDXM`) |
+| Stock kernel | `6.1.157-android14-11` (HyperOS `OS3.0.302`) or `6.1.138-android14-11` (`OS3.0.301`), any region ([check the version](docs/pasang.en.md#before-you-start)) |
 
 </details>
 
