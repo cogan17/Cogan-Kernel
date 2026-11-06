@@ -47,6 +47,7 @@ Modules the owner runs on their phone together with Cogan Kernel. Click a module
 | Module | Purpose | Author |
 |---|---|---|
 | 🛡️ [SUSFS-FOR-KERNELSU](https://github.com/sidex15/susfs4ksu-module) | SUSFS settings through a WebUI (already in the release as file 5) | sidex15 |
+| 🧷 [BRENE](https://github.com/rrr333nnn333/BRENE) | Another SUSFS module with a WebUI: hides root, custom kernel, recovery and Zygisk module traces, and spoofs system properties and `uname` | rrr333nnn333 |
 | 📂 [NoMount](https://github.com/maxsteeel/nomount) | Mountless module loading (already in the kernel) | maxsteeel |
 | 🧠 [Cogan Smart Kernel](modules/cogan-smart/README.md) | Power modes, thermals, module guard | Cogan17 |
 | 🔁 [AshReXcue BootLoop Protector](https://github.com/RipperHybrid/AshLooper) | Disables modules automatically on bootloop | RipperHybrid |
@@ -60,6 +61,7 @@ Modules the owner runs on their phone together with Cogan Kernel. Click a module
 | 🔑 [Tricky Store OSS](https://github.com/beakthoven/TrickyStoreOSS) | Key attestation for Play Integrity | beakthoven |
 | 🔐 [TEESimulator](https://github.com/JingMatrix/TEESimulator) | TEE simulation for key attestation, replaces Tricky Store (install one of them); of the system apps, target only Google Play services and the Play Store | JingMatrix |
 | ➕ [Tricky Addon](https://github.com/KOWX712/Tricky-Addon-Update-Target-List) | WebUI to manage the Tricky Store target app list (`target.txt`) | KOWX712 |
+| 🦆 [Duck ToolBox](https://github.com/eltavine/Duck-ToolBox) | Attestation toolbox in one WebUI: Tricky Store/TEESimulator manager (a full Tricky Addon port), its own Play Integrity engine (off by default), RKP | Eltavine, KOW, MhmRdd |
 | 🕵️ [Stealth Debug](https://github.com/sp11xy/StealthDebug) | Hides USB/developer debugging from apps | sp11xy |
 | 🌐 [TCP Optimiser](https://github.com/fatalcoder524/TCP_Optimiser_Module) | Tunes TCP congestion control | fatalcoder524 |
 | 📱 [HyperUnlocked](https://github.com/ukriu/HyperUnlocked) | Unlocks hidden HyperOS features | ukriu |
@@ -67,6 +69,23 @@ Modules the owner runs on their phone together with Cogan Kernel. Click a module
 | ▶️ [YouTube Morphe](https://github.com/MorpheApp/morphe-manager) | Modded YouTube, root-installed through Morphe Manager | MorpheApp |
 | 🚫 [zygisk-detach](https://github.com/j-hc/zygisk-detach) | Detaches apps from Play Store updates | j-hc |
 | 📶 [WiFi Password Viewer](https://github.com/Googlers-Repo/wpd) | Shows saved Wi-Fi passwords (for MMRL) | Googlers-Repo |
+
+**⚠️ Pick one.** The modules below do the same job. Installing both can overwrite each other's settings or make Play Integrity fail.
+
+| Pick one | Why |
+|---|---|
+| SUSFS-FOR-KERNELSU **or** BRENE | Both manage SUSFS and install the `ksu_susfs` tool. BRENE disables other SUSFS modules when installed |
+| Play Integrity Fix [INJECT] **or** Duck ToolBox (Play Integrity feature) | Duck ToolBox ships its own Play Integrity engine (derived from Play Integrity Fork). If you use PIF Inject, leave Duck ToolBox's Play Integrity feature off |
+| Tricky Store OSS **or** TEESimulator | Both are keystore modules for key attestation |
+| Tricky Addon **or** Duck ToolBox | Duck ToolBox already contains a full Tricky Addon port |
+
+**📝 Notes before installing**
+
+- Install modules **one at a time**: install, reboot, check the phone works, then move on to the next one. If the phone bootloops, you know which module did it.
+- Install **AshReXcue BootLoop Protector** first, so modules are disabled automatically on a bootloop. If the phone is still stuck, see [Back to Stock](docs/kembali-ke-stok.en.md).
+- AdbHide, Core Patch and FuseHide are Vector/LSPosed modules: they need **Zygisk Next** and **Vector**, and are enabled in the Vector app.
+- Duck ToolBox needs **Zygisk Next**. Its Tricky Store manager configures the active keystore module (Tricky Store OSS or TEESimulator), so one of them is still installed.
+- The `uname` spoof in [Install the Kernel](docs/pasang.en.md) uses the sidex15 SUSFS module's WebUI. With BRENE, enter the same values in BRENE's *Spoof Uname* setting.
 
 </details>
 
