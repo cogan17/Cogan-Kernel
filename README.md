@@ -125,6 +125,8 @@ Modul yang dipakai owner di HP-nya bersama Cogan Kernel. Klik nama modul untuk m
 
 Builder memakai rilis ACK resmi `android14-6.1` sejak kernel bawaan HP; `lts` = yang terbaru; ketik `semua` di isian Kernel Sublevel untuk semua sublevel (isian yang dikosongkan diganti GitHub dengan bawaannya, `lts`). Tombol workflow **Catat sublevel** mencatat hasil build terakhir di tabel ini (✅ lolos build dan gate KMI, ⏳ menunggu pembaruan hulu); ia tidak mengecek dan tidak membangun.
 
+**Pilih sumber** (isian pertama form Builder): **Selalu terbaru (CI)** mengambil versi terbaru setiap komponen; bila ada yang belum cocok, root itu menunggu. **Stabil (terakhir berhasil)** mengambil semua komponen (ACK, root manager, SUSFS, NoMount, modul, dan lainnya) persis dari build terakhir yang berhasil untuk root itu (`kernel/history/`), jadi tetap bisa dibangun saat versi terbaru masih menunggu. Manager dari CI pengembang hanya tersimpan 90 hari.
+
 Tombol **Cek pembaruan** satu-satunya yang mengecek, dan tidak membangun: versi terbaru setiap komponen (ACK, KernelSU Next, BakaSU, KernelSU, SukiSU, CoganSU, SUSFS simonpunk dan modul SUSFS sidex15, NoMount, Baseband Guard, AnyKernel3, Neutron clang, Unicode fix) dibandingkan dengan build terakhir, dengan tanggal rilis stabil dan CI, yang baru dan perbaikannya, dan siapa yang ditunggu bila belum bisa dibangun. Bila ada yang baru, ringkasannya menyarankan menjalankan Builder.
 
 **[Riwayat build](kernel/history/)** disimpan otomatis oleh Builder dalam dokumen Markdown. **Build terakhir** dan **Status** tetap bisa dibandingkan setelah log, artifact atau run Actions dihapus; **Hapus log run lama** bekerja seperti sebelumnya.

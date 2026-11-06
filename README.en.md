@@ -125,6 +125,8 @@ Modules the owner runs on their phone together with Cogan Kernel. Click a module
 
 The builder uses the official ACK `android14-6.1` releases since the phone's stock kernel; `lts` = the newest; type `semua` (or `all`) in Kernel Sublevel for every sublevel (GitHub replaces an empty field with its default, `lts`). The **Catat sublevel** (record sublevels) workflow button records the latest build in this table (✅ passed the build and the KMI gate, ⏳ waiting for an upstream update); it neither checks nor builds.
 
+**Pilih sumber / Source** (the first field of the Builder form): **Always newest (CI)** takes the newest version of every component; when one does not fit yet, that root waits. **Stable (last good build)** takes every component (ACK, root manager, SUSFS, NoMount, modules and the rest) exactly from the last successful build of that root (`kernel/history/`), so it still builds while the newest versions wait. Managers from the developers' CI are kept for 90 days only.
+
 The **Cek pembaruan** (check for updates) button is the only check, and it builds nothing: the newest version of every component (ACK, KernelSU Next, BakaSU, KernelSU, SukiSU, CoganSU, simonpunk's SUSFS and sidex15's SUSFS module, NoMount, Baseband Guard, AnyKernel3, Neutron clang, Unicode fix) against the last build, with the dates of the stable and CI versions, what is new and fixed, and whom to wait for when it cannot be built yet. When something is newer, the summary suggests running the Builder.
 
 **[Build history](kernel/history/)** is saved automatically by the Builder as Markdown documents. **Last build** and **Status** remain comparable after Actions logs, artifacts or runs are deleted; **Delete old run logs** works as before.

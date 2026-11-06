@@ -100,6 +100,16 @@ def susfs_label(envs, lang):
     return " · tanpa SUSFS" if lang == "id" else " · without SUSFS"
 
 
+def source_lines(envs, lang):
+    """Pilih sumber (owner 2026-11-06): a build from the last good build says so, once."""
+    runs = sorted({e.get("SOURCE_RUN", "-") for e in envs if e.get("SOURCE") == "stable"})
+    if not runs:
+        return []
+    label = ", ".join(f"#{r}" for r in runs)
+    return [f"🧊 Sumber: Stabil, build terakhir yang berhasil ({label})" if lang == "id"
+            else f"🧊 Source: Stable, last good build ({label})"]
+
+
 def read_env(path):
     return dict(line.split("=", 1) for line in Path(path).read_text().splitlines() if "=" in line)
 
@@ -274,7 +284,7 @@ def post(env, lang, prev=None, fix_titles=(), link="", tested=False, note="", hi
     localized_note = note if lang == "id" else note_en
     if localized_note.strip():
         lines += ["", w["note"], *localized_note.replace("\\n", "\n").strip().splitlines()]
-    lines += ["", f"{w['features']}: {env.get('FEATURES', '')}", w["tested"] if tested else w["untested"]]
+    lines += ["", *source_lines([env], lang), f"{w['features']}: {env.get('FEATURES', '')}", w["tested"] if tested else w["untested"]]
     if link:
         lines.append(f"{w['download']}: {link}")
     return "\n".join(lines) + "\n"
@@ -371,6 +381,7 @@ def release_post(builds, lang, link="", tested=False, note="", note_en=""):
         lines += ["", w["note"], *localized_note.replace("\\n", "\n").strip().splitlines()]
     features = {env.get("FEATURES", "") for env in envs}
     lines.append("")
+    lines += source_lines(envs, lang)
     if len(features) == 1:
         lines.append(f"{w['features']}: {envs[0].get('FEATURES', '')}")
     else:
@@ -458,6 +469,7 @@ def sublevels_post(builds, lang, link="", tested=False, note="", note_en=""):
         lines += ["", w["note"], *localized_note.replace("\\n", "\n").strip().splitlines()]
     features = unique(env.get("FEATURES", "") for env in envs)
     lines.append("")
+    lines += source_lines(envs, lang)
     if len(features) == 1:
         lines.append(f"{w['features']}: {features[0]}")
     else:

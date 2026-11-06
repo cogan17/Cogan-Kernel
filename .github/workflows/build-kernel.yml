@@ -5,11 +5,22 @@ name: Cogan Kernel Builder
 # newest ACK release, KernelSU Next (pershoot dev-susfs), BakaSU release, official KernelSU main, SukiSU or CoganSU, SUSFS, NoMount, Baseband
 # Guard, AnyKernel3 and Neutron clang (kernel/resolve.py). A newest version that does not fit yet is
 # not built; the summary says whom to wait for. The KMI gate against the phone's stock kernel always
-# runs and fails closed. Summaries are in Indonesian and English.
+# runs and fails closed. Summaries are in Indonesian and English. Pilih sumber (owner 2026-11-06): the source
+# Stabil (terakhir berhasil) takes every component exactly from the last good build of each root manager
+# (kernel/last_good.py, kernel/history/) instead of the newest versions.
 
 on:
   workflow_dispatch:
     inputs:
+      # Pilih sumber (owner 2026-11-06): the newest versions, or the exact components of the last good build
+      # of each root manager (kernel/last_good.py, from kernel/history/), which built together before.
+      source:
+        description: "Pilih sumber / Source"
+        type: choice
+        default: "Selalu terbaru (CI) / Always newest (CI)"
+        options:
+          - "Selalu terbaru (CI) / Always newest (CI)"
+          - "Stabil (terakhir berhasil) / Stable (last good build)"
       release_type:
         description: "Release Type (CI = artifact saja / only)"
         type: choice
@@ -103,6 +114,9 @@ jobs:
       BUILD_TIME: ${{ inputs.build_time }}
       USE_UNICODE: ${{ inputs.use_unicode }}
       USE_SUSFS: ${{ inputs.use_susfs }}
+      USE_NOMOUNT: ${{ inputs.use_nomount }}
+      USE_BBG: ${{ inputs.use_bbg }}
+      SOURCE: ${{ inputs.source }}
       DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
     steps:
       - uses: actions/checkout@v7.0.1
@@ -144,9 +158,15 @@ jobs:
             "KernelSU Next & KernelSU & CoganSU") roots=(KSUN KSU CSU) ;;
             *) echo "::error::Root Flavor: $ROOT_FLAVOR"; exit 1 ;;
           esac
+          finder=(kernel/resolve.py)
+          if [[ "$SOURCE" == Stabil* ]]; then
+            finder=(kernel/last_good.py)
+            [ "$USE_NOMOUNT" = "true" ] || extra+=(--no-nomount)
+            [ "$USE_BBG" = "true" ] || extra+=(--no-bbg)
+          fi
           for root in "${roots[@]}"; do
             status=0
-            python3 kernel/resolve.py --root "$root" --sublevel "$SUBLEVEL" "${extra[@]}" --out "snapshots/$root.json" || status=$?
+            python3 "${finder[@]}" --root "$root" --sublevel "$SUBLEVEL" "${extra[@]}" --out "snapshots/$root.json" || status=$?
             [ "$status" -le 2 ] || exit "$status"
             [ "$status" -ne 1 ] || exit 1
           done
@@ -154,6 +174,7 @@ jobs:
           import json, os
           from pathlib import Path
           include, rows_id, waits, nomount = [], [], [], set()
+          stable = os.environ.get("SOURCE", "").startswith("Stabil")
           for path in sorted(Path("snapshots").glob("*.json")):
               snap = json.loads(path.read_text())
               root = snap["root"]
@@ -185,16 +206,22 @@ jobs:
                       ("AnyKernel3", f"`{snap['anykernel']['commit'][:12]}`"), ("Neutron clang", snap["neutron"]["tag"])]
               if "unicode" in snap:
                   rows.append(("Unicode fix (WildKernel)", f"`{snap['unicode']['commit'][:12]}`"))
+              if snap.get("source", {}).get("kind") == "stable":
+                  src_run = snap["source"]
+                  rows.insert(0, ("Sumber / source", f"Stabil: build terakhir yang berhasil / last good build "
+                                                     f"[#{src_run['run']}]({src_run['url']})"))
               rows_id += [f"| {name} | {k} | {v} |" for k, v in rows]
-          summary = ["## Cogan Kernel Builder — versi terbaru / newest versions", "",
+          summary = ["## Cogan Kernel Builder — " + ("stabil / stable (last good build)" if stable else "versi terbaru / newest versions"), "",
                      "<details open><summary>🇮🇩 Bahasa Indonesia</summary>", "",
-                     "Tanpa kunci: setiap komponen diambil versi terbarunya saat run dimulai.", ""]
+                     ("Stabil: setiap komponen diambil persis dari build terakhir yang berhasil (kernel/history/)."
+                      if stable else "Tanpa kunci: setiap komponen diambil versi terbarunya saat run dimulai."), ""]
           table = ["| Varian | Komponen / component | Versi / version |", "|---|---|---|", *rows_id]
           summary += table if rows_id else []
           for name, wait in waits:
               summary += ["", f"> [!WARNING]\n> ⏳ **{name} tidak dibangun.** {wait['id']}"]
           summary += ["", "</details>", "", "<details><summary>🇬🇧 English</summary>", "",
-                      "No lock: every component is taken at its newest version when the run starts.", ""]
+                      ("Stable: every component is taken exactly from the last good build (kernel/history/)."
+                       if stable else "No lock: every component is taken at its newest version when the run starts."), ""]
           summary += table if rows_id else []
           for name, wait in waits:
               summary += ["", f"> [!WARNING]\n> ⏳ **{name} is not built.** {wait['en']}"]

@@ -47,6 +47,8 @@ def component_lines(env):
              f"- NoMount: {env['NOMOUNT']} · Neutron clang {env['NEUTRON']}",
              f"- Fitur / features: {env['FEATURES']}",
              *([f"- Unicode fix: WildKernel `{env['UNICODE_FIX'][:12]}`"] if env.get("UNICODE_FIX", "-") != "-" else []),
+             *([f"- Sumber / source: Stabil, build terakhir yang berhasil #{env.get('SOURCE_RUN', '-')} / "
+                f"Stable, last good build #{env.get('SOURCE_RUN', '-')}"] if env.get("SOURCE") == "stable" else []),
              f"- {env['KMI_COMPAT'].split('; BSP:')[0]}"]
 
 
