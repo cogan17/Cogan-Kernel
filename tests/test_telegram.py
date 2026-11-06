@@ -306,6 +306,19 @@ class TelegramTest(unittest.TestCase):
         for post in (text, english):
             self.assertNotRegex(post, r"[0-9a-f]{7,}")
 
+    def test_release_notes_consolidate_sublevels_instead_of_repeating(self):
+        # A release with many ACK sublevels of one root manager (owner 2026-11-05: r12 was far too long):
+        # the versions are named once and "first release" appears once, not per sublevel, in each language.
+        envs = [{"ROOT_NAME": "CoganSU", "LINUX_VERSION": v, "RELEASE": "v26.11.05-r12", "FEATURES": "SUSFS, BBRv3"}
+                for v in ("6.1.138", "6.1.145", "6.1.176")]
+        measured = [(e, {"prev": None, "fix_titles": {}, "history_available": True,
+                         "fixes_available": True, "source_sha": "", "upstream": {}}) for e in envs]
+        md = tg.changelog_markdown(measured)
+        self.assertEqual(md.count("Rilis pertama varian ini"), 1)
+        self.assertEqual(md.count("First release of this variant"), 1)
+        self.assertIn("🐧 3 pilihan kernel: 6.1.138, 6.1.145, 6.1.176 (6.1.176 = terbaru)", md)
+        self.assertIn("🐧 3 kernel choices: 6.1.138, 6.1.145, 6.1.176 (6.1.176 = newest)", md)
+
     def test_a_rebased_fork_only_reports_titles_it_did_not_have(self):
         def api(path):
             if path.endswith("/compare/old...new"):

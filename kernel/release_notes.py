@@ -67,7 +67,7 @@ def notes(env, files, run_url, repo, tested=False, note="", changelog=""):
     return "\n".join(lines) + "\n"
 
 
-def compact_notes(builds, run_url, repo, tested=False, note="", artifact_run=False, note_en=""):
+def compact_notes(builds, run_url, repo, tested=False, note="", artifact_run=False, note_en="", changes_md=""):
     """README-style release: short download table, with all longer sections collapsed.
 
     builds contains (build.env, matching file names, measured changelog Markdown) per variant.
@@ -97,10 +97,15 @@ def compact_notes(builds, run_url, repo, tested=False, note="", artifact_run=Fal
     for label, text in (("🇮🇩 Catatan", note), ("🇬🇧 Note", note_en)):
         if text.strip():
             lines += [f"**{label}**", "", *[f"> {line}" for line in text.replace("\\n", "\n").strip().splitlines()], ""]
-    for build, _, changelog in builds:
-        lines += [f"#### {build['ROOT_NAME']} · {build['LINUX_VERSION']}", ""]
-        lines += changelog.splitlines()[1:] if changelog else ["Lihat catatan build / See build notes."]
+    if changes_md:
+        # One consolidated block, versions named once (owner 2026-11-05): no per-sublevel repetition.
+        lines += changes_md.splitlines()[1:]   # drop the "### What's New & Fixes" line; the <summary> already says it
         lines.append("")
+    else:
+        for build, _, changelog in builds:
+            lines += [f"#### {build['ROOT_NAME']} · {build['LINUX_VERSION']}", ""]
+            lines += changelog.splitlines()[1:] if changelog else ["Lihat catatan build / See build notes."]
+            lines.append("")
     lines += ["</details>", "", "<details>", "<summary>📦 <b>Modul pendukung / Modules</b></summary>", ""]
     modules = sorted({name for _, files, _ in builds for name in files if name.startswith(("4-", "5-"))})
     labels = {"4": "NoMount", "5": "SUSFS · sidex15 (WebUI)"}

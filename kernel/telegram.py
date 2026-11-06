@@ -292,6 +292,58 @@ def joined(values):
     return " / ".join(dict.fromkeys(value for value in values if value))
 
 
+def new_fixed(builds, lang, strip_kernel):
+    """Consolidated New and Fixes lists across every build, grouped once per root manager (merged()).
+    strip_kernel drops the kernel/ACK change lines, for a release that names its sublevels at the top."""
+    new_by_root, fixed_by_root = {}, {}
+    for env, measured in builds:
+        prev = measured.get("prev")
+        base = {**env, "LINUX_VERSION": prev.get("kernel", env.get("LINUX_VERSION")),
+                "ACK_TAG": prev.get("ack", env.get("ACK_TAG"))} if (prev and strip_kernel) else env
+        root = env.get("ROOT_NAME", "")
+        new_by_root.setdefault(root, []).extend(
+            whats_new(base, prev, lang, measured.get("history_available", True), measured.get("upstream")))
+        fixed_by_root.setdefault(root, []).extend(
+            fix_items(lang, prev, measured.get("fix_titles", ()), measured.get("history_available", True),
+                      measured.get("fixes_available", True), upstream_fixes(env, prev, lang, measured.get("upstream"))))
+    return (merged([(root, unique(items)) for root, items in new_by_root.items()]),
+            merged([(root, unique(items)) for root, items in fixed_by_root.items()]))
+
+
+def changelog_markdown(builds):
+    """What's New & Fixes for the published release notes, consolidated like the Telegram post
+    (owner 2026-11-05: the per-sublevel repetition was far too long and not end-user friendly).
+    builds: [(env, measured)] as from changes(). Versions named once; each change once per root manager."""
+    envs = [env for env, _ in builds]
+    versions = sorted(unique(e.get("LINUX_VERSION", "") for e in envs if e.get("LINUX_VERSION")), key=sublevel_key)
+    roots = unique(e.get("ROOT_NAME", "") for e in envs)
+    multi_version = len(versions) > 1
+    prevs = {}
+    for env, measured in builds:
+        if measured.get("prev"):
+            prevs.setdefault(env.get("ROOT_NAME", ""), measured["prev"])
+    lines = ["### What's New & Fixes", ""]
+    for lang in ("id", "en"):
+        w = WORDS[lang]
+        lines += [f"**{HEADINGS[lang][0]}**", ""]
+        if multi_version:
+            lines += [w["choices"].format(n=len(versions), versions=", ".join(versions), newest=versions[-1]), ""]
+        if prevs:
+            tags = unique(prev["tag"] for prev in prevs.values())
+            same = len(prevs) == len(roots) and len(tags) == 1
+            lines += [w["baseline"].format(prev=tags[0] if same else
+                                           ", ".join(f"{prev['tag']} ({root})" for root, prev in prevs.items())), ""]
+        new, fixed = new_fixed(builds, lang, strip_kernel=multi_version)
+        if multi_version and prevs:
+            known = {prev.get("kernel") for prev in prevs.values()}
+            fresh = [version for version in versions if version not in known]
+            if fresh:
+                new = [w["kernel_new"].format(versions=", ".join(fresh))] + [i for i in new if not i.startswith(w["same"][:12])]
+        lines += [f"**{w['new']}**", *[f"- {item}" for item in new], "",
+                  f"**{w['fixes']}**", *[f"- {item}" for item in fixed], ""]
+    return "\n".join(lines)
+
+
 def release_post(builds, lang, link="", tested=False, note="", note_en=""):
     """One post for one release (owner 2026-10-26: "mesti copas 2 kali"): KernelSU Next and BakaSU of a
     Release From Run share one text, each change measured against that root manager's own previous release.
@@ -312,13 +364,7 @@ def release_post(builds, lang, link="", tested=False, note="", note_en=""):
     if prevs:
         same = len(prevs) == len(builds) and len({tag for _, tag in prevs}) == 1
         lines += ["", "📌 " + w["baseline"].format(prev=prevs[0][1] if same else ", ".join(f"{tag} ({label})" for label, tag in prevs))]
-    new = merged([(label, whats_new(env, measured.get("prev"), lang, measured.get("history_available", True),
-                                    measured.get("upstream")))
-                  for label, (env, measured) in zip(labels, builds)])
-    fixed = merged([(label, fix_items(lang, measured.get("prev"), measured.get("fix_titles", ()),
-                                      measured.get("history_available", True), measured.get("fixes_available", True),
-                                      upstream_fixes(env, measured.get("prev"), lang, measured.get("upstream"))))
-                    for label, (env, measured) in zip(labels, builds)])
+    new, fixed = new_fixed(builds, lang, strip_kernel=False)
     lines += ["", w["new"], *[f"• {item}" for item in new], "", w["fixes"], *[f"• {item}" for item in fixed]]
     localized_note = note if lang == "id" else note_en
     if localized_note.strip():
@@ -363,24 +409,11 @@ def sublevels_post(builds, lang, link="", tested=False, note="", note_en=""):
         same = len(prevs) == len(roots) and len(tags) == 1
         lines += ["", "📌 " + w["baseline"].format(prev=tags[0] if same else
                                                    ", ".join(f"{prev['tag']} ({root})" for root, prev in prevs.items()))]
-    new_by_root, fixed_by_root = {}, {}
-    for env, measured in builds:
-        prev = measured.get("prev")
-        # The kernel and ACK release lines are left out per build: the versions are named at the top.
-        same_kernel = {**env, "LINUX_VERSION": prev.get("kernel", env.get("LINUX_VERSION")),
-                       "ACK_TAG": prev.get("ack", env.get("ACK_TAG"))} if prev else env
-        root = env.get("ROOT_NAME", "")
-        new_by_root.setdefault(root, []).extend(
-            whats_new(same_kernel, prev, lang, measured.get("history_available", True), measured.get("upstream")))
-        fixed_by_root.setdefault(root, []).extend(
-            fix_items(lang, prev, measured.get("fix_titles", ()), measured.get("history_available", True),
-                      measured.get("fixes_available", True), upstream_fixes(env, prev, lang, measured.get("upstream"))))
+    new, fixed = new_fixed(builds, lang, strip_kernel=True)
     known = {prev.get("kernel") for prev in prevs.values()}
     fresh = [version for version in versions if version not in known]
-    new = merged([(root, unique(items)) for root, items in new_by_root.items()])
     if prevs and fresh:
         new = [w["kernel_new"].format(versions=", ".join(fresh))] + [item for item in new if not item.startswith(w["same"][:12])]
-    fixed = merged([(root, unique(items)) for root, items in fixed_by_root.items()])
     lines += ["", w["new"], *[f"• {item}" for item in new], "", w["fixes"], *[f"• {item}" for item in fixed]]
     localized_note = note if lang == "id" else note_en
     if localized_note.strip():
