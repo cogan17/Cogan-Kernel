@@ -47,6 +47,7 @@ Modul yang dipakai owner di HP-nya bersama Cogan Kernel. Klik nama modul untuk m
 | Modul | Fungsi | Pembuat |
 |---|---|---|
 | 🛡️ [SUSFS-FOR-KERNELSU](https://github.com/sidex15/susfs4ksu-module) | Pengaturan SUSFS lewat WebUI (sudah ada di rilis sebagai file 5) | sidex15 |
+| 🧷 [BRENE](https://github.com/rrr333nnn333/BRENE) | Modul SUSFS lain dengan WebUI: menyembunyikan jejak root, *custom kernel*, recovery dan modul Zygisk, serta menyamarkan properti sistem dan `uname` | rrr333nnn333 |
 | 📂 [NoMount](https://github.com/maxsteeel/nomount) | Pemasangan modul tanpa *mount* (sudah ada di kernel) | maxsteeel |
 | 🧠 [Cogan Smart Kernel](modules/cogan-smart/README.md) | Mode daya, suhu, penjaga modul | Cogan17 |
 | 🔁 [AshReXcue BootLoop Protector](https://github.com/RipperHybrid/AshLooper) | Mematikan modul otomatis saat bootloop | RipperHybrid |
@@ -60,6 +61,7 @@ Modul yang dipakai owner di HP-nya bersama Cogan Kernel. Klik nama modul untuk m
 | 🔑 [Tricky Store OSS](https://github.com/beakthoven/TrickyStoreOSS) | Atestasi kunci untuk Play Integrity | beakthoven |
 | 🔐 [TEESimulator](https://github.com/JingMatrix/TEESimulator) | Simulasi TEE untuk atestasi kunci, pengganti Tricky Store (pasang salah satu); targetkan hanya Layanan Google Play dan Play Store dari aplikasi sistem | JingMatrix |
 | ➕ [Tricky Addon](https://github.com/KOWX712/Tricky-Addon-Update-Target-List) | WebUI untuk mengatur daftar aplikasi target Tricky Store (`target.txt`) | KOWX712 |
+| 🦆 [Duck ToolBox](https://github.com/eltavine/Duck-ToolBox) | Kotak alat atestasi dalam satu WebUI: pengelola Tricky Store/TEESimulator (port lengkap Tricky Addon), mesin Play Integrity sendiri (mati secara bawaan), RKP | Eltavine, KOW, MhmRdd |
 | 🕵️ [Stealth Debug](https://github.com/sp11xy/StealthDebug) | Menyembunyikan USB/developer debugging dari aplikasi | sp11xy |
 | 🌐 [TCP Optimiser](https://github.com/fatalcoder524/TCP_Optimiser_Module) | Mengatur TCP congestion control | fatalcoder524 |
 | 📱 [HyperUnlocked](https://github.com/ukriu/HyperUnlocked) | Membuka fitur HyperOS yang tersembunyi | ukriu |
@@ -67,6 +69,23 @@ Modul yang dipakai owner di HP-nya bersama Cogan Kernel. Klik nama modul untuk m
 | ▶️ [YouTube Morphe](https://github.com/MorpheApp/morphe-manager) | YouTube termodifikasi, dipasang root lewat Morphe Manager | MorpheApp |
 | 🚫 [zygisk-detach](https://github.com/j-hc/zygisk-detach) | Melepas aplikasi dari pembaruan Play Store | j-hc |
 | 📶 [WiFi Password Viewer](https://github.com/Googlers-Repo/wpd) | Melihat sandi Wi-Fi tersimpan (untuk MMRL) | Googlers-Repo |
+
+**⚠️ Pilih salah satu.** Modul di bawah mengerjakan hal yang sama. Memasang keduanya bisa saling menimpa pengaturan atau membuat Play Integrity gagal.
+
+| Pilih salah satu | Kenapa |
+|---|---|
+| SUSFS-FOR-KERNELSU **atau** BRENE | Keduanya mengatur SUSFS dan memasang alat `ksu_susfs`. BRENE mematikan modul SUSFS lain saat dipasang |
+| Play Integrity Fix [INJECT] **atau** Duck ToolBox (fitur Play Integrity) | Duck ToolBox membawa mesin Play Integrity sendiri (turunan Play Integrity Fork). Bila memakai PIF Inject, biarkan fitur Play Integrity Duck ToolBox mati |
+| Tricky Store OSS **atau** TEESimulator | Keduanya modul keystore untuk atestasi kunci |
+| Tricky Addon **atau** Duck ToolBox | Duck ToolBox sudah berisi port lengkap Tricky Addon |
+
+**📝 Catatan sebelum memasang**
+
+- Pasang modul **satu per satu**: pasang, reboot, cek HP normal, baru lanjut ke modul berikutnya. Kalau HP bootloop, kamu langsung tahu modul mana penyebabnya.
+- Pasang **AshReXcue BootLoop Protector** lebih dulu, supaya modul dimatikan otomatis bila HP bootloop. Bila tetap macet, lihat [Kembali ke Stok](docs/kembali-ke-stok.md).
+- AdbHide, Core Patch dan FuseHide adalah modul Vector/LSPosed: butuh **Zygisk Next** dan **Vector**, lalu diaktifkan di aplikasi Vector.
+- Duck ToolBox butuh **Zygisk Next**. Pengelola Tricky Store-nya mengatur modul keystore yang aktif (Tricky Store OSS atau TEESimulator), jadi salah satunya tetap dipasang.
+- Spoof `uname` di [Pasang Kernel](docs/pasang.md) memakai WebUI modul SUSFS sidex15. Bila memakai BRENE, isi nilai yang sama di pengaturan *Spoof Uname* BRENE.
 
 </details>
 
