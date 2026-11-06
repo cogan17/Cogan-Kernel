@@ -332,8 +332,10 @@ group "Building kernel"
 echo "::endgroup::"
 
 group "KMI gate: Xiaomi 14T Pro vendor modules"
+STOCK_REFS=()
+for stock in "$WORK"/stock/*/; do STOCK_REFS+=(--stock-reference "$stock"); done
 python3 "$HERE/scripts/kmi_compat.py" --device rothko "$KSRC" "$KOUT" --reference "$HERE/bsp" \
-  --stock-reference "$WORK/stock" --json "$OUT/kmi-compat.json" --github-env "$WORK/kmi.env"
+  "${STOCK_REFS[@]}" --json "$OUT/kmi-compat.json" --github-env "$WORK/kmi.env"
 KMI_COMPAT="$(sed -n 's/^KMI_COMPAT=//p' "$WORK/kmi.env")"
 FEATURES="$(python3 "$HERE/scripts/kernel_features.py" "$KOUT/.config" "$KSRC")"
 echo "::endgroup::"
