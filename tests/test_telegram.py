@@ -319,6 +319,20 @@ class TelegramTest(unittest.TestCase):
         self.assertIn("🐧 3 pilihan kernel: 6.1.138, 6.1.145, 6.1.176 (6.1.176 = terbaru)", md)
         self.assertIn("🐧 3 kernel choices: 6.1.138, 6.1.145, 6.1.176 (6.1.176 = newest)", md)
 
+    def test_components_section_is_one_block_per_root_not_per_sublevel(self):
+        # Owner 2026-11-06: the Components & features section repeated the whole block for every sublevel.
+        builds = [({**R2, "LINUX_VERSION": v, "ACK_TAG": ack, "ZIP": "1-K.zip",
+                    "KMI_COMPAT": f"KMI Xiaomi 14T Pro (rothko): OK; exported GKI 2/2, mtk {mtk}/{mtk}, "
+                                  "xiaomi 455/455; CRC differs 0"},
+                   [], tg.changelog_section(R2, "r/r", source_sha="d" * 40))
+                  for v, ack, mtk in (("6.1.138", "a-2025-06_r17", "3596"), ("6.1.176", "a-2026-09_r6", "3705"))]
+        out = rn.compact_notes(builds, "https://run", "r/r")
+        sec = out.split("Components & features</b></summary>", 1)[1].split("\n</details>", 1)[0]
+        self.assertEqual(sec.count("## KernelSU Next"), 1)        # one section, not one per sublevel
+        self.assertEqual(sec.count("- Root: "), 1)
+        self.assertEqual(sec.count("- Kernel: "), 2)             # both sublevels kept
+        self.assertIn("· mtk 3705/3705, xiaomi 455/455", sec)
+
     def test_a_rebased_fork_only_reports_titles_it_did_not_have(self):
         def api(path):
             if path.endswith("/compare/old...new"):

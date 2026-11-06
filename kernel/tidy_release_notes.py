@@ -12,10 +12,10 @@ import sys
 from pathlib import Path
 
 if __package__:
-    from .telegram import merged, sublevel_key, unique, WORDS
+    from .telegram import compact_components, merged, sublevel_key, unique, WORDS
 else:
     sys.path.insert(0, str(Path(__file__).resolve().parent))
-    from telegram import merged, sublevel_key, unique, WORDS  # noqa: E402
+    from telegram import compact_components, merged, sublevel_key, unique, WORDS  # noqa: E402
 
 ACK_LINE = re.compile(r"^(Kernel ACK |Rilis ACK |ACK kernel |ACK release )")
 # (lang, heading, New heading, Fixes heading, baseline prefix)
@@ -36,7 +36,44 @@ def bullets(lines, header):
     return out
 
 
+SHA = re.compile(r"<!-- cogan-build-sha: ([0-9a-f]{40}) -->")
+
+
+def tidy_components(body):
+    """Collapse the per-sublevel 'Components & features' section to one '## ROOT' section per root
+    manager (owner 2026-11-06). Runs only on the old per-sublevel form (a root with >1 section);
+    an already-compact or single-build section is returned unchanged, so re-running is idempotent."""
+    m = re.search(r"(<summary>🧩 <b>Komponen & fitur / Components & features</b></summary>\n)(.*?)(\n</details>)",
+                  body, re.S)
+    if not m:
+        return body
+    inner = m.group(2)
+    first = inner.find("## ")
+    if first == -1:
+        return body
+    variants = []
+    for chunk in re.split(r"\n## ", inner[first + 3:]):
+        chunk = chunk.strip("\n")
+        if not chunk:
+            continue
+        head = chunk.splitlines()[0]
+        root = head.split(" · ")[0].strip()
+        bul = [l for l in chunk.splitlines() if l.startswith("- ")]
+        ver = head.split(" · ")[1].strip() if " · " in head else next(
+            (re.search(r"`([^`]+)`", b)[1] for b in bul if b.startswith("- Kernel:")), "")
+        sha = SHA.search(chunk)
+        variants.append((root, ver, bul, sha[1] if sha else ""))
+    counts = {}
+    for root, *_ in variants:
+        counts[root] = counts.get(root, 0) + 1
+    if not variants or max(counts.values()) < 2:  # already compact or single build
+        return body
+    rebuilt = "\n" + "\n".join(compact_components(variants)).rstrip("\n") + "\n"
+    return body[:m.start(2)] + rebuilt + body[m.end(2):]
+
+
 def tidy(body):
+    body = tidy_components(body)
     m = re.search(r"(<summary>✨ <b>What's New & Fixes</b></summary>\n)(.*?)(\n</details>)", body, re.S)
     if not m:
         return body

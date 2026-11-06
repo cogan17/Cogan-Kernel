@@ -389,6 +389,44 @@ def unique(items):
     return list(dict.fromkeys(items))
 
 
+KMI_COUNTS = re.compile(r", mtk \d+/\d+, xiaomi \d+/\d+")
+
+
+def compact_components(variants):
+    """One '## ROOT' section per root manager instead of one per sublevel (owner 2026-11-06).
+
+    variants: [(root_name, version, [component bullet lines], source_sha)] in build order. The bullets a
+    root's sublevels share (Root, NoMount, features, Unicode, the KMI line without its per-sublevel
+    counts) are printed once; each sublevel keeps its own '- Kernel:' line (read back by parse_release)
+    with its KMI counts appended. Every machine-read line stays in the root's section so previous() works.
+    """
+    order, groups = [], {}
+    for root, ver, bullets, sha in variants:
+        if root not in groups:
+            order.append(root)
+        groups.setdefault(root, []).append((ver, bullets, sha))
+    out = []
+    for root in order:
+        items = sorted(groups[root], key=lambda it: sublevel_key(it[0]))
+        kmis = [next((b for b in bul if ", mtk " in b), "") for _, bul, _ in items]
+        stripped = [KMI_COUNTS.sub("", k) for k in kmis]
+        common_kmi = stripped[0] if any(kmis) and len(set(stripped)) == 1 else ""
+        common = [b for b in items[0][1] if not b.startswith("- Kernel:") and ", mtk " not in b]
+        out += [f"## {root}", "", *common]
+        if common_kmi:
+            out.append(common_kmi)
+        for (ver, bul, _), kmi in zip(items, kmis):
+            kernel = next((b for b in bul if b.startswith("- Kernel:")), f"- Kernel: `{ver}`")
+            counts = KMI_COUNTS.search(kmi)
+            if common_kmi and counts:
+                kernel += " · " + counts.group(0).lstrip(", ")
+            elif kmi and not common_kmi:  # KMI differs beyond the counts: keep each sublevel's own line
+                kernel += " · " + kmi[2:]
+            out.append(kernel)
+        out += ["", f"<!-- cogan-build-sha: {items[0][2]} -->", ""]
+    return out
+
+
 def sublevels_post(builds, lang, link="", tested=False, note="", note_en=""):
     """A release with several ACK sublevels, short enough for end users (owner 2026-11-02, r8: one line per
     sublevel and root manager was far too long). The kernel versions are named once at the top; every

@@ -12,6 +12,12 @@ import sys
 from pathlib import Path
 from urllib.parse import quote
 
+if __package__:
+    from .telegram import compact_components
+else:
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from telegram import compact_components  # noqa: E402
+
 USES = {
     "1": ("Flash di **Kernel Flasher** atau TWRP (partisi `boot` saja)", "Flash with **Kernel Flasher** or TWRP (`boot` only)"),
     "2": ("Aplikasi manager root", "Root manager app"),
@@ -111,11 +117,15 @@ def compact_notes(builds, run_url, repo, tested=False, note="", artifact_run=Fal
     labels = {"4": "NoMount", "5": "SUSFS · sidex15 (WebUI)"}
     lines += [f"- {download(name, labels[name[0]])}" for name in modules]
     lines += ["", "</details>", "", "<details>", "<summary>🧩 <b>Komponen & fitur / Components & features</b></summary>", ""]
-    for build, _, changelog in builds:
-        lines += [f"## {build['ROOT_NAME']} · {build['LINUX_VERSION']}", "", *component_lines(build), ""]
-        # Each root section keeps its source commit so future comparisons use the built code.
-        lines += [line for line in changelog.splitlines() if line.startswith("<!-- cogan-build-sha: ")]
-        lines.append("")
+    # One section per root manager (owner 2026-11-06): the shared component lines once, Kernel per sublevel.
+    def build_sha(changelog):
+        for line in changelog.splitlines():
+            if line.startswith("<!-- cogan-build-sha: "):
+                return line[len("<!-- cogan-build-sha: "):].removesuffix(" -->")
+        return ""
+    variants = [(build["ROOT_NAME"], build["LINUX_VERSION"], component_lines(build), build_sha(changelog))
+                for build, _, changelog in builds]
+    lines += compact_components(variants)
     lines += ["</details>", "", "<details>", "<summary>🔏 <b>SHA256 & sumber / Source</b></summary>", ""]
     lines += [f"- {build['ROOT_NAME']}: `{build['ZIP_SHA256']}`" for build, _, _ in builds] if artifact_run else \
              [f"- {download('checksums.txt', 'checksums.txt')}"]
