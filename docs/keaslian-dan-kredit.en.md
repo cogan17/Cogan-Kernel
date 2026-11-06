@@ -70,4 +70,4 @@ The old releases of [cogan17/Kernel-14t-pro](https://github.com/cogan17/Kernel-1
 | **[GKI-Duchamp](https://github.com/ahmed-alnassif/GKI-Duchamp-6.1) · [AK3-GKID](https://github.com/ahmed-alnassif/AK3-GKID)** ([Ahmed Al-Nassif](https://github.com/ahmed-alnassif)) | Base of the early kernel experiments (no longer used) |
 | **[cogan17/Cogan](https://github.com/cogan17/Cogan)** | Origin of the build engine |
 
-Sister project: **[TWRP Xiaomi 14T Pro](https://github.com/cogan17/TWRP-14T-PRO)** · predecessor repository: **[Kernel-14t-pro](https://github.com/cogan17/Kernel-14t-pro)**.
+Sister project: **[TWRP Xiaomi 14T Pro](https://github.com/cogan17/TWRP-14T-PRO)** · **[CoganSU](https://github.com/cogan17/CoganSU)** · predecessor repository: **[Kernel-14t-pro](https://github.com/cogan17/Kernel-14t-pro)**.
