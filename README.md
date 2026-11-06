@@ -100,7 +100,7 @@ Modul yang dipakai owner di HP-nya bersama Cogan Kernel. Klik nama modul untuk m
 | RAM | 12 / 16 GB |
 | Layar | 1220 × 2712 |
 | Rilis | September 2024 (Android 14) |
-| Kernel bawaan | `6.1.138-android14-11` (HyperOS `OS3.0.301.0.WNNIDXM`) |
+| Kernel bawaan | `6.1.157-android14-11` (HyperOS `OS3.0.302`) atau `6.1.138-android14-11` (`OS3.0.301`), semua wilayah ([cek versi](docs/pasang.md#sebelum-mulai)) |
 
 </details>
 

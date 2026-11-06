@@ -9,7 +9,16 @@ Kernel Cogan hanya mengganti partisi **`boot`**. Data, `init_boot` dan `vendor_b
 ## Sebelum mulai
 
 - Bootloader sudah **unlock**.
-- HyperOS **`OS3.0.302.0.WNNIDXM`** (Android 16, diuji dengan r12) atau **`OS3.0.301.0.WNNIDXM`**, versi yang dipakai uji. Kernel dibangun dari ACK resmi Google android14-6.1: arsip r8 dan r6 dari 6.1.176 (`2026-09_r4`), arsip r5 dari 6.1.138 (sama dengan kernel bawaan HyperOS versi ini).
+- **Catat versi kernel bawaan HP-mu sebelum flash**: Setelan → Tentang ponsel → Versi kernel. Setelah flash, nilai ini berganti dan dipakai lagi di langkah 3 (samarkan kernel).
+- Kernel ini untuk Xiaomi 14T Pro (`rothko`) **dari wilayah mana pun** (Indonesia, Global, EEA, Turki, …), asalkan versi kernel bawaannya salah satu dari ini:
+
+  | Versi kernel bawaan | HyperOS |
+  |---|---|
+  | `6.1.157-android14-11-g0baf70f2581d-ab15659624` | `OS3.0.302` (Android 16) |
+  | `6.1.138-android14-11-g6ab8c9a86a33-ab14396278` | `OS3.0.301` |
+
+  Setiap build dicek terhadap kedua kernel bawaan itu. Uji HP dilakukan di ROM Indonesia (`OS3.0.302.0.WNNIDXM` dan `OS3.0.301.0.WNNIDXM`). ROM wilayah lain memakai kernel bawaan yang sama bila versinya sama persis. **Bila versi kernel bawaanmu berbeda, jangan flash dulu**: kirim versinya ke grup Telegram, supaya kernel bawaan itu ditambahkan ke pengecekan build.
+- Kernel dibangun dari ACK resmi Google android14-6.1.
 - ZIP kernel `1-KERNEL_Cogan-Rothko-ACK-…zip`. ZIP berisi cek perangkat, jadi di HP selain `rothko` flash berhenti sebelum `boot` disentuh.
 
 ## 1. Cadangkan `boot` dulu
@@ -38,8 +47,8 @@ Salin hasilnya ke **PC atau flashdisk**, jangan hanya di HP. Simpan juga `boot.i
 1. Pasang aplikasi root manager dari paket rilis yang sama (**KernelSU Next** atau **BakaSU**, sesuai ZIP kernel), lalu metamodule **NoMount**.
    Bila ZIP kernel bernama `…+SuSFS…` dan ingin mengatur SUSFS, pasang juga **modul SUSFS** `5-SUSFS-MODULE-SIDEX15_…zip`: modul sidex15 dengan WebUI (build CI terbarunya), memasang alat `ksu_susfs`. Rilis 26–28 Okt 2026 juga berisi modul simonpunk (`5-…SIMONPUNK`) dan menomori modul sidex15 `6-`; pasang salah satunya saja. Modul [BRENE](https://github.com/rrr333nnn333/BRENE) juga modul SUSFS: pasang sidex15 **atau** BRENE, jangan keduanya (BRENE mematikan modul SUSFS lain).
 2. *Opsional:* modul **[Cogan Smart Kernel](https://github.com/cogan17/Cogan-Kernel/blob/main/modules/cogan-smart/README.md)**. Pengembangannya sedang diparkir (hanya perbaikan bug); kernel berjalan normal tanpanya. Bila dipasang, reboot sekali, lalu cek di WebUI modul: **"Identitas asli · terverifikasi"** dan **"✓ kernel dibuat untuk HP ini"**.
-3. *Opsional, untuk menyamarkan kernel dari aplikasi pendeteksi:* buka WebUI modul SUSFS → **Kernel Uname**, lalu isi nilai kernel bawaan HP sesuai versi HyperOS-mu (Setelan → Tentang ponsel; dibaca dari `boot.img` stok rothko). Centang kotak di sebelah **Spoof Kernel Version** dan **Spoof Kernel Build**.
-   - **HyperOS `OS3.0.302.0.WNNIDXM`** (patch keamanan Oktober 2026):
+3. *Opsional, untuk menyamarkan kernel dari aplikasi pendeteksi:* buka WebUI modul SUSFS → **Kernel Uname**, lalu isi nilai yang sama dengan versi kernel bawaan yang kamu catat sebelum flash (dibaca dari `boot.img` stok rothko). Centang kotak di sebelah **Spoof Kernel Version** dan **Spoof Kernel Build**.
+   - **Kernel bawaan `6.1.157`** (HyperOS `OS3.0.302`):
      - Spoof Kernel Version:
        ```
        6.1.157-android14-11-g0baf70f2581d-ab15659624
@@ -48,7 +57,7 @@ Salin hasilnya ke **PC atau flashdisk**, jangan hanya di HP. Simpan juga `boot.i
        ```
        #1 SMP PREEMPT Tue Jun 16 21:49:26 UTC 2026
        ```
-   - **HyperOS `OS3.0.301.0.WNNIDXM`**:
+   - **Kernel bawaan `6.1.138`** (HyperOS `OS3.0.301`):
      - Spoof Kernel Version:
        ```
        6.1.138-android14-11-g6ab8c9a86a33-ab14396278
