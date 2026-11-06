@@ -99,7 +99,9 @@ def prepare(info, files, run_url, repo, tested=False, note="", sha="", api=tg.gh
         title = " & ".join(dict.fromkeys(env["ROOT_NAME"] for env, _ in builds))
         versions = " / ".join(dict.fromkeys(env["LINUX_VERSION"] for env, _ in builds))
         (telegram / "summary.md").write_text(f"**{title} · {versions}**\n\n" + tg.summary_section(posts))
-    return metadata, compact_notes(sections, run_url, repo, tested, note, artifact_run=link == run_url, note_en=note_en)
+    changes_md = tg.changelog_markdown(measured)
+    return metadata, compact_notes(sections, run_url, repo, tested, note, artifact_run=link == run_url,
+                                   note_en=note_en, changes_md=changes_md)
 
 
 def main(argv=None):
