@@ -21,6 +21,24 @@ The Cogan kernel replaces only the **`boot`** partition. Data, `init_boot` and `
 - The kernel is built from the official Google android14-6.1 ACK.
 - The kernel ZIP `1-KERNEL_Cogan-Rothko-ACK-…zip`. It carries a device check, so on a phone other than `rothko` the flash stops before `boot` is touched.
 
+## 0. Install root first (if you don't have root yet)
+
+The Cogan kernel is flashed with **Kernel Flasher**, which needs root, so **root must come first**. Just unlocking the bootloader (UBL) does not give you root. Skip this section if the phone already has root (e.g. moving from another kernel).
+
+Root goes on the **`init_boot`** partition, not `boot`. The Cogan kernel and KernelSU Next/CoganSU are **GKI** (root is built into the kernel), so you *patch* `init_boot`, not an LKM module.
+
+On the PC you need: Google's official **platform-tools** (`adb`/`fastboot`) and a USB cable.
+
+1. Install the root manager app (**KernelSU Next** or **CoganSU**) from the release package.
+2. Get the **stock** `init_boot.img` from the same HyperOS ROM version as the phone. Keep a spare copy.
+3. In the root manager app → **Install** menu → **Select and patch a file** → pick `init_boot.img`. It produces `init_boot_patched.img` (or similar) in the `Download` folder.
+4. Copy `init_boot_patched.img` to the PC. Enter fastboot mode: `adb reboot bootloader` (or power off, then hold **Volume Down + Power**).
+5. Flash: `fastboot flash init_boot init_boot_patched.img`, then `fastboot reboot`.
+6. Once it boots, open the root manager app → confirm it shows **installed / working** and reads the kernel version. Root is active.
+
+> ⚠️ Do not `fastboot flash boot` with an `init_boot` file, or vice versa. The wrong partition can bootloop.
+> Failed or bootloop? Flash the **stock** `init_boot` back: `fastboot flash init_boot init_boot.img`. The `boot` partition and data are untouched in this step.
+
 ## 1. Back up `boot` first
 
 Pick one way:
