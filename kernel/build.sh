@@ -123,6 +123,29 @@ else
 fi
 echo "::endgroup::"
 
+# HyperOS OS3.0.302 (owner 2026-11-06: every sublevel for both HyperOS versions). Its stock kernel
+# (ACK 0baf70f2581d, 6.1.157) adds vendor hooks, exports and the dynamic task_struct size its vendor
+# modules use. 157, 172 and 176 have them; the official ACK commits are cherry-picked for older releases
+# in kernel/patches/hyperos302/6.1.N.patch (commit list in each header), applied as they are when all
+# are missing. A release with only part of them, or without a patch for its sublevel, stops the build.
+group "HyperOS 302 vendor hooks and exports (ACK android14-6.1-2025-12)"
+HOS302=0
+grep -q 'android_vh_mm_direct_reclaim_start' "$KSRC/include/trace/hooks/mm.h" && HOS302=$((HOS302 + 1))
+grep -q 'vendor_data_pad' "$KSRC/init/init_task.c" && HOS302=$((HOS302 + 1))
+grep -q 'EXPORT_SYMBOL(__filemap_remove_folio);' "$KSRC/mm/filemap.c" && HOS302=$((HOS302 + 1))
+if [ "$HOS302" = 3 ]; then
+  HYPEROS302="present"
+  log "Already in ACK $ACK_TAG: nothing to apply"
+elif [ "$HOS302" != 0 ]; then
+  fail "ACK $ACK_TAG has only part of the HyperOS 302 vendor hooks and exports"
+else
+  [ -f "$HERE/patches/hyperos302/6.1.$SUBLEVEL.patch" ] || fail "No HyperOS 302 patch for 6.1.$SUBLEVEL"
+  apply "$HERE/patches/hyperos302/6.1.$SUBLEVEL.patch" || fail "HyperOS 302 patch does not fit ACK $ACK_TAG"
+  HYPEROS302="applied"
+  log "Applied: kernel/patches/hyperos302/6.1.$SUBLEVEL.patch ($(grep -c '^  [0-9a-f]\{12\} ' "$HERE/patches/hyperos302/6.1.$SUBLEVEL.patch") ACK commits)"
+fi
+echo "::endgroup::"
+
 group "Stock kernel reference of the phone (KMI gate)"
 python3 "$HERE/scripts/stock_reference.py" --device rothko "$WORK/stock"
 echo "::endgroup::"
@@ -424,6 +447,7 @@ echo "::endgroup::"
   echo "BBG_COMMIT=$([ "${BBG:-true}" = "true" ] && snap bbg.commit || echo -)"
   echo "CVE_2026_53163=$CVE_2026_53163"
   echo "STOCK_VENDOR_HOOKS=$STOCK_VENDOR_HOOKS"
+  echo "HYPEROS302=$HYPEROS302"
   echo "DISGUISE=$([ "${DISGUISE:-false}" = "true" ] && echo on || echo off)"
   echo "UNICODE_FIX=$([ "${UNICODE:-false}" = "true" ] && snap unicode.commit || echo -)"
   echo "ZIP=$ZIP"
