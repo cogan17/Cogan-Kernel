@@ -25,9 +25,9 @@ Kernel Cogan hanya mengganti partisi **`boot`**. Data, `init_boot` dan `vendor_b
 
 Kernel Cogan di-flash lewat **Kernel Flasher** yang butuh root, jadi **root harus ada lebih dulu**. Baru buka bootloader (UBL) belum berarti sudah root. Lewati bagian ini bila HP sudah punya root (mis. pindah dari kernel lain).
 
-Root dipasang di partisi **`init_boot`**, bukan `boot`. Kernel Cogan dan KernelSU Next/CoganSU bertipe **GKI** (root menyatu di kernel), jadi caranya mem-*patch* `init_boot`, bukan modul LKM.
+Root pertama dipasang di partisi **`init_boot`**, bukan `boot`, dengan **mode LKM**: aplikasi root manager menaruh modul KernelSU di `init_boot`, di atas kernel bawaan. Root ini sementara, untuk membuka akses Kernel Flasher. Setelah kernel Cogan terpasang, root sudah **tertanam di kernel** (mode GKI).
 
-Siapkan di PC: **platform-tools** (`adb`/`fastboot`) resmi Google dan kabel USB.
+Siapkan di PC: **platform-tools** (`adb`/`fastboot`) resmi Google, **driver USB Xiaomi** (ikut terpasang saat membuka MiFlash) dan kabel USB. Pakai root manager **KernelSU** (KernelSU Next/CoganSU), **jangan Magisk**: kernel Cogan sudah membawa KernelSU, dan dua root sekaligus bisa bentrok.
 
 1. Pasang aplikasi root manager (**KernelSU Next** atau **CoganSU**) dari paket rilis.
 2. Ambil `init_boot.img` **stok** dari ROM HyperOS versi yang sama dengan HP. Simpan juga salinannya sebagai cadangan.
