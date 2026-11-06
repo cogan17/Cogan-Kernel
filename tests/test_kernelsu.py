@@ -129,20 +129,22 @@ class WorkflowTest(unittest.TestCase):
         box = wf[True]["workflow_dispatch"]["inputs"]["root_flavor"]
         self.assertEqual(box["default"], "KernelSU Next")
         self.assertEqual(box["options"], ["KernelSU Next", "KernelSU", "SukiSU", "CoganSU", "BakaSU",
-                                          "KernelSU Next & KernelSU & CoganSU"])
-        # BakaSU (banking) and SukiSU (waiting for its update) only on their own: no combination has them (owner 2026-11-05).
+                                          "KernelSU Next & KernelSU & CoganSU", "Semua / All"])
+        # BakaSU (banking) and SukiSU (waiting for its update) in no combination (owner 2026-11-05); only "Semua / All"
+        # builds every root manager (owner 2026-11-06).
         self.assertFalse([o for o in box["options"] if "&" in o and ("BakaSU" in o or "SukiSU" in o)])
         plan = next(s["run"] for s in wf["jobs"]["resolve"]["steps"] if s.get("id") == "plan")
         case = re.search(r'case "\$ROOT_FLAVOR" in\n(.*?)esac', plan, re.S)[1]
         for flavor, roots in (("KernelSU Next", "roots=(KSUN)"), ("BakaSU", "roots=(BSU)"), ("KernelSU", "roots=(KSU)"),
                               ("SukiSU", "roots=(SUKI)"), ("CoganSU", "roots=(CSU)"),
-                              ("KernelSU Next & KernelSU & CoganSU", "roots=(KSUN KSU CSU)")):
+                              ("KernelSU Next & KernelSU & CoganSU", "roots=(KSUN KSU CSU)"),
+                              ("Semua / All", "roots=(KSUN KSU SUKI CSU BSU)")):
             self.assertIn(f'"{flavor}") {roots} ;;', case)
         self.assertNotIn('== *"KernelSU', plan)   # "KernelSU" must not match "KernelSU Next"
 
     def test_a_release_needs_one_root(self):
         wf = WORKFLOW.read_text()
-        self.assertIn('[[ "$ROOT_FLAVOR" != *"&"* && -n "${SUBLEVEL// /}"', wf)
+        self.assertIn('[[ "$ROOT_FLAVOR" != *"&"* && "$ROOT_FLAVOR" != "Semua / All" && -n "${SUBLEVEL// /}"', wf)
 
 
 class ReportsTest(unittest.TestCase):
