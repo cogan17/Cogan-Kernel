@@ -1,0 +1,53 @@
+name: Rapikan catatan rilis
+
+# Owner 2026-11-06: catatan rilis lama terlalu panjang karena mengulang blok What's New & Fixes per
+# sublevel. Tombol ini menggabungkannya (kernel/tidy_release_notes.py) tanpa membangun ulang dan tanpa
+# menyentuh file rilis. Rilis baru sudah ringkas dari generator; ini hanya untuk yang sudah terbit.
+# A button that shortens the What's New & Fixes of already-published releases; it never rebuilds or
+# touches the release files. Only this repository's kernel tags (vYY.MM.DD-rN).
+
+on:
+  workflow_dispatch:
+    inputs:
+      tags:
+        description: "Tag rilis, pisah spasi (mis. v26.11.05-r12 v26.11.02-r8) / release tags, space-separated"
+        required: true
+        type: string
+
+permissions:
+  contents: write  # edit release notes only (no files, no new release)
+
+concurrency:
+  group: rapikan-catatan
+  cancel-in-progress: false
+
+jobs:
+  tidy:
+    name: Rapikan / tidy
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+      TAGS: ${{ inputs.tags }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: kernel
+      - name: Rapikan catatan rilis / tidy release notes
+        run: |
+          set -euo pipefail
+          for tag in $TAGS; do
+            [[ "$tag" =~ ^v[0-9]{2}\.[0-9]{2}\.[0-9]{2}-r[0-9]+$ ]] \
+              || { echo "::error::Tag tidak valid / invalid tag: $tag"; exit 1; }
+            id="$(gh api "repos/$REPO/releases/tags/$tag" --jq .id)" \
+              || { echo "::error::Rilis $tag tidak ada / release $tag not found"; exit 1; }
+            gh api "repos/$REPO/releases/tags/$tag" --jq .body > body.md
+            python3 kernel/tidy_release_notes.py body.md > new.md
+            if cmp -s body.md new.md; then
+              echo "- $tag: sudah ringkas, tidak diubah / already short, unchanged" >> "$GITHUB_STEP_SUMMARY"
+              continue
+            fi
+            jq -Rs '{body: .}' < new.md | gh api -X PATCH "repos/$REPO/releases/$id" --input - >/dev/null
+            echo "- $tag: dirapikan ($(wc -l < body.md) → $(wc -l < new.md) baris) / tidied" >> "$GITHUB_STEP_SUMMARY"
+          done
