@@ -1,5 +1,27 @@
 # Checkpoint
 
+## 6 Nov 2026 (checkpoint owner)
+
+**Sedang berjalan**
+- Tidak ada workflow atau PR yang berjalan.
+
+**Selesai hari ini (catatan rilis makin ringkas untuk end user)**
+- PR #138 (sebelumnya): generator What's New & Fixes digabung seperti teks Telegram (versi sekali, tiap perubahan sekali per root).
+- PR #139: tombol **Rapikan catatan rilis** (`.github/workflows/rapikan-catatan.yml` + `kernel/tidy_release_notes.py`) untuk merapikan body rilis yang sudah terbit — mengedit lewat token Actions, tanpa build ulang, tanpa menyentuh file rilis. Dijalankan: r12 854→327 baris, r11/r8 ikut ringkas; r1–r3 format lama dibiarkan.
+- PR #140: bagian **Komponen & fitur** jadi satu seksi `## ROOT` per root manager (`kernel/telegram.py` `compact_components`), dipakai `compact_notes` (Builder + Rilis dari run) dan `tidy_components` (tombol, idempoten). Tiap seksi tetap lengkap agar `previous()` bisa membandingkan rilis berikutnya. Tombol dijalankan ulang: r12 330→147 baris (3 seksi, dari 21 blok), r11/r8 ikut.
+- PR #141: CoganSU masuk sebagai proyek saudara di `docs/keaslian-dan-kredit.md` (ID+EN).
+
+**Tertunda**
+- CoganSU "Tidak terpasang" di HP (dari 4 Nov): menunggu owner kirim `cogansu-terpasang.apk` untuk pastikan sertifikat APK terpasang = rilis r1. Diagnosa lengkap ada di entri 4 Nov di bawah.
+- Terbitkan r38 lewat Rilis dari run bila owner minta (run_id 41819469210, diuji di HP).
+- CoganSU di kombinasi root bila owner mau.
+- Penyebab NoMount menolak aturan di SukiSU (telusuri kode, tanpa HP).
+- Branch `feat/stabil-dev-utama` di GitHub (hapus manual).
+- `modules/cogan-smart/webroot/about.html` masih sebut proyek saudara TWRP saja (modul Cogan Smart diparkir, D-025); CoganSU belum ditambah di sana — hanya bila owner minta.
+
+**Langkah pertama berikutnya**
+- Baca `CLAUDE.md`, lalu tunggu instruksi owner.
+
 ## 4 Nov 2026 malam (checkpoint owner)
 
 **Sedang berjalan**
