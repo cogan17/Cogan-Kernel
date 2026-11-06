@@ -14,8 +14,10 @@ Kernel Cogan hanya mengganti partisi **`boot`**. Data, `init_boot` dan `vendor_b
 
   | Versi kernel bawaan | HyperOS |
   |---|---|
-  | `6.1.157-android14-11-g0baf70f2581d-ab15659624` | `OS3.0.302` (Android 16) |
+  | `6.1.157-android14-11-g0baf70f2581d-ab15659624` | `OS3.0.302` |
   | `6.1.138-android14-11-g6ab8c9a86a33-ab14396278` | `OS3.0.301` |
+
+  Keduanya HyperOS 3 berbasis **Android 16** (huruf `W` di kode ROM, mis. `OS3.0.301.0.WNNIDXM`). Kata `android14` di versi kernel bukan versi Android HP, melainkan generasi kernel GKI (`android14-6.1`) yang dipakai Google untuk Android 14 sampai 16.
 
   Setiap build dicek terhadap kedua kernel bawaan itu. Uji HP dilakukan di ROM Indonesia (`OS3.0.302.0.WNNIDXM` dan `OS3.0.301.0.WNNIDXM`). ROM wilayah lain memakai kernel bawaan yang sama bila versinya sama persis. **Bila versi kernel bawaanmu berbeda, jangan flash dulu**: kirim versinya ke grup Telegram, supaya kernel bawaan itu ditambahkan ke pengecekan build.
 - Kernel dibangun dari ACK resmi Google android14-6.1.

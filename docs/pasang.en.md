@@ -14,8 +14,10 @@ The Cogan kernel replaces only the **`boot`** partition. Data, `init_boot` and `
 
   | Stock kernel version | HyperOS |
   |---|---|
-  | `6.1.157-android14-11-g0baf70f2581d-ab15659624` | `OS3.0.302` (Android 16) |
+  | `6.1.157-android14-11-g0baf70f2581d-ab15659624` | `OS3.0.302` |
   | `6.1.138-android14-11-g6ab8c9a86a33-ab14396278` | `OS3.0.301` |
+
+  Both are HyperOS 3 based on **Android 16** (the letter `W` in the ROM code, e.g. `OS3.0.301.0.WNNIDXM`). The word `android14` in the kernel version is not the phone's Android version but the GKI kernel generation (`android14-6.1`) Google uses for Android 14 to 16.
 
   Every build is checked against both stock kernels. Phone tests were done on the Indonesian ROM (`OS3.0.302.0.WNNIDXM` and `OS3.0.301.0.WNNIDXM`). Other regions' ROMs carry the same stock kernel when the version matches exactly. **If your stock kernel version is different, do not flash yet**: send it to the Telegram group so that stock kernel can be added to the build check.
 - The kernel is built from the official Google android14-6.1 ACK.
