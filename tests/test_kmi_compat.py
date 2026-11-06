@@ -166,37 +166,57 @@ class KmiCompatTests(unittest.TestCase):
                             for e in report["errors"]), report["errors"])
 
     def make_stock(self, version="138", config="CONFIG_A=y\nCONFIG_MEMFD_ASHMEM_SHIM=y\n"):
-        stock = self.make_bsp(config=config).rename(Path(self.temp.name) / "stock")
+        stock = self.make_bsp(config=config).rename(Path(self.temp.name) / f"stock-{version}")
         (stock / "Makefile").write_text(f"# SPDX\nVERSION = 6\nPATCHLEVEL = 1\nSUBLEVEL = {version}\nEXTRAVERSION =\n")
         (stock / "android/abi_gki_aarch64.stg").write_text(STG.replace("0x0000000a", "0x0000000c"))
         return stock
 
-    def test_stock_reference_reports_its_own_crc_differences(self):
-        stock = self.make_stock()
+    def run_stocks(self, *stocks):
         report_file = Path(self.temp.name) / "stock.json"
-        status = kc.main(["--device", "rothko", str(self.src), str(self.out), "--stock-reference", str(stock),
-                          "--json", str(report_file)])
-        report = json.loads(report_file.read_text())
+        args = ["--device", "rothko", str(self.src), str(self.out), "--json", str(report_file)]
+        for stock in stocks:
+            args += ["--stock-reference", str(stock)]
+        status = kc.main(args)
+        return status, json.loads(report_file.read_text())
+
+    def test_stock_reference_reports_its_own_crc_differences(self):
+        status, report = self.run_stocks(self.make_stock(), self.make_stock("157"))
         self.assertEqual(status, 0, report["errors"])
-        ref = report["references"]["stock"]
-        self.assertEqual(ref["version"], "6.1.138")
+        self.assertEqual(sorted(report["references"]), ["stock 6.1.138", "stock 6.1.157"])
+        self.assertEqual(report["references"]["stock 6.1.157"]["hyperos"], "OS3.0.302.0.WNNIDXM")
+        ref = report["references"]["stock 6.1.138"]
+        self.assertEqual(ref["hyperos"], "OS3.0.301.0.WNNIDXM")
         self.assertEqual(ref["config_not_enabled"],
                          {"CONFIG_MEMFD_ASHMEM_SHIM": kc.DEVICES["rothko"]["stock_config_exceptions"]["CONFIG_MEMFD_ASHMEM_SHIM"]})
         # The stock frozen ABI is the one the vendor modules were built with: vendor_used differs there.
         self.assertEqual(ref["crc_differences"], ["changed_type", "vendor_used"])
         self.assertIn("; stock 6.1.138: generation 11, exported GKI 1/1, mtk 1/1, xiaomi 0/0, "
-                      "config =y not enabled 1 (reviewed), stock-only vendor hooks 0 (unused), CRC differs 2",
-                      kc.summary(report))
+                      "config =y not enabled 1 (reviewed), stock-only vendor hooks 0 (unused), CRC differs 2; "
+                      "stock 6.1.157: generation 11", kc.summary(report))
+
+    def test_every_supported_hyperos_stock_kernel_must_be_checked(self):
+        # Users still on HyperOS OS3.0.301 get the newest kernel too (owner 2026-11-06).
+        status, report = self.run_stocks(self.make_stock("157"))
+        self.assertEqual(status, 1)
+        self.assertIn("stock reference of 6.1.138 (HyperOS OS3.0.301.0.WNNIDXM) not given: "
+                      "every supported HyperOS version must be checked", report["errors"])
+
+    def test_a_symbol_only_the_newer_stock_kernel_needs_fails(self):
+        newer = self.make_stock("157")
+        (newer / "android/abi_gki_aarch64_xiaomi").write_text("[abi_symbol_list]\n  inode_add_lru\n")
+        status, report = self.run_stocks(self.make_stock(), newer)
+        self.assertEqual(status, 1)
+        self.assertEqual(report["errors"], ["stock 6.1.157 abi_gki_aarch64_xiaomi: 1 symbol(s) not exported, "
+                                            "e.g. inode_add_lru"])
 
     def test_stock_reference_must_be_the_stock_kernel(self):
-        for change, message in (({"version": "155"}, "stock reference is kernel 6.1.155"),
+        for change, message in (({"version": "155"}, "stock reference is kernel 6.1.155, the phone's stock kernels "
+                                 "are 6.1.138 (HyperOS OS3.0.301.0.WNNIDXM), 6.1.157 (HyperOS OS3.0.302.0.WNNIDXM)"),
                                 ({"config": "CONFIG_A=y\nCONFIG_INTERCONNECT=y\n"},
-                                 "stock gki_defconfig options not enabled: CONFIG_INTERCONNECT")):
+                                 "stock 6.1.138 gki_defconfig options not enabled: CONFIG_INTERCONNECT")):
             self.setUp()
-            report_file = Path(self.temp.name) / "stock.json"
-            status = kc.main(["--device", "rothko", str(self.src), str(self.out),
-                              "--stock-reference", str(self.make_stock(**change)), "--json", str(report_file)])
-            errors = json.loads(report_file.read_text())["errors"]
+            status, report = self.run_stocks(self.make_stock(**change), self.make_stock("157"))
+            errors = report["errors"]
             self.assertEqual(status, 1, message)
             self.assertTrue(any(message in error for error in errors), errors)
 

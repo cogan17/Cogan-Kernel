@@ -4,7 +4,7 @@
 On a GKI phone the boot partition holds only the generic kernel; the SoC and phone
 drivers are vendor_dlkm / system_dlkm modules built against the frozen KMI. They
 load on another kernel only if:
-  1. the KMI generation matches (rothko stock: 6.1.138-android14-11 -> 11);
+  1. the KMI generation matches (rothko stock: 6.1.138/6.1.157-android14-11 -> 11);
   2. every symbol of the ACK symbol lists those modules were built with is
      exported (missing exports cannot be forced) - by the kernel, or by a GKI
      module (modules.bzl, e.g. bluetooth.ko) that the phone loads from its stock
@@ -21,11 +21,14 @@ load on another kernel only if:
 Two references hold the GKI build against the phone itself:
   --reference BSP_SRC          the phone maker's own kernel source (rothko: the Xiaomi
                                BSP in cogan17/Xiomi-14t-pro);
-  --stock-reference STOCK_SRC  the ACK source of the phone's stock kernel (rothko:
-                               6.1.138, tag android14-6.1-2025-06_r11; fetched at the
-                               pinned commit by stock_reference.py).
+  --stock-reference STOCK_SRC  the ACK source of a stock kernel of the phone, once per
+                               supported HyperOS version (rothko: 6.1.138 of HyperOS
+                               OS3.0.301 and 6.1.157 of OS3.0.302; fetched at the stock
+                               commits by stock_reference.py). With any of them given, all
+                               must be: a kernel has to keep the vendor modules of every
+                               supported HyperOS version loadable.
 For each one:
-  5. its KMI generation is the phone's (the stock one must also be the stock version);
+  5. its KMI generation is the phone's (a stock one must also be a stock version);
   6. every symbol of its own symbol lists is exported (as in 2);
   7. every CONFIG_*=y of its gki_defconfig is =y in the built .config, except the
      reviewed exceptions listed per device and reference;
@@ -33,11 +36,11 @@ For each one:
      unused by the vendor modules (its __tracepoint_ symbol is in no symbol list);
      unused ones are only reported. Xiaomi/MediaTek features themselves live in the
      phone's vendor modules, which these checks keep loadable.
-The stock reference also reports the CRC differences against the stock frozen ABI,
-the one the phone's vendor modules were actually built with.
+A stock reference also reports the CRC differences against its stock frozen ABI,
+the one that HyperOS version's vendor modules were actually built with.
 
 Usage: kmi_compat.py --device rothko KERNEL_SRC OUT_DIR [--reference BSP_SRC]
-                     [--stock-reference STOCK_SRC] [--github-env FILE] [--json FILE]
+                     [--stock-reference STOCK_SRC ...] [--github-env FILE] [--json FILE]
 Exit 1 when 1-3, 5-8 or the force-load change fail; CRC differences only warn.
 """
 import argparse
@@ -51,7 +54,7 @@ SCMVERSION = ("only the modinfo/sysfs scmversion attribute (struct module keeps 
               "layout is unchanged); depends on LOCALVERSION_AUTO, which build.sh turns off for the "
               "Cogan version name, as in the device-tested r2/r3 kernels")
 DEVICES = {
-    # Xiaomi 14T Pro: MediaTek MT6989; stock kernel 6.1.138-android14-11.
+    # Xiaomi 14T Pro: MediaTek MT6989; stock kernels 6.1.138 and 6.1.157, android14-11.
     "rothko": {"name": "Xiaomi 14T Pro (rothko)", "generation": "11",
                "lists": ["abi_gki_aarch64", "abi_gki_aarch64_mtk", "abi_gki_aarch64_xiaomi"],
                # Xiaomi BSP (6.1.57) gki_defconfig =y options that are not =y in GKID 6.1, reviewed
@@ -62,11 +65,22 @@ DEVICES = {
                    "CONFIG_MODULE_SCMVERSION": SCMVERSION,
                    "CONFIG_UAPI_HEADER_TEST": "build-time header test, not in the kernel",
                },
-               # Stock kernel 6.1.138-android14-11-g6ab8c9a86a33-ab14396278 = this ACK commit.
-               "stock": {"kernel": "6.1.138-android14-11-g6ab8c9a86a33-ab14396278", "version": "6.1.138",
-                         "repo": "https://github.com/aosp-mirror/kernel_common",
-                         "tag": "android14-6.1-2025-06_r11",
-                         "commit": "6ab8c9a86a331cece499c7edac062ceffbe2e320"},
+               # Stock kernel of each supported HyperOS version = this ACK commit (read from the
+               # stock boot.img). A kernel must keep the vendor modules of all of them loadable
+               # (owner 2026-11-06), so users still on the older HyperOS get the newest kernel too.
+               "stocks": [
+                   {"hyperos": "OS3.0.301.0.WNNIDXM",
+                    "kernel": "6.1.138-android14-11-g6ab8c9a86a33-ab14396278", "version": "6.1.138",
+                    "repo": "https://github.com/aosp-mirror/kernel_common",
+                    "tag": "android14-6.1-2025-06_r11",
+                    "commit": "6ab8c9a86a331cece499c7edac062ceffbe2e320"},
+                   # boot.img SHA256 3c7bd85e...afe43; ACK "ANDROID: GKI: update symbol list file for
+                   # xiaomi" (2026-06-16), only on android.googlesource.com, not on the GitHub mirror.
+                   {"hyperos": "OS3.0.302.0.WNNIDXM",
+                    "kernel": "6.1.157-android14-11-g0baf70f2581d-ab15659624", "version": "6.1.157",
+                    "repo": "https://android.googlesource.com/kernel/common",
+                    "commit": "0baf70f2581d2bef029fb08cb61255e420858d10"},
+               ],
                # Stock gki_defconfig =y options that are not =y in GKID 6.1, reviewed 2026-10-16.
                "stock_config_exceptions": {
                    "CONFIG_MEMFD_ASHMEM_SHIM": "removed from android14-6.1 by Google (ACK 8e481acd, "
@@ -154,7 +168,11 @@ def kernel_version(src):
     return ".".join(part.group(1) for part in parts) if all(parts) else None
 
 
-def check(src, out, device, reference=None, stock=None):
+def stock_name(stock):
+    return f"{stock['version']} (HyperOS {stock['hyperos']})"
+
+
+def check(src, out, device, reference=None, stocks=()):
     spec = DEVICES[device]
     report = {"device": spec["name"], "kmi_generation": generation(src), "lists": {}, "errors": []}
     if report["kmi_generation"] != spec["generation"]:
@@ -184,9 +202,16 @@ def check(src, out, device, reference=None, stock=None):
     if report["protected_exports"]:
         report["errors"].append("protected exports still present: " + ", ".join(report["protected_exports"]))
     report["references"] = {}
-    for kind, path in (("bsp", reference), ("stock", stock)):
-        if path:
-            check_reference(report, kind, path, src, out, spec, exported)
+    if reference:
+        check_reference(report, "bsp", reference, src, out, spec, exported)
+    for path in stocks:
+        check_reference(report, "stock", path, src, out, spec, exported)
+    if stocks:
+        given = {ref["version"] for ref in report["references"].values() if ref["kind"] == "stock"}
+        for stock in spec["stocks"]:
+            if stock["version"] not in given:
+                report["errors"].append(f"stock reference of {stock_name(stock)} not given: "
+                                        "every supported HyperOS version must be checked")
     return report
 
 
@@ -201,13 +226,20 @@ def read_config(path):
 
 def check_reference(report, kind, reference, src, out, spec, exported):
     """Hold the GKI build against one of the phone's own kernel sources (BSP or stock ACK)."""
-    label = REFERENCES[kind]
-    ref = {"kmi_generation": generation(reference), "version": kernel_version(reference), "lists": {}}
+    ref = {"kind": kind, "kmi_generation": generation(reference), "version": kernel_version(reference),
+           "lists": {}}
+    label = REFERENCES[kind] if kind == "bsp" else f"stock {ref['version']}"
+    if kind == "stock":
+        stock = next((s for s in spec["stocks"] if s["version"] == ref["version"]), None)
+        if stock:
+            ref["hyperos"] = stock["hyperos"]
+        else:
+            report["errors"].append(f"stock reference is kernel {ref['version']}, the phone's stock kernels are "
+                                    + ", ".join(stock_name(s) for s in spec["stocks"]))
+        if label in report["references"]:  # keyed by version, e.g. "stock 6.1.157"
+            report["errors"].append(f"{label} reference given twice")
     if ref["kmi_generation"] != spec["generation"]:
         report["errors"].append(f"{label} KMI generation {ref['kmi_generation']}, the phone needs {spec['generation']}")
-    if kind == "stock" and ref["version"] != spec["stock"]["version"]:
-        report["errors"].append(f"stock reference is kernel {ref['version']}, the phone's stock kernel is "
-                                f"{spec['stock']['version']} ({spec['stock']['tag']})")
     wanted = set()
     for name in spec["lists"]:
         wanted |= read_list(reference / "android" / name)
@@ -241,7 +273,7 @@ def check_reference(report, kind, reference, src, out, spec, exported):
         frozen = read_stg(reference / "android/abi_gki_aarch64.stg")
         ref["crc_differences"] = sorted(name for name in wanted & frozen.keys() & exported.keys()
                                         if frozen[name] != exported[name])
-    report["references"][kind] = ref
+    report["references"][kind if kind == "bsp" else label] = ref
 
 
 def summary(report):
@@ -253,9 +285,9 @@ def summary(report):
     line = (f"KMI {report['device']}: {verdict}; generation {report['kmi_generation']}; "
             f"exported {exported(report['lists'])} ({len(report['from_gki_modules'])} via GKI modules); "
             f"CRC differs {len(report['crc_differences'])} (force-load {'on' if report['force_load'] else 'OFF'})")
-    for kind, ref in report.get("references", {}).items():
-        label = REFERENCES[kind]
-        name = f"{label} {ref['version']}" if kind == "stock" and ref["version"] else label
+    for key, ref in report.get("references", {}).items():
+        label = REFERENCES[ref["kind"]]
+        name = label if key == "bsp" else key
         unreviewed = sum(why == "NOT REVIEWED" for why in ref["config_not_enabled"].values())
         line += (f"; {name}: generation {ref['kmi_generation']}, exported {exported(ref['lists'])}, "
                  f"config =y not enabled {len(ref['config_not_enabled'])} "
@@ -272,7 +304,8 @@ def main(argv=None):
     parser.add_argument("src", type=Path)
     parser.add_argument("out", type=Path)
     parser.add_argument("--reference", type=Path, help="phone maker's kernel source (BSP) to hold the build against")
-    parser.add_argument("--stock-reference", type=Path, help="ACK source of the phone's stock kernel")
+    parser.add_argument("--stock-reference", type=Path, action="append", default=[],
+                        help="ACK source of a stock kernel of the phone (once per supported HyperOS version)")
     parser.add_argument("--github-env")
     parser.add_argument("--json", type=Path)
     args = parser.parse_args(argv)
