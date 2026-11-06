@@ -88,9 +88,11 @@ def markdown(run):
              f"Sumber / Source: [Builder]({run['url']}) · `{run['sha']}` · branch `{run['branch']}`", "",
              f"Waktu mulai / Started: {date:%Y-%m-%d %H:%M} WIB", "",
              "Catatan ini tetap ada setelah log, artifact atau run dihapus. "
-             "Cek pembaruan membaca metadata di bawah; catatan ini tidak menentukan versi build berikutnya.", "",
+             "Cek pembaruan membaca metadata di bawah. Build dengan sumber Selalu terbaru (CI) tidak memakainya; "
+             "sumber Stabil (terakhir berhasil) mengambil komponennya persis dari build berhasil terakhir di sini.", "",
              "This record survives deletion of logs, artifacts or the run. "
-             "Check for updates reads the metadata below; this record never selects the next build's versions.", "",
+             "Check for updates reads the metadata below. A build with the source Always newest (CI) does not use it; "
+             "the source Stable (last good build) takes its components exactly from the last good build here.", "",
              "| Root | Kernel | Hasil / Result | ACK | Root commit | SUSFS | NoMount |", "|---|---|---|---|---|---|---|"]
     for build in run["builds"]:
         snap = build.get("snap", {})
