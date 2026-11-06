@@ -9,7 +9,7 @@ Kernel Cogan hanya mengganti partisi **`boot`**. Data, `init_boot` dan `vendor_b
 ## Sebelum mulai
 
 - Bootloader sudah **unlock**.
-- HyperOS **`OS3.0.301.0.WNNIDXM`** (Android 16), versi yang dipakai uji. Kernel dibangun dari ACK resmi Google android14-6.1: arsip r8 dan r6 dari 6.1.176 (`2026-09_r4`), arsip r5 dari 6.1.138 (sama dengan kernel bawaan HyperOS versi ini).
+- HyperOS **`OS3.0.302.0.WNNIDXM`** (Android 16, diuji dengan r12) atau **`OS3.0.301.0.WNNIDXM`**, versi yang dipakai uji. Kernel dibangun dari ACK resmi Google android14-6.1: arsip r8 dan r6 dari 6.1.176 (`2026-09_r4`), arsip r5 dari 6.1.138 (sama dengan kernel bawaan HyperOS versi ini).
 - ZIP kernel `1-KERNEL_Cogan-Rothko-ACK-…zip`. ZIP berisi cek perangkat, jadi di HP selain `rothko` flash berhenti sebelum `boot` disentuh.
 
 ## 1. Cadangkan `boot` dulu
@@ -38,15 +38,25 @@ Salin hasilnya ke **PC atau flashdisk**, jangan hanya di HP. Simpan juga `boot.i
 1. Pasang aplikasi root manager dari paket rilis yang sama (**KernelSU Next** atau **BakaSU**, sesuai ZIP kernel), lalu metamodule **NoMount**.
    Bila ZIP kernel bernama `…+SuSFS…` dan ingin mengatur SUSFS, pasang juga **modul SUSFS** `5-SUSFS-MODULE-SIDEX15_…zip`: modul sidex15 dengan WebUI (build CI terbarunya), memasang alat `ksu_susfs`. Rilis 26–28 Okt 2026 juga berisi modul simonpunk (`5-…SIMONPUNK`) dan menomori modul sidex15 `6-`; pasang salah satunya saja.
 2. *Opsional:* modul **[Cogan Smart Kernel](https://github.com/cogan17/Cogan-Kernel/blob/main/modules/cogan-smart/README.md)**. Pengembangannya sedang diparkir (hanya perbaikan bug); kernel berjalan normal tanpanya. Bila dipasang, reboot sekali, lalu cek di WebUI modul: **"Identitas asli · terverifikasi"** dan **"✓ kernel dibuat untuk HP ini"**.
-3. *Opsional, untuk menyamarkan kernel dari aplikasi pendeteksi:* buka WebUI modul SUSFS → **Kernel Uname**, lalu isi nilai kernel bawaan HP (dibaca dari `boot.img` stok rothko):
-   - **Spoof Kernel Version** (centang kotak di sebelahnya):
-     ```
-     6.1.138-android14-11-g6ab8c9a86a33-ab14396278
-     ```
-   - **Spoof Kernel Build** (centang kotak di sebelahnya; ada **dua spasi** sebelum `5`):
-     ```
-     #1 SMP PREEMPT Wed Nov  5 15:47:39 UTC 2025
-     ```
+3. *Opsional, untuk menyamarkan kernel dari aplikasi pendeteksi:* buka WebUI modul SUSFS → **Kernel Uname**, lalu isi nilai kernel bawaan HP sesuai versi HyperOS-mu (Setelan → Tentang ponsel; dibaca dari `boot.img` stok rothko). Centang kotak di sebelah **Spoof Kernel Version** dan **Spoof Kernel Build**.
+   - **HyperOS `OS3.0.302.0.WNNIDXM`** (patch keamanan Oktober 2026):
+     - Spoof Kernel Version:
+       ```
+       6.1.157-android14-11-g0baf70f2581d-ab15659624
+       ```
+     - Spoof Kernel Build:
+       ```
+       #1 SMP PREEMPT Tue Jun 16 21:49:26 UTC 2026
+       ```
+   - **HyperOS `OS3.0.301.0.WNNIDXM`**:
+     - Spoof Kernel Version:
+       ```
+       6.1.138-android14-11-g6ab8c9a86a33-ab14396278
+       ```
+     - Spoof Kernel Build (ada **dua spasi** sebelum `5`):
+       ```
+       #1 SMP PREEMPT Wed Nov  5 15:47:39 UTC 2025
+       ```
    - Biarkan **Spoof on boot** dan **Execute on post-fs-data** tercentang, lalu reboot.
    - Cek di Termux **tanpa** `su`: `uname -a` harus menampilkan kedua nilai di atas persis.
 
@@ -57,12 +67,12 @@ Salin hasilnya ke **PC atau flashdisk**, jangan hanya di HP. Simpan juga `boot.i
    | Perintah | Yang tampil |
    |---|---|
    | `su -c cat /sys/kernel/cogan/banner` | Identitas Cogan asli: versi kernel, nomor rilis (mis. `r33`), pembuat dan tanggal build. Paling pasti, tidak ikut disamarkan |
-   | `su -c cat /proc/version` | Versi kernel yang benar-benar berjalan (mis. `6.1.176`, bukan `6.1.138`) |
-   | `uname -a` (tanpa `su`) | Yang dilihat aplikasi biasa: nilai samaran `6.1.138-android14-11-g6ab8c9a86a33-ab14396278` |
+   | `su -c cat /proc/version` | Versi kernel yang benar-benar berjalan (mis. `6.1.176`, bukan nilai samaran) |
+   | `uname -a` (tanpa `su`) | Yang dilihat aplikasi biasa: nilai samaran di atas (mis. `6.1.157-android14-11-g0baf70f2581d-ab15659624`) |
 
-   Bila perintah pertama menunjukkan Cogan, perintah kedua versi aslinya, dan `uname -a` menunjukkan `6.1.138`, semuanya bekerja benar: kernel aslinya Cogan, aplikasi melihat kernel bawaan.
+   Bila perintah pertama menunjukkan Cogan, perintah kedua versi aslinya, dan `uname -a` menunjukkan nilai samaran itu, semuanya bekerja benar: kernel aslinya Cogan, aplikasi melihat kernel bawaan.
 
-> 💡 Versi kernel di Setelan bisa tampil lain (mis. `6.1.138`). Itu SUSFS yang menyamarkan `uname`. Identitas asli dibaca modul Cogan Smart lewat Cogan Bridge.
+> 💡 Versi kernel di Setelan bisa tampil lain (mis. `6.1.157`). Itu SUSFS yang menyamarkan `uname`. Identitas asli dibaca modul Cogan Smart lewat Cogan Bridge.
 
 ---
 
