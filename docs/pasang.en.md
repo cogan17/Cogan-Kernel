@@ -25,9 +25,9 @@ The Cogan kernel replaces only the **`boot`** partition. Data, `init_boot` and `
 
 The Cogan kernel is flashed with **Kernel Flasher**, which needs root, so **root must come first**. Just unlocking the bootloader (UBL) does not give you root. Skip this section if the phone already has root (e.g. moving from another kernel).
 
-Root goes on the **`init_boot`** partition, not `boot`. The Cogan kernel and KernelSU Next/CoganSU are **GKI** (root is built into the kernel), so you *patch* `init_boot`, not an LKM module.
+The first root goes on the **`init_boot`** partition, not `boot`, in **LKM mode**: the root manager app puts the KernelSU module into `init_boot`, on top of the stock kernel. This root is temporary, to give Kernel Flasher access. Once the Cogan kernel is installed, root is **built into the kernel** (GKI mode).
 
-On the PC you need: Google's official **platform-tools** (`adb`/`fastboot`) and a USB cable.
+On the PC you need: Google's official **platform-tools** (`adb`/`fastboot`), the **Xiaomi USB driver** (installed when you open MiFlash) and a USB cable. Use a **KernelSU** root manager (KernelSU Next/CoganSU), **not Magisk**: the Cogan kernel already carries KernelSU, and two roots at once can clash.
 
 1. Install the root manager app (**KernelSU Next** or **CoganSU**) from the release package.
 2. Get the **stock** `init_boot.img` from the same HyperOS ROM version as the phone. Keep a spare copy.
