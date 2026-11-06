@@ -21,6 +21,24 @@ Kernel Cogan hanya mengganti partisi **`boot`**. Data, `init_boot` dan `vendor_b
 - Kernel dibangun dari ACK resmi Google android14-6.1.
 - ZIP kernel `1-KERNEL_Cogan-Rothko-ACK-…zip`. ZIP berisi cek perangkat, jadi di HP selain `rothko` flash berhenti sebelum `boot` disentuh.
 
+## 0. Pasang root dulu (bila belum punya root)
+
+Kernel Cogan di-flash lewat **Kernel Flasher** yang butuh root, jadi **root harus ada lebih dulu**. Baru buka bootloader (UBL) belum berarti sudah root. Lewati bagian ini bila HP sudah punya root (mis. pindah dari kernel lain).
+
+Root dipasang di partisi **`init_boot`**, bukan `boot`. Kernel Cogan dan KernelSU Next/CoganSU bertipe **GKI** (root menyatu di kernel), jadi caranya mem-*patch* `init_boot`, bukan modul LKM.
+
+Siapkan di PC: **platform-tools** (`adb`/`fastboot`) resmi Google dan kabel USB.
+
+1. Pasang aplikasi root manager (**KernelSU Next** atau **CoganSU**) dari paket rilis.
+2. Ambil `init_boot.img` **stok** dari ROM HyperOS versi yang sama dengan HP. Simpan juga salinannya sebagai cadangan.
+3. Di aplikasi root manager → menu **Install / Pasang** → **Pilih dan patch file** → pilih `init_boot.img`. Hasilnya `init_boot_patched.img` (atau nama sejenis) di folder `Download`.
+4. Salin `init_boot_patched.img` ke PC. Masuk mode fastboot: `adb reboot bootloader` (atau matikan HP lalu tahan **Volume Bawah + Power**).
+5. Flash: `fastboot flash init_boot init_boot_patched.img`, lalu `fastboot reboot`.
+6. Setelah menyala, buka aplikasi root manager → pastikan statusnya **terpasang / working** dan versi kernel terbaca. Root sudah aktif.
+
+> ⚠️ Jangan `fastboot flash boot` dengan file `init_boot`, dan sebaliknya. Salah partisi bisa bootloop.
+> Gagal atau bootloop? Flash `init_boot` **stok** balik: `fastboot flash init_boot init_boot.img`. Partisi `boot` dan data tidak tersentuh di langkah ini.
+
 ## 1. Cadangkan `boot` dulu
 
 Pilih salah satu cara:
