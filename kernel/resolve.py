@@ -618,7 +618,8 @@ def main(argv=None):
             if isinstance(wait, BuildFirst):
                 found["kind"] = "build-first"   # one build of ours first, not a wait (kernel/cogansu_auto.py)
             args.out.write_text(json.dumps({"root": args.root, "wait": found}, indent=1))
-            print(f"WAIT: {wait.en_text}")
+            # Owner 2026-11-07: "wait" only when a main developer waits; BuildFirst is a build of ours to run.
+            print(f"{'BUILD FIRST' if isinstance(wait, BuildFirst) else 'WAIT'}: {wait.en_text}")
             return 2
         except (OSError, ValueError, KeyError, subprocess.SubprocessError) as exc:
             print(f"::error::{args.root}: {exc}")
