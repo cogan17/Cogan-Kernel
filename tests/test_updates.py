@@ -33,9 +33,10 @@ class FakeNet:
 
     def __init__(self, *, runs=True, ack="android14-6.1-2026-10_r2", susfs=SUSFS_NEW, nomount="v2.3.0",
                  bakasu=("SUSFS diblokir di BakaSU / SUSFS blocked in BakaSU", None), manager=True, sidex="6" * 40,
-                 ksu_fits=True):
+                 ksu_fits=True, cogansu_wait=None):
         self.runs, self.ack, self.susfs, self.nomount, self.bakasu, self.manager = runs, ack, susfs, nomount, bakasu, manager
         self.ksu_fits_value = ksu_fits
+        self.cogansu_wait = cogansu_wait
         self.apis = {
             f"repos/{REPO}/actions/workflows/build-kernel.yml/runs?branch=main&status=completed&per_page=30":
                 {"workflow_runs": [{"id": 11, "run_number": 6, "html_url": "https://run/11", "created_at": "2026-10-24T01:00:00Z"}]
@@ -146,6 +147,10 @@ class FakeNet:
     def ksu_fits(self, main, susfs):
         return self.ksu_fits_value
 
+    def cogansu_susfs(self, tag, sha, susfs):
+        self.cogansu_asked = (tag, sha, susfs)
+        return self.cogansu_wait
+
     def sukisu_ready(self, builtin, susfs):
         return None
 
@@ -154,6 +159,25 @@ class UpdatesTest(unittest.TestCase):
     def run_check(self, **kwargs):
         builds, found = u.gather(FakeNet(**kwargs), REPO)
         return builds, {e["key"]: e for e in found}, u.summary(builds, found)
+
+    def test_cogansu_release_is_checked_against_the_newest_susfs(self):
+        net = FakeNet()
+        found = {e["key"]: e for e in u.gather(net, REPO)[1]}["cogansu"]
+        self.assertEqual(net.cogansu_asked[:2], ("v26.11.04-r1", "c" * 40))
+        self.assertIn("untuk CoganSU v26.11.04-r1: cocok", found["lines"][-1]["id"])
+        self.assertIn("for CoganSU v26.11.04-r1: fits", found["lines"][-1]["en"])
+        self.assertEqual(found["status"], "off")                         # never built, nothing to wait for
+
+    def test_cogansu_waits_for_what_resolve_names(self):
+        # Owner 2026-11-07: the same reason as the Builder (resolve.cogansu_susfs_wait), not always "simonpunk".
+        wait = r.Wait("Tunggu rilis CoganSU baru: patch SUSFS sudah cocok dengan CoganSU main.",
+                      "Wait for a new CoganSU release: SUSFS already fits CoganSU main.")
+        _, found, text = self.run_check(cogansu_wait=wait)
+        self.assertEqual(found["cogansu"]["status"], "wait")
+        self.assertEqual(found["cogansu"]["wait"], {"id": wait.id_text, "en": wait.en_text})
+        self.assertIn("untuk CoganSU v26.11.04-r1: belum cocok", found["cogansu"]["lines"][-1]["id"])
+        self.assertIn("Tunggu rilis CoganSU baru", text)
+        self.assertIn("Wait for a new CoganSU release", text)
 
     def test_newer_components_ask_for_a_build(self):
         builds, found, text = self.run_check()
