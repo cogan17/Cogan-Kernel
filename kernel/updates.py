@@ -186,6 +186,18 @@ class Net:
             r.run("git", "-C", repo, "fetch", "-q", "--depth=1", r.KSU, f"{main}:refs/check/ksu")
             return r.patch_fits(repo, "refs/check/ksu", r.run("git", "-C", repo, "show", f"refs/check/susfs:{r.SUSFS_KSU_PATCH}"))
 
+    def cogansu_susfs(self, tag, sha, susfs):
+        """None when SUSFS's patch for KernelSU (at susfs) fits CoganSU release tag (commit sha), else the
+        resolve.Wait the Builder would raise: a new CoganSU release, CoganSU merging KernelSU main, or simonpunk."""
+        with tempfile.TemporaryDirectory(prefix="updates-cogansu-", ignore_cleanup_errors=True) as repo:
+            self.git_dir(repo)
+            r.run("git", "-C", repo, "fetch", "-q", "--depth=1", r.SUSFS, f"{susfs}:refs/check/susfs")
+            r.run("git", "-C", repo, "fetch", "-q", "--depth=1", r.COGANSU, f"{sha}:refs/check/cogansu")
+            patch = r.run("git", "-C", repo, "show", f"refs/check/susfs:{r.SUSFS_KSU_PATCH}")
+            if r.patch_fits(repo, "refs/check/cogansu", patch):
+                return None
+            return r.cogansu_susfs_wait(repo, tag, sha, susfs, patch)
+
     def sukisu_ready(self, builtin, susfs):
         """None when SukiSU's builtin branch at builtin compiles with SUSFS commit susfs, else what is missing."""
         with tempfile.TemporaryDirectory(prefix="updates-sukisu-", ignore_cleanup_errors=True) as repo:
@@ -522,8 +534,9 @@ def check_sukisu(net, builds, susfs_head=None):
                 wait=wait, lines=lines, notes={"tag": stable["tag"], "text": stable["notes"]} if stable else None)
 
 
-def check_cogansu(net, builds):
-    """CoganSU (owner 2026-11-04): the Builder takes kernel and manager from the newest CoganSU release."""
+def check_cogansu(net, builds, susfs_head=None):
+    """CoganSU (owner 2026-11-04): the Builder takes kernel and manager from the newest CoganSU release. With
+    SUSFS (owner 2026-11-07) the same patch check as the Builder, and the same reason to wait."""
     snap = builds.get("CSU", {}).get("snap", {})
     base = snap.get("root_source", {})
     repo = r.COGANSU.removeprefix("https://github.com/")
@@ -534,16 +547,23 @@ def check_cogansu(net, builds):
         return item("cogansu", "CoganSU", base={"label": f"{base.get('tag')} `{short(base.get('commit'))}`"} if base else None,
                     status="wait", wait=wait)
     tag, sha = found
+    wait, lines = None, []
+    if susfs_head:
+        missing = net.cogansu_susfs(tag, sha, susfs_head)
+        lines.append({"id": f"SUSFS `{short(susfs_head)}` untuk CoganSU {tag}: " + ("belum cocok" if missing else "cocok"),
+                      "en": f"SUSFS `{short(susfs_head)}` for CoganSU {tag}: " + ("does not fit yet" if missing else "fits")})
+        if missing:
+            wait = {"id": missing.id_text, "en": missing.en_text}
     try:
         stable = github_release(net, repo, tag)
     except OSError:
         stable = None
     # Never built yet: an optional root manager, "not used" rather than "history unavailable".
-    status = "off" if not base else "same" if base.get("commit") == sha else "new"
+    status = "wait" if wait else "off" if not base else "same" if base.get("commit") == sha else "new"
     return item("cogansu", "CoganSU", base={"label": f"{base.get('tag')} `{short(base.get('commit'))}`"} if base else None,
                 stable={"label": tag, "date": stable["date"], "url": stable["url"]} if stable else {"label": tag},
                 changes=github_changes(net, repo, base.get("commit"), sha) if base else [], status=status,
-                notes={"tag": tag, "text": stable["notes"]} if stable else None)
+                wait=wait, lines=lines, notes={"tag": tag, "text": stable["notes"]} if stable else None)
 
 
 def check_nomount(net, builds):
@@ -625,7 +645,7 @@ def gather(net, repo):
     checks = [("ack", lambda: check_ack(net, clean)), ("susfs", lambda: check_susfs(net, clean)),
               ("sidex", lambda: check_sidex(net, clean)), ("ksun", lambda: check_ksun(net, clean)), ("bakasu", lambda: check_bakasu(net, clean, susfs_head)),
               ("ksu", lambda: check_ksu(net, clean, susfs_head)), ("sukisu", lambda: check_sukisu(net, clean, susfs_head)),
-              ("cogansu", lambda: check_cogansu(net, clean)),
+              ("cogansu", lambda: check_cogansu(net, clean, susfs_head)),
               ("nomount", lambda: check_nomount(net, clean)),
               ("bbg", lambda: check_branch(net, clean, "bbg", "Baseband Guard", r.BBG)),
               ("anykernel", lambda: check_anykernel(net, clean)),
