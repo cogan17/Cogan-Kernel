@@ -389,6 +389,8 @@
     ['Suhu turun ke {0} °C: CPU {1}%', 'Temperature down to {0} °C: CPU {1}%'],
     ['Badan HP {0} °C (batas {1} °C){2}: CPU besar {3}%, kecil {4}%', 'Phone body {0} °C (limit {1} °C){2}: big CPU {3}%, little {4}%'],
     ['Badan HP turun ke {0} °C: CPU besar {1}%, kecil {2}%', 'Phone body down to {0} °C: big CPU {1}%, little {2}%'],
+    ['Badan HP {0} °C, di bawah batas {1} °C: CPU besar {2}%, kecil {3}%', 'Phone body {0} °C, under the {1} °C limit: big CPU {2}%, little {3}%'],
+    ['Prosesor {0} °C, di bawah {1} °C: batas dilepas, CPU besar {2}%, kecil {3}%', 'Processor {0} °C, under {1} °C: cap released, big CPU {2}%, little {3}%'],
     ['Rem darurat: prosesor {0} °C ≥ {1} °C: CPU besar {2}%, kecil {3}%', 'Emergency brake: processor {0} °C ≥ {1} °C: big CPU {2}%, little {3}%'],
     ['Ada kontrol yang belum pulih; periksa izin node lalu Henti lagi', 'Some controls are not restored; check node permissions and tap Stop again'],
     ['Pemulihan CPU gagal: {0}', 'CPU restore failed: {0}'],

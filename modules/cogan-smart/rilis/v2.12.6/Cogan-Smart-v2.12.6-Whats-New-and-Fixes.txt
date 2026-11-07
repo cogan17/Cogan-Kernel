@@ -1,0 +1,31 @@
+Cogan Smart Kernel v2.12.6 / versionCode 37 — paket uji / test build
+
+Indonesia
+
+Perbaikan:
+- "Terapkan ulang tiap interval" yang dulu tersimpan diam-diam oleh tombol Paksa (v2.12.4 ke bawah) dilepas sekali saat update. Mode, target suhu dan setelan cas tetap.
+- Riwayat Daya tidak lagi menulis "Badan HP turun" saat yang dingin hanya prosesornya. Kini: "Badan HP … °C, di bawah batas …" atau "Prosesor … °C, di bawah 55 °C: batas dilepas".
+- Termasuk semua perbaikan v2.12.5 (hemat baterai saat layar mati).
+
+Batas:
+- Belum diuji di HP.
+
+Cara uji:
+1. Pasang sebagai pembaruan modul melalui root manager, lalu reboot.
+2. Tab Daya (Mode Dev): centang "Terapkan ulang tiap interval" harus mati.
+3. Setelah HP sempat dibatasi lalu dilepas, riwayat Daya menulis salah satu teks baru di atas.
+
+English
+
+Fixes:
+- "Reapply at each interval", saved behind the scenes by the Force button (v2.12.4 and older), is switched off once on update. Mode, temperature target and charging settings stay.
+- The Power history no longer writes "Phone body down" when only the processor cooled. Now: "Phone body … °C, under the … limit" or "Processor … °C, under 55 °C: cap released".
+- Includes every v2.12.5 fix (less battery use with the screen off).
+
+Limits:
+- Not phone-tested yet.
+
+How to test:
+1. Install as a module update through the root manager, then reboot.
+2. Power tab (Dev mode): "Reapply at each interval" must be off.
+3. After the phone was capped and released, the Power history shows one of the new texts above.

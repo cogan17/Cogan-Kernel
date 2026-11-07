@@ -35,7 +35,7 @@ HEAT_PAUSE_CHARGE=1    # Kernel Default: pause while charging heats the phone bo
 INTERVAL=10            # seconds between checks
 FORCE=0               # 1 = reapply supported controls on every check
 AUTOSTART=1
-CTRL_VER=3             # 3 = phone body thresholds of 24 Oct 2026; older configs keep their other settings
+CTRL_VER=4             # 3 = phone body thresholds of 24 Oct 2026; 4 = FORCE back to 0 once (v2.12.6)
 CPU_BRAKE=95           # every mode: emergency brake when the processor reaches this (°C), not a setting
 CPU_WORK=55            # the CPU is lowered only while the processor works this hot (°C): an idle CPU, or heat
                        # from charging or the room, is not what a lower CPU cap cools (owner 2026-10-24).
@@ -46,14 +46,14 @@ CPU_WORK=55            # the CPU is lowered only while the processor works this 
 defaults() {
   MODE=seimbang; TARGET_TEMP=41; GAME_LIMIT=44; SAVER_CAP=60; GAME_BOOST=1
   CHARGE_CTRL=1; CHARGE_STOP=95; CHARGE_RESUME=90; CHARGE_THERMAL=0; BATT_TEMP_STOP=42
-  HEAT_PAUSE_CHARGE=1; INTERVAL=10; FORCE=0; AUTOSTART=1; CTRL_VER=3
+  HEAT_PAUSE_CHARGE=1; INTERVAL=10; FORCE=0; AUTOSTART=1; CTRL_VER=4
 }
 
 limits_of() {   # limits_of KEY -> LIM_LO and LIM_HI of a numeric setting, no subshell
   case "$1" in
     TARGET_TEMP) LIM_LO=38; LIM_HI=46 ;;
     GAME_LIMIT) LIM_LO=40; LIM_HI=50 ;;
-    CTRL_VER) LIM_LO=3; LIM_HI=3 ;;
+    CTRL_VER) LIM_LO=3; LIM_HI=4 ;;
     SAVER_CAP) LIM_LO=30; LIM_HI=90 ;;
     GAME_BOOST|CHARGE_CTRL|CHARGE_THERMAL|HEAT_PAUSE_CHARGE|FORCE|AUTOSTART) LIM_LO=0; LIM_HI=1 ;;
     CHARGE_STOP) LIM_LO=50; LIM_HI=100 ;;
@@ -84,7 +84,10 @@ load_config() {
   [ "$CHARGE_RESUME" -lt "$CHARGE_STOP" ] || CHARGE_RESUME=$((CHARGE_STOP - 5))
   # Older temperatures do not carry over: v2.8 meant the processor, early v2.9.0 test builds used
   # 42/45 °C. Everything else (mode, charging, interval) stays as the user saved it.
-  if [ "$CTRL_VER" != 3 ]; then TARGET_TEMP=41; GAME_LIMIT=44; CTRL_VER=3; fi
+  if [ "$CTRL_VER" != 3 ] && [ "$CTRL_VER" != 4 ]; then TARGET_TEMP=41; GAME_LIMIT=44; fi
+  # Up to v2.12.4 Paksa saved FORCE=1 behind the user's back (audit 7 Nov 2026): a config from before v2.12.6
+  # starts again without "reapply at each interval". Ticked and saved from v2.12.6 on, it stays.
+  if [ "$CTRL_VER" != 4 ]; then FORCE=0; CTRL_VER=4; fi
 }
 
 write_config() {

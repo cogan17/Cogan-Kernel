@@ -117,7 +117,13 @@ step() {
   elif [ "$step_level" -gt "$old_level" ]; then
     event "Badan HP $(deg "$body") °C (batas $limit °C)${cause:+ ($cause)}: CPU besar $big%, kecil $little%"
   elif [ "$step_level" -lt "$old_level" ]; then
-    event "Badan HP turun ke $(deg "$body") °C: CPU besar $big%, kecil $little%"
+    # A step is given back when the phone body is well under the limit, or when the processor is under CPU_WORK
+    # while the body may still be warm (audit 7 Nov 2026: "turun" was written even when the body had not cooled).
+    if [ "$body" -gt -9999 ] && [ "$body" -le $(((limit - 1) * 10 - 5)) ]; then
+      event "Badan HP $(deg "$body") °C, di bawah batas $limit °C: CPU besar $big%, kecil $little%"
+    else
+      event "Prosesor $(deg "$main") °C, di bawah $CPU_WORK °C: batas dilepas, CPU besar $big%, kecil $little%"
+    fi
   fi
   if [ "$MODE" = game ] && [ "$GAME_BOOST" = 1 ]; then set_boost 1; else set_boost 0; fi
   FORCE=$step_force
