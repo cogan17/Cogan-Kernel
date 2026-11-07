@@ -61,11 +61,13 @@ block_source() {   # block_source PKG
   else notify "Izin memasang aplikasi dari $1 GAGAL dicabut. Cabut sendiri di Pengaturan, Instal aplikasi tak dikenal."; fi
   [ "$ca_ok" = 1 ]
 }
+# Fails when the query cannot be read or a revoke does not hold, so block.sh waits longer before the next try.
 block_pass() {   # a query that cannot be read is marked for the WebUI, never taken as "nothing allowed"
   if ! ca_q=$(cmd appops query-op REQUEST_INSTALL_PACKAGES allow 2>&1) || printf '%s\n' "$ca_q" | grep -Eiq "$CA_QUERY_BAD"; then
     mkdir -p "$CA_RUN" && : > "$CA_RUN/query.failed"; return 1
   fi
   rm -f "$CA_RUN/query.failed"
-  for ca_p in $ca_q; do is_source "$ca_p" && block_source "$ca_p"; done
-  return 0
+  ca_pass=0
+  for ca_p in $ca_q; do is_source "$ca_p" && { block_source "$ca_p" || ca_pass=1; }; done
+  return "$ca_pass"
 }

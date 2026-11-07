@@ -242,7 +242,7 @@ case "$1" in
   clear)
     was_running=0; sampler_pid >/dev/null && was_running=1
     stop_sampler || { echo '{"ok":0,"error":"Pencatat belum berhenti"}'; exit 0; }
-    rm -f "$CT_DATA"/data/*.tsv "$CT_RUN/cpu.prev" "$CT_RUN/pids.prev" "$CT_RUN/net.prev" "$CT_RUN/last" "$CT_RUN/notified"
+    rm -f "$CT_DATA"/data/*.tsv "$CT_RUN/cpu.prev" "$CT_RUN/pids.prev" "$CT_RUN/pids.light" "$CT_RUN/net.prev" "$CT_RUN/last" "$CT_RUN/notified"
     printf '%s\t%s\n' "$now" "$(kernel_release)" > "$CT_DATA/kernels.tsv"
     # Keep the Cogan Smart · Power mode that is active now.
     current=$(tail -n 1 "$CT_DATA/modes.tsv" 2>/dev/null | cut -f 2)

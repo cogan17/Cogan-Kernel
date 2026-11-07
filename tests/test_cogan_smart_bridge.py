@@ -83,6 +83,20 @@ class CompanionTests(unittest.TestCase):
         row = next(x for x in self.p.report('status')['controls'] if x['node'] == 'policy4')
         self.assertEqual((row['result'], row['actual'], row['requested']), ('applied', '1500000', '1500000'))
 
+    def test_paksa_forces_only_the_check_that_serves_it(self):
+        self.p.report('set', 'MODE', 'hemat')
+        self.p.set_temp(30)
+        self.p.step()
+        node = self.p.sys / 'devices/system/cpu/cpufreq/policy4/scaling_max_freq'
+        row = lambda: next(x for x in self.p.report('status')['controls'] if x['node'] == 'policy4')
+        write(node, '2400000\n')
+        write(self.p.data / 'run/apply.request', '1-1\n')   # what report.sh apply asks of the controller
+        state = self.p.step()
+        self.assertEqual((row()['result'], row()['actual'], state['force']), ('applied', '1500000', 0))
+        write(node, '2400000\n')   # the request is served: the next check respects the other writer again
+        self.p.step()
+        self.assertEqual((row()['result'], row()['actual']), ('conflict', '2400000'))
+
     def test_external_stricter_limit_is_retained_on_stop(self):
         self.p.report('set', 'MODE', 'hemat', 'FORCE', '1')
         self.p.set_temp(30)
@@ -130,7 +144,8 @@ class CompanionTests(unittest.TestCase):
         r = self.p.report('apply', 'MODE', 'hemat', 'SAVER_CAP', '50', 'CHARGE_CTRL', '0')
         self.assertEqual(r['ok'], 1)
         s = r['status']
-        self.assertEqual((s['running'], s['config']['FORCE'], s['state']['big']), (1, 1, 50))
+        # Paksa applies once; it no longer switches on "reapply at each interval" (audit 7 Nov 2026).
+        self.assertEqual((s['running'], s['config']['FORCE'], s['config']['AUTOSTART'], s['state']['big']), (1, 0, 1, 50))
         self.assertTrue(any(x['result'] == 'applied' for x in s['controls']))
         self.assertEqual((self.p.data/'run/apply.request').read_text(), (self.p.data/'run/applied.request').read_text())
 

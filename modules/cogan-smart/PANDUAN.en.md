@@ -61,7 +61,7 @@ Cogan Smart Kernel keeps the phone cool and records its temperature. This guide 
 - **🔍 Search** (above the list): type an app name or package name. It searches every app, whatever list is chosen.
 - **🛡️ Trust**: the app is no longer flagged and cannot be removed by accident.
 - **🗑 Remove completely**: releases its device admin, stops and removes the app for every user (Dual apps and Second space too), then deletes leftover data and identical APK files in storage. This cannot be undone. System apps and the root manager cannot be removed here.
-- **🛡️ Block APKs from chat & social apps**: on by default. Chat, social, email and SMS apps (WhatsApp, Telegram, Signal, Instagram, Facebook, Threads, TikTok, X, Gmail, Outlook, Messages and more) cannot install apps. If the right is turned on again in Settings, the module takes it back within seconds and shows a notification. Browsers and file managers still can.
+- **🛡️ Block APKs from chat & social apps**: on by default. Chat, social, email and SMS apps (WhatsApp, Telegram, Signal, Instagram, Facebook, Threads, TikTok, X, Gmail, Outlook, Messages and more) cannot install apps. If the right is turned on again in Settings, the module takes it back within seconds and shows a notification. With the screen off the module does not check (the right can only be turned on with the screen on), and while Android's service keeps failing, it checks less often, down to once a minute. Browsers and file managers still can.
 
 ## ℹ️ About
 

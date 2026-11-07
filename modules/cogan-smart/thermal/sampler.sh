@@ -6,9 +6,15 @@
 #
 # top = "name:pct_x10;..." (busiest user processes), net = "wifi:kB/s,cell:kB/s",
 # zones = "type=tenths_of_degC,...", cap = CPU cap of Cogan Smart · Power "big%/little%/step" or "-"
-# (since v2.9.1), load = CPU used by this module's recorder and power controller, % x10 of the whole phone
-# (since v2.9.1), ctl = the controller's part of load (since v2.9.1). cpu_x10 is -1 without a previous reading
-# and -2 right after the phone restarted (since v2.9.1). Usage: sampler.sh [--once]
+# (since v2.9.1), load = CPU used by this module's own scripts: the recorder, the power controller and, since
+# v2.12.5, the APK block, % x10 of the whole phone (since v2.9.1); the work they ask of system_server (dumpsys,
+# appops) is not in it. ctl = the controller's part of load (since v2.9.1). cpu_x10 is -1 without a previous
+# reading and -2 right after the phone restarted (since v2.9.1).
+# Light samples (since v2.12.5, audit 7 Nov): with the screen off and the phone body more than 2 °C under "hot",
+# only this module's own processes are read, not every /proc/[pid]/stat; top is "-" and kernel_x10 -1 then,
+# and also in the first full sample after a light one. Every sample is still taken every INTERVAL seconds, so the
+# summary's "% of time" stays a share of samples, and a phone heating up in a pocket gets the full scan again.
+# Usage: sampler.sh [--once]
 
 MODDIR=${0%/*}; [ "$MODDIR" = "$0" ] && MODDIR=.   # started as "sh report.sh"
 . "$MODDIR/common.sh"
@@ -21,14 +27,29 @@ sample() {
   [ -d "$CT_DATA/data" ] && [ -d "$CT_RUN" ] || mkdir -p "$CT_DATA/data" "$CT_RUN"
   heartbeat thermal
 
+  read_screen
+  read_zones
+  read_battery
+  heat=$body_t
+  case "$heat" in ''|*[!0-9-]*|-9999) heat=$battery ;; esac   # no phone body sensor: the battery
+
   # CPU since the previous sample: the whole phone, kernel threads and the busiest processes.
   read_into cpu_now "$CT_PROC/stat"
   read_into cpu_prev "$CT_RUN/cpu.prev"
-  cat "$CT_PROC"/[0-9]*/stat > "$CT_RUN/pids.new" 2>/dev/null
   [ -f "$CT_RUN/pids.prev" ] || : > "$CT_RUN/pids.prev"
   mods=$$; read_into cp_pid "$CP_DATA/run/pid"
   case "$cp_pid" in ''|*[!0-9]*) cp_pid="" ;; *) mods="$mods $cp_pid" ;; esac   # the power controller
-  awk -v prev="$cpu_prev" -v cur="$cpu_now" -v mods="$mods" -v ctl="${cp_pid:-0}" -f "$MODDIR/cpu.awk" \
+  read_into ca_pid "$CA_BLOCK_PID"
+  case "$ca_pid" in ''|*[!0-9]*) ;; *) mods="$mods $ca_pid" ;; esac             # the APK block (audit 7 Nov)
+  partial=0; [ -f "$CT_RUN/pids.light" ] && partial=1
+  if [ "$screen" = 0 ] && [ "$heat" -lt $(((HOT_TEMP - 2) * 10)) ]; then
+    for m_pid in $mods; do cat "$CT_PROC/$m_pid/stat"; done > "$CT_RUN/pids.new" 2>/dev/null
+    : > "$CT_RUN/pids.light"; partial=1
+  else
+    cat "$CT_PROC"/[0-9]*/stat > "$CT_RUN/pids.new" 2>/dev/null
+    rm -f "$CT_RUN/pids.light"
+  fi
+  awk -v prev="$cpu_prev" -v cur="$cpu_now" -v mods="$mods" -v ctl="${cp_pid:-0}" -v partial="$partial" -f "$MODDIR/cpu.awk" \
     "$CT_RUN/pids.prev" "$CT_RUN/pids.new" > "$CT_RUN/cpu.out" 2>/dev/null
   mv "$CT_RUN/pids.new" "$CT_RUN/pids.prev"
   echo "$cpu_now" > "$CT_RUN/cpu.prev"
@@ -60,12 +81,9 @@ sample() {
   fi
   echo "$now $wifi $cell" > "$CT_RUN/net.prev"
 
-  read_screen
   if [ "$screen" = 0 ]; then app=screen_off; FG_SET=""; else read_foreground; fi
-  read_battery
   read_gpu
   read_freqs
-  read_zones
   power_cap
 
   printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$now" "$app" "$screen" "$charging" "$current" \

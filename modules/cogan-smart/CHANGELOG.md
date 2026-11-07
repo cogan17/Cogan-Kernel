@@ -1,5 +1,29 @@
 # Cogan Smart Kernel
 
+## Lebih hemat baterai / Lighter on the battery — v2.12.5 (paket uji / test build)
+
+Indonesia:
+
+- Dari audit suhu dan baterai v2.12.4 (7 Nov 2026), diperiksa satu per satu di kode, bukan diterima mentah. Tidak ada fitur yang dibuang.
+- **Blokir APK**: saat layar mati tidak lagi menjalankan `cmd appops` tiap 5 detik; ia hanya membaca lampu layar (tanpa proses Android) dan langsung memeriksa begitu layar menyala. Izin memasang aplikasi hanya bisa dinyalakan dengan layar menyala, jadi perlindungan tetap sama. Bila layanan Android gagal terus atau pencabutan tidak berhasil, jedanya naik 10, 20, 40, lalu 60 detik, dan kembali 5 detik setelah berhasil. Pekerja blokir kini berhenti sendiri saat modul dinonaktifkan atau dihapus di root manager, tanpa menunggu reboot.
+- **Pencatat suhu**: saat layar mati dan Badan HP lebih dari 2 °C di bawah batas panas, sampel tidak lagi membaca stat semua proses; hanya proses modul sendiri. Jedanya tetap 20 detik, jadi "% waktu" di ringkasan tidak berubah artinya. Begitu layar menyala atau HP mulai hangat, pindai penuh kembali supaya penyebab panas tetap tercatat. Sampel ringan menulis aplikasi teratas "-" dan proses kernel -1.
+- **Beban modul** kini juga menghitung pekerja blokir APK. Labelnya menyebut cakupannya: "Beban skrip Cogan Smart (pencatat + pengendali + blokir APK)". Kerja yang diminta dari system_server (dumpsys, appops) tidak termasuk.
+- **Paksa / Terapkan** di Daya kini menerapkan satu kali dan tidak lagi menyalakan "Terapkan ulang tiap interval" diam-diam. Mengulang tiap interval hanya bila kotak itu dicentang, dan centangnya kini ikut terkirim saat Paksa. Paksa tetap menyalakan pengendali saat boot (AUTOSTART=1).
+- **Tombol Action** kini menulis apa yang diubahnya: pencatat suhu aktif dan perpindahan mode (mis. "Kernel Default → Performa").
+- Status "prosesor santai" diganti "prosesor di bawah 55 °C", karena nilainya memang ambang suhu prosesor, bukan pemakaian CPU.
+- Terukur lokal: tes lolos (mksh dan dash). Belum diuji di HP. Dampak ke baterai dan suhu baru bisa dipastikan dengan uji A/B/C di HP (layar mati, tanpa charger, durasi sama).
+
+English:
+
+- From the v2.12.4 temperature and battery audit (7 Nov 2026), each finding checked in the code, not taken as is. No feature removed.
+- **APK block**: with the screen off it no longer runs `cmd appops` every 5 seconds; it only reads the screen backlight (no Android process) and checks as soon as the screen lights up. The install right can only be turned on with the screen on, so protection is the same. While Android's service keeps failing or a revoke does not hold, the pause grows to 10, 20, 40, then 60 seconds, and goes back to 5 after a success. The block worker now stops by itself when the module is disabled or removed in the root manager, without a reboot.
+- **Temperature recorder**: with the screen off and the phone body more than 2 °C under the hot limit, a sample no longer reads the stat of every process, only the module's own. Samples stay 20 seconds apart, so "% of time" in the summary keeps its meaning. As soon as the screen lights up or the phone warms, the full scan returns so the cause of heat is still recorded. Light samples write the top app as "-" and kernel processes as -1.
+- **Module load** now also counts the APK block worker. Its label names the scope: "Cogan Smart script load (recorder + controller + APK block)". Work asked of system_server (dumpsys, appops) is not in it.
+- **Force / Apply** in Power now applies once and no longer turns on "Reapply at each interval" behind the scenes. It reapplies at each interval only with that box ticked, and the box is now sent along with Force. Force still starts the controller at boot (AUTOSTART=1).
+- **The Action button** now says what it changed: temperature recorder on, and the mode switch (e.g. "Kernel Default → Performa").
+- The "processor idle" status is now "processor under 55 °C", because the value is a processor temperature threshold, not CPU use.
+- Measured locally: tests pass (mksh and dash). Not phone-tested yet. The effect on battery and temperature can only be confirmed with the A/B/C test on the phone (screen off, no charger, equal durations).
+
 ## Cari aplikasi / Search apps — v2.12.4 (paket uji / test build)
 
 Indonesia:

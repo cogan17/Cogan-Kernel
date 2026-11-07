@@ -304,7 +304,7 @@ function summary_text(   s, i, g, nc, order, na, apps, nk, kord, line, nm, mord,
             deg(mode_peak[mord[i]]), int(mode_hot[mord[i]] * 100 / mode_n[mord[i]] + 0.5), int(mode_n[mord[i]] * 100 / n + 0.5))
     }
     s = s tr("\nCPU rata-rata ", "\nAverage CPU ") (cpun ? sprintf("%.0f%%", cpusum / cpun / 10) : "-") tr(" · proses kernel ", " · kernel processes ") (kernn ? sprintf("%.1f%%", kernsum / kernn / 10) : "-") "\n"
-    if (loadn) s = s sprintf(tr("⚙️ Beban Cogan Smart (pencatat + pengendali): %.1f%% CPU", "⚙️ Cogan Smart load (recorder + controller): %.1f%% CPU"), loadsum / loadn / 10) \
+    if (loadn) s = s sprintf(tr("⚙️ Beban skrip Cogan Smart (pencatat + pengendali + blokir APK): %.1f%% CPU", "⚙️ Cogan Smart script load (recorder + controller + APK block): %.1f%% CPU"), loadsum / loadn / 10) \
         (ctln ? sprintf(tr(" (pengendali %.1f%%)", " (controller %.1f%%)"), ctlsum / ctln / 10) : "") "\n"
     if (capn) s = s cap_text() "\n"
     if (stuck_list() != "") s = s tr("Sensor macet, tidak dihitung: ", "Stuck sensors, left out: ") stuck_list() "\n"
