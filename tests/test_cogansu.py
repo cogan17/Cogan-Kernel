@@ -29,10 +29,11 @@ APK = {"assets": [{"name": "CoganSU_v3.3.1_33000-release.apk", "browser_download
 
 
 class ResolveTest(unittest.TestCase):
-    def resolve(self, tags=TAGS, identity=True, fits=True, susfs_box=True):
+    def resolve(self, tags=TAGS, identity=True, fits=True, susfs_box=True, cogansu_main=None):
         def ls_remote(url, *patterns):
             if url == r.COGANSU:
-                return tags
+                return {"refs/heads/main": cogansu_main} if patterns == ("refs/heads/main",) and cogansu_main else \
+                    {} if patterns == ("refs/heads/main",) else tags
             if url == r.NOMOUNT:
                 return {"refs/tags/v2.2.0": "c" * 40}
             if url == r.SUSFS:
@@ -49,7 +50,8 @@ class ResolveTest(unittest.TestCase):
                 mock.patch.multiple(r, ls_remote=ls_remote, api=api, run=lambda *a, **k: "",
                                     ack_releases=lambda refs: [], pick_ack=lambda releases, wanted: [],
                                     cogansu_identity=mock.Mock(return_value=identity),
-                                    patch_fits=mock.Mock(return_value=fits),
+                                    patch_fits=mock.Mock(side_effect=fits) if isinstance(fits, list)
+                                    else mock.Mock(return_value=fits),
                                     susfs_sidex=lambda: {"commit": "6" * 40}):
             return r.resolve("CSU", "lts", tmp, susfs_box=susfs_box)
 
@@ -75,6 +77,26 @@ class ResolveTest(unittest.TestCase):
             self.resolve(fits=False)
         self.assertIn("Tunggu simonpunk menyesuaikan SUSFS", caught.exception.id_text)
         self.assertNotIn("susfs", self.resolve(fits=False, susfs_box=False))
+
+    def test_susfs_that_fits_kernelsu_main_waits_for_cogansu_not_simonpunk(self):
+        # Owner 2026-11-07: SUSFS 5f85e6e fitted KernelSU main 019a3c01 but not CoganSU; "tunggu simonpunk" misled.
+        with self.assertRaises(r.Wait) as caught:
+            self.resolve(fits=[False, True])           # CoganSU release, then KernelSU main
+        self.assertIn("Tunggu CoganSU menggabung KernelSU main `dddddddddddd`", caught.exception.id_text)
+        self.assertNotIn("Tunggu simonpunk", caught.exception.id_text)
+        self.assertIn("Wait for CoganSU to merge KernelSU main", caught.exception.en_text)
+
+    def test_susfs_that_fits_cogansu_main_waits_for_a_cogansu_release(self):
+        with self.assertRaises(r.Wait) as caught:
+            self.resolve(fits=[False, True], cogansu_main="9" * 40)   # release, then CoganSU main
+        self.assertIn("Tunggu rilis CoganSU baru", caught.exception.id_text)
+        self.assertIn("`999999999999`", caught.exception.id_text)
+        self.assertIn("Run Build CoganSU with Release Type Release", caught.exception.en_text)
+
+    def test_cogansu_main_at_the_release_is_not_checked_twice(self):
+        with self.assertRaises(r.Wait) as caught:
+            self.resolve(fits=[False, False], cogansu_main="b" * 40)  # main = release v26.11.04-r10
+        self.assertIn("Tunggu simonpunk menyesuaikan SUSFS", caught.exception.id_text)
 
     def test_identity_is_read_from_cogansu_mk(self):
         with tempfile.TemporaryDirectory() as tmp:
