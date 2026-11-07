@@ -29,7 +29,7 @@ APK = {"assets": [{"name": "CoganSU_v3.3.1_33000-release.apk", "browser_download
 
 
 class ResolveTest(unittest.TestCase):
-    def resolve(self, tags=TAGS, identity=True, fits=True, susfs_box=True, cogansu_main=None):
+    def resolve(self, tags=TAGS, identity=True, fits=True, susfs_box=True, cogansu_main=None, has_ksu=True):
         def ls_remote(url, *patterns):
             if url == r.COGANSU:
                 return {"refs/heads/main": cogansu_main} if patterns == ("refs/heads/main",) and cogansu_main else \
@@ -50,6 +50,7 @@ class ResolveTest(unittest.TestCase):
                 mock.patch.multiple(r, ls_remote=ls_remote, api=api, run=lambda *a, **k: "",
                                     ack_releases=lambda refs: [], pick_ack=lambda releases, wanted: [],
                                     cogansu_identity=mock.Mock(return_value=identity),
+                                    cogansu_has=mock.Mock(return_value=has_ksu),
                                     patch_fits=mock.Mock(side_effect=fits) if isinstance(fits, list)
                                     else mock.Mock(return_value=fits),
                                     susfs_sidex=lambda: {"commit": "6" * 40}):
@@ -57,7 +58,9 @@ class ResolveTest(unittest.TestCase):
 
     def test_kernel_and_manager_from_the_same_newest_release(self):
         snap = self.resolve()
-        self.assertEqual(snap["root_source"], {"repo": r.COGANSU, "tag": "v26.11.04-r10", "commit": "b" * 40})
+        self.assertEqual(snap["root_source"], {"repo": r.COGANSU, "tag": "v26.11.04-r10", "commit": "b" * 40,
+                                               "kernelsu_main": "d" * 40, "kernelsu_in_release": True})
+        self.assertFalse(self.resolve(has_ksu=False)["root_source"]["kernelsu_in_release"])
         self.assertEqual(snap["manager"], {"kind": "release", "tag": "v26.11.04-r10",
                                            "name": "CoganSU_v3.3.1_33000-release.apk", "url": "https://x/c.apk",
                                            "digest": "sha256:" + "1" * 64})
