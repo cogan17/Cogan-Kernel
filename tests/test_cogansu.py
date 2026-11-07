@@ -78,25 +78,30 @@ class ResolveTest(unittest.TestCase):
         self.assertIn("Tunggu simonpunk menyesuaikan SUSFS", caught.exception.id_text)
         self.assertNotIn("susfs", self.resolve(fits=False, susfs_box=False))
 
-    def test_susfs_that_fits_kernelsu_main_waits_for_cogansu_not_simonpunk(self):
-        # Owner 2026-11-07: SUSFS 5f85e6e fitted KernelSU main 019a3c01 but not CoganSU; "tunggu simonpunk" misled.
+    def test_susfs_that_fits_kernelsu_main_asks_for_build_cogansu_not_a_wait(self):
+        # Owner 2026-11-07: SUSFS 5f85e6e fitted KernelSU main 019a3c01 but not CoganSU; Build CoganSU merges
+        # KernelSU main by itself, so this is a build to run, never "tunggu".
         with self.assertRaises(r.Wait) as caught:
             self.resolve(fits=[False, True])           # CoganSU release, then KernelSU main
-        self.assertIn("Tunggu CoganSU menggabung KernelSU main `dddddddddddd`", caught.exception.id_text)
-        self.assertNotIn("Tunggu simonpunk", caught.exception.id_text)
-        self.assertIn("Wait for CoganSU to merge KernelSU main", caught.exception.en_text)
+        self.assertIn("Jalankan Build CoganSU dengan Release Type Release", caught.exception.id_text)
+        self.assertIn("KernelSU main `dddddddddddd` otomatis", caught.exception.id_text)
+        self.assertNotIn("Tunggu", caught.exception.id_text)
+        self.assertNotIn("Wait", caught.exception.en_text)
+        self.assertIsInstance(caught.exception, r.BuildFirst)
 
-    def test_susfs_that_fits_cogansu_main_waits_for_a_cogansu_release(self):
+    def test_susfs_that_fits_cogansu_main_asks_for_a_cogansu_release(self):
         with self.assertRaises(r.Wait) as caught:
             self.resolve(fits=[False, True], cogansu_main="9" * 40)   # release, then CoganSU main
-        self.assertIn("Tunggu rilis CoganSU baru", caught.exception.id_text)
-        self.assertIn("`999999999999`", caught.exception.id_text)
+        self.assertIn("Jalankan Build CoganSU dengan Release Type Release: CoganSU main `999999999999`",
+                      caught.exception.id_text)
+        self.assertNotIn("Tunggu", caught.exception.id_text)
         self.assertIn("Run Build CoganSU with Release Type Release", caught.exception.en_text)
 
     def test_cogansu_main_at_the_release_is_not_checked_twice(self):
         with self.assertRaises(r.Wait) as caught:
             self.resolve(fits=[False, False], cogansu_main="b" * 40)  # main = release v26.11.04-r10
         self.assertIn("Tunggu simonpunk menyesuaikan SUSFS", caught.exception.id_text)
+        self.assertNotIsInstance(caught.exception, r.BuildFirst)      # a real wait: KernelSU main does not fit
 
     def test_identity_is_read_from_cogansu_mk(self):
         with tempfile.TemporaryDirectory() as tmp:
