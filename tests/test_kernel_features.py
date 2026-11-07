@@ -35,18 +35,18 @@ UTF8_FIXED = """\t\t} else if (ccc == DECOMPOSE) {
 class KernelFeaturesTests(unittest.TestCase):
     def test_full_ksun_susfs_build(self):
         self.assertEqual(kf.features(FULL, BBR_V3_SOURCE),
-                         ["SUSFS", "BBRv3 (default)", "BBG", "NoMount", "No Unicode fix", "No Cogan Bridge", "Full LTO"])
+                         ["SUSFS", "BBRv3 (default)", "BBG", "NoMount", "No Unicode fix", "No Cogan Bridge"])
 
     def test_unicode_fix_is_read_from_the_source(self):
         config = FULL + "CONFIG_UNICODE=y\n"
         self.assertEqual(kf.features(config, BBR_V3_SOURCE, UTF8_FIXED),
-                         ["SUSFS", "BBRv3 (default)", "BBG", "NoMount", "Unicode fix", "No Cogan Bridge", "Full LTO"])
+                         ["SUSFS", "BBRv3 (default)", "BBG", "NoMount", "Unicode fix", "No Cogan Bridge"])
         self.assertNotIn("Unicode fix", kf.features(config, BBR_V3_SOURCE, UTF8_STOCK))
         self.assertNotIn("Unicode fix", kf.features(FULL, BBR_V3_SOURCE, UTF8_FIXED))  # no CONFIG_UNICODE
 
     def test_cogan_bridge_is_reported(self):
         self.assertEqual(kf.features(FULL + "CONFIG_COGAN_BRIDGE=y\n", BBR_V3_SOURCE),
-                         ["SUSFS", "BBRv3 (default)", "BBG", "NoMount", "No Unicode fix", "Cogan Bridge", "Full LTO"])
+                         ["SUSFS", "BBRv3 (default)", "BBG", "NoMount", "No Unicode fix", "Cogan Bridge"])
 
     def test_bbr3_name_is_reported(self):
         source = BBR_V3_SOURCE + '\tstrscpy(tcp_bbr3_cong_ops.name, "bbr3", sizeof(tcp_bbr3_cong_ops.name));\n'
@@ -64,11 +64,23 @@ class KernelFeaturesTests(unittest.TestCase):
         config = FULL.replace('CONFIG_DEFAULT_TCP_CONG="bbr"', 'CONFIG_DEFAULT_TCP_CONG="cubic"')
         self.assertIn("BBRv3", kf.features(config, BBR_V3_SOURCE))
 
-    def test_networking_off_vanilla_thin_lto(self):
+    def test_networking_off_vanilla_and_lto_never_named(self):
+        # LTO was removed from the Builder (owner 2026-11-07); every build is without LTO, so it is not named.
         config = "# CONFIG_TCP_CONG_BBR is not set\nCONFIG_LTO_CLANG_THIN=y\n"
         off = ["No SUSFS", "No BBR", "No BBG", "No NoMount", "No Unicode fix", "No Cogan Bridge"]
-        self.assertEqual(kf.features(config, BBR_V3_SOURCE), off + ["Thin LTO"])
-        self.assertEqual(kf.features("", ""), off + ["No LTO"])
+        self.assertEqual(kf.features(config, BBR_V3_SOURCE), off)
+        self.assertEqual(kf.features("", ""), off)
+
+    def test_the_builder_has_no_lto_choice_and_the_build_refuses_lto(self):
+        # Owner 2026-11-07: "hapus semua fitur lto". The stock HyperOS 302 kernel is CONFIG_LTO_NONE=y with CFI on.
+        root = Path(__file__).resolve().parents[1]
+        workflow = (root / ".github/workflows/build-kernel.yml").read_text()
+        build = (root / "kernel/build.sh").read_text()
+        self.assertNotRegex(workflow, r"(?i)\blto\b")
+        self.assertIn('echo "CONFIG_LTO_NONE=y"', build)
+        self.assertIn("CONFIG_LTO_NONE=y CONFIG_CFI_CLANG=y)", build)
+        self.assertIn("! grep -q '^CONFIG_LTO_CLANG' \"$KOUT/.config\" || fail", build)
+        self.assertNotIn("CONFIG_LTO_CLANG_FULL=y", build)
 
     def test_features_turned_off_are_named(self):
         # Owner 2026-11-02 (r19 flashed without SUSFS): "lebih bagus lagi dilaporkannya tidak ada susfs".
@@ -93,7 +105,7 @@ class KernelFeaturesTests(unittest.TestCase):
                                       "--github-env", str(env)]), 0)
             self.assertEqual(env.read_text(),
                              "KERNEL_FEATURES=SUSFS, BBRv3 (default), BBG, NoMount, No Unicode fix, "
-                             "No Cogan Bridge, Full LTO\n")
+                             "No Cogan Bridge\n")
             self.assertEqual(kf.main([str(directory / "missing"), str(directory / "src")]), 1)
 
 

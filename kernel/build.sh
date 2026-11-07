@@ -9,7 +9,7 @@
 # Environment:
 #   SNAPSHOT     resolve.py JSON of the root (KSUN, BSU, KSU, SUKI or CSU)
 #   ACK_TAG ACK_COMMIT SUBLEVEL   the ACK release of this job
-#   BRAND REVISION RUN_NUMBER LTO(full|thin|none) BUILD_TIME(N or a date)
+#   BRAND REVISION RUN_NUMBER BUILD_TIME(N or a date)
 #   NOMOUNT BBG NETWORKING UNICODE (true|false)   OUT (results)   GH_TOKEN
 set -euo pipefail
 
@@ -291,10 +291,9 @@ DEFCONFIG=arch/arm64/configs/gki_defconfig
   cat "$HERE/configs/compat.config"
   if [ "${NETWORKING:-true}" = "true" ]; then cat "$HERE/configs/custom.config"
   else sed '/^# Networking extras$/,$d' "$HERE/configs/custom.config"; fi
-  case "${LTO:-none}" in  # the Builder form defaults to Tanpa LTO (owner 2026-11-01)
-    full) printf 'CONFIG_LTO_NONE=n\nCONFIG_LTO_CLANG_FULL=y\n' ;;
-    thin) printf 'CONFIG_LTO_NONE=n\nCONFIG_LTO_CLANG_THIN=y\n' ;;
-  esac
+  # No LTO, like the phone's stock kernel (HyperOS 302 IKCONFIG: CONFIG_LTO_NONE=y, CFI and SCS on).
+  # Thin and Full LTO were removed from the Builder (owner 2026-11-07).
+  echo "CONFIG_LTO_NONE=y"
   echo "CONFIG_RCU_TRACE=n"
   cat "$HERE/configs/hardening.config"
   # Last, so it wins: what the phone's vendor modules were built against (IPV6_SUBTREES off, HZ 250).
@@ -341,12 +340,13 @@ MAKE=(make -j"$(nproc)" O="$KOUT" ARCH=arm64 LLVM=1 LLVM_IAS=1 CROSS_COMPILE=aar
 # wins over its Kconfig default, so olddefconfig does not reset it back to the real clang.
 [ -z "$CC_TEXT" ] || MAKE+=(CC_VERSION_TEXT="$CC_TEXT")
 "${MAKE[@]}" gki_defconfig
-required=(CONFIG_KSU=y CONFIG_COGAN_BRIDGE=y CONFIG_HZ=250 CONFIG_SECURITY_DMESG_RESTRICT=y)
+required=(CONFIG_KSU=y CONFIG_COGAN_BRIDGE=y CONFIG_HZ=250 CONFIG_SECURITY_DMESG_RESTRICT=y CONFIG_LTO_NONE=y CONFIG_CFI_CLANG=y)
 [ "$SUSFS_ON" = true ] && required+=(CONFIG_KSU_SUSFS=y CONFIG_KSU_SUSFS_SUS_MAP=y)
 for line in "${required[@]}"; do
   grep -qx "$line" "$KOUT/.config" || fail "$line missing from the resolved config"
 done
 [ "$SUSFS_ON" = true ] || ! grep -qx 'CONFIG_KSU_SUSFS=y' "$KOUT/.config" || fail "SUSFS unticked but CONFIG_KSU_SUSFS=y"
+! grep -q '^CONFIG_LTO_CLANG' "$KOUT/.config" || fail "LTO must stay off, like the stock kernel (owner 2026-11-07)"
 ! grep -qx 'CONFIG_KPM=y' "$KOUT/.config" || fail "CONFIG_KPM must stay off (owner 2026-11-02)"
 ! grep -qx 'CONFIG_IPV6_SUBTREES=y' "$KOUT/.config" || fail "CONFIG_IPV6_SUBTREES must stay off (vendor KMI)"
 echo "::endgroup::"

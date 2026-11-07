@@ -113,7 +113,7 @@ Modul yang dipakai owner di HP-nya bersama Cogan Kernel. Klik nama modul untuk m
 - ✅ **NoMount** (modul tanpa mount, tertanam di kernel), **Baseband Guard**
 - ✅ **BBRv3** sebagai TCP bawaan (`bbr` dan `bbr3`)
 - ✅ **Cogan Bridge**: kernel dan modul Cogan Smart saling mengenal (`/sys/kernel/cogan`)
-- ✅ Tanpa LTO sebagai bawaan (build lebih cepat; Thin/Full LTO tetap bisa dipilih), cek perangkat di ZIP (hanya `rothko`)
+- ✅ Tanpa LTO, sama dengan kernel bawaan HP (CFI dan Shadow Call Stack tetap aktif), cek perangkat di ZIP (hanya `rothko`)
 - ⚙️ Opsional, dicentang secara default: **Unicode fix** (WildKernel). Nama file berisi karakter tak terlihat (mis. zero-width) di penyimpanan internal tidak lagi dianggap sama dengan nama tanpa karakter itu (celah *unicode bypass* untuk menemukan path yang disembunyikan)
 - ⚙️ Opsional, **mati secara default**: **Samarkan identitas kernel**. `uname` dan `/proc/version` memakai format GKI bawaan (`6.1.176-android14-11-g…-ab…`), bukan nama `Cogan`. Hanya tampilan, bukan penyembunyian berbasis perilaku
 - ✅ Tiap build dicek otomatis terhadap ABI kernel bawaan (gate KMI); gagal = tidak ada ZIP
