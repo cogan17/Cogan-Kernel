@@ -168,16 +168,26 @@ class UpdatesTest(unittest.TestCase):
         self.assertIn("for CoganSU v26.11.04-r1: fits", found["lines"][-1]["en"])
         self.assertEqual(found["status"], "off")                         # never built, nothing to wait for
 
+    def test_cogansu_behind_kernelsu_is_a_build_to_run_not_a_wait(self):
+        # Owner 2026-11-07: Build CoganSU merges KernelSU main by itself; "tunggu" only for a main developer.
+        action = r.BuildFirst("Jalankan Build CoganSU dengan Release Type Release: ia menggabung KernelSU main otomatis.",
+                              "Run Build CoganSU with Release Type Release: it merges KernelSU main by itself.")
+        _, found, text = self.run_check(cogansu_wait=action)
+        self.assertEqual(found["cogansu"]["status"], "new")
+        self.assertIsNone(found["cogansu"]["wait"])
+        self.assertIn("➡️ Jalankan Build CoganSU", found["cogansu"]["lines"][-1]["id"])
+        self.assertNotIn("CoganSU: Jalankan", text)                    # not listed under "Belum bisa dibangun"
+
     def test_cogansu_waits_for_what_resolve_names(self):
         # Owner 2026-11-07: the same reason as the Builder (resolve.cogansu_susfs_wait), not always "simonpunk".
-        wait = r.Wait("Tunggu rilis CoganSU baru: patch SUSFS sudah cocok dengan CoganSU main.",
-                      "Wait for a new CoganSU release: SUSFS already fits CoganSU main.")
+        wait = r.Wait("Tunggu simonpunk menyesuaikan SUSFS dengan KernelSU.",
+                      "Wait for simonpunk to adapt SUSFS to KernelSU.")
         _, found, text = self.run_check(cogansu_wait=wait)
         self.assertEqual(found["cogansu"]["status"], "wait")
         self.assertEqual(found["cogansu"]["wait"], {"id": wait.id_text, "en": wait.en_text})
         self.assertIn("untuk CoganSU v26.11.04-r1: belum cocok", found["cogansu"]["lines"][-1]["id"])
-        self.assertIn("Tunggu rilis CoganSU baru", text)
-        self.assertIn("Wait for a new CoganSU release", text)
+        self.assertIn("Tunggu simonpunk menyesuaikan SUSFS dengan KernelSU", text)
+        self.assertIn("Wait for simonpunk to adapt SUSFS to KernelSU", text)
 
     def test_newer_components_ask_for_a_build(self):
         builds, found, text = self.run_check()

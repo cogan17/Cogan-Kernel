@@ -547,19 +547,24 @@ def check_cogansu(net, builds, susfs_head=None):
         return item("cogansu", "CoganSU", base={"label": f"{base.get('tag')} `{short(base.get('commit'))}`"} if base else None,
                     status="wait", wait=wait)
     tag, sha = found
-    wait, lines = None, []
+    wait, lines, build_first = None, [], False
     if susfs_head:
         missing = net.cogansu_susfs(tag, sha, susfs_head)
         lines.append({"id": f"SUSFS `{short(susfs_head)}` untuk CoganSU {tag}: " + ("belum cocok" if missing else "cocok"),
                       "en": f"SUSFS `{short(susfs_head)}` for CoganSU {tag}: " + ("does not fit yet" if missing else "fits")})
-        if missing:
+        if isinstance(missing, r.BuildFirst):
+            # Build CoganSU merges KernelSU main by itself: something to build, not to wait for.
+            build_first = True
+            lines.append({"id": "➡️ " + missing.id_text, "en": "➡️ " + missing.en_text})
+        elif missing:
             wait = {"id": missing.id_text, "en": missing.en_text}
     try:
         stable = github_release(net, repo, tag)
     except OSError:
         stable = None
     # Never built yet: an optional root manager, "not used" rather than "history unavailable".
-    status = "wait" if wait else "off" if not base else "same" if base.get("commit") == sha else "new"
+    status = ("wait" if wait else "new" if build_first else "off" if not base
+              else "same" if base.get("commit") == sha else "new")
     return item("cogansu", "CoganSU", base={"label": f"{base.get('tag')} `{short(base.get('commit'))}`"} if base else None,
                 stable={"label": tag, "date": stable["date"], "url": stable["url"]} if stable else {"label": tag},
                 changes=github_changes(net, repo, base.get("commit"), sha) if base else [], status=status,

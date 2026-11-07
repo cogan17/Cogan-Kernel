@@ -94,6 +94,11 @@ class Wait(Exception):
         self.id_text, self.en_text = id_text, en_text
 
 
+class BuildFirst(Wait):
+    """Not a wait: one build of ours to run first (owner 2026-11-07: "tunggu" only when a main developer
+    waits). The Builder still stops; Cek pembaruan shows it as something new, not as waiting."""
+
+
 def run(*cmd, cwd=None, timeout=900):
     return subprocess.run(cmd, cwd=cwd, check=True, capture_output=True, text=True, timeout=timeout).stdout
 
@@ -428,30 +433,30 @@ def patch_fits(repo, ref, patch_text):
 
 
 def cogansu_susfs_wait(repo, tag, sha, susfs, patch):
-    """Whom to wait for when the newest SUSFS patch for KernelSU does not fit CoganSU release tag (owner
-    2026-11-07: "tunggu simonpunk" was wrong once simonpunk had already followed KernelSU main). In order: a
-    newer CoganSU main that already takes it (only a CoganSU release is missing), official KernelSU main that
-    takes it (CoganSU has to merge KernelSU main first), else simonpunk."""
+    """Why the newest SUSFS patch for KernelSU does not fit CoganSU release tag. Build CoganSU merges the newest
+    KernelSU main by itself (owner 2026-11-07: "tidak perlu ada kata menunggu … Kecuali dari Dev utama ada
+    kata menunggu"), so a CoganSU that only lags KernelSU is not a wait but one Build CoganSU to run; only
+    SUSFS not fitting KernelSU main either is a wait (for simonpunk)."""
     main = ls_remote(COGANSU, "refs/heads/main").get("refs/heads/main")
     if main and main != sha:
         run("git", "-C", repo, "fetch", "-q", "--depth=1", COGANSU, f"{main}:refs/check/cogansu-main")
         if patch_fits(repo, "refs/check/cogansu-main", patch):
-            return Wait(f"Tunggu rilis CoganSU baru: patch SUSFS `{susfs[:12]}` sudah cocok dengan CoganSU main "
-                        f"`{main[:12]}`, belum dengan rilis {tag}. Jalankan Build CoganSU dengan Release Type Release.",
-                        f"Wait for a new CoganSU release: SUSFS `{susfs[:12]}` already fits CoganSU main "
-                        f"`{main[:12]}`, not release {tag}. Run Build CoganSU with Release Type Release.")
+            return BuildFirst(f"Jalankan Build CoganSU dengan Release Type Release: CoganSU main `{main[:12]}` sudah cocok "
+                        f"dengan SUSFS `{susfs[:12]}`, rilis {tag} belum.",
+                        f"Run Build CoganSU with Release Type Release: CoganSU main `{main[:12]}` already fits "
+                        f"SUSFS `{susfs[:12]}`, release {tag} does not.")
     ksu = ls_remote(KSU, "refs/heads/main").get("refs/heads/main")
     if ksu:
         run("git", "-C", repo, "fetch", "-q", "--depth=1", KSU, f"{ksu}:refs/check/ksu")
         if patch_fits(repo, "refs/check/ksu", patch):
-            return Wait(f"Tunggu CoganSU menggabung KernelSU main `{ksu[:12]}`: patch SUSFS `{susfs[:12]}` sudah cocok "
-                        f"dengan KernelSU main, belum dengan CoganSU {tag} (bukan menunggu simonpunk).",
-                        f"Wait for CoganSU to merge KernelSU main `{ksu[:12]}`: SUSFS `{susfs[:12]}` already fits "
-                        f"KernelSU main, not CoganSU {tag} (not waiting for simonpunk).")
-    return Wait(f"Tunggu simonpunk menyesuaikan SUSFS `{susfs[:12]}` dengan CoganSU {tag} "
-                "(patch SUSFS untuk KernelSU belum cocok, juga dengan KernelSU main).",
-                f"Wait for simonpunk to adapt SUSFS `{susfs[:12]}` to CoganSU {tag} "
-                "(the SUSFS patch for KernelSU does not fit yet, nor KernelSU main).")
+            return BuildFirst(f"Jalankan Build CoganSU dengan Release Type Release: ia menggabung KernelSU main `{ksu[:12]}` "
+                        f"otomatis, yang sudah cocok dengan SUSFS `{susfs[:12]}` (rilis {tag} belum).",
+                        f"Run Build CoganSU with Release Type Release: it merges KernelSU main `{ksu[:12]}` by itself, "
+                        f"which already fits SUSFS `{susfs[:12]}` (release {tag} does not).")
+    return Wait(f"Tunggu simonpunk menyesuaikan SUSFS `{susfs[:12]}` dengan KernelSU "
+                f"(patch SUSFS untuk KernelSU belum cocok dengan KernelSU main maupun CoganSU {tag}).",
+                f"Wait for simonpunk to adapt SUSFS `{susfs[:12]}` to KernelSU "
+                f"(the SUSFS patch for KernelSU fits neither KernelSU main nor CoganSU {tag}).")
 
 
 def resolve(root, sublevel, work, unicode=False, susfs_box=True):
