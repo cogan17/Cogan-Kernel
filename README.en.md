@@ -113,7 +113,7 @@ Modules the owner runs on their phone together with Cogan Kernel. Click a module
 - ✅ **NoMount** (mountless modules, built into the kernel), **Baseband Guard**
 - ✅ **BBRv3** as the default TCP (`bbr` and `bbr3`)
 - ✅ **Cogan Bridge**: the kernel and the Cogan Smart module know each other (`/sys/kernel/cogan`)
-- ✅ No LTO by default (faster builds; Thin/Full LTO can still be chosen), device check in the ZIP (`rothko` only)
+- ✅ No LTO, like the phone's stock kernel (CFI and Shadow Call Stack stay on), device check in the ZIP (`rothko` only)
 - ⚙️ Optional, ticked by default: **Unicode fix** (WildKernel). File names with invisible characters (e.g. zero-width) on internal storage no longer count as the same name without them (the *unicode bypass* gap used to find hidden paths)
 - ⚙️ Optional, **off by default**: **Disguise kernel identity**. `uname` and `/proc/version` use the stock GKI format (`6.1.176-android14-11-g…-ab…`) instead of the `Cogan` name. Display only, not behaviour-based hiding
 - ✅ Every build is checked automatically against the stock kernel ABI (KMI gate); failure = no ZIP

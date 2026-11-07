@@ -53,14 +53,6 @@ on:
           # Every root manager, BakaSU and SukiSU included (owner 2026-11-06: "Tambahkan all, sebelumnya yg sudah ada
           # jangan diganggu"). The one combination above stays as it is.
           - "Semua / All"
-      lto:
-        description: "LTO"
-        type: choice
-        default: "Tanpa LTO"
-        options:
-          - "Tanpa LTO"
-          - "Thin LTO"
-          - "Full LTO"
       build_revision:
         description: "Build Revision: r10 · kosong / empty = nomor run / run number"
         type: string
@@ -322,7 +314,7 @@ jobs:
           sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache /usr/local/share/boost
           sudo apt-get update -qq
           sudo apt-get install -y -qq bc bison flex libssl-dev libelf-dev libdw-dev zlib1g-dev cmake ccache cpio zstd zip unzip
-          # Full LTO links the whole kernel at once: room to breathe.
+          # Room for linking vmlinux and the KMI gate.
           sudo swapoff -a || true
           sudo fallocate -l 24G /swapfile && sudo chmod 600 /swapfile && sudo mkswap -q /swapfile && sudo swapon /swapfile
           df -h / | tail -1; free -h | head -2
@@ -346,7 +338,6 @@ jobs:
           BRAND: ${{ inputs.brand_name }}
           REVISION: ${{ inputs.build_revision }}
           RUN_NUMBER: ${{ github.run_number }}
-          LTO: ${{ inputs.lto == 'Thin LTO' && 'thin' || inputs.lto == 'Tanpa LTO' && 'none' || 'full' }}
           BUILD_TIME: ${{ inputs.build_time }}
           NOMOUNT: ${{ inputs.use_nomount }}
           BBG: ${{ inputs.use_bbg }}

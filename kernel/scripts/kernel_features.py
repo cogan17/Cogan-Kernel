@@ -12,15 +12,16 @@ so the line cannot claim a feature the build lacks:
   Unicode fix      CONFIG_UNICODE=y and fs/unicode/utf8-norm.c checks an empty
                    decomposition before it moves on (WildKernel's unicode bypass fix)
   Cogan Bridge     CONFIG_COGAN_BRIDGE=y
-  LTO              Full / Thin / No LTO
   Disguise         CONFIG_LOCALVERSION in the stock GKI format (the "Samarkan identitas kernel" box)
 
-A feature that is on by default and was turned off is named too, "No <feature>" like "No LTO"
+A feature that is on by default and was turned off is named too, "No <feature>" like "No SUSFS"
 (owner 2026-11-02: "lebih bagus lagi dilaporkannya tidak ada susfs/no susfs"), so the flasher and the
 release notes say what the kernel lacks. An off-by-default extra (Disguise) is named only when on.
 
-Prints one line such as "SUSFS, BBRv3 (default), BBG, NoMount, Full LTO" or
-"No SUSFS, BBRv3 (default), BBG, No NoMount, Unicode fix, Cogan Bridge, No LTO".
+LTO is not named: every build is without LTO, like the stock kernel (owner 2026-11-07).
+
+Prints one line such as "SUSFS, BBRv3 (default), BBG, NoMount, Cogan Bridge" or
+"No SUSFS, BBRv3 (default), BBG, No NoMount, Unicode fix, Cogan Bridge".
 
 Usage: kernel_features.py CONFIG KERNEL_SOURCE [--github-env FILE]
 """
@@ -62,12 +63,6 @@ def features(config_text, bbr_source="", unicode_source=""):
     found.append("NoMount" if on("CONFIG_NOMOUNT") else "No NoMount")
     found.append("Unicode fix" if on("CONFIG_UNICODE") and UNICODE_FIX.search(unicode_source) else "No Unicode fix")
     found.append("Cogan Bridge" if on("CONFIG_COGAN_BRIDGE") else "No Cogan Bridge")
-    if on("CONFIG_LTO_CLANG_FULL"):
-        found.append("Full LTO")
-    elif on("CONFIG_LTO_CLANG_THIN"):
-        found.append("Thin LTO")
-    else:
-        found.append("No LTO")
     if DISGUISE.match(config.get("CONFIG_LOCALVERSION", "")):
         found.append("Disguise")
     return found
