@@ -1,0 +1,45 @@
+Cogan Smart Kernel v2.12.5 / versionCode 36 — paket uji / test build
+
+Indonesia
+
+Perbaikan (dari audit suhu dan baterai v2.12.4, 7 Nov 2026):
+- Blokir APK tidak memeriksa izin saat layar mati; begitu layar menyala, pemeriksaan langsung jalan lagi.
+- Bila layanan Android gagal terus, blokir APK memeriksa makin jarang (sampai sekali per menit), bukan tiap 5 detik.
+- Blokir APK berhenti sendiri saat modul dinonaktifkan atau dihapus di root manager.
+- Pencatat suhu tidak membaca semua proses saat layar mati dan HP dingin; pindai penuh kembali saat layar menyala atau HP mulai hangat.
+- Angka beban modul kini juga menghitung blokir APK, dan labelnya menyebut cakupannya.
+- Paksa / Terapkan di Daya menerapkan satu kali; tidak lagi menyalakan "Terapkan ulang tiap interval" diam-diam.
+- Tombol Action menulis apa yang diubahnya (pencatat suhu, mode lama → mode baru).
+- "Prosesor santai" diganti "prosesor di bawah 55 °C" (itu ambang suhu, bukan pemakaian CPU).
+- Tidak ada fitur yang dibuang.
+
+Batas:
+- Belum diuji di HP. Dampak baterai dan suhu belum terukur.
+
+Cara uji:
+1. Pasang sebagai pembaruan modul melalui root manager, lalu reboot.
+2. Tab 📱 Aplikasi: blokir tetap aktif. Nyalakan izin "Instal aplikasi tak dikenal" untuk WhatsApp di Pengaturan: harus dicabut dalam beberapa detik dengan notifikasi.
+3. Tab Suhu: baris beban menyebut "pencatat + pengendali + blokir APK".
+4. Uji baterai A/B/C sesuai audit (layar mati, tanpa charger, durasi sama), bandingkan dengan v2.12.4.
+
+English
+
+Fixes (from the v2.12.4 temperature and battery audit, 7 Nov 2026):
+- The APK block does not check the install right while the screen is off; it checks again as soon as the screen lights up.
+- While Android's service keeps failing, the APK block checks less and less often (down to once a minute), not every 5 seconds.
+- The APK block stops by itself when the module is disabled or removed in the root manager.
+- The temperature recorder does not read every process while the screen is off and the phone is cool; the full scan returns when the screen lights up or the phone warms.
+- The module load figure now also counts the APK block, and its label names its scope.
+- Force / Apply in Power applies once; it no longer turns on "Reapply at each interval" behind the scenes.
+- The Action button says what it changed (temperature recorder, old mode → new mode).
+- "Processor idle" is now "processor under 55 °C" (it is a temperature threshold, not CPU use).
+- No feature removed.
+
+Limits:
+- Not phone-tested yet. The effect on battery and temperature is not measured yet.
+
+How to test:
+1. Install as a module update through the root manager, then reboot.
+2. 📱 Apps tab: the block stays on. Turn on "Install unknown apps" for WhatsApp in Settings: it must be taken back within seconds with a notification.
+3. Temperature tab: the load line says "recorder + controller + APK block".
+4. Battery test A/B/C as in the audit (screen off, no charger, equal durations), compared with v2.12.4.

@@ -99,6 +99,7 @@ event() {   # one line in the WebUI's activity log
   printf '%s\t%s\n' "$(date +%s)" "$*" >> "$EVENTS"
 }
 
+mode_label() { case "$1" in hemat) echo Hemat ;; game) echo Performa ;; *) echo 'Kernel Default' ;; esac; }
 deg() { echo "$(($1 / 10)).$(( ($1 < 0 ? -$1 : $1) % 10 ))"; }
 
 # One sensor read for the controller, in tenths of °C: MAIN_T, the hottest CPU/GPU sensor, and BODY_T,

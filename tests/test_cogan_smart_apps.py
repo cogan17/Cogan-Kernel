@@ -330,6 +330,38 @@ esac""")
         alive[0].wait(timeout=10)
         self.assertFalse((self.data / "run/block.pid").exists())
 
+    def test_the_block_waits_for_the_screen_and_ends_with_the_module(self):
+        # Audit 7 Nov 2026: one appops query every 5 s also with the screen off, and the worker outlived a module
+        # disabled in the manager.
+        light = self.base / "sys/class/backlight/panel0-backlight/brightness"
+        write(light, "0\n")
+        env = dict(self.env, CB_SYS=str(self.base / "sys"))
+        write(self.data / "config", "BLOCK=1\n")
+        worker = subprocess.Popen([SHELL, str(self.module / "apps/block.sh")], env=env)
+        time.sleep(2.5)
+        self.assertIn("com.whatsapp", (self.state / "allowed").read_text())   # screen off: not asked
+        light.write_text("150\n")
+        for _ in range(40):
+            if "com.whatsapp" not in (self.state / "allowed").read_text():
+                break
+            time.sleep(0.1)
+        self.assertNotIn("com.whatsapp", (self.state / "allowed").read_text())
+        write(self.module / "disable", "")
+        worker.wait(timeout=10)
+        self.assertFalse((self.data / "run/block.pid").exists())
+
+    def test_a_query_that_keeps_failing_is_asked_less_often(self):
+        calls = self.state / "calls"
+        self.tool("cmd", f'[ "$1 $2" = "appops query-op" ] && {{ echo x >> {calls}; echo "Error: Failed transaction" >&2; exit 1; }}\nexit 0')
+        write(self.data / "config", "BLOCK=1\n")
+        worker = subprocess.Popen([SHELL, str(self.module / "apps/block.sh")], env=self.env)
+        time.sleep(7.5)   # CA_SLEEP=1: every second before, now after 1, 2, 4 and 8 s
+        self.report("block", "off")
+        worker.wait(timeout=20)
+        count = len(calls.read_text().splitlines())
+        self.assertGreaterEqual(count, 3)
+        self.assertLessEqual(count, 5)
+
     def test_block_takes_the_install_right_back_from_chat_apps_only(self):
         self.assertEqual(self.report("block", "on")["block"], 1)
         log = (self.state / "log").read_text()

@@ -127,6 +127,46 @@ class SamplerTests(unittest.TestCase):
         self.assertEqual(len(files), 1)
         return [line.split("\t") for line in files[0].read_text().splitlines()]
 
+    def test_screen_off_and_cool_reads_only_the_module_processes(self):
+        # Audit 7 Nov 2026: with the screen off every /proc/[pid]/stat was read every 20 s. Now only the module's own
+        # processes are, the APK block among them; a full scan comes back with the screen or near "hot".
+        light = self.phone.sys / "class/backlight/panel0-backlight/brightness"
+        light.write_text("0\n")
+        for index, kind in enumerate(ZONES):
+            if kind == "shell_back":
+                write(self.phone.sys / f"class/thermal/thermal_zone{index}/temp", "35000\n")
+        block = self.phone.base / "apps/run/block.pid"   # the APK block of the Aplikasi tab, next to thermal/
+        write(block, "7000\n")
+        write(self.phone.proc / "7000/stat", proc_stat(7000, "sh", 1, 10, 0))
+        self.phone.run("sampler.sh", "--once")
+        self.phone.set_cpu(1)
+        write(self.phone.proc / "7000/stat", proc_stat(7000, "sh", 1, 25, 5))
+        self.phone.run("sampler.sh", "--once")
+        self.assertTrue((self.phone.data / "run/pids.light").exists())
+        self.assertNotIn("UnityMain", (self.phone.data / "run/pids.prev").read_text())
+        second = self.lines()[1]
+        self.assertEqual((second[1], second[2], second[6], second[7], second[9]), ("screen_off", "0", "400", "-1", "-"))
+        self.assertEqual(second[14], "20")   # the APK block: 20 of 1000 ticks = 2.0 %
+        light.write_text("900\n")           # screen on: the first full scan has no light list to compare with
+        self.phone.set_cpu(2)
+        self.phone.run("sampler.sh", "--once")
+        self.phone.set_cpu(3)
+        self.phone.run("sampler.sh", "--once")
+        third, fourth = self.lines()[2:]
+        self.assertEqual((third[7], third[9]), ("-1", "-"))
+        self.assertEqual(fourth[7], "80")
+        self.assertTrue(fourth[9].startswith("com.mobile.legends:250"))
+        self.assertFalse((self.phone.data / "run/pids.light").exists())
+        # Screen off but the phone body near "hot" (39 °C, HOT 41): the full scan stays for the cause.
+        light.write_text("0\n")
+        for index, kind in enumerate(ZONES):
+            if kind == "shell_back":
+                write(self.phone.sys / f"class/thermal/thermal_zone{index}/temp", "39500\n")
+        self.phone.set_cpu(4)
+        self.phone.run("sampler.sh", "--once")
+        self.assertEqual(self.lines()[4][1:3], ["screen_off", "0"])
+        self.assertTrue(self.lines()[4][9].startswith("com.mobile.legends:250"))
+
     def test_sample_records_every_sensor_and_what_the_phone_does(self):
         self.phone.run("sampler.sh", "--once")
         self.phone.set_cpu(1)
@@ -462,7 +502,7 @@ class ReportTests(unittest.TestCase):
         self.assertIn("📈 Lonjakan suhu (Badan HP naik ≥ 2 °C dalam 5 menit): 1 kali", summary["text"])
         self.assertIn("36.3 → 40.7 °C (+4.4) · Pembaruan aplikasi: Google Play Store", summary["text"])
         self.assertEqual(summary["load"], 4)   # (45 × 4 + 10 × 6 + 5 × 3) / 60
-        self.assertIn("Beban Cogan Smart (pencatat + pengendali): 0.4% CPU (pengendali 0.2%)", summary["text"])
+        self.assertIn("Beban skrip Cogan Smart (pencatat + pengendali + blokir APK): 0.4% CPU (pengendali 0.2%)", summary["text"])
         self.assertEqual(summary["load_ctl"], 2)   # only the samples that split it (column 16)
         table = list(csv.DictReader(self.phone.report("csv", "3600").splitlines()))
         self.assertEqual((table[0]["beban_modul_persen"], table[0]["beban_pengendali_persen"]), ("0.4", ""))

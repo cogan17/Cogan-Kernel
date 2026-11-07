@@ -28,6 +28,19 @@ read_node() {
 # the background workers call it dozens of times per check (v2.9.1, owner's log: 4.8% CPU before).
 read_into() { eval "$1=''"; IFS= read -r "$1" 2>/dev/null < "$2" || :; }
 
+# Screen from the panel backlight, shell builtins only: CB_SCREEN 1 on, 0 off, -1 no readable backlight.
+# The thermal sampler and the APK block both read it; neither calls dumpsys for it every few seconds.
+screen_lit() {
+  CB_SCREEN=-1
+  for cb_node in "$CB_SYS"/class/leds/lcd-backlight/brightness "$CB_SYS"/class/backlight/*/brightness; do
+    [ -r "$cb_node" ] || continue
+    read_into cb_light "$cb_node"
+    uint "$cb_light" || continue
+    if [ "$cb_light" -gt 0 ]; then CB_SCREEN=1; else CB_SCREEN=0; fi
+    return 0
+  done
+}
+
 # Detect the exported ABI, independently of branding or a spoofed uname.
 # Virtual files may report size zero even when their read callback returns data.
 bridge_available() { read_into cb_abi "$CB_ROOT/abi"; read_into cb_rel "$CB_ROOT/release"; [ "$cb_abi" = 1 ] && [ -n "$cb_rel" ]; }

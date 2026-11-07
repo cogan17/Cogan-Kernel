@@ -77,7 +77,7 @@ apply_now() {
   if [ $# -gt 0 ] && ! validate_values "$@"; then
     echo '{"ok":0,"error":"Nilai tidak valid; tidak ada perubahan"}'; return
   fi
-  FORCE=1; AUTOSTART=1
+  AUTOSTART=1   # FORCE stays as saved: the request below makes the controller force this one check (audit 7 Nov)
   write_config || { echo '{"ok":0,"error":"Gagal menyimpan"}'; return; }
   mkdir -p "$CP_RUN"
   cp_request="$(date +%s)-$$"
@@ -124,8 +124,8 @@ status_json() {
   switch=$(cut -d '|' -f 1 "$CP_DATA/switch" 2>/dev/null)
   state=$(cat "$CP_RUN/state.json" 2>/dev/null)
   version=$(sed -n 's/^version=//p' "$MODROOT/module.prop" 2>/dev/null)
-  printf '{"running":%d,"version":"%s","main":%d,"body":%d,"body_from":"%s","brake":%d,"battery":{"level":%d,"status":"%s","temp":%d,"current":%d},' \
-    "$([ "$pid" -gt 0 ] && echo 1 || echo 0)" "$version" "$SS_MAIN" "$body" "$body_from" "$CPU_BRAKE" "$1" "$2" "$3" "$4"
+  printf '{"running":%d,"version":"%s","main":%d,"body":%d,"body_from":"%s","brake":%d,"cpu_work":%d,"battery":{"level":%d,"status":"%s","temp":%d,"current":%d},' \
+    "$([ "$pid" -gt 0 ] && echo 1 || echo 0)" "$version" "$SS_MAIN" "$body" "$body_from" "$CPU_BRAKE" "$CPU_WORK" "$1" "$2" "$3" "$4"
   printf '"sensor_ts":%d,"monitor":' "$SS_TS"
   cs_health=$(thermal_health_json)
   printf '%s,"cause":' "${cs_health%\}}"; json_string "$M_CAUSE"

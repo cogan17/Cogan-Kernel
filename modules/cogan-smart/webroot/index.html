@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Cogan Smart</title>
-<link rel="stylesheet" href="theme.css?v=2.12.4">
-<script src="i18n.js?v=2.12.4"></script>
+<link rel="stylesheet" href="theme.css?v=2.12.5">
+<script src="i18n.js?v=2.12.5"></script>
 <script>try { document.documentElement.dataset.theme = localStorage.getItem('cogan.theme') || ''; document.documentElement.dataset.dev = localStorage.getItem('cogan.dev') || ''; } catch (_) { /* storage off: follow the phone */ }</script>
 <style>
   * { box-sizing: border-box; }
@@ -166,7 +166,7 @@
     <label class="f">Performa: boost aplikasi di layar <input id="sGAME_BOOST" type="checkbox"></label>
     <label class="f dev">Cek tiap (detik) <input id="sINTERVAL" type="number" min="5" max="60"></label>
     <label class="f dev">Terapkan ulang tiap interval <input id="sFORCE" type="checkbox"></label>
-    <p class="muted dev">Simpan: simpan setelan (pengendali aktif membaca pada interval berikutnya). Paksa: simpan, mulai, terapkan sekarang dan ulangi tiap interval. Henti dan Reset melepaskan kontrol milik modul. Reset memakai cas 95/90 dan berhenti sampai Mulai.</p>
+    <p class="muted dev">Simpan: simpan setelan (pengendali aktif membaca pada interval berikutnya). Paksa: simpan, mulai dan terapkan sekarang satu kali; mengulang tiap interval hanya bila Terapkan ulang tiap interval dicentang. Henti dan Reset melepaskan kontrol milik modul. Reset memakai cas 95/90 dan berhenti sampai Mulai.</p>
     <p class="muted" id="draftNote"></p>
     <p><a href="manager.html#powerControls">Simpan, terapkan, reset dan hentikan dari tab Manager.</a></p>
   </details>
@@ -188,7 +188,7 @@
 </main>
 
 <div id="actionStatus" class="feedback hidden" role="status" aria-live="polite"></div>
-<script src="client.js?v=2.12.4"></script>
+<script src="client.js?v=2.12.5"></script>
 <script>
 const confirm = value => window.confirm(CoganI18n.t(value));
 const REPORT = '/data/adb/modules/cogan_smart/power/report.sh';
@@ -266,7 +266,7 @@ function render(s) {
   const sensorAge = s.sensor_ts ? Math.max(0, Math.floor(Date.now() / 1000) - s.sensor_ts) : -1;
   $('limitLine').title = sensorAge >= 0 ? `Sensor langsung · ${sensorAge} dtk lalu` : 'Sensor tidak tersedia';
   if (st && s.running) {
-    $('cpuLine').textContent = [body > -9999 && (s.body_from === 'battery' ? 'Baterai (tanpa sensor Badan HP)' : 'Badan HP'), cpu, `target batas CPU besar ${st.big}%`, `kecil ${st.little}%`, st.brake ? `rem darurat prosesor ≥ ${s.brake} °C` : '', !st.brake && st.busy === 0 && body >= (limit - 1) * 10 ? 'prosesor santai: CPU tidak diturunkan' : ''].filter(Boolean).join(' · ');
+    $('cpuLine').textContent = [body > -9999 && (s.body_from === 'battery' ? 'Baterai (tanpa sensor Badan HP)' : 'Badan HP'), cpu, `target batas CPU besar ${st.big}%`, `kecil ${st.little}%`, st.brake ? `rem darurat prosesor ≥ ${s.brake} °C` : '', !st.brake && st.busy === 0 && body >= (limit - 1) * 10 ? `prosesor di bawah ${s.cpu_work ?? 55} °C: CPU tidak diturunkan` : ''].filter(Boolean).join(' · ');
     $('causeLine').textContent = [st.cause && `Penyebab: ${st.cause}`, st.app && `Aplikasi: ${st.app}`, st.boost ? 'Boost Performa aktif' : '', st.native_cooling ? 'Cooling CPU kernel aktif' : ''].filter(Boolean).join(' · ');
   } else {
     $('cpuLine').textContent = [cpu, 'pengendali berhenti'].filter(Boolean).join(' · ');

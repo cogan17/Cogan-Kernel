@@ -4,6 +4,7 @@ MODDIR=${0%/*}; [ "$MODDIR" = "$0" ] && MODDIR=.
 . "$MODDIR/common.sh"
 load_config
 case "$MODE" in hemat) next=seimbang ;; seimbang) next=game ;; *) next=hemat ;; esac
+echo "🔁 Mode: $(mode_label "$MODE") → $(mode_label "$next")"
 sh "$MODDIR/report.sh" start > /dev/null 2>&1
 sh "$MODDIR/report.sh" mode "$next" > /dev/null
 case "$next" in

@@ -1,9 +1,11 @@
 # Cogan Smart · Thermal: CPU use since the previous sample.
 # Files: <previous /proc/[pid]/stat lines> <current lines>; -v prev=<old /proc/stat cpu line> -v cur=<new one>,
-# -v mods="<pid> ..." (this module's own long-running scripts), -v ctl=<pid> (the power controller, one of them).
+# -v mods="<pid> ..." (this module's own long-running scripts: recorder, power controller, APK block),
+# -v ctl=<pid> (the power controller, one of them).
 # Prints "C <cpu%x10> <kernel%x10>" (-1 without a previous reading, -2 when the counters started again: the
 # phone restarted), "M <module%x10> <controller%x10>", then "P <pct x10> <pid> <comm> <start>"
-# for the 5 busiest user processes (start: start time, which tells a reused pid apart). The module's share
+# for the 5 busiest user processes (start: start time, which tells a reused pid apart). -v partial=1: one of the
+# two lists holds only the module's processes (a light sample, see sampler.sh): kernel is -1 and no P lines. The module's share
 # counts its scripts and every child they already waited for (awk, cat, dumpsys...), which a per-process
 # list misses because those end between two samples.
 function total(line,   a, n, i, t) { n = split(line, a, " "); t = 0; for (i = 2; i <= n; i++) t += a[i]; return t }
@@ -39,7 +41,8 @@ END {
     dt = total(cur) - total(prev)
     if (prev == "" || dt <= 0) { print "C " (prev != "" && dt < 0 ? -2 : -1) " -1"; exit }
     busy = dt - (idle(cur) - idle(prev))
-    printf "C %d %d\n", int(busy * 1000 / dt + 0.5), int(kernel * 1000 / dt + 0.5)
+    printf "C %d %d\n", int(busy * 1000 / dt + 0.5), (partial ? -1 : int(kernel * 1000 / dt + 0.5))
     printf "M %d %d\n", int(module * 1000 / dt + 0.5), int(control * 1000 / dt + 0.5)
+    if (partial) exit
     for (i = 1; i <= 5; i++) if (i in top) printf "P %d %d %s %s\n", int(top[i] * 1000 / dt + 0.5), tpid[i], tcomm[i], tstart[i]
 }

@@ -43,6 +43,9 @@ step() {
   lock_take "$CP_RUN/step.lock" || return 1
   : > "$CP_RUN/apply.tsv.tmp"
   read_into step_request "$CP_RUN/apply.request"
+  # Paksa (report.sh apply) forces the check that serves its request only; FORCE=1 repeats it every check.
+  step_force=$FORCE; read_into step_done "$CP_RUN/applied.request"
+  [ -n "$step_request" ] && [ "$step_request" != "$step_done" ] && FORCE=1
   heartbeat power
   now=$(date +%s); CB_NOW=$now
   read_temps; main=$MAIN_T; body=$BODY_T
@@ -88,6 +91,8 @@ step() {
   [ "$hold" -gt 0 ] && hold=$((hold - 1))
   [ "$paused_for_heat" = 1 ] && hold=3
   brake=0; [ "$main" -ge $((CPU_BRAKE * 10)) ] && brake=1
+  # "busy" is the processor temperature at CPU_WORK or above, not measured CPU use (audit 7 Nov): heat left
+  # after a game keeps it 1 for a while, and a load that just started counts once the processor warms.
   busy=0; [ "$main" -ge $((CPU_WORK * 10)) ] && busy=1
   if [ "$brake" = 1 ]; then
     cool=0
@@ -115,6 +120,7 @@ step() {
     event "Badan HP turun ke $(deg "$body") °C: CPU besar $big%, kecil $little%"
   fi
   if [ "$MODE" = game ] && [ "$GAME_BOOST" = 1 ]; then set_boost 1; else set_boost 0; fi
+  FORCE=$step_force
   write_state
   mv "$CP_RUN/apply.tsv.tmp" "$CP_RUN/apply.tsv"
   printf '%s\n' "$step_request" > "$CP_RUN/applied.request"
@@ -185,8 +191,6 @@ charge_step() {
     *) event "Baterai $level_pct%: cas dihentikan, lanjut di $CHARGE_RESUME%" ;;
   esac
 }
-
-mode_label() { case "$1" in hemat) echo Hemat ;; game) echo Performa ;; *) echo 'Kernel Default' ;; esac; }
 
 # jstr VAR TEXT: TEXT without backslashes and double quotes into VAR (safe inside a JSON string).
 jstr() {

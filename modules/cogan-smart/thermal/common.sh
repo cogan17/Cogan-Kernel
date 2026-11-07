@@ -12,6 +12,7 @@ CT_CPUSET=${CT_CPUSET:-/dev/cpuset}
 CP_DATA=${CP_DATA:-/data/adb/cogan_smart/power}
 CP_MOD=${CP_MOD:-$MODROOT}   # the power part lives in the same module
 CT_RUN=$CT_DATA/run
+CA_BLOCK_PID=${CA_DATA:-${CT_DATA%/*}/apps}/run/block.pid   # the APK block of the Aplikasi tab
 CONFIG=$CT_DATA/config
 
 # Settings (WebUI writes $CONFIG; only these keys and plain numbers are accepted).
@@ -106,13 +107,8 @@ bounded_dumpsys() {
 }
 
 read_screen() {   # sets screen
-  for node in "$CT_SYS"/class/leds/lcd-backlight/brightness "$CT_SYS"/class/backlight/*/brightness; do
-    [ -r "$node" ] || continue
-    read_into value "$node"
-    uint "$value" || continue
-    if [ "$value" -gt 0 ]; then screen=1; else screen=0; fi
-    return
-  done
+  screen_lit; screen=$CB_SCREEN
+  [ "$screen" = -1 ] || return 0
   case "$(bounded_dumpsys deviceidle get screen 2>/dev/null)" in
     true*) screen=1 ;;
     false*) screen=0 ;;
