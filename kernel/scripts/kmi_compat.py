@@ -13,10 +13,11 @@ load on another kernel only if:
   3. the Google-signed GKI modules may still export protected symbols: our kernel
      does not trust Google's key, so android/abi_gki_protected_exports_* must be
      gone from the source (GKID removes it; gkid_parity.py for older sublevels);
-  4. symbol CRC differences do not refuse the module: the GKID force-load change
-     in kernel/module/version.c turns them into a warning. Differences against the
-     frozen ABI (android/abi_gki_aarch64.stg) are still reported: each one is a
-     changed KMI type worth a look before testing on a phone.
+  4. no symbol CRC differs from the frozen ABI (android/abi_gki_aarch64.stg): a
+     difference is a changed KMI type, and the force-load change in
+     kernel/module/version.c would load a vendor module against it anyway, so the
+     gate fails instead (owner 2026-11-07, security audit r13/r14; every good build
+     so far had 0).
 
 Two references hold the GKI build against the phone itself:
   --reference BSP_SRC          the phone maker's own kernel source (rothko: the Xiaomi
@@ -36,12 +37,12 @@ For each one:
      unused by the vendor modules (its __tracepoint_ symbol is in no symbol list);
      unused ones are only reported. Xiaomi/MediaTek features themselves live in the
      phone's vendor modules, which these checks keep loadable.
-A stock reference also reports the CRC differences against its stock frozen ABI,
-the one that HyperOS version's vendor modules were actually built with.
+A stock reference also checks the CRCs against its stock frozen ABI, the one that
+HyperOS version's vendor modules were actually built with: a difference fails too.
 
 Usage: kmi_compat.py --device rothko KERNEL_SRC OUT_DIR [--reference BSP_SRC]
                      [--stock-reference STOCK_SRC ...] [--github-env FILE] [--json FILE]
-Exit 1 when 1-3, 5-8 or the force-load change fail; CRC differences only warn.
+Exit 1 when 1-8 or the force-load change fail.
 """
 import argparse
 import json
@@ -195,6 +196,9 @@ def check(src, out, device, reference=None, stocks=()):
     frozen = read_stg(src / "android/abi_gki_aarch64.stg")
     report["crc_differences"] = sorted(name for name in wanted & frozen.keys() & exported.keys()
                                        if frozen[name] != exported[name])
+    if report["crc_differences"]:
+        report["errors"].append(f"CRC differs from the frozen ABI for {len(report['crc_differences'])} symbol(s), "
+                                f"e.g. {', '.join(report['crc_differences'][:5])}")
     report["force_load"] = bool(FORCE_LOAD.search((src / "kernel/module/version.c").read_text(errors="replace")))
     if not report["force_load"]:
         report["errors"].append("module force-load change missing (CRC differences would refuse vendor modules)")
@@ -273,6 +277,9 @@ def check_reference(report, kind, reference, src, out, spec, exported):
         frozen = read_stg(reference / "android/abi_gki_aarch64.stg")
         ref["crc_differences"] = sorted(name for name in wanted & frozen.keys() & exported.keys()
                                         if frozen[name] != exported[name])
+        if ref["crc_differences"]:
+            report["errors"].append(f"{label} CRC differs for {len(ref['crc_differences'])} symbol(s), "
+                                    f"e.g. {', '.join(ref['crc_differences'][:5])}")
     report["references"][kind if kind == "bsp" else label] = ref
 
 
@@ -318,9 +325,6 @@ def main(argv=None):
     print(line)
     for error in report["errors"]:
         print("BLOCKED: " + error, file=sys.stderr)
-    if report["crc_differences"]:
-        print(f"WARNING: CRC differs from the frozen ABI for: {', '.join(report['crc_differences'][:20])}"
-              + (" ..." if len(report["crc_differences"]) > 20 else ""))
     if args.json:
         args.json.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
     if args.github_env:

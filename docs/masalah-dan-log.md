@@ -18,6 +18,8 @@ Jalankan di Termux atau terminal root manager (KernelSU Next atau BakaSU):
 
 Untuk log boot gagal: pulihkan HP dulu ([Kembali ke Stok](kembali-ke-stok.md)), lalu ambil log di atas **sebelum** reboot lagi.
 
+> 🔒 **Periksa log sebelum dibagikan.** Log kernel bisa memuat argumen perintah yang ditolak Baseband Guard (baris `baseband_guard: deny … argv="…"`), nomor seri, alamat MAC atau nama Wi-Fi. Hapus atau samarkan bagian itu sebelum mengirim ke Issues atau grup. Sejak 7 Nov 2026 log kernel hanya bisa dibaca dengan root (`dmesg_restrict = 1`), jadi perintah di atas tetap memakai `su`.
+
 Modul **Cogan Smart Kernel**:
 
 - Tab **🌡️ Suhu** → **Simpan log** (tersimpan di `Download/CoganThermal`).
@@ -29,7 +31,7 @@ Modul **Cogan Smart Kernel**:
 |---|---|
 | Versi kernel di Setelan tidak sama dengan versi kernel Cogan (mis. `6.1.138`) | Normal: SUSFS menyamarkan `uname`. Identitas asli ada di WebUI Cogan Smart atau `/sys/kernel/cogan/release` |
 | Flash berhenti dengan *Unsupported device* | ZIP hanya untuk `rothko`; HP lain ditolak sebelum `boot` disentuh |
-| Banyak baris `disagrees about version of symbol` di `dmesg` | Sudah diketahui: modul vendor dimuat lewat *force-load*. Diperbaiki di revisi kernel berikutnya |
+| Baris `disagrees about version of symbol` di `dmesg` | Seharusnya tidak muncul: sejak 7 Nov 2026 build berhenti bila ada simbol KMI yang CRC-nya berbeda dari kernel bawaan. Bila muncul, laporkan dengan log lengkap (sudah disamarkan) |
 | Modul KernelSU mati semua setelah bootloop | Safe mode KernelSU. Nyalakan lagi di aplikasi root manager → Modul, lalu reboot |
 
 ## Rilis dari run gagal HTTP 403

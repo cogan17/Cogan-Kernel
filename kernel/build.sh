@@ -296,6 +296,7 @@ DEFCONFIG=arch/arm64/configs/gki_defconfig
     thin) printf 'CONFIG_LTO_NONE=n\nCONFIG_LTO_CLANG_THIN=y\n' ;;
   esac
   echo "CONFIG_RCU_TRACE=n"
+  cat "$HERE/configs/hardening.config"
   # Last, so it wins: what the phone's vendor modules were built against (IPV6_SUBTREES off, HZ 250).
   cat "$HERE/configs/stock-kmi.config"
 } >> "$DEFCONFIG"
@@ -340,7 +341,7 @@ MAKE=(make -j"$(nproc)" O="$KOUT" ARCH=arm64 LLVM=1 LLVM_IAS=1 CROSS_COMPILE=aar
 # wins over its Kconfig default, so olddefconfig does not reset it back to the real clang.
 [ -z "$CC_TEXT" ] || MAKE+=(CC_VERSION_TEXT="$CC_TEXT")
 "${MAKE[@]}" gki_defconfig
-required=(CONFIG_KSU=y CONFIG_COGAN_BRIDGE=y CONFIG_HZ=250)
+required=(CONFIG_KSU=y CONFIG_COGAN_BRIDGE=y CONFIG_HZ=250 CONFIG_SECURITY_DMESG_RESTRICT=y)
 [ "$SUSFS_ON" = true ] && required+=(CONFIG_KSU_SUSFS=y CONFIG_KSU_SUSFS_SUS_MAP=y)
 for line in "${required[@]}"; do
   grep -qx "$line" "$KOUT/.config" || fail "$line missing from the resolved config"

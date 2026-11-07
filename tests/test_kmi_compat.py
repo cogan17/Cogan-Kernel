@@ -44,7 +44,7 @@ class KmiCompatTests(unittest.TestCase):
         (self.src / "android/abi_gki_aarch64.stg").write_text(STG)
         (self.out / "vmlinux.symvers").write_text(
             "0x0000000a\tvendor_used\tvmlinux\tEXPORT_SYMBOL\t\n"
-            "0x000000ff\tchanged_type\tvmlinux\tEXPORT_SYMBOL_GPL\t\n"
+            "0x0000000b\tchanged_type\tvmlinux\tEXPORT_SYMBOL_GPL\t\n"
             "0x00000001\txiaomi_only\tvmlinux\tEXPORT_SYMBOL\t\n")
 
     def run_gate(self):
@@ -54,15 +54,26 @@ class KmiCompatTests(unittest.TestCase):
                           "--json", str(report_file), "--github-env", str(env_file)])
         return status, json.loads(report_file.read_text()), env_file.read_text()
 
-    def test_compatible_kernel_passes_and_reports_crc_differences(self):
+    def test_compatible_kernel_passes(self):
         status, report, env = self.run_gate()
         self.assertEqual(status, 0, report)
-        self.assertEqual(report["crc_differences"], ["changed_type"])
+        self.assertEqual(report["crc_differences"], [])
         self.assertEqual(report["lists"]["abi_gki_aarch64_mtk"], {"symbols": 1, "missing": []})
         self.assertIn("KMI_COMPAT=KMI Xiaomi 14T Pro (rothko): OK; generation 11", env)
         self.assertIn("mtk 1/1", env)
         self.assertIn("xiaomi 1/1", env)
-        self.assertIn("CRC differs 1 (force-load on)", env)
+        self.assertIn("CRC differs 0 (force-load on)", env)
+
+    def test_a_crc_difference_fails(self):
+        # A changed KMI type: force-load would load the vendor module anyway (owner 2026-11-07, audit r13/r14).
+        (self.out / "vmlinux.symvers").write_text(
+            "0x0000000a\tvendor_used\tvmlinux\tEXPORT_SYMBOL\t\n"
+            "0x000000ff\tchanged_type\tvmlinux\tEXPORT_SYMBOL_GPL\t\n"
+            "0x00000001\txiaomi_only\tvmlinux\tEXPORT_SYMBOL\t\n")
+        status, report, env = self.run_gate()
+        self.assertEqual(status, 1)
+        self.assertEqual(report["errors"], ["CRC differs from the frozen ABI for 1 symbol(s), e.g. changed_type"])
+        self.assertIn("GAGAL / FAILED", env)
 
     def test_missing_vendor_symbol_fails(self):
         (self.out / "vmlinux.symvers").write_text("0x0000000a\tvendor_used\tvmlinux\tEXPORT_SYMBOL\t\n")
@@ -168,7 +179,7 @@ class KmiCompatTests(unittest.TestCase):
     def make_stock(self, version="138", config="CONFIG_A=y\nCONFIG_MEMFD_ASHMEM_SHIM=y\n"):
         stock = self.make_bsp(config=config).rename(Path(self.temp.name) / f"stock-{version}")
         (stock / "Makefile").write_text(f"# SPDX\nVERSION = 6\nPATCHLEVEL = 1\nSUBLEVEL = {version}\nEXTRAVERSION =\n")
-        (stock / "android/abi_gki_aarch64.stg").write_text(STG.replace("0x0000000a", "0x0000000c"))
+        (stock / "android/abi_gki_aarch64.stg").write_text(STG)
         return stock
 
     def run_stocks(self, *stocks):
@@ -179,7 +190,7 @@ class KmiCompatTests(unittest.TestCase):
         status = kc.main(args)
         return status, json.loads(report_file.read_text())
 
-    def test_stock_reference_reports_its_own_crc_differences(self):
+    def test_stock_references_pass_with_matching_crcs(self):
         status, report = self.run_stocks(self.make_stock(), self.make_stock("157"))
         self.assertEqual(status, 0, report["errors"])
         self.assertEqual(sorted(report["references"]), ["stock 6.1.138", "stock 6.1.157"])
@@ -188,11 +199,18 @@ class KmiCompatTests(unittest.TestCase):
         self.assertEqual(ref["hyperos"], "OS3.0.301.0.WNNIDXM")
         self.assertEqual(ref["config_not_enabled"],
                          {"CONFIG_MEMFD_ASHMEM_SHIM": kc.DEVICES["rothko"]["stock_config_exceptions"]["CONFIG_MEMFD_ASHMEM_SHIM"]})
-        # The stock frozen ABI is the one the vendor modules were built with: vendor_used differs there.
-        self.assertEqual(ref["crc_differences"], ["changed_type", "vendor_used"])
+        self.assertEqual(ref["crc_differences"], [])
         self.assertIn("; stock 6.1.138: generation 11, exported GKI 1/1, mtk 1/1, xiaomi 0/0, "
-                      "config =y not enabled 1 (reviewed), stock-only vendor hooks 0 (unused), CRC differs 2; "
+                      "config =y not enabled 1 (reviewed), stock-only vendor hooks 0 (unused), CRC differs 0; "
                       "stock 6.1.157: generation 11", kc.summary(report))
+
+    def test_a_crc_difference_against_a_stock_frozen_abi_fails(self):
+        # The stock frozen ABI is the one that HyperOS version's vendor modules were built with.
+        newer = self.make_stock("157")
+        (newer / "android/abi_gki_aarch64.stg").write_text(STG.replace("0x0000000a", "0x0000000c"))
+        status, report = self.run_stocks(self.make_stock(), newer)
+        self.assertEqual(status, 1)
+        self.assertEqual(report["errors"], ["stock 6.1.157 CRC differs for 1 symbol(s), e.g. vendor_used"])
 
     def test_every_supported_hyperos_stock_kernel_must_be_checked(self):
         # Users still on HyperOS OS3.0.301 get the newest kernel too (owner 2026-11-06).

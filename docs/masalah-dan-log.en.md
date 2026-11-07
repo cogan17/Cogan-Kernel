@@ -18,6 +18,8 @@ Run in Termux or the root manager's terminal (KernelSU Next or BakaSU):
 
 For a failed boot: recover the phone first ([Back to Stock](kembali-ke-stok.en.md)), then collect the log above **before** rebooting again.
 
+> 🔒 **Check the log before sharing it.** A kernel log can hold the arguments of a command Baseband Guard refused (lines `baseband_guard: deny … argv="…"`), serial numbers, MAC addresses or Wi-Fi names. Remove or mask them before posting to Issues or the group. Since 7 Nov 2026 the kernel log can be read only with root (`dmesg_restrict = 1`), so the commands above keep using `su`.
+
 **Cogan Smart Kernel** module:
 
 - **🌡️ Suhu** (temperature) tab → **Simpan log** (saved in `Download/CoganThermal`).
@@ -29,7 +31,7 @@ For a failed boot: recover the phone first ([Back to Stock](kembali-ke-stok.en.m
 |---|---|
 | The kernel version in Settings differs from the Cogan kernel version (e.g. `6.1.138`) | Normal: SUSFS spoofs `uname`. The real identity is in the Cogan Smart WebUI or `/sys/kernel/cogan/release` |
 | The flash stops with *Unsupported device* | The ZIP is for `rothko` only; other phones are refused before `boot` is touched |
-| Many `disagrees about version of symbol` lines in `dmesg` | Known: vendor modules load through *force-load*. Fixed in a later kernel revision |
+| `disagrees about version of symbol` lines in `dmesg` | Should not appear: since 7 Nov 2026 the build stops when a KMI symbol's CRC differs from the stock kernel. If it appears, report it with the full log (masked) |
 | Every KernelSU module is off after a bootloop | KernelSU safe mode. Turn them back on in the root manager app → Modules, then reboot |
 
 ## Release from run fails with HTTP 403
