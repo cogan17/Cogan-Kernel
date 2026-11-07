@@ -13,26 +13,21 @@ A token is needed because a workflow in one repository may not start a workflow 
 
 ## 1. Create the token (fine-grained)
 
-1. Open **https://github.com/settings/personal-access-tokens/new** (signed in as `cogan17`).
-   From the menu: profile picture → **Settings** → at the bottom **Developer settings** → **Personal access tokens** → **Fine-grained tokens** → **Generate new token**.
-2. Fill in:
+Open **https://github.com/settings/personal-access-tokens/new** (signed in as `cogan17`). From the menu: profile picture → **Settings** → at the bottom **Developer settings** → **Personal access tokens** → **Fine-grained tokens** → **Generate new token**. Fill in from top to bottom:
 
-   | Field | Value |
-   |---|---|
-   | **Token name** | `Cogan Kernel → Build CoganSU` |
-   | **Resource owner** | `cogan17` |
-   | **Expiration** | **366 days** (or *Custom*, one year). Note the date so you can renew it. |
-   | **Repository access** | **Only select repositories** → choose **`cogan17/CoganSU`** only |
-
-3. Under **Permissions** → **Repository permissions**:
-
-   | Permission | Choose |
-   |---|---|
-   | **Actions** | **Read and write** |
-   | **Metadata** | *Read-only* (added automatically) |
-
-   Leave everything else at **No access**.
-4. Tap **Generate token** and **copy** the token (it starts with `github_pat_…`). It is shown only once.
+1. **Token name**: `Cogan Kernel - Build CoganSU`
+2. **Description** (optional): `Used by Cogan Kernel Builder to run Build CoganSU`
+3. **Resource owner**: leave **cogan17**.
+4. **Expiration**: tap **No expiration** → **Custom…** → pick a date one year ahead and note it. *No expiration* works too, but GitHub recommends a date.
+5. **Repository access**: choose **Only select repositories** (not *Public repositories* or *All repositories*) → tap **Select repositories** → type `CoganSU` → tick **cogan17/CoganSU** only.
+6. **Permissions**:
+   - Once the repository is chosen, the Permissions box has a **Repositories** part next to **Account**. Open **Repositories**.
+   - Tap **Add permissions** → tick **Actions** → close the list.
+   - On the **Actions** row, change *Read-only* to **Read and write**.
+   - **Metadata** (*Read-only*) is added automatically; leave it.
+   - Leave **Account** at **0**; add nothing there.
+7. Tap **Generate token**. If a summary shows up, check it: repository `cogan17/CoganSU`, *Actions: Read and write*, *Metadata: Read-only*. Then tap **Generate token** again.
+8. **Copy** the token (it starts with `github_pat_…`). It is shown only once.
 
 ## 2. Store it as a secret in Cogan-Kernel
 
