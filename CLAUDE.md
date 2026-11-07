@@ -13,6 +13,7 @@ Nama repo **`cogan17/Cogan-Kernel`** sejak 24 Okt 2026 (owner; sebelumnya `cogan
 
 - **Panggilan** (owner, 6 Nov 2026): panggil owner **bro** atau **bang**, jangan **Pak/Bapak**.
 - Jawab langsung pada intinya di kalimat pertama. Dilarang menggunakan kalimat pembuka, sapaan, atau kesimpulan di akhir. Dilarang menggunakan kata atau frasa klise AI (seperti delve, tapestry, testament, seamless, crucial). Gunakan bahasa yang ringkas, kasual, dan konkret. Jangan merangkum jawaban.
+- **Teliti, hati-hati, tanpa duplikasi** (owner, 7 Nov 2026: "kerjakan dengan teliti, hati-hati, tidak ada duplikasi pekerjaan"): periksa dulu apa yang sudah ada (kode, patch, config, dokumen, riwayat) sebelum menambah. Jangan membuat ulang atau menggandakan yang sudah ada, dan pastikan dengan bukti sebelum mengubah.
 
 ## Tanpa atribusi AI
 
