@@ -1,5 +1,19 @@
 # Cogan Smart Kernel
 
+## Setelan Paksa lama dan teks riwayat / Old Force setting and history text — v2.12.6 (paket uji / test build)
+
+Indonesia:
+
+- Lanjutan audit 7 Nov 2026. Sampai v2.12.4, tombol Paksa diam-diam menyimpan "Terapkan ulang tiap interval" (FORCE=1); di HP owner nilai itu masih tersimpan (`force=1`). Setelan dari versi sebelum v2.12.6 kini mulai lagi tanpa centang itu, satu kali saat dibaca. Setelan lain (mode, target suhu, cas) tetap. Bila dicentang dan disimpan lagi mulai v2.12.6, centang itu dipertahankan.
+- Riwayat Daya: dulu "Badan HP turun ke …" juga tertulis saat batas CPU dilepas karena prosesor sudah di bawah 55 °C, padahal badan HP belum turun. Kini ada dua teks: "Badan HP … °C, di bawah batas … °C" bila badan HP memang sudah dingin, dan "Prosesor … °C, di bawah 55 °C: batas dilepas" bila yang dingin prosesornya.
+- Terukur lokal: tes lolos. Belum diuji di HP.
+
+English:
+
+- Follow-up to the 7 Nov 2026 audit. Up to v2.12.4 the Force button saved "Reapply at each interval" (FORCE=1) behind the scenes; on the owner's phone it is still saved (`force=1`). A config from before v2.12.6 now starts again without that box, once, when it is read. Other settings (mode, temperature target, charging) stay. Ticked and saved again from v2.12.6 on, the box is kept.
+- Power history: "Phone body down to …" was also written when the CPU cap was given back because the processor was under 55 °C, while the phone body had not cooled. There are now two texts: "Phone body … °C, under the … °C limit" when the phone body really is cool, and "Processor … °C, under 55 °C: cap released" when the processor is the cool one.
+- Measured locally: tests pass. Not phone-tested yet.
+
 ## Lebih hemat baterai / Lighter on the battery — v2.12.5 (paket uji / test build)
 
 Indonesia:

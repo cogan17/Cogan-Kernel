@@ -199,8 +199,20 @@ class PowerModeTests(unittest.TestCase):
         self.assertEqual([self.phone.step()["level"] for _ in range(3)], [2, 2, 1])   # three cool checks
         self.assertEqual(self.phone.caps()["policy4"], 2700000)
         events = self.phone.events()
-        self.assertIn("Badan HP turun ke 39.4 °C: CPU besar 90%, kecil 100%", events[0])
+        self.assertIn("Badan HP 39.4 °C, di bawah batas 41 °C: CPU besar 90%, kecil 100%", events[0])
         self.assertTrue(any("Badan HP 41.5 °C (batas 41 °C): CPU besar 90%, kecil 100%" in event for event in events))
+
+    def test_a_cool_processor_releases_the_step_without_claiming_the_body_cooled(self):
+        # Audit 7 Nov 2026: "Badan HP turun" was written when the step was given back because the processor
+        # dropped under CPU_WORK, while the phone body had not cooled.
+        self.phone.set_temp(65.0)
+        self.phone.set_body(41.5)
+        self.assertEqual(self.phone.step()["level"], 1)
+        self.phone.set_temp(45.0)                                         # processor idle, body still warm
+        self.assertEqual([self.phone.step()["level"] for _ in range(3)], [1, 1, 0])
+        last = self.phone.events()[0]
+        self.assertIn("Prosesor 45.0 °C, di bawah 55 °C: batas dilepas, CPU besar 100%, kecil 100%", last)
+        self.assertNotIn("turun", last)
 
     def test_smooth_steps_big_cores_first_little_cores_last(self):
         # Owner 2026-10-24, "as smooth as possible": from 1 °C under the limit only two gentle steps.
@@ -285,6 +297,15 @@ class PowerModeTests(unittest.TestCase):
         status = self.phone.report("status")
         self.assertEqual((status["body"], status["body_from"]), (390, "skin"))
 
+    def test_force_saved_before_v2126_is_switched_off_once(self):
+        # Up to v2.12.4 Paksa saved FORCE=1 by itself (audit 7 Nov 2026: force=1 on the owner's phone).
+        write(self.phone.data / "config", "MODE=seimbang\nTARGET_TEMP=39\nFORCE=1\nCTRL_VER=3\n")
+        config = self.phone.report("status")["config"]
+        self.assertEqual((config["FORCE"], config["TARGET_TEMP"]), (0, 39))   # the user's own target stays
+        self.assertEqual(self.phone.report("set", "FORCE", "1"), {"ok": 1})   # ticked again from v2.12.6 on: kept
+        self.assertIn("CTRL_VER=4", (self.phone.data / "config").read_text())
+        self.assertEqual(self.phone.report("status")["config"]["FORCE"], 1)
+
     def test_v28_temperatures_do_not_carry_over(self):
         # A v2.8 config: its TARGET_TEMP and GAME_LIMIT were processor thresholds.
         write(self.phone.data / "config", "MODE=game\nTARGET_TEMP=44\nGAME_LIMIT=48\nCHARGE_STOP=80\nCHARGE_RESUME=75\n"
@@ -294,7 +315,7 @@ class PowerModeTests(unittest.TestCase):
                          ("game", 41, 44, 80, 15))
         self.assertEqual(config["CHARGE_THERMAL"], 0)                      # kept as saved
         self.assertEqual(self.phone.report("set", "TARGET_TEMP", "44"), {"ok": 1})
-        self.assertIn("CTRL_VER=3", (self.phone.data / "config").read_text())
+        self.assertIn("CTRL_VER=4", (self.phone.data / "config").read_text())
         config = self.phone.report("status")["config"]
         self.assertEqual((config["TARGET_TEMP"], config["GAME_LIMIT"], config["CHARGE_RESUME"]), (44, 44, 75))
 
