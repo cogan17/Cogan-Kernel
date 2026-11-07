@@ -432,6 +432,16 @@ def patch_fits(repo, ref, patch_text):
                               env=env, text=True, capture_output=True).returncode == 0
 
 
+def cogansu_has(sha, commit):
+    """True when CoganSU commit sha already contains commit (e.g. the newest KernelSU main), checked on a
+    blobless history in a scratch repository (the Builder's work repository holds shallow fetches)."""
+    with tempfile.TemporaryDirectory(prefix="cogansu-history-") as repo:
+        run("git", "init", "-q", repo)
+        run("git", "-C", repo, "fetch", "-q", "--filter=blob:none", COGANSU, f"{sha}:refs/check/cogansu")
+        return subprocess.run(["git", "-C", repo, "merge-base", "--is-ancestor", commit, "refs/check/cogansu"],
+                              capture_output=True).returncode == 0
+
+
 def cogansu_susfs_wait(repo, tag, sha, susfs, patch):
     """Why the newest SUSFS patch for KernelSU does not fit CoganSU release tag. Build CoganSU merges the newest
     KernelSU main by itself (owner 2026-11-07: "tidak perlu ada kata menunggu … Kecuali dari Dev utama ada
@@ -508,7 +518,11 @@ def resolve(root, sublevel, work, unicode=False, susfs_box=True):
             patch = run("git", "-C", repo, "show", f"refs/check/susfs:{SUSFS_KSU_PATCH}")
             if not patch_fits(repo, "refs/check/cogansu", patch):
                 raise cogansu_susfs_wait(repo, tag, sha, susfs, patch)
-        snap["root_source"] = {"repo": COGANSU, "tag": tag, "commit": sha}
+        # Does the release carry the newest KernelSU main? If not, the Builder runs Build CoganSU first
+        # (kernel/cogansu_auto.py, owner 2026-11-07: "buat jadi satu langkah pakai PAT").
+        ksu = ls_remote(KSU, "refs/heads/main").get("refs/heads/main")
+        snap["root_source"] = {"repo": COGANSU, "tag": tag, "commit": sha, "kernelsu_main": ksu,
+                               "kernelsu_in_release": bool(ksu) and cogansu_has(sha, ksu)}
         snap["manager"] = release_manager(COGANSU, "CoganSU", tag, api)
     elif root == "SUKI":
         tag, sha = newest_tag(ls_remote(SUKISU, "refs/tags/v*"))
@@ -600,8 +614,10 @@ def main(argv=None):
         try:
             snap = resolve(args.root, args.sublevel, work, args.unicode, not args.no_susfs)
         except Wait as wait:
-            args.out.write_text(json.dumps({"root": args.root, "wait": {"id": wait.id_text, "en": wait.en_text}},
-                                           indent=1))
+            found = {"id": wait.id_text, "en": wait.en_text}
+            if isinstance(wait, BuildFirst):
+                found["kind"] = "build-first"   # one build of ours first, not a wait (kernel/cogansu_auto.py)
+            args.out.write_text(json.dumps({"root": args.root, "wait": found}, indent=1))
             print(f"WAIT: {wait.en_text}")
             return 2
         except (OSError, ValueError, KeyError, subprocess.SubprocessError) as exc:

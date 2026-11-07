@@ -144,6 +144,10 @@ jobs:
 
       - name: Cari versi terbaru / find the newest versions
         id: plan
+        env:
+          # Fine-grained PAT for cogan17/CoganSU (Actions: read and write): runs Build CoganSU when CoganSU
+          # lags KernelSU (kernel/cogansu_auto.py, docs/cogansu-token.md). Optional.
+          COGANSU_TOKEN: ${{ secrets.COGANSU_TOKEN }}
         run: |
           set -euo pipefail
           mkdir -p snapshots
@@ -173,6 +177,17 @@ jobs:
             python3 "${finder[@]}" --root "$root" --sublevel "$SUBLEVEL" "${extra[@]}" --out "snapshots/$root.json" || status=$?
             [ "$status" -le 2 ] || exit "$status"
             [ "$status" -ne 1 ] || exit 1
+            # CoganSU in one step (owner 2026-11-07): when its newest release lacks the newest KernelSU main or
+            # does not fit SUSFS yet, run Build CoganSU (it merges KernelSU main by itself), wait, resolve again.
+            # Without the token, or when Build CoganSU fails, the summary says so and the other roots go on.
+            if [ "$root" = CSU ] && [[ "$SOURCE" != Stabil* ]] && python3 kernel/cogansu_auto.py need "snapshots/CSU.json"; then
+              if python3 kernel/cogansu_auto.py build --release-type "$RELEASE_TYPE"; then
+                status=0
+                python3 kernel/resolve.py --root CSU --sublevel "$SUBLEVEL" "${extra[@]}" --out snapshots/CSU.json || status=$?
+                [ "$status" -le 2 ] || exit "$status"
+                [ "$status" -ne 1 ] || exit 1
+              fi
+            fi
           done
           python3 - >> "$GITHUB_OUTPUT" <<'PY'
           import json, os
