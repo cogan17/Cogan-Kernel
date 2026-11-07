@@ -13,26 +13,21 @@ Token dibutuhkan karena workflow di satu repo tidak boleh menjalankan workflow r
 
 ## 1. Buat token (fine-grained)
 
-1. Buka **https://github.com/settings/personal-access-tokens/new** (login sebagai `cogan17`).
-   Dari menu: foto profil → **Settings** → paling bawah **Developer settings** → **Personal access tokens** → **Fine-grained tokens** → **Generate new token**.
-2. Isi:
+Buka **https://github.com/settings/personal-access-tokens/new** (login sebagai `cogan17`). Dari menu: foto profil → **Settings** → paling bawah **Developer settings** → **Personal access tokens** → **Fine-grained tokens** → **Generate new token**. Isi dari atas ke bawah:
 
-   | Kolom | Isi |
-   |---|---|
-   | **Token name** | `Cogan Kernel → Build CoganSU` |
-   | **Resource owner** | `cogan17` |
-   | **Expiration** | **366 days** (atau *Custom* setahun). Catat tanggalnya untuk diperpanjang. |
-   | **Repository access** | **Only select repositories** → pilih **`cogan17/CoganSU`** saja |
-
-3. Bagian **Permissions** → **Repository permissions**:
-
-   | Izin | Pilih |
-   |---|---|
-   | **Actions** | **Read and write** |
-   | **Metadata** | *Read-only* (otomatis ikut) |
-
-   Izin lain biarkan **No access**.
-4. Ketuk **Generate token**, lalu **salin** token yang muncul (diawali `github_pat_…`). Token hanya ditampilkan sekali.
+1. **Token name**: `Cogan Kernel - Build CoganSU`
+2. **Description** (boleh kosong): `Dipakai Cogan Kernel Builder untuk menjalankan Build CoganSU`
+3. **Resource owner**: biarkan **cogan17**.
+4. **Expiration**: ketuk **No expiration** → **Custom…** → pilih tanggal setahun lagi, lalu catat tanggalnya. *No expiration* juga jalan, tetapi GitHub menyarankan tanggal.
+5. **Repository access**: pilih **Only select repositories** (bukan *Public repositories* atau *All repositories*) → ketuk **Select repositories** → ketik `CoganSU` → centang **cogan17/CoganSU** saja.
+6. **Permissions**:
+   - Setelah repo dipilih, kotak Permissions punya bagian **Repositories** di samping **Account**. Buka **Repositories**.
+   - Ketuk **Add permissions** → centang **Actions** → tutup daftarnya.
+   - Di baris **Actions**, ubah *Read-only* menjadi **Read and write**.
+   - **Metadata** (*Read-only*) ikut otomatis, biarkan.
+   - Bagian **Account** tetap **0**, jangan ditambah.
+7. Ketuk **Generate token**. Bila muncul ringkasan, cek isinya: repo `cogan17/CoganSU`, *Actions: Read and write*, *Metadata: Read-only*. Lalu ketuk **Generate token** lagi.
+8. **Salin** token yang muncul (diawali `github_pat_…`). Token hanya ditampilkan sekali.
 
 ## 2. Simpan sebagai secret di Cogan-Kernel
 
