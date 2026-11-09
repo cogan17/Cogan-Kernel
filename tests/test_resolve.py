@@ -153,12 +153,21 @@ class KsunManagerTest(unittest.TestCase):
         found = r.ksun_manager("b" * 40, self.api([{"id": 9, "html_url": "u"}], artifacts))
         self.assertEqual(found, {"repo": "KernelSU-Next/KernelSU-Next", "run": 9, "url": "u", "manager": 1, "spoofed": 2})
 
-    def test_no_or_expired_build_means_wait(self):
-        expired = [{"name": "manager", "id": 1, "expired": True}]
-        for runs in ([], [{"id": 9, "html_url": "u"}]):
+    def test_the_wait_tells_the_three_reasons_apart(self):
+        # Owner 2026-11-09: never ambiguous — no build yet vs expired artifact vs no artifact at all.
+        cases = {
+            "belum ada build CI resmi yang berhasil": ([], []),
+            "artifact manager-nya sudah kedaluwarsa": ([{"id": 9, "html_url": "u"}],
+                                                       [{"name": "manager", "id": 1, "expired": True}]),
+            "tidak menghasilkan artifact manager": ([{"id": 9, "html_url": "u"}],
+                                                    [{"name": "unrelated", "id": 2, "expired": False}]),
+        }
+        for phrase, (runs, artifacts) in cases.items():
             with self.assertRaises(r.Wait) as caught:
-                r.ksun_manager("b" * 40, self.api(runs, expired))
+                r.ksun_manager("b" * 40, self.api(runs, artifacts))
             self.assertIn("bbbbbbbbbbbb", caught.exception.id_text)
+            self.assertIn(phrase, caught.exception.id_text)
+            self.assertNotIn("atau artifact", caught.exception.id_text)  # no "none yet, or expired" ambiguity
 
 
 class BakasuMainTest(unittest.TestCase):
@@ -216,10 +225,20 @@ class SusfsSidexTest(unittest.TestCase):
                                               "date": "2026-10-16T05:03:00Z", "artifact": 21, "name": "release-1.5.2+_ddddddd"})
         self.assertIn("build.yml/runs?branch=v1.5.2%2B&status=success&per_page=5", asked[0])
 
-    def test_no_build_means_wait(self):
-        found = r.susfs_sidex(lambda path: {"workflow_runs": []})
-        self.assertIn("Tunggu sidex15", found["wait"]["id"])
-        self.assertIn("Wait for sidex15", found["wait"]["en"])
+    def test_wait_reason_is_specific(self):
+        # Owner 2026-11-09: no build yet vs expired module artifact vs a build without one.
+        none = r.susfs_sidex(lambda path: {"workflow_runs": []})
+        self.assertIn("belum ada build CI", none["wait"]["id"])
+
+        def expired(path):
+            return {"workflow_runs": [{"id": 9, "html_url": "u", "head_sha": "e" * 40}]} if "/runs?" in path \
+                else {"artifacts": [{"name": "release-1.5.2+_x", "id": 3, "expired": True}]}
+        self.assertIn("sudah kedaluwarsa", r.susfs_sidex(expired)["wait"]["id"])
+
+        def absent(path):
+            return {"workflow_runs": [{"id": 9, "html_url": "u", "head_sha": "e" * 40}]} if "/runs?" in path \
+                else {"artifacts": [{"name": "other", "id": 3, "expired": False}]}
+        self.assertIn("tanpa artifact modul", r.susfs_sidex(absent)["wait"]["id"])
 
 
 class UnicodeFixTest(unittest.TestCase):
