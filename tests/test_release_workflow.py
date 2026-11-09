@@ -377,11 +377,13 @@ fi
         self.assertIn("menimpa rilis lama", self.summary())
         self.assertIn("replaced the old release", self.summary())
 
-    def test_timpa_keeps_an_undeletable_tag_and_still_publishes(self):
+    def test_timpa_stops_on_an_undeletable_tag_before_touching_the_old_release(self):
+        # Audit r17: a kept tag would point the new release at the old build's commit.
         result = self.run_step("Terbitkan / publish", CASE="exists", REPLACE="true", TAG_DELETE="denied")
-        self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn("Tag v26.10.24-r2 lama tetap dipakai", result.stdout)
-        self.assertTrue((self.root / "called.txt").exists())
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("Tag v26.10.24-r2 lama tidak bisa dihapus", result.stdout)
+        self.assertFalse((self.root / "deleted.txt").exists())
+        self.assertFalse((self.root / "called.txt").exists())
 
     def test_timpa_without_an_existing_release_publishes_normally(self):
         result = self.run_step("Terbitkan / publish", REPLACE="true")

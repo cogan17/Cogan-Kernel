@@ -52,6 +52,55 @@ def check(path):
     return version
 
 
+# Audit r17 (9 Nov 2026): sidex15's installer downloads ksu_susfs from GitHub, runs it as root without any
+# trusted digest (wget fallback even without TLS checks), skips the install entirely when the hashes match,
+# and puts Termux's user-writable bin on the root PATH. Cogan Kernel's copy installs the bundled tool only.
+TERMUX_PATH = ":/data/data/com.termux/files/usr/bin"
+CLOUD_START = "# Check connectivity first\n"
+CLOUD_END = "# cleanup\n"
+LOCAL_INSTALL = """# Cogan Kernel: only the ksu_susfs inside this ZIP is installed; nothing is downloaded and run as root.
+ui_print "[-] Installing the bundled susfs binary"
+cp -f ${TMPDIR}/susfs/tools/ksu_susfs_arm64 ${DEST_BIN_DIR}/ksu_susfs && chmod 755 ${DEST_BIN_DIR}/ksu_susfs \\
+\t|| abort "[!] ksu_susfs could not be installed"
+
+"""
+NO_ONLINE_UPDATE = """#!/bin/sh
+# Cogan Kernel: online update of ksu_susfs is off (it ran an unverified download as root).
+echo "[!] Update online ksu_susfs dimatikan di Cogan Kernel; pasang ZIP modul yang lebih baru."
+echo "[!] Online ksu_susfs update is off in Cogan Kernel; install a newer module ZIP instead."
+exit 1
+"""
+UPDATERS = ("action.sh", "susfs-bin-update.sh")
+# Only reads a hash to show "update available"; it never runs or installs what it downloads.
+HASH_ONLY = "susfs-bin-check.sh"
+
+
+def harden(path):
+    """Rewrite the module ZIP so installing or updating never runs a download; SystemExit when sidex15's
+    scripts no longer look as expected (check them again, never ship them unpatched)."""
+    with zipfile.ZipFile(path) as archive:
+        entries = [(info, archive.read(info)) for info in archive.infolist()]
+    files = {info.filename: data for info, data in entries}
+    text = files["customize.sh"].decode()
+    start, end = text.find(CLOUD_START), text.find(CLOUD_END)
+    if (text.count(TERMUX_PATH) != 1 or text.count(CLOUD_START) != 1 or text.count(CLOUD_END) != 1
+            or not start < end or "raw.githubusercontent.com" not in text[start:end]):
+        raise SystemExit("::error::sidex15 module: customize.sh changed, its download step was not found; check it again")
+    files["customize.sh"] = (text[:start] + LOCAL_INSTALL + text[end:]).replace(TERMUX_PATH, "").encode()
+    for name in UPDATERS:
+        if name in files:
+            files[name] = NO_ONLINE_UPDATE.encode()
+    for name, data in files.items():
+        # The download helpers may stay defined; without a web address nothing is fetched.
+        if name.endswith(".sh") and name != HASH_ONLY and re.search(rb"https?://", data):
+            raise SystemExit(f"::error::sidex15 module: {name} still has a web address; check it again")
+    tmp = path.with_suffix(".tmp")
+    with zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as out:
+        for info, _ in entries:
+            out.writestr(info, files[info.filename], compress_type=zipfile.ZIP_DEFLATED)
+    tmp.replace(path)
+
+
 def main(argv=None, fetch=download):
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--snapshots", type=Path, required=True)
@@ -65,6 +114,7 @@ def main(argv=None, fetch=download):
     raw = args.out / "sidex15.download.zip"
     fetch(info["repo"], info["artifact"], raw)
     version = check(raw)
+    harden(raw)
     name = f"5-SUSFS-MODULE-SIDEX15_{version}.zip"
     raw.replace(args.out / name)
     lines = {"SUSFS_MODULE": name, "SUSFS_MODULE_SHA256": hashlib.sha256((args.out / name).read_bytes()).hexdigest(),
