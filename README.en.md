@@ -134,13 +134,13 @@ The **Cek pembaruan** (check for updates) button is the only check, and it build
 <!-- sublevel:start -->
 | Sublevel | ACK release | Status |
 |---|---|---|
-| **176** (`lts`) | `2026-09_r5` | ✅ KernelSU Next · BakaSU: [build + KMI gate](https://github.com/cogan17/Cogan-Kernel/actions/runs/41377913431) · r1 and r2 tested on the phone |
-| 172 | `2026-06_r17` | ✅ KernelSU Next · BakaSU: [build + KMI gate](https://github.com/cogan17/Cogan-Kernel/actions/runs/41377913431) |
-| 162 | `2026-03_r25` | ✅ KernelSU Next · BakaSU: [build + KMI gate](https://github.com/cogan17/Cogan-Kernel/actions/runs/41377913431) |
-| 157 | `2025-12_r32` | ✅ KernelSU Next · BakaSU: [build + KMI gate](https://github.com/cogan17/Cogan-Kernel/actions/runs/41377913431) |
-| 145 | `2025-09_r36` | ✅ KernelSU Next · BakaSU: [build + KMI gate](https://github.com/cogan17/Cogan-Kernel/actions/runs/41377913431) |
-| 141 | `2025-07_r13` | ✅ KernelSU Next · BakaSU: [build + KMI gate](https://github.com/cogan17/Cogan-Kernel/actions/runs/41384518511) |
-| 138 | `2025-06_r17` | ✅ KernelSU Next · BakaSU: [build + KMI gate](https://github.com/cogan17/Cogan-Kernel/actions/runs/41377913431) · the phone's stock kernel; archive r5 tested on the phone |
+| **176** (`lts`) | `2026-09_r6` | ✅ KernelSU Next · KernelSU · CoganSU: [build + KMI gate](https://github.com/cogan17/Cogan-Kernel/actions/runs/42361730613) · r1 and r2 tested on the phone |
+| 172 | `2026-06_r18` | ✅ KernelSU Next · KernelSU · CoganSU: [build + KMI gate](https://github.com/cogan17/Cogan-Kernel/actions/runs/42361730613) |
+| 162 | `2026-03_r25` | ✅ KernelSU Next · BakaSU · KernelSU · CoganSU: [build + KMI gate](https://github.com/cogan17/Cogan-Kernel/actions/runs/42361730613) |
+| 157 | `2025-12_r32` | ✅ KernelSU Next · BakaSU · KernelSU · CoganSU: [build + KMI gate](https://github.com/cogan17/Cogan-Kernel/actions/runs/42361730613) |
+| 145 | `2025-09_r36` | ✅ KernelSU Next · BakaSU · KernelSU · CoganSU: [build + KMI gate](https://github.com/cogan17/Cogan-Kernel/actions/runs/42361730613) |
+| 141 | `2025-07_r13` | ✅ KernelSU Next · BakaSU · KernelSU · CoganSU: [build + KMI gate](https://github.com/cogan17/Cogan-Kernel/actions/runs/42361730613) |
+| 138 | `2025-06_r17` | ✅ KernelSU Next · BakaSU · KernelSU · CoganSU: [build + KMI gate](https://github.com/cogan17/Cogan-Kernel/actions/runs/42361730613) · the phone's stock kernel; archive r5 tested on the phone |
 <!-- sublevel:end -->
 
 Unicode fix (ticked by default since 1 Nov 2026) passes the build + KMI gate on 157, 162, 172 and 176, and applies cleanly on 138 and 145 ([CI](https://github.com/cogan17/Cogan-Kernel/actions/runs/40048269498)). If WildKernel's patch does not fit yet, the build stops: untick Unicode fix to build anyway.

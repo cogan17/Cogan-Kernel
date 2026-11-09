@@ -4,25 +4,33 @@
    "id": "r1 dan r2 diuji di HP",
    "en": "r1 and r2 tested on the phone"
   },
-  "tag": "android14-6.1-2026-09_r5",
-  "BSU": {
+  "tag": "android14-6.1-2026-09_r6",
+  "CSU": {
    "status": "ok",
-   "run": 41377913431
+   "run": 42361730613
+  },
+  "KSU": {
+   "status": "ok",
+   "run": 42361730613
   },
   "KSUN": {
    "status": "ok",
-   "run": 41377913431
+   "run": 42361730613
   }
  },
  "172": {
-  "tag": "android14-6.1-2026-06_r17",
-  "BSU": {
+  "tag": "android14-6.1-2026-06_r18",
+  "CSU": {
    "status": "ok",
-   "run": 41377913431
+   "run": 42361730613
+  },
+  "KSU": {
+   "status": "ok",
+   "run": 42361730613
   },
   "KSUN": {
    "status": "ok",
-   "run": 41377913431
+   "run": 42361730613
   }
  },
  "162": {
@@ -33,40 +41,72 @@
   },
   "KSUN": {
    "status": "ok",
-   "run": 41377913431
+   "run": 42361730613
+  },
+  "CSU": {
+   "status": "ok",
+   "run": 42361730613
+  },
+  "KSU": {
+   "status": "ok",
+   "run": 42361730613
   }
  },
  "157": {
   "tag": "android14-6.1-2025-12_r32",
   "KSUN": {
    "status": "ok",
-   "run": 41377913431
+   "run": 42361730613
   },
   "BSU": {
    "status": "ok",
    "run": 41377913431
+  },
+  "CSU": {
+   "status": "ok",
+   "run": 42361730613
+  },
+  "KSU": {
+   "status": "ok",
+   "run": 42361730613
   }
  },
  "145": {
   "tag": "android14-6.1-2025-09_r36",
   "KSUN": {
    "status": "ok",
-   "run": 41377913431
+   "run": 42361730613
   },
   "BSU": {
    "status": "ok",
    "run": 41377913431
+  },
+  "CSU": {
+   "status": "ok",
+   "run": 42361730613
+  },
+  "KSU": {
+   "status": "ok",
+   "run": 42361730613
   }
  },
  "141": {
   "tag": "android14-6.1-2025-07_r13",
   "KSUN": {
    "status": "ok",
-   "run": 41384518511
+   "run": 42361730613
   },
   "BSU": {
    "status": "ok",
    "run": 41384518511
+  },
+  "CSU": {
+   "status": "ok",
+   "run": 42361730613
+  },
+  "KSU": {
+   "status": "ok",
+   "run": 42361730613
   }
  },
  "138": {
@@ -77,11 +117,19 @@
   "tag": "android14-6.1-2025-06_r17",
   "KSUN": {
    "status": "ok",
-   "run": 41377913431
+   "run": 42361730613
   },
   "BSU": {
    "status": "ok",
    "run": 41377913431
+  },
+  "CSU": {
+   "status": "ok",
+   "run": 42361730613
+  },
+  "KSU": {
+   "status": "ok",
+   "run": 42361730613
   }
  }
 }
