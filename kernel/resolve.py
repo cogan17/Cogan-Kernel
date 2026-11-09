@@ -219,29 +219,56 @@ def ksun_version(repo, head, base_branch):
 
 
 def ci_manager(ci, run_info, api=api):
-    """Manager artifacts of one official CI run, or None when its manager is gone (expired)."""
+    """(manager artifacts, miss reason) of one official CI run. The reason, when the manager is not
+    usable, tells an expired artifact apart from a build that never produced one (owner 2026-11-09)."""
     repo, _, names = ci
     # BakaSU's runs have 30 artifacts, the API's default page: ask for 100.
     listed = api(f"repos/{repo}/actions/runs/{run_info['id']}/artifacts?per_page=100")["artifacts"]
     artifacts = {a["name"]: a for a in listed if not a["expired"]}
     if names["manager"] not in artifacts:
-        return None
+        return None, ("expired" if any(a["name"] == names["manager"] and a["expired"] for a in listed) else "absent")
     return {"repo": repo, "run": run_info["id"], "url": run_info["html_url"],
-            **{key: artifacts[name]["id"] for key, name in names.items() if name in artifacts}}
+            **{key: artifacts[name]["id"] for key, name in names.items() if name in artifacts}}, None
+
+
+# Why an official CI manager is not usable (owner 2026-11-09: be specific, never ambiguous).
+ARTIFACT_MISS = {
+    "none": ("belum ada build CI resmi yang berhasil (mungkin masih berjalan atau belum terpicu)",
+             "there is no successful official CI build yet (it may still be running, or was not triggered)"),
+    "expired": ("build CI-nya ada tetapi artifact manager-nya sudah kedaluwarsa (artifact Actions hanya bertahan 90 hari)",
+                "its CI build exists but the manager artifact has expired (Actions artifacts last only 90 days)"),
+    "absent": ("build CI-nya ada tetapi tidak menghasilkan artifact manager",
+               "its CI build exists but produced no manager artifact"),
+}
+
+
+def manager_wait(subject_id, subject_en, reason):
+    why_id, why_en = ARTIFACT_MISS[reason]
+    return Wait(f"Tunggu manager CI resmi {subject_id}: {why_id}.",
+                f"Wait for the official CI manager {subject_en}: {why_en}.")
+
+
+def newest_manager(ci, runs, api):
+    """(head_sha, manager) of the newest run with a usable manager, or (None, newest miss reason)."""
+    reason = "none"
+    for run_info in runs:
+        found, miss = ci_manager(ci, run_info, api)
+        if found:
+            return run_info.get("head_sha"), found
+        if reason == "none":          # runs are newest first; report the newest run's reason
+            reason = miss
+    return None, reason
 
 
 def ksun_manager(base, api=api):
     """Official KernelSU Next CI run that built the manager at the kernel's base commit."""
     repo, workflow, _ = KSUN_CI
     runs = api(f"repos/{repo}/actions/workflows/{workflow}/runs?head_sha={base}&status=success&per_page=5")
-    for ci in runs.get("workflow_runs", []):
-        found = ci_manager(KSUN_CI, ci, api)
-        if found:
-            return found
-    raise Wait(f"Tunggu build CI resmi manager KernelSU Next untuk commit `{base[:12]}` "
-               "(belum ada atau artifact-nya sudah kedaluwarsa).",
-               f"Wait for the official KernelSU Next CI manager build of commit `{base[:12]}` "
-               "(none yet, or its artifact expired).")
+    _, result = newest_manager(KSUN_CI, runs.get("workflow_runs", []), api)
+    if isinstance(result, dict):
+        return result
+    raise manager_wait(f"KernelSU Next untuk commit `{base[:12]}`",
+                       f"KernelSU Next for commit `{base[:12]}`", result)
 
 
 def bakasu_main(api=api):
@@ -250,26 +277,34 @@ def bakasu_main(api=api):
     there (owner 24 Okt 2026). Commits that only change other files get no CI run."""
     repo, workflow, _ = BAKASU_CI
     runs = api(f"repos/{repo}/actions/workflows/{workflow}/runs?branch=main&event=push&per_page=5")
-    for ci in runs.get("workflow_runs", []):
-        found = ci_manager(BAKASU_CI, ci, api)
-        if found:
-            return ci["head_sha"], found
-    raise Wait("Tunggu build CI resmi manager BakaSU di main (belum ada atau artifact-nya sudah kedaluwarsa).",
-               "Wait for the official BakaSU CI manager build on main (none yet, or its artifact expired).")
+    head, result = newest_manager(BAKASU_CI, runs.get("workflow_runs", []), api)
+    if isinstance(result, dict):
+        return head, result
+    raise manager_wait("BakaSU di main", "BakaSU on main", result)
 
 
 def susfs_sidex(api=api):
     """The newest CI build of sidex15's SUSFS module that still has its artifact, or what to wait for."""
     repo, workflow, branch = SUSFS_SIDEX
     runs = api(f"repos/{repo}/actions/workflows/{workflow}/runs?branch={branch.replace('+', '%2B')}&status=success&per_page=5")
+    reason = "none"
     for ci in runs.get("workflow_runs", []):
         artifacts = api(f"repos/{repo}/actions/runs/{ci['id']}/artifacts?per_page=100")["artifacts"]
-        module = next((a for a in artifacts if a["name"].startswith("release-") and not a["expired"]), None)
+        releases = [a for a in artifacts if a["name"].startswith("release-")]
+        module = next((a for a in releases if not a["expired"]), None)
         if module:
             return {"repo": repo, "run": ci["id"], "url": ci["html_url"], "commit": ci["head_sha"],
                     "date": ci.get("created_at", ""), "artifact": module["id"], "name": module["name"]}
-    return {"wait": {"id": f"Tunggu sidex15 membangun modul SUSFS lagi (build CI {branch} tidak ada atau artifact-nya kedaluwarsa).",
-                     "en": f"Wait for sidex15 to build the SUSFS module again (no {branch} CI build, or its artifact expired)."}}
+        if reason == "none":
+            reason = "expired" if releases else "absent"
+    detail = {"none": (f"belum ada build CI {branch} yang berhasil (mungkin masih berjalan)",
+                       f"there is no successful {branch} CI build yet (it may still be running)"),
+              "expired": (f"build CI {branch} ada tetapi artifact modulnya sudah kedaluwarsa (90 hari)",
+                          f"the {branch} CI build exists but its module artifact has expired (90 days)"),
+              "absent": (f"build CI {branch} ada tetapi tanpa artifact modul",
+                         f"the {branch} CI build exists but has no module artifact")}[reason]
+    return {"wait": {"id": f"Tunggu sidex15 membangun modul SUSFS lagi: {detail[0]}.",
+                     "en": f"Wait for sidex15 to build the SUSFS module again: {detail[1]}."}}
 
 
 def needed_hooks(susfs_patch_text):
@@ -335,12 +370,10 @@ def ksu_main(api=api):
     """(commit, manager) of the newest official KernelSU main commit the CI built a manager for."""
     repo, workflow, _ = KSU_CI
     runs = api(f"repos/{repo}/actions/workflows/{workflow}/runs?branch=main&event=push&status=success&per_page=5")
-    for ci in runs.get("workflow_runs", []):
-        found = ci_manager(KSU_CI, ci, api)
-        if found:
-            return ci["head_sha"], found
-    raise Wait("Tunggu build CI resmi manager KernelSU di main (belum ada atau artifact-nya sudah kedaluwarsa).",
-               "Wait for the official KernelSU CI manager build on main (none yet, or its artifact expired).")
+    head, result = newest_manager(KSU_CI, runs.get("workflow_runs", []), api)
+    if isinstance(result, dict):
+        return head, result
+    raise manager_wait("KernelSU di main", "KernelSU on main", result)
 
 
 def release_manager(url, who, tag, api=api):
