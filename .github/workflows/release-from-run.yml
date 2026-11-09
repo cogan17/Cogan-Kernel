@@ -148,11 +148,12 @@ jobs:
           mode=(--prerelease); [ "$RELEASE_TYPE" = "Release" ] && mode=(--latest)
           # Replace only now, after every check passed and the files are ready.
           if [ "$replaced" = true ]; then
+            # Tag first: a tag that cannot be deleted would point the new release at the old build's
+            # commit, so stop before the old release is touched.
+            gh api -X DELETE "repos/$GITHUB_REPOSITORY/git/refs/tags/$tag" >/dev/null \
+              || { echo "::error::Tag $tag lama tidak bisa dihapus; rilis lama tidak diubah / the old tag $tag could not be deleted; the old release is unchanged"; exit 1; }
             gh release delete "$tag" --repo "$GITHUB_REPOSITORY" --yes
             touch replaced-old-release
-            # A tag that cannot be deleted stays; the new release then uses it (its target is ignored).
-            gh api -X DELETE "repos/$GITHUB_REPOSITORY/git/refs/tags/$tag" >/dev/null \
-              || echo "::warning::Tag $tag lama tetap dipakai / the old tag $tag is kept"
           fi
           gh release create "$tag" files/* --repo "$GITHUB_REPOSITORY" --target "$target" "${mode[@]}" \
             --title "$title" --notes-file notes.md
