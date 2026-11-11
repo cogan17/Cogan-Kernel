@@ -78,9 +78,11 @@ export PATH="$WORK/clang/bin:$HOME/.local/bin:$PATH"
 # The workflow caches ~/.ccache; newer ccache defaults to ~/.cache/ccache.
 export CCACHE_DIR="${CCACHE_DIR:-$HOME/.ccache}"
 clang --version | head -n 1
-# pahole from its own repository (BTF of the GKI defconfig), as the device-tested builds used.
+# pahole for the BTF of the GKI defconfig, as the device-tested builds used. From its maintainer's GitHub
+# repository (acmel/dwarves, the same project as git.kernel.org/.../pahole.git), because git.kernel.org
+# 502'd through every retry across parallel jobs (owner 2026-11-11, run 42948550226); GitHub is reliable.
 if [ ! -x "$HOME/.local/bin/pahole" ]; then
-  retry git clone -q --depth=1 https://git.kernel.org/pub/scm/devel/pahole/pahole.git "$WORK/pahole"
+  retry git clone -q --depth=1 https://github.com/acmel/dwarves.git "$WORK/pahole"
   cmake -S "$WORK/pahole" -B "$WORK/pahole/build" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$HOME/.local" \
     -DCMAKE_INSTALL_RPATH="$HOME/.local/lib" -DCMAKE_BUILD_WITH_INSTALL_RPATH=ON -D__LIB=lib >/dev/null
   make -s -C "$WORK/pahole/build" -j"$(nproc)" install >/dev/null
