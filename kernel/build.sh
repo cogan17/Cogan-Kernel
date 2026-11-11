@@ -38,6 +38,18 @@ print(d)' "$SNAPSHOT" "$1"; }
 apply() {  # strict: the patch applies as it is, or the build stops
   git -C "$KSRC" apply --whitespace=nowarn "$1"
 }
+# A transient 5xx on an external git transfer must not kill a whole matrix run (owner 2026-11-11: run
+# 42945957032, git.kernel.org 502'd across ~25 parallel jobs). Retry network git like curl's --retry,
+# with backoff. git clone removes its partial target on failure, so a retried clone starts clean.
+retry() {
+  local n=1
+  until "$@"; do
+    [ "$n" -ge 4 ] && return 1
+    log "percobaan git gagal, ulang $n/3 setelah $((n * 5))s: $*"
+    sleep $((n * 5))
+    n=$((n + 1))
+  done
+}
 
 ROOT="$(snap root)"
 # The SUSFS box (owner 2026-11-02, ticked by default): unticked builds the plain root manager.
@@ -68,7 +80,7 @@ export CCACHE_DIR="${CCACHE_DIR:-$HOME/.ccache}"
 clang --version | head -n 1
 # pahole from its own repository (BTF of the GKI defconfig), as the device-tested builds used.
 if [ ! -x "$HOME/.local/bin/pahole" ]; then
-  git clone -q --depth=1 https://git.kernel.org/pub/scm/devel/pahole/pahole.git "$WORK/pahole"
+  retry git clone -q --depth=1 https://git.kernel.org/pub/scm/devel/pahole/pahole.git "$WORK/pahole"
   cmake -S "$WORK/pahole" -B "$WORK/pahole/build" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$HOME/.local" \
     -DCMAKE_INSTALL_RPATH="$HOME/.local/lib" -DCMAKE_BUILD_WITH_INSTALL_RPATH=ON -D__LIB=lib >/dev/null
   make -s -C "$WORK/pahole/build" -j"$(nproc)" install >/dev/null
@@ -78,7 +90,7 @@ echo "::endgroup::"
 
 group "Kernel source: ACK $ACK_TAG (6.1.$SUBLEVEL)"
 git init -q "$KSRC"
-git -C "$KSRC" fetch -q --depth=1 https://android.googlesource.com/kernel/common "$ACK_COMMIT"
+retry git -C "$KSRC" fetch -q --depth=1 https://android.googlesource.com/kernel/common "$ACK_COMMIT"
 git -C "$KSRC" checkout -q FETCH_HEAD
 LINUX_VERSION="$(make -s -C "$KSRC" kernelversion)"
 [ "$LINUX_VERSION" = "6.1.$SUBLEVEL" ] || fail "$ACK_TAG is $LINUX_VERSION, expected 6.1.$SUBLEVEL"
@@ -187,7 +199,7 @@ fi
 cd "$KSRC"
 if [ "${BBG:-true}" = "true" ]; then
   group "Baseband Guard $(snap bbg.commit | cut -c1-12)"
-  git clone -q "$(snap bbg.repo)" Baseband-guard
+  retry git clone -q "$(snap bbg.repo)" Baseband-guard
   git -C Baseband-guard checkout -q --detach "$(snap bbg.commit)"
   bash Baseband-guard/setup.sh "$(snap bbg.commit)" || log "BBG setup.sh exited non-zero; checking its results"
   [ -L security/baseband-guard ] && grep -q 'baseband-guard/' security/Makefile \
@@ -246,7 +258,7 @@ echo "::endgroup::"
 SUSFS_VERSION="-"
 if [ "$SUSFS_ON" = true ]; then
 group "SUSFS $(snap susfs.commit | cut -c1-12)"
-git clone -q --filter=blob:none -b "$(snap susfs.branch)" "$(snap susfs.repo)" "$WORK/susfs"
+retry git clone -q --filter=blob:none -b "$(snap susfs.branch)" "$(snap susfs.repo)" "$WORK/susfs"
 git -C "$WORK/susfs" checkout -q "$(snap susfs.commit)"
 cp -R "$WORK/susfs/kernel_patches/fs/." fs/
 cp -R "$WORK/susfs/kernel_patches/include/linux/." include/linux/
