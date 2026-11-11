@@ -13,7 +13,7 @@ Run in Termux or the root manager's terminal (KernelSU Next or BakaSU):
 | Log | Command |
 |---|---|
 | Current kernel log | `su -c dmesg > /sdcard/Download/dmesg.txt` |
-| Real kernel identity | `su -c cat /sys/kernel/cogan/release /sys/kernel/cogan/features` |
+| Real kernel identity | `su -c cat /sys/kernel/cogan/identity /sys/kernel/cogan/release /sys/kernel/cogan/features` |
 | Kernel log of the previous failed boot (if present) | `su -c 'cat /sys/fs/pstore/console-ramoops* > /sdcard/Download/last_kmsg.txt'` |
 
 For a failed boot: recover the phone first ([Back to Stock](kembali-ke-stok.en.md)), then collect the log above **before** rebooting again.

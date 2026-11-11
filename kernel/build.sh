@@ -320,6 +320,12 @@ DEFCONFIG=arch/arm64/configs/gki_defconfig
 # stays the real 6.1.N, so Cogan Bridge and the Cogan Smart module keep working; the Cogan brand and
 # revision stay in the ZIP name and build.env. Behaviour-based detectors are unaffected.
 CC_TEXT=""
+# The real Cogan identity for Cogan Bridge's root-only "identity" file (CoganSU shows it): the same
+# whether or not the build is disguised or given its own Build Time.
+REAL_LOCALVERSION="-$NAME-$REVISION-$(git rev-parse --short=9 HEAD)"
+printf '#define COGAN_IDENTITY "%s|%s|%s"\n' "$RELEASE" "6.1.$SUBLEVEL$REAL_LOCALVERSION" \
+  "$(LC_ALL=C date -u '+%a %b %d %H:%M:%S UTC %Y')" > drivers/misc/cogan_identity.h
+log "Cogan identity: $(cat drivers/misc/cogan_identity.h)"
 if [ "${DISGUISE:-false}" = "true" ]; then
   . "$HERE/configs/stock-identity.env"
   GEN="$(sed -n 's/^KMI_GENERATION=//p' build.config.common 2>/dev/null || true)"; GEN="${GEN:-11}"
@@ -335,7 +341,7 @@ if [ "${DISGUISE:-false}" = "true" ]; then
   export KBUILD_LD_VERSION_TEXT="$STOCK_LD_TEXT"
   log "Disguised identity: 6.1.$SUBLEVEL$LOCALVERSION ($BUILD_USER@$BUILD_HOST)"
 else
-  LOCALVERSION="-$NAME-$REVISION-$(git rev-parse --short=9 HEAD)"
+  LOCALVERSION="$REAL_LOCALVERSION"
   BUILD_USER="cogan17"; BUILD_HOST="github-actions"
 fi
 scripts/config --file "$DEFCONFIG" --set-str CONFIG_LOCALVERSION "$LOCALVERSION" \

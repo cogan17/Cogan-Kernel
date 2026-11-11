@@ -56,7 +56,7 @@ class DriverSourceTests(unittest.TestCase):
     def test_abi_1_attributes_including_device_and_soc(self):
         text = (ROOT / "kernel/patches/cogan_bridge.c").read_text()
         attrs = re.findall(r"__ATTR\((\w+), (0[46]00)", text)
-        self.assertEqual(dict(attrs), {"abi": "0400", "release": "0400", "banner": "0400", "features": "0400",
+        self.assertEqual(dict(attrs), {"abi": "0400", "release": "0400", "banner": "0400", "identity": "0400", "features": "0400",
                                        "device": "0400", "soc": "0400", "limits": "0600", "policies": "0400",
                                        "power_client": "0600", "thermal_client": "0600"})
         self.assertNotIn("EXPORT_SYMBOL", text)   # nothing new in the KMI

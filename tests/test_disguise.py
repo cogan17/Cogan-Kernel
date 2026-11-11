@@ -32,20 +32,23 @@ def decide(disguise, mkcompile=MKCOMPILE):
         Path(tmp, "build.config.common").write_text("KMI_GENERATION=11\n")
         Path(tmp, "scripts").mkdir()
         Path(tmp, "scripts/mkcompile_h").write_text(mkcompile)
+        Path(tmp, "drivers/misc").mkdir(parents=True)
         for args in (["add", "-A"], ["-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "x"]):
             subprocess.run(["git", "-C", tmp, *args], check=True)
         script = ('set -euo pipefail\nlog() { echo "[+] $*" >&2; }\nfail() { echo "FAIL $*"; exit 1; }\n'
-                  f'DISGUISE={disguise}\nNAME=Cogan-Rothko-ACK\nREVISION=r16\nSUBLEVEL=176\nACK_COMMIT={ACK}\n'
+                  f'DISGUISE={disguise}\nNAME=Cogan-Rothko-ACK\nREVISION=r16\nRELEASE=v26.11.11-r16\nSUBLEVEL=176\nACK_COMMIT={ACK}\n'
                   f'HERE={ROOT / "kernel"}\n' + BLOCK +
                   '\nexport KBUILD_BUILD_USER="$BUILD_USER" KBUILD_BUILD_HOST="$BUILD_HOST"'
                   '\nprintf "%s\\n%s\\n%s\\n%s\\n" "$LOCALVERSION" "$BUILD_USER" "$BUILD_HOST" "$CC_TEXT"'
+                  '\ncat drivers/misc/cogan_identity.h'
                   '\nsh scripts/mkcompile_h arm64 "${CC_TEXT:-Neutron clang version 24.0.0git}" true')
         result = subprocess.run(["bash", "-c", script], cwd=tmp, capture_output=True, text=True,
                                 env={"PATH": os.environ["PATH"]})
     if result.returncode:
         return {"error": result.stdout + result.stderr}
     lines = result.stdout.splitlines()
-    return {"local": lines[0], "user": lines[1], "host": lines[2], "cc": lines[3], "compile_h": "\n".join(lines[4:])}
+    return {"local": lines[0], "user": lines[1], "host": lines[2], "cc": lines[3], "identity": lines[4],
+            "compile_h": "\n".join(lines[5:])}
 
 
 class DisguiseTest(unittest.TestCase):
@@ -63,6 +66,15 @@ class DisguiseTest(unittest.TestCase):
         self.assertIn('#define LINUX_COMPILE_BY\t"build-user"', on["compile_h"])
         self.assertIn('#define LINUX_COMPILE_HOST\t"build-host"', on["compile_h"])
         self.assertIn(f'#define LINUX_COMPILER\t\t"{STOCK_CC}, LLD 17.0.2"', on["compile_h"])
+
+    def test_cogan_bridge_identity_stays_real_when_disguised(self):
+        # CoganSU shows this (owner 2026-11-11): tag, Cogan release and real build time, disguised or not.
+        pattern = (r'^#define COGAN_IDENTITY "v26\.11\.11-r16\|6\.1\.176-Cogan-Rothko-ACK-r16-[0-9a-f]{9}\|'
+                   r'[A-Z][a-z]{2} [A-Z][a-z]{2} \d{2} \d{2}:\d{2}:\d{2} UTC \d{4}"$')
+        off, on = decide("false"), decide("true")
+        self.assertRegex(on["identity"], pattern)
+        self.assertEqual(on["identity"].split("|")[1], off["identity"].split("|")[1])
+        self.assertEqual("6.1.176" + off["local"], off["identity"].split("|")[1])
 
     def test_an_unexpected_mkcompile_h_stops_the_build(self):
         result = decide("true", mkcompile="#!/bin/sh\necho changed\n")

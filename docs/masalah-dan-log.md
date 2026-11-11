@@ -13,7 +13,7 @@ Jalankan di Termux atau terminal root manager (KernelSU Next atau BakaSU):
 | Log | Perintah |
 |---|---|
 | Log kernel sekarang | `su -c dmesg > /sdcard/Download/dmesg.txt` |
-| Identitas kernel asli | `su -c cat /sys/kernel/cogan/release /sys/kernel/cogan/features` |
+| Identitas kernel asli | `su -c cat /sys/kernel/cogan/identity /sys/kernel/cogan/release /sys/kernel/cogan/features` |
 | Log kernel boot gagal sebelumnya (kalau ada) | `su -c 'cat /sys/fs/pstore/console-ramoops* > /sdcard/Download/last_kmsg.txt'` |
 
 Untuk log boot gagal: pulihkan HP dulu ([Kembali ke Stok](kembali-ke-stok.md)), lalu ambil log di atas **sebelum** reboot lagi.

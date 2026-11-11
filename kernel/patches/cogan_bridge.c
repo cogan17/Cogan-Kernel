@@ -22,6 +22,18 @@
 #define COGAN_BRIDGE_DEVICE ""
 #endif
 
+/*
+ * The Cogan build itself, written by kernel/build.sh into drivers/misc/cogan_identity.h:
+ * "<release tag>|<Cogan release string>|<real build time>". It stays real when the build
+ * disguises uname/banner or sets its own Build Time; root-only, so apps still see the disguise.
+ */
+#if __has_include("cogan_identity.h")
+#include "cogan_identity.h"
+#endif
+#ifndef COGAN_IDENTITY
+#define COGAN_IDENTITY ""
+#endif
+
 struct cogan_policy {
 	struct list_head node;
 	struct cpufreq_policy *policy;
@@ -133,6 +145,11 @@ static ssize_t abi_show(struct kobject *k, struct kobj_attribute *a, char *buf)
 static ssize_t release_show(struct kobject *k, struct kobj_attribute *a, char *buf)
 {
 	return sysfs_emit(buf, "%s\n", UTS_RELEASE);
+}
+
+static ssize_t identity_show(struct kobject *k, struct kobj_attribute *a, char *buf)
+{
+	return sysfs_emit(buf, "%s\n", COGAN_IDENTITY);
 }
 
 static ssize_t banner_show(struct kobject *k, struct kobj_attribute *a, char *buf)
@@ -263,6 +280,7 @@ static ssize_t client_store(struct kobject *k, struct kobj_attribute *a,
 static struct kobj_attribute abi_attr = __ATTR(abi, 0400, abi_show, NULL);
 static struct kobj_attribute release_attr = __ATTR(release, 0400, release_show, NULL);
 static struct kobj_attribute banner_attr = __ATTR(banner, 0400, banner_show, NULL);
+static struct kobj_attribute identity_attr = __ATTR(identity, 0400, identity_show, NULL);
 static struct kobj_attribute features_attr = __ATTR(features, 0400, features_show, NULL);
 static struct kobj_attribute device_attr = __ATTR(device, 0400, device_show, NULL);
 static struct kobj_attribute soc_attr = __ATTR(soc, 0400, soc_show, NULL);
@@ -271,7 +289,7 @@ static struct kobj_attribute policies_attr = __ATTR(policies, 0400, policies_sho
 static struct kobj_attribute power_attr = __ATTR(power_client, 0600, client_show, client_store);
 static struct kobj_attribute thermal_attr = __ATTR(thermal_client, 0600, client_show, client_store);
 static struct attribute *cogan_attrs[] = {
-	&abi_attr.attr, &release_attr.attr, &banner_attr.attr, &features_attr.attr,
+	&abi_attr.attr, &release_attr.attr, &banner_attr.attr, &identity_attr.attr, &features_attr.attr,
 	&device_attr.attr, &soc_attr.attr,
 	&limits_attr.attr, &policies_attr.attr, &power_attr.attr, &thermal_attr.attr, NULL
 };
