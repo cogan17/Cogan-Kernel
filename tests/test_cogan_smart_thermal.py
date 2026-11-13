@@ -376,7 +376,11 @@ class ReportTests(unittest.TestCase):
         # Per app, kernel and mode: the phone body; the peak tile stays the processor.
         self.assertEqual((apps["com.mobile.legends"]["avg"], apps["com.mobile.legends"]["peak"]), (432, 434))
         self.assertIn("Penyebab panas (Badan HP ≥ 41.0 °C)", summary["text"])
-        self.assertEqual(max(value for _, value in summary["series"]), 434)
+        self.assertEqual(max(point[1] for point in summary["series"]), 434)
+        # Owner 13 Nov 2026: each point says whether the screen was on, for the chart colours.
+        self.assertEqual({point[2] for point in summary["series"]} <= {0, 1}, True)
+        self.assertIn(0, {point[2] for point in summary["series"]})   # this log has screen-off samples
+        self.assertIn(1, {point[2] for point in summary["series"]})
 
     def test_a_hot_processor_alone_is_not_hot(self):
         now = int(time.time())

@@ -1,5 +1,23 @@
 # Cogan Smart Kernel
 
+## Batas tidak bolak-balik, grafik berwarna / No more cap ping-pong, coloured chart — v2.12.8 (paket uji / test build)
+
+Indonesia:
+
+- Uji owner v2.12.7, 13 Nov 2026 (Hemat, Instagram 09.16–09.25): Riwayat Daya menulis "Prosesor 53 °C, di bawah 55 °C: batas dilepas" lalu "Badan HP 41 °C … CPU besar 60%" bergantian tiap setengah menit, sementara Badan HP tetap 40,5–41,4 °C (batas Hemat 39 °C). Prosesor saat scroll duduk di 51–55 °C, tepat di sekitar ambang "bekerja" 55 °C. Ini membuktikan temuan 1 audit 13 Nov.
+- Perbaikan: batas yang dilepas karena prosesor dingin kini hanya dilepas bila Badan HP sudah di bawah zona langkah (1 °C di bawah ambang). Selama badan masih panas, batas ditahan; menambah langkah tetap hanya saat prosesor bekerja, jadi panas dari cas atau ruangan tetap tidak menurunkan CPU. Tanpa sensor badan, perilakunya seperti dulu.
+- Grafik suhu (Suhu dan Manager): biru saat layar mati, hijau saat layar nyala di bawah garis merah, merah terang di atas garis merah. Ringkasan kini menyertakan keadaan layar di tiap titik grafik.
+- Catatan uji v2.12.7: batas SosMed bekerja (CPU besar 60–65%), tetapi prosesor hanya 51–55 °C sementara badan 40–41 °C, dan tab Suhu menyebut penyebabnya "Layar & pemakaian: Instagram". Artinya panas Instagram terutama dari layar, data seluler (5G) dan GPU, bukan CPU.
+- Terukur lokal: tes lolos (mksh dan dash). Belum diuji di HP.
+
+English:
+
+- Owner test of v2.12.7, 13 Nov 2026 (Power saver, Instagram 09:16–09:25): the Power history alternated "Processor 53 °C, under 55 °C: cap released" and "Phone body 41 °C … big CPU 60%" every half minute while the phone body stayed at 40.5–41.4 °C (Power saver limit 39 °C). Scrolling kept the processor at 51–55 °C, right around the 55 °C "working" threshold. This confirms finding 1 of the 13 Nov audit.
+- Fix: a cap given back because the processor is cool is now only given back once the phone body is under the step zone (1 °C under the limit). While the body is still hot the cap is kept; new steps are still only taken while the processor works, so heat from charging or the room still does not lower the CPU. Without a body sensor it behaves as before.
+- Temperature chart (Temperature and Manager): blue with the screen off, green with the screen on under the red line, bright red above it. The summary now carries the screen state of every chart point.
+- v2.12.7 test note: the social media cap works (big CPU 60–65%), but the processor was only at 51–55 °C while the body was at 40–41 °C, and the Temperature tab names the cause "Screen & use: Instagram". Instagram's heat comes mostly from the display, mobile data (5G) and the GPU, not the CPU.
+- Measured locally: tests pass (mksh and dash). Not phone-tested yet.
+
 ## SosMed tidak keburu hangat / Social media without the warm-up — v2.12.7 (paket uji / test build)
 
 Indonesia:

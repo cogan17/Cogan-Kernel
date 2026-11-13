@@ -257,13 +257,25 @@
     // steep jump across the gap (owner 2026-10-24, "naik turun, tidak stabil").
     const steps = series.slice(1).map((p, i) => p[0] - series[i][0]).sort((a, b) => a - b);
     const far = Math.max(120, 3 * (steps[Math.floor(steps.length / 2)] || 20));
-    const d = series.map((p, i) => `${i && p[0] - series[i - 1][0] <= far ? 'L' : 'M'}${x(p[0])},${y(p[1])}`).join(' ');
+    // Colour per piece (owner 13 Nov 2026): blue with the screen off, green with the screen on under the
+    // dashed hot line, bright red above it. Each piece takes the colour of the sample it ends at.
+    const kind = p => p[2] === 0 ? 'off' : p[1] >= hot * 10 ? 'hot' : 'on';
+    const paths = { off: '', on: '', hot: '' };
+    series.forEach((p, i) => {
+      if (!i || p[0] - series[i - 1][0] > far) return;
+      const q = series[i - 1];
+      paths[kind(p)] += `M${x(q[0])},${y(q[1])} L${x(p[0])},${y(p[1])} `;
+    });
+    const colours = { off: '#4d9fff', on: '#2fbf5a', hot: '#ff2d2d' };
+    const lines = Object.keys(paths).filter(k => paths[k]).map(k =>
+      `<path d="${paths[k]}" fill="none" stroke="${colours[k]}" stroke-width="2.4" vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round"/>`).join('');
     const clock = t => new Date(t * 1000).toLocaleTimeString(CoganI18n.locale(), { hour: '2-digit', minute: '2-digit' });
     return `<svg viewBox="0 0 600 160" preserveAspectRatio="none" aria-label="Grafik suhu Badan HP">
         <line x1="0" x2="600" y1="${y(hot * 10)}" y2="${y(hot * 10)}" stroke="var(--hot)" stroke-dasharray="6 5" vector-effect="non-scaling-stroke" opacity=".7"/>
-        <path d="${d}" fill="none" stroke="var(--accent)" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round"/>
+        ${lines}
       </svg>
-      <div class="axis"><span>${clock(t0)}</span><span class="hot">Badan HP - - ${hot} °C</span><span>${clock(t1)}</span></div>`;
+      <div class="axis"><span>${clock(t0)}</span><span class="hot">Badan HP - - ${hot} °C</span><span>${clock(t1)}</span></div>
+      <div class="axis"><span style="color:#4d9fff">● Layar mati</span><span style="color:#2fbf5a">● Layar nyala</span><span style="color:#ff2d2d">● Di atas garis</span></div>`;
   }
   window.CoganUI = {create, poll, action, text, html, shortKernel, kernel, cooling, folds, identity, health, recorder, learnLabels, draft, chart};
 })();

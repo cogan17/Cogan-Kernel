@@ -214,7 +214,9 @@ class PowerModeTests(unittest.TestCase):
         self.phone.set_temp(65.0)
         self.phone.set_body(41.5)
         self.assertEqual(self.phone.step()["level"], 1)
-        self.phone.set_temp(45.0)                                         # processor idle, body still warm
+        self.phone.set_temp(45.0)                                         # processor idle, body still warm:
+        self.assertEqual([self.phone.step()["level"] for _ in range(4)], [1, 1, 1, 1])   # kept (owner 13 Nov 2026)
+        self.phone.set_body(39.8)                                         # under the step zone, not yet 1.5 °C under
         self.assertEqual([self.phone.step()["level"] for _ in range(3)], [1, 1, 0])
         last = self.phone.events()[0]
         self.assertIn("Prosesor 45.0 °C, di bawah 55 °C: batas dilepas, CPU besar 100%, kecil 100%", last)
@@ -244,11 +246,16 @@ class PowerModeTests(unittest.TestCase):
         self.assertEqual([self.phone.step()["level"] for _ in range(6)], [0] * 6)
         self.phone.set_temp(66.0)                                         # the processor works: steps
         self.assertEqual([self.phone.step()["level"] for _ in range(5)], [1, 1, 1, 2, 2])
-        self.phone.set_temp(52.0)                                         # idle again: speed comes back
+        self.phone.set_temp(52.0)                                         # idle, body still hot: the step stays
+        self.assertEqual([self.phone.step()["level"] for _ in range(6)], [2] * 6)
+        # Owner 13 Nov 2026 (Instagram, 09.16-09.25): released at a cool processor while the body was still over
+        # the limit, the cap came and went every half minute. Speed comes back once the body is under the zone.
+        self.phone.set_body(39.9)
         levels = [self.phone.step()["level"] for _ in range(6)]
         self.assertEqual(levels, [2, 2, 1, 1, 1, 0])
         state = self.phone.step()
         self.assertEqual((state["busy"], state["big"], state["little"]), (0, 100, 100))
+        self.phone.set_body(43.5)
         # Owner 26 Okt 2026: scrolling Instagram kept the processor at 56 °C with the body at 42-44 °C, and the
         # CPU was hardly lowered under the old 60 °C rule. From 55 °C the processor counts as working.
         self.phone.set_temp(56.0)
@@ -283,6 +290,19 @@ class PowerModeTests(unittest.TestCase):
         for _ in range(30):
             state = self.phone.step()
         self.assertEqual((state["level"], state["big"], state["little"]), (0, 100, 100))
+
+    def test_a_processor_around_55_does_not_bounce_the_cap_while_the_body_is_hot(self):
+        # Owner 13 Nov 2026, Hemat + Instagram: the processor sat at 51-55 °C with the phone body at 40.5-41.4 °C, and
+        # the cap was released and lowered again every half minute.
+        self.assertEqual(self.phone.report("mode", "hemat"), {"ok": 1})
+        self.phone.set_body(41.0)
+        levels = []
+        for i in range(24):
+            self.phone.set_temp(56.0 if i % 4 == 0 else 53.0)
+            levels.append(self.phone.step()["level"])
+        self.assertEqual(levels, sorted(levels))                          # never released while the body is hot
+        self.assertGreater(levels[-1], 0)
+        self.assertFalse(any("batas dilepas" in event for event in self.phone.events()))
 
     def test_social_cap_not_in_performa_off_at_zero_and_needs_a_fresh_sample(self):
         self.phone.start_recorder()
