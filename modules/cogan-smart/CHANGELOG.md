@@ -1,5 +1,17 @@
 # Cogan Smart Kernel
 
+## Layar mati biru di grafik / Screen-off time in blue — v2.12.9 (paket uji / test build)
+
+Indonesia:
+
+- Uji owner v2.12.8, 13 Nov 2026: waktu layar mati tampil sebagai celah, bukan biru. Penyebabnya: saat layar mati HP tidur (deep sleep) dan pencatat suhu tidak mengambil sampel sampai layar nyala lagi, sedangkan grafik memutus garis di setiap jeda. Kini jeda yang diawali sampel layar mati digambar biru. Jeda lain (mis. HP dinyalakan ulang) tetap terputus.
+- Terukur lokal: tes lolos. Belum diuji di HP.
+
+English:
+
+- Owner test of v2.12.8, 13 Nov 2026: screen-off time showed as a gap, not blue. With the screen off the phone sleeps (deep sleep) and the temperature logger takes no sample until the screen is on again, while the chart broke the line at every gap. A gap that starts at a screen-off sample is now drawn blue. Other gaps (e.g. a restart) stay open.
+- Measured locally: tests pass. Not phone-tested yet.
+
 ## Batas tidak bolak-balik, grafik berwarna / No more cap ping-pong, coloured chart — v2.12.8 (paket uji / test build)
 
 Indonesia:

@@ -1,0 +1,27 @@
+Cogan Smart Kernel v2.12.9 / versionCode 40 — paket uji / test build
+
+Indonesia
+
+Perbaikan:
+- Waktu layar mati di grafik suhu kini tergambar biru, bukan celah kosong. Saat layar mati HP tidur dan tidak ada sampel; jeda itu sekarang ditarik garis biru. Jeda karena HP dinyalakan ulang tetap terputus.
+- Termasuk v2.12.8 (batas CPU tidak bolak-balik) dan v2.12.7 (batas SosMed).
+
+Batas:
+- Belum diuji di HP.
+
+Cara uji:
+1. Pasang sebagai pembaruan modul, lalu reboot.
+2. Matikan layar beberapa menit, nyalakan lagi, buka tab Suhu → Ringkasan 1 jam: masa layar mati harus garis biru.
+
+English
+
+Fixes:
+- Screen-off time in the temperature chart is now drawn blue instead of an empty gap. With the screen off the phone sleeps and takes no sample; that gap is now a blue line. A gap from a restart stays open.
+- Includes v2.12.8 (no cap ping-pong) and v2.12.7 (social media cap).
+
+Limits:
+- Not phone-tested yet.
+
+How to test:
+1. Install as a module update, then reboot.
+2. Turn the screen off for a few minutes, turn it on, open Temperature → Summary 1 hour: the screen-off time must be a blue line.
