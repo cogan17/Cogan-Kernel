@@ -79,8 +79,8 @@ step() {
   # three checks to see what that step did. From 1 °C under the limit only the first two (gentle) steps
   # are taken, at the limit all of them. Only while the processor works (CPU_WORK): heat from charging,
   # the room or an idle phone is not cooled by a lower CPU cap, and a cap kept from then would only slow
-  # the next use. One step back up after three checks at least 1.5 °C under the limit or with an idle
-  # processor. The processor brake steps down at every check. While charging was just paused for heat,
+  # the next use. One step back up after three checks at least 1.5 °C under the limit, or with an idle
+  # processor once the phone body is under the step zone (1 °C under the limit). The processor brake steps down at every check. While charging was just paused for heat,
   # that pause gets its three checks first.
   case "$MODE" in
     hemat) limit=$((TARGET_TEMP - 2)) ;;
@@ -105,7 +105,11 @@ step() {
     if [ "$hold" = 0 ] && [ "$body" -ge $((prev - 2)) ] && [ "$step_level" -lt "$room" ]; then
       step_level=$((step_level + 1)); hold=3
     fi
-  elif { [ "$busy" = 0 ] || [ "$body" -le $(((limit - 1) * 10 - 5)) ]; } && [ "$main" -lt $(((CPU_BRAKE - 5) * 10)) ] && [ "$step_level" -gt 0 ]; then
+  # Given back with a cool processor only once the phone body is under the step zone (owner 13 Nov 2026, Instagram
+  # at 09.16-09.25: the processor sat at 51-55 °C, so the cap was released and lowered again every half minute while
+  # the phone body stayed at 40.5-41.4 °C, over Hemat's 39 °C). Without a body sensor body is -9999: as before.
+  elif { { [ "$busy" = 0 ] && [ "$body" -lt $(((limit - 1) * 10)) ]; } || [ "$body" -le $(((limit - 1) * 10 - 5)) ]; } &&
+       [ "$main" -lt $(((CPU_BRAKE - 5) * 10)) ] && [ "$step_level" -gt 0 ]; then
     cool=$((cool + 1))
     [ "$cool" -ge 3 ] && { step_level=$((step_level - 1)); cool=0; }
   else

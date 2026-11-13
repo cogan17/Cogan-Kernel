@@ -1,0 +1,39 @@
+Cogan Smart Kernel v2.12.8 / versionCode 39 — paket uji / test build
+
+Indonesia
+
+Perbaikan:
+- Batas CPU tidak lagi dilepas lalu dipasang lagi tiap setengah menit saat Badan HP masih panas (terlihat di uji Instagram 13 Nov). Batas baru dilepas setelah Badan HP turun di bawah ambang.
+
+Baru:
+- Grafik suhu berwarna: biru = layar mati, hijau = layar nyala di bawah garis merah, merah terang = di atas garis merah.
+- Termasuk batas SosMed dari v2.12.7.
+
+Batas:
+- Belum diuji di HP.
+- Instagram tetap bisa hangat dari layar, data seluler 5G dan GPU; modul ini hanya mengatur CPU.
+
+Cara uji:
+1. Pasang sebagai pembaruan modul, lalu reboot.
+2. Pakai Instagram 15–20 menit tanpa charger.
+3. Riwayat Daya tidak boleh lagi berganti-ganti "batas dilepas" dan "CPU besar …" tiap setengah menit selama Badan HP di atas batas.
+4. Lihat grafik di tab Suhu: biru, hijau, merah sesuai keadaan.
+
+English
+
+Fixes:
+- The CPU cap is no longer released and set again every half minute while the phone body is still hot (seen in the 13 Nov Instagram test). It is given back once the phone body is under the limit.
+
+New:
+- Coloured temperature chart: blue = screen off, green = screen on under the red line, bright red = above the red line.
+- Includes the social media cap from v2.12.7.
+
+Limits:
+- Not phone-tested yet.
+- Instagram can still warm the phone through the display, 5G mobile data and the GPU; this module only manages the CPU.
+
+How to test:
+1. Install as a module update, then reboot.
+2. Use Instagram for 15–20 minutes unplugged.
+3. The Power history must no longer alternate "cap released" and "big CPU …" every half minute while the phone body is over the limit.
+4. Check the chart in the Temperature tab: blue, green and red as described.
