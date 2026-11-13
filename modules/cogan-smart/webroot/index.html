@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Cogan Smart</title>
-<link rel="stylesheet" href="theme.css?v=2.12.6">
-<script src="i18n.js?v=2.12.6"></script>
+<link rel="stylesheet" href="theme.css?v=2.12.7">
+<script src="i18n.js?v=2.12.7"></script>
 <script>try { document.documentElement.dataset.theme = localStorage.getItem('cogan.theme') || ''; document.documentElement.dataset.dev = localStorage.getItem('cogan.dev') || ''; } catch (_) { /* storage off: follow the phone */ }</script>
 <style>
   * { box-sizing: border-box; }
@@ -161,6 +161,8 @@
     <label class="f">Kernel Default: ambang Badan HP (°C) <input id="sTARGET_TEMP" type="number" min="38" max="46"></label>
     <label class="f">Performa: rem di Badan HP (°C) <input id="sGAME_LIMIT" type="number" min="40" max="50"></label>
     <label class="f">Hemat: CPU besar maks (%) <input id="sSAVER_CAP" type="number" min="30" max="90"></label>
+    <label class="f">SosMed: CPU besar maks (%, 0 = mati) <input id="sSOCIAL_CAP" type="number" min="0" max="90"></label>
+    <p class="muted user">SosMed: selama Instagram, TikTok, YouTube, Facebook, X, WhatsApp, Telegram dan sejenisnya terbuka, CPU besar dibatasi sejak awal supaya HP tidak keburu hangat. Tidak berlaku di Performa. Butuh pencatat suhu aktif.</p>
     <p class="muted user">Suhu di sini adalah suhu Badan HP, yang terasa di tangan.</p>
     <p class="muted dev">Ambang mode dibaca dari suhu Badan HP (yang terasa di tangan). Hemat 2 °C di bawah Kernel Default. Langkah halus: mulai 1 °C sebelum ambang, CPU besar turun 10% per langkah sampai 60%, CPU kecil (yang menjaga UI tetap lancar) paling akhir dan tidak di bawah 80%. CPU hanya diturunkan saat prosesor bekerja (≥ 55 °C); panas dari cas atau ruangan tidak membuat CPU diturunkan. Di semua mode ada rem darurat bila prosesor ≥ 95 °C.</p>
     <label class="f">Performa: boost aplikasi di layar <input id="sGAME_BOOST" type="checkbox"></label>
@@ -188,14 +190,14 @@
 </main>
 
 <div id="actionStatus" class="feedback hidden" role="status" aria-live="polite"></div>
-<script src="client.js?v=2.12.6"></script>
+<script src="client.js?v=2.12.7"></script>
 <script>
 const confirm = value => window.confirm(CoganI18n.t(value));
 const REPORT = '/data/adb/modules/cogan_smart/power/report.sh';
 const MODES = { hemat: ['🌿 Hemat', c => `CPU besar maks ${c.SAVER_CAP}%, Badan HP ≤ ${c.TARGET_TEMP - 2} °C`],
                 seimbang: ['🧠 Kernel Default', c => `Badan HP dijaga ≤ ${c.TARGET_TEMP} °C`],
                 game: ['🎮 Performa', c => `Performa penuh, rem di Badan HP ${c.GAME_LIMIT} °C`] };
-const NUMBERS = ['TARGET_TEMP', 'GAME_LIMIT', 'SAVER_CAP', 'INTERVAL', 'CHARGE_STOP', 'CHARGE_RESUME', 'BATT_TEMP_STOP'];
+const NUMBERS = ['TARGET_TEMP', 'GAME_LIMIT', 'SAVER_CAP', 'SOCIAL_CAP', 'INTERVAL', 'CHARGE_STOP', 'CHARGE_RESUME', 'BATT_TEMP_STOP'];
 const FLAGS = ['GAME_BOOST', 'CHARGE_CTRL', 'CHARGE_THERMAL', 'HEAT_PAUSE_CHARGE', 'FORCE'];
 const REASONS = { batas: 'batas isi', baterai: 'baterai panas', panas: 'cas bikin HP panas' };
 const $ = id => document.getElementById(id);

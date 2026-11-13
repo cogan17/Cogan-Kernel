@@ -237,7 +237,7 @@ function tip(kind) {
 
 function csvq(t) { gsub(/"/, "\"\"", t); return "\"" t "\"" }   # app names may hold commas or quotes
 function csv_row(   i, g, line) {
-    line = local_date(ts) " " local_clock(ts) "," csvq(label(app)) "," (app == "screen_off" ? tr("mati", "off") : tr("nyala", "on")) "," \
+    line = local_date(ts) " " local_clock_s(ts) "," csvq(label(app)) "," (app == "screen_off" ? tr("mati", "off") : tr("nyala", "on")) "," \
            (chg ? tr("ya", "yes") : tr("tidak", "no")) "," cur "," (cpu >= 0 ? cpu / 10 : "") "," (kern >= 0 ? kern / 10 : "") "," \
            (gpu >= 0 ? gpu : "") "," csvq(top_text(top)) "," net_kbps("wifi") "," net_kbps("cell") "," (capb >= 0 ? capb "/" capl : "") "," (ld >= 0 ? ld / 10 : "") "," (lc >= 0 ? lc / 10 : "")
     for (i = 1; i <= ng; i++) { g = GROUPS[i]; line = line "," ((g in gmax) ? deg(gmax[g]) : "") }

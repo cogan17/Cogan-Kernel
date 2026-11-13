@@ -1,5 +1,23 @@
 # Cogan Smart Kernel
 
+## SosMed tidak keburu hangat / Social media without the warm-up — v2.12.7 (paket uji / test build)
+
+Indonesia:
+
+- Permintaan owner 13 Nov 2026 ("semua jenis SosMed tidak panas/hangat saat scroll atau menonton"). Sampai v2.12.6, CPU baru diturunkan setelah Badan HP hangat (≥ 1 °C di bawah ambang) **dan** prosesor ≥ 55 °C. Di log 13 Nov, YouTube dan Telegram hanya 3 dari 24 dan 2 dari 10 sampel dengan prosesor ≥ 55 °C, jadi CPU tidak pernah diturunkan di sana, padahal ada lonjakan prosesor 72–78 °C saat aplikasi dibuka atau di-scroll.
+- **Batas SosMed** (`SOCIAL_CAP`, bawaan 70%, 0 = mati, di ⚙️ Setelan mode): selama aplikasi sosmed/video di layar (Instagram, Threads, TikTok, YouTube termasuk ReVanced, Facebook, Messenger, X, Snapchat, Pinterest, Reddit, Snack Video, Likee, WhatsApp, Telegram, LINE, Discord), CPU besar dibatasi sejak cek pertama, tanpa menunggu panas. CPU kecil yang menjaga UI tetap lancar tidak disentuh. Langkah panas tetap boleh turun lebih jauh. Tidak berlaku di Performa; di Hemat batasnya sendiri sudah lebih rendah. Riwayat Daya mencatat "SosMed di layar (…)" dan "Batas SosMed dilepas". Aplikasi di layar dibaca dari sampel pencatat suhu (tanpa proses tambahan), jadi pencatat suhu harus aktif.
+- Dari audit termal 13 Nov: waktu di CSV kini sampai detik (dulu hanya menit). Alasan setiap perubahan batas CPU sudah ada di Riwayat Daya, dengan waktu sampai detik.
+- Diperiksa dari audit, tidak diubah: batas yang dilepas saat prosesor < 55 °C walau Badan HP masih hangat (audit temuan 1) memang perilaku yang disengaja (panas dari cas/ruangan tidak didinginkan CPU). Untuk SosMed, batas SosMed tidak ikut dilepas.
+- Terukur lokal: tes lolos (mksh dan dash). Belum diuji di HP. Batas ini mengurangi lonjakan CPU; panas dari layar, modem seluler (di log sampai 46 °C saat YouTube lewat data seluler) dan GPU tidak diatur modul ini.
+
+English:
+
+- Owner request 13 Nov 2026 ("no social media app should get warm while scrolling or watching"). Up to v2.12.6 the CPU was only lowered once the phone body was warm (≥ 1 °C under the limit) **and** the processor at 55 °C or more. In the 13 Nov log, YouTube and Telegram had the processor at 55 °C or more in only 3 of 24 and 2 of 10 samples, so the CPU was never lowered there, while the processor spiked to 72–78 °C when an app was opened or scrolled.
+- **Social media cap** (`SOCIAL_CAP`, 70% by default, 0 = off, in ⚙️ Mode settings): while a social or video app is on screen (Instagram, Threads, TikTok, YouTube including ReVanced, Facebook, Messenger, X, Snapchat, Pinterest, Reddit, Snack Video, Likee, WhatsApp, Telegram, LINE, Discord), the big cores are capped from the first check, without waiting for heat. The little cores that keep the interface fluid are not touched. The heat steps may still go lower. Not in Performance; Power saver's own cap is already lower. The Power history notes "SosMed di layar (…)" and "Batas SosMed dilepas". The app on screen comes from the temperature logger's sample (no extra process), so the logger must be running.
+- From the 13 Nov thermal audit: CSV times now include seconds (minutes only before). The reason for every CPU cap change is already in the Power history, with seconds.
+- Checked from the audit, not changed: releasing the cap when the processor is under 55 °C while the phone body is still warm (audit finding 1) is intended (heat from charging or the room is not cooled by the CPU). For social media, the social media cap is not released.
+- Measured locally: tests pass (mksh and dash). Not phone-tested yet. The cap lowers CPU spikes; heat from the display, the cellular modem (up to 46 °C in the log while watching YouTube over mobile data) and the GPU is not managed by this module.
+
 ## Setelan Paksa lama dan teks riwayat / Old Force setting and history text — v2.12.6 (paket uji / test build)
 
 Indonesia:

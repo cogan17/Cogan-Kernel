@@ -17,7 +17,7 @@ EVENTS=$CP_DATA/events.tsv
 BATTERY=$CP_SYS/class/power_supply/battery
 
 # Settings (the WebUI writes $CONFIG; only these keys and values within range are accepted).
-KEYS="MODE TARGET_TEMP GAME_LIMIT SAVER_CAP GAME_BOOST CHARGE_CTRL CHARGE_STOP CHARGE_RESUME CHARGE_THERMAL BATT_TEMP_STOP HEAT_PAUSE_CHARGE INTERVAL FORCE AUTOSTART CTRL_VER"
+KEYS="MODE TARGET_TEMP GAME_LIMIT SAVER_CAP GAME_BOOST CHARGE_CTRL CHARGE_STOP CHARGE_RESUME CHARGE_THERMAL BATT_TEMP_STOP HEAT_PAUSE_CHARGE SOCIAL_CAP INTERVAL FORCE AUTOSTART CTRL_VER"
 MODE=seimbang          # hemat (Hemat) | seimbang (Kernel Default) | game (Performa)
 # The modes read the phone body (Badan HP), what a hand feels (owner 2026-10-24); the processor
 # sits around 50 °C at rest, so a 42 °C processor target capped the CPU almost all the time.
@@ -32,6 +32,9 @@ CHARGE_RESUME=90
 CHARGE_THERMAL=0       # 0 = HyperCharge and the phone manage charging heat (owner 2026-10-24); 1 = module pauses too
 BATT_TEMP_STOP=42      # optional module pause threshold, only when CHARGE_THERMAL=1
 HEAT_PAUSE_CHARGE=1    # Kernel Default: pause while charging heats the phone body, gated by CHARGE_THERMAL
+SOCIAL_CAP=70          # Kernel Default and Hemat: big cores at most this % while a social or video app is on
+                       # screen, from the first check (owner 2026-11-13: social media warm while scrolling or
+                       # watching); 0 = off. Not in Performa.
 INTERVAL=10            # seconds between checks
 FORCE=0               # 1 = reapply supported controls on every check
 AUTOSTART=1
@@ -41,12 +44,21 @@ CPU_WORK=55            # the CPU is lowered only while the processor works this 
                        # from charging or the room, is not what a lower CPU cap cools (owner 2026-10-24).
                        # 55 since owner 26 Okt 2026 (was 60): scrolling Instagram kept the processor at 56 °C
                        # and the phone body at 42-44 °C, and the CPU was lowered in only 4 of 107 samples.
+# Social and video apps (packages) the SOCIAL_CAP limit is for: feeds, short video, video, and chat apps with
+# stories or channels. Scrolling them or watching video does not need the big cores at top speed.
+SOCIAL_APPS=" com.instagram.android com.instagram.lite com.instagram.barcelona \
+com.zhiliaoapp.musically com.zhiliaoapp.musically.go com.ss.android.ugc.trill com.ss.android.ugc.aweme \
+com.facebook.katana com.facebook.lite com.facebook.orca com.facebook.mlite com.twitter.android \
+com.google.android.youtube app.revanced.android.youtube app.rvx.android.youtube \
+com.snapchat.android com.pinterest com.reddit.frontpage com.kwai.bulldog video.like \
+com.whatsapp com.whatsapp.w4b org.telegram.messenger org.telegram.messenger.web jp.naver.line.android com.discord "
+is_social() { [ -n "$1" ] && case "$SOCIAL_APPS" in *" $1 "*) true ;; *) false ;; esac; }
 . "$MODROOT/bridge.sh"
 
 defaults() {
   MODE=seimbang; TARGET_TEMP=41; GAME_LIMIT=44; SAVER_CAP=60; GAME_BOOST=1
   CHARGE_CTRL=1; CHARGE_STOP=95; CHARGE_RESUME=90; CHARGE_THERMAL=0; BATT_TEMP_STOP=42
-  HEAT_PAUSE_CHARGE=1; INTERVAL=10; FORCE=0; AUTOSTART=1; CTRL_VER=4
+  HEAT_PAUSE_CHARGE=1; SOCIAL_CAP=70; INTERVAL=10; FORCE=0; AUTOSTART=1; CTRL_VER=4
 }
 
 limits_of() {   # limits_of KEY -> LIM_LO and LIM_HI of a numeric setting, no subshell
@@ -55,6 +67,7 @@ limits_of() {   # limits_of KEY -> LIM_LO and LIM_HI of a numeric setting, no su
     GAME_LIMIT) LIM_LO=40; LIM_HI=50 ;;
     CTRL_VER) LIM_LO=3; LIM_HI=4 ;;
     SAVER_CAP) LIM_LO=30; LIM_HI=90 ;;
+    SOCIAL_CAP) LIM_LO=0; LIM_HI=90 ;;
     GAME_BOOST|CHARGE_CTRL|CHARGE_THERMAL|HEAT_PAUSE_CHARGE|FORCE|AUTOSTART) LIM_LO=0; LIM_HI=1 ;;
     CHARGE_STOP) LIM_LO=50; LIM_HI=100 ;;
     CHARGE_RESUME) LIM_LO=40; LIM_HI=99 ;;
@@ -170,9 +183,9 @@ read_battery() { battery_now; echo "$level $status $temp $current"; }
 monitor_installed() { [ -f "$CT_MOD/module.prop" ] && [ ! -f "$CT_MOD/disable" ]; }
 
 # Latest report of the thermal part, while its PID and interval-based freshness agree.
-# sets M_MAIN, M_APP and M_CAUSE.
+# sets M_MAIN, M_APP, M_CAUSE and M_PKG (the app on screen).
 read_monitor() {
-  M_MAIN=""; M_APP=""; M_CAUSE=""
+  M_MAIN=""; M_APP=""; M_CAUSE=""; M_PKG=""
   thermal_health
   [ "$CS_RUNNING" = 1 ] && [ "$CS_FRESH" = 1 ] || return 1
   IFS='	' read -r m_ts m_main _ _ m_app m_cause < "$CT_DATA/run/latest" 2>/dev/null || return 1
@@ -180,6 +193,11 @@ read_monitor() {
   m_age=$((${CB_NOW:-$(date +%s)} - m_ts))
   [ "$m_age" -ge 0 ] && [ "$m_age" -le "$cs_limit" ] && [ "$m_ts" -ge "$CS_STARTED" ] || return 1
   M_MAIN=$m_main; M_APP=$m_app; M_CAUSE=$m_cause
+  # The app on screen at the last sample (package, screen_off or -), as fresh as the report: SOCIAL_CAP.
+  IFS='	' read -r m_sts m_pkg _ < "$CT_DATA/run/sample.tsv" 2>/dev/null || return 0
+  case "$m_sts" in ''|*[!0-9]*) return 0 ;; esac
+  [ $((${CB_NOW:-$(date +%s)} - m_sts)) -le "$cs_limit" ] && [ "$m_sts" -ge "$CS_STARTED" ] && M_PKG=$m_pkg
+  return 0
 }
 
 # Tell the thermal part which mode is active from now on; its summaries report per mode.

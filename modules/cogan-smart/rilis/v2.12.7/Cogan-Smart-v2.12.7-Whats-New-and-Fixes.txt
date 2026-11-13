@@ -1,0 +1,37 @@
+Cogan Smart Kernel v2.12.7 / versionCode 38 — paket uji / test build
+
+Indonesia
+
+Baru:
+- Batas SosMed: selama Instagram, Threads, TikTok, YouTube (termasuk ReVanced), Facebook, Messenger, X, Snapchat, Pinterest, Reddit, Snack Video, Likee, WhatsApp, Telegram, LINE atau Discord ada di layar, CPU besar dibatasi 70% sejak awal, tanpa menunggu HP hangat. CPU kecil yang menjaga layar tetap lancar tidak disentuh. Bisa diubah di Daya → ⚙️ Setelan mode (0 = mati). Tidak berlaku di Performa.
+- Waktu di CSV log suhu kini sampai detik.
+
+Batas:
+- Belum diuji di HP.
+- Pencatat suhu harus aktif (dari situ modul tahu aplikasi apa yang ada di layar).
+- Yang dikurangi adalah lonjakan CPU saat membuka dan scroll. Panas dari layar, modem data seluler dan GPU tidak diatur modul ini. Wi-Fi lebih dingin daripada data seluler.
+
+Cara uji:
+1. Pasang sebagai pembaruan modul melalui root manager, lalu reboot.
+2. Pastikan pencatat suhu aktif dan mode Kernel Default.
+3. Buka Instagram/TikTok/YouTube. Dalam ±20 detik, Riwayat Daya menulis "SosMed di layar (…): CPU besar maks 70%".
+4. Scroll atau nonton 15–20 menit tanpa charger, dari suhu awal yang mirip uji sebelumnya. Simpan log suhu (.csv) dan bandingkan kolom Badan HP dan batas_cpu (harus 70/100).
+5. Bila terasa patah-patah, naikkan ke 80%. Bila masih hangat, turunkan ke 60%.
+
+English
+
+New:
+- Social media cap: while Instagram, Threads, TikTok, YouTube (including ReVanced), Facebook, Messenger, X, Snapchat, Pinterest, Reddit, Snack Video, Likee, WhatsApp, Telegram, LINE or Discord is on screen, the big cores are capped at 70% from the start, without waiting for the phone to warm up. The little cores that keep the screen fluid are not touched. Change it in Power → ⚙️ Mode settings (0 = off). Not in Performance.
+- Times in the temperature log CSV now include seconds.
+
+Limits:
+- Not phone-tested yet.
+- The temperature logger must be running (it tells the module which app is on screen).
+- It lowers CPU spikes when opening and scrolling. Heat from the display, the cellular modem and the GPU is not managed by this module. Wi-Fi runs cooler than mobile data.
+
+How to test:
+1. Install as a module update through the root manager, then reboot.
+2. Make sure the temperature logger is running and the mode is Kernel Default.
+3. Open Instagram/TikTok/YouTube. Within about 20 seconds the Power history shows "SosMed di layar (…): CPU besar maks 70%".
+4. Scroll or watch for 15–20 minutes unplugged, starting from a temperature similar to the previous test. Save the temperature log (.csv) and compare the phone body column and cpu_cap (must be 70/100).
+5. If it feels choppy, raise it to 80%. If it is still warm, lower it to 60%.

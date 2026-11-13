@@ -34,6 +34,7 @@ Cogan Smart Kernel menjaga HP tetap adem dan mencatat suhunya. Panduan ini menje
 - **🎮 Performa**: tenaga penuh, baru direm saat Badan HP 44 °C.
 - **🔌 Cas**: berhenti mengecas di 95% dan lanjut di 90% (bisa diubah). *Cari saklar cas* cukup sekali, saat charger tercolok.
 - **⚙️ Setelan mode**: ubah angka suhu tiap mode. Simpan dari Manager.
+- **SosMed: CPU besar maks**: selama Instagram, TikTok, YouTube, Facebook, X, WhatsApp, Telegram dan sejenisnya terbuka, CPU besar dibatasi sejak awal (bawaan 70%) supaya HP tidak keburu hangat. 0 = mati. Tidak berlaku di Performa. Pencatat suhu harus aktif.
 - **📝 Aktivitas**: catatan apa saja yang dilakukan modul.
 
 ## 🌡️ Suhu

@@ -9,6 +9,8 @@
 #           Kernel Default and Performa keep the big cores at 60 % or more and touch the little cores
 #           last (level_caps). The CPU only steps down while the processor works (CPU_WORK); with an
 #           idle processor the steps are given back. Every mode brakes when the processor reaches CPU_BRAKE.
+#           While a social or video app is on screen (not in Performa) the big cores stay at SOCIAL_CAP %
+#           or lower from the first check.
 #   Charge  stops at CHARGE_STOP % and resumes at CHARGE_RESUME %. Charging heat is managed by the
 #           phone (HyperCharge) by default; CHARGE_THERMAL=1 adds the module's own heat pauses.
 #
@@ -111,6 +113,20 @@ step() {
   fi
   echo "$step_level" > "$CP_RUN/level"; echo "$cool" > "$CP_RUN/cool"; echo "$hold" > "$CP_RUN/hold"; echo "$body" > "$CP_RUN/prev"
   level_caps "$step_level"; big=$LC_BIG; little=$LC_LITTLE
+  # SosMed (owner 2026-11-13): scrolling a feed or watching video does not need the big cores at top speed,
+  # and the heat steps above only start once the phone body is already warm. While a social or video app is
+  # on screen, the big cores stay at SOCIAL_CAP % or lower from the first check, whatever the temperature;
+  # the little cores, which keep the interface fluid, stay as the heat steps set them. Not in Performa.
+  social=0
+  if [ "$MODE" != game ] && [ "$SOCIAL_CAP" -gt 0 ] && is_social "$M_PKG"; then
+    social=1; [ "$big" -gt "$SOCIAL_CAP" ] && big=$SOCIAL_CAP
+  fi
+  state was_social social 0
+  if [ "$social" != "$was_social" ]; then
+    echo "$social" > "$CP_RUN/social"
+    if [ "$social" = 1 ]; then event "SosMed di layar (${app:-$M_PKG}): CPU besar maks $SOCIAL_CAP%, CPU kecil $little%"
+    else event "Batas SosMed dilepas: CPU besar $big%, kecil $little%"; fi
+  fi
   set_cpu_cap "$big" "$little"
   if [ "$step_level" -gt "$old_level" ] && [ "$brake" = 1 ]; then
     event "Rem darurat: prosesor $(deg "$main") °C ≥ $CPU_BRAKE °C: CPU besar $big%, kecil $little%"
@@ -213,9 +229,9 @@ jstr() {
 write_state() {
   state st_off charge_off ""; jstr st_cause "$cause"; jstr st_app "$app"
   st_boost=0; [ -f "$CP_RUN/uclamp.written" ] && st_boost=1
-  printf '{"ts":%d,"mode":"%s","main":%d,"body":%d,"limit":%d,"brake":%d,"busy":%d,"level":%d,"big":%d,"little":%d,"battery":{"level":%d,"status":"%s","temp":%d,"current":%d},"charge_off":"%s","source":"%s","cause":"%s","app":"%s","boost":%d,"force":%d,"native_cooling":%d}\n' \
+  printf '{"ts":%d,"mode":"%s","main":%d,"body":%d,"limit":%d,"brake":%d,"busy":%d,"level":%d,"big":%d,"little":%d,"battery":{"level":%d,"status":"%s","temp":%d,"current":%d},"charge_off":"%s","source":"%s","cause":"%s","app":"%s","boost":%d,"force":%d,"native_cooling":%d,"social":%d}\n' \
     "$now" "$MODE" "$main" "$body" "$limit" "$brake" "$busy" "$step_level" "$big" "$little" "$level_pct" "$status" "$btemp" "$current" \
-    "$st_off" "$source" "$st_cause" "$st_app" "$st_boost" "$FORCE" "$native_cooling" \
+    "$st_off" "$source" "$st_cause" "$st_app" "$st_boost" "$FORCE" "$native_cooling" "$social" \
     > "$CP_RUN/state.json.tmp" && mv "$CP_RUN/state.json.tmp" "$CP_RUN/state.json"
 }
 

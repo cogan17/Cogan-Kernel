@@ -34,6 +34,7 @@ Cogan Smart Kernel keeps the phone cool and records its temperature. This guide 
 - **🎮 Performance**: full power, held back only at a 44 °C phone body.
 - **🔌 Charging**: stops at 95% and resumes at 90% (adjustable). *Detect charging switch* once, with the charger plugged in.
 - **⚙️ Mode settings**: change each mode's temperature. Save from Manager.
+- **Social media: big CPU cap**: while Instagram, TikTok, YouTube, Facebook, X, WhatsApp, Telegram and the like are open, the big cores are capped from the start (70% by default) so the phone does not warm up first. 0 = off. Not in Performance. The temperature logger must be running.
 - **📝 Activity**: a record of what the module did.
 
 ## 🌡️ Temperature
