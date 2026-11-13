@@ -129,6 +129,12 @@ class FakePhone:
         write(self.monitor / "run/latest", f"{int(time.time()) - age}\t450\t300\t1\t{app}\t{cause}\n")
         write(self.monitor / "run/last", f"{int(time.time()) - age}\n")
 
+    def on_screen(self, pkg, label="Instagram", age=0):
+        """The thermal sampler's last sample: the package on screen (column 2), and its fresh report."""
+        ts = int(time.time()) - age
+        write(self.monitor / "run/sample.tsv", f"{ts}\t{pkg}\t1\t0\t0\t300\t250\t-1\t-1\t-\t-\t-\t-\t-\t-1\t-1\n")
+        self.monitor_report("", app=label, age=age)
+
     def caps(self):
         return {name: int((self.sys / f"devices/system/cpu/cpufreq/{name}/scaling_max_freq").read_text())
                 for name in POLICIES}
@@ -248,6 +254,57 @@ class PowerModeTests(unittest.TestCase):
         self.phone.set_temp(56.0)
         self.assertEqual([self.phone.step()["level"] for _ in range(2)], [1, 1])
         self.assertEqual(self.phone.step()["busy"], 1)
+
+    def test_social_apps_cap_the_big_cores_from_the_first_check(self):
+        # Owner 13 Nov 2026: social media should not warm the phone while scrolling or watching. The heat steps only
+        # start once the phone body is warm and the processor at 55 °C; SosMed caps the big cores from the start.
+        self.phone.start_recorder()
+        self.phone.set_temp(48.0)                                         # watching video: processor under 55 °C
+        self.phone.set_body(35.0)                                         # phone body cool
+        self.phone.on_screen("com.instagram.android")
+        state = self.phone.step()
+        self.assertEqual((state["social"], state["level"], state["big"], state["little"]), (1, 0, 70, 100))
+        self.assertEqual(self.phone.caps(), {"policy0": 2000000, "policy4": 2000000, "policy7": 2000000})
+        self.assertIn("SosMed di layar (Instagram): CPU besar maks 70%, CPU kecil 100%", self.phone.events()[0])
+        self.assertEqual(self.phone.step()["big"], 70)                    # stays while the app is on screen
+        # The heat steps still go further when the phone body gets warm anyway.
+        self.phone.set_temp(65.0)
+        self.phone.set_body(43.0)
+        for _ in range(16):
+            state = self.phone.step()
+        self.assertEqual((state["big"], state["social"]), (60, 1))
+        # Another app: the SosMed cap goes, the heat steps alone decide.
+        self.phone.set_temp(45.0)
+        self.phone.set_body(35.0)
+        self.phone.on_screen("com.android.settings", label="Setelan")
+        state = self.phone.step()
+        self.assertEqual(state["social"], 0)
+        self.assertTrue(self.phone.events()[0].startswith("Batas SosMed dilepas"))
+        for _ in range(30):
+            state = self.phone.step()
+        self.assertEqual((state["level"], state["big"], state["little"]), (0, 100, 100))
+
+    def test_social_cap_not_in_performa_off_at_zero_and_needs_a_fresh_sample(self):
+        self.phone.start_recorder()
+        self.phone.set_temp(48.0)
+        self.phone.set_body(35.0)
+        for pkg in ("com.zhiliaoapp.musically", "com.google.android.youtube", "org.telegram.messenger", "com.whatsapp"):
+            self.phone.on_screen(pkg, label=pkg)
+            self.assertEqual(self.phone.step()["big"], 70, pkg)
+        self.phone.report("mode", "game")                                 # Performa runs free
+        self.assertEqual(self.phone.step()["big"], 100)
+        self.phone.report("mode", "hemat")                                # Hemat's own cap is already lower
+        self.assertEqual(self.phone.step()["big"], 60)
+        self.phone.report("mode", "seimbang")
+        self.assertEqual(self.phone.report("set", "SOCIAL_CAP", "0"), {"ok": 1})   # 0 = off
+        self.assertEqual(self.phone.step()["big"], 100)
+        self.assertEqual(self.phone.report("set", "SOCIAL_CAP", "50"), {"ok": 1})
+        self.assertEqual(self.phone.step()["big"], 50)
+        self.assertEqual(self.phone.report("set", "SOCIAL_CAP", "95")["ok"], 0)     # out of range
+        self.phone.on_screen("com.instagram.android", age=1000)          # an old sample: not on screen now
+        self.assertEqual(self.phone.step()["social"], 0)
+        self.phone.on_screen("screen_off", label="Layar mati")
+        self.assertEqual(self.phone.step()["social"], 0)
 
     def test_controller_reads_the_same_numbers_as_the_tabs(self):
         # v2.9.1 (owner 26 Okt 2026): the controller reads only the CPU/GPU sensors and the phone body, with shell

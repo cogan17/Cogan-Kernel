@@ -164,6 +164,8 @@
     ['Node GPU belum ditemukan.', 'No GPU node found yet.'],
     ['Baca saja: batas GPU dipasang setelah node ini terbukti di HP.', 'Read only: a GPU limit comes once these nodes are proven on the phone.'],
     ['Hemat: CPU besar maks (%)', 'Power saver: big CPU cap (%)'],
+    ['SosMed: CPU besar maks (%, 0 = mati)', 'Social media: big CPU cap (%, 0 = off)'],
+    ['SosMed: selama Instagram, TikTok, YouTube, Facebook, X, WhatsApp, Telegram dan sejenisnya terbuka, CPU besar dibatasi sejak awal supaya HP tidak keburu hangat. Tidak berlaku di Performa. Butuh pencatat suhu aktif.', 'Social media: while Instagram, TikTok, YouTube, Facebook, X, WhatsApp, Telegram and the like are open, the big cores are capped from the start so the phone does not warm up first. Not in Performance. Needs the temperature logger running.'],
     ['Performa: boost aplikasi di layar', 'Performance: boost foreground app'],
     ['Cek tiap (detik)', 'Check every (seconds)'], ['Terapkan ulang tiap interval', 'Reapply at each interval'],
     ['Simpan: simpan setelan (pengendali aktif membaca pada interval berikutnya). Paksa: simpan, mulai dan terapkan sekarang satu kali; mengulang tiap interval hanya bila Terapkan ulang tiap interval dicentang. Henti dan Reset melepaskan kontrol milik modul. Reset memakai cas 95/90 dan berhenti sampai Mulai.', 'Save stores settings; a running controller reads them at the next interval. Force saves, starts and applies once now; it reapplies at each interval only with Reapply at each interval ticked. Stop and Reset release the module’s controls. Reset restores 95/90 charging and waits for Start.'],

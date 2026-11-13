@@ -88,6 +88,8 @@ function days_to_date(z,   era, doe, yoe, y, doy, mp, d, m) {   # Howard Hinnant
 }
 function local_date(ts) { return days_to_date(int((ts + TZOFF) / 86400)) }
 function local_clock(ts,   s) { s = (ts + TZOFF) % 86400; if (s < 0) s += 86400; return sprintf("%02d:%02d", int(s / 3600), int((s % 3600) / 60)) }
+# With seconds, for the CSV (audit 13 Nov 2026: minute-only times could not order the samples of one minute).
+function local_clock_s(ts,   s) { s = (ts + TZOFF) % 86400; if (s < 0) s += 86400; return sprintf("%02d:%02d:%02d", int(s / 3600), int((s % 3600) / 60), s % 60) }
 
 function deg(tenths) { return sprintf("%.1f", tenths / 10) }
 function jesc(s) { gsub(/\\/, "\\\\", s); gsub(/"/, "\\\"", s); return s }
