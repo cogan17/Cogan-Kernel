@@ -1,0 +1,19 @@
+Cogan Smart Kernel v2.12.10 / versionCode 41 — paket uji / test build
+
+Indonesia
+
+Perbaikan:
+- Grafik: jeda saat layar mati kini selalu biru, juga bila layar dimatikan tepat setelah sampel terakhir.
+- Legenda grafik: biru "Layar mati", hijau "Suhu normal", merah "Lonjakan suhu".
+
+Batas:
+- Belum diuji di HP.
+
+English
+
+Fixes:
+- Chart: a screen-off gap is now always blue, also when the screen went off right after the last sample.
+- Chart legend: blue "Screen off", green "Normal temperature", red "Temperature spike".
+
+Limits:
+- Not phone-tested yet.
