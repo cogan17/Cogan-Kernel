@@ -1,5 +1,19 @@
 # Cogan Smart Kernel
 
+## Jeda layar mati selalu biru, legenda baru / Screen-off gaps always blue, new legend — v2.12.10 (paket uji / test build)
+
+Indonesia:
+
+- Uji owner v2.12.9, 14 Nov 2026: satu jeda layar mati masih terputus (08.08.41 → 08.10.49). Sampel terakhir sebelum HP tidur masih "layar nyala" (layar dimatikan sesudahnya) dan sampel sesudahnya "layar mati", sedangkan v2.12.9 hanya melihat ujung awal jeda. Kini jeda digambar biru bila salah satu ujungnya layar mati; jeda yang kedua ujungnya layar nyala (HP dinyalakan ulang) tetap terputus.
+- Legenda grafik: hijau "Suhu normal", merah "Lonjakan suhu" (dulu "Layar nyala" dan "Di atas garis"). Biru tetap "Layar mati".
+- Terukur lokal: tes lolos, grafik dicek di Node dengan pola log owner. Belum diuji di HP.
+
+English:
+
+- Owner test of v2.12.9, 14 Nov 2026: one screen-off gap was still open (08:08:41 → 08:10:49). The last sample before the phone slept was still "screen on" (the screen went off after it) and the one after was "screen off", while v2.12.9 only looked at the start of the gap. A gap is now blue when either end is screen off; a gap with the screen on at both ends (a restart) stays open.
+- Chart legend: green "Normal temperature", red "Temperature spike" (were "Screen on" and "Above the line"). Blue stays "Screen off".
+- Measured locally: tests pass, chart checked in Node with the owner's log pattern. Not phone-tested yet.
+
 ## Layar mati biru di grafik / Screen-off time in blue — v2.12.9 (paket uji / test build)
 
 Indonesia:

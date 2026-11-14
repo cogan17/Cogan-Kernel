@@ -262,11 +262,12 @@
     const kind = p => p[2] === 0 ? 'off' : p[1] >= hot * 10 ? 'hot' : 'on';
     const paths = { off: '', on: '', hot: '' };
     // With the screen off the phone sleeps and nothing is sampled (owner 13 Nov 2026: the screen-off time showed as
-    // a gap). A gap that starts at a screen-off sample is that sleep: drawn blue. Other gaps (restart) stay open.
+    // a gap). A gap with a screen-off sample at either end is that sleep (14 Nov: the screen often goes off just
+    // after an "on" sample): drawn blue. Other gaps (restart) stay open.
     series.forEach((p, i) => {
       if (!i) return;
       const q = series[i - 1], gap = p[0] - q[0] > far;
-      if (gap && q[2] !== 0) return;
+      if (gap && q[2] !== 0 && p[2] !== 0) return;
       paths[gap ? 'off' : kind(p)] += `M${x(q[0])},${y(q[1])} L${x(p[0])},${y(p[1])} `;
     });
     const colours = { off: '#4d9fff', on: '#2fbf5a', hot: '#ff2d2d' };
@@ -278,7 +279,7 @@
         ${lines}
       </svg>
       <div class="axis"><span>${clock(t0)}</span><span class="hot">Badan HP - - ${hot} °C</span><span>${clock(t1)}</span></div>
-      <div class="axis"><span style="color:#4d9fff">● Layar mati</span><span style="color:#2fbf5a">● Layar nyala</span><span style="color:#ff2d2d">● Di atas garis</span></div>`;
+      <div class="axis"><span style="color:#4d9fff">● Layar mati</span><span style="color:#2fbf5a">● Suhu normal</span><span style="color:#ff2d2d">● Lonjakan suhu</span></div>`;
   }
   window.CoganUI = {create, poll, action, text, html, shortKernel, kernel, cooling, folds, identity, health, recorder, learnLabels, draft, chart};
 })();

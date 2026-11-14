@@ -215,7 +215,7 @@
     ['Terapkan sekarang', 'Apply now'], ['Hapus riwayat', 'Clear history'],
     ['Panas diukur dari suhu Badan HP (yang terasa di tangan), bukan prosesor yang saat santai pun sekitar 50 °C. Ambang ini hanya untuk pencatatan. Kendali CPU dan cas ada di tab Daya. Reset mempertahankan riwayat dan berhenti sampai Mulai.', 'Heat is measured on the phone body (what your hand feels), not the processor, which sits around 50 °C even at rest. These thresholds only affect recording. CPU and charging controls are in the Power tab. Reset keeps history and waits for Start.'],
     ['Badan HP · sensor langsung', 'Phone body · live sensors'], ['Baterai · HP tanpa sensor badan', 'Battery · no phone body sensor'],
-    ['Grafik suhu Badan HP', 'Phone body temperature chart'], ['Badan HP - - {0} °C', 'Phone body - - {0} °C'], ['● Layar mati', '● Screen off'], ['● Layar nyala', '● Screen on'], ['● Di atas garis', '● Above the line'],
+    ['Grafik suhu Badan HP', 'Phone body temperature chart'], ['Badan HP - - {0} °C', 'Phone body - - {0} °C'], ['● Layar mati', '● Screen off'], ['● Suhu normal', '● Normal temperature'], ['● Lonjakan suhu', '● Temperature spike'],
     ['Cogan Smart · Suhu & log hanya membaca sensor', 'Cogan Smart · Temperature & logs only read sensors'],
     ['Cogan Smart {0} · Suhu & log hanya membaca sensor', 'Cogan Smart {0} · Temperature & logs only read sensors'],
     ['Riwayat: {0} hari (sejak {1}), {2} KB', 'History: {0} days (since {1}), {2} KB'], ['Riwayat masih kosong.', 'History is empty.'],
