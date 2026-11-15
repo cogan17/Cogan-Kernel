@@ -1,5 +1,19 @@
 # Cogan Smart Kernel
 
+## Garis biru di grafik panjang / Blue line in longer charts — v2.12.11 (paket uji / test build)
+
+Indonesia:
+
+- Uji owner v2.12.10, 15 Nov 2026: jeda layar mati masih terputus di grafik 1 jam (1 jeda) dan 6 jam (3 jeda), padahal di log semua jeda itu kedua ujungnya layar mati. Penyebabnya: lebih dari 120 sampel digabung menjadi satu titik grafik (133 sampel → 2 per titik, 712 → 6 per titik), dan titik dianggap "layar nyala" bila separuh atau lebih sampelnya nyala. Titik tepat sebelum HP tidur (nyala + mati) jadi "nyala", sehingga jeda di belakangnya tampak diapit dua titik nyala. Kini titik gabungan hanya "nyala" bila semua sampelnya nyala.
+- Diuji dengan CSV owner (simulasi agregasi + grafik): jeda terputus 1 → 0 (1 jam) dan 3 → 0 (6 jam).
+- Terukur lokal: tes lolos. Belum diuji di HP.
+
+English:
+
+- Owner test of v2.12.10, 15 Nov 2026: screen-off gaps were still open in the 1-hour (1 gap) and 6-hour (3 gaps) charts, although in the log both ends of every gap were screen off. Over 120 samples are merged into one chart point (133 samples → 2 per point, 712 → 6 per point), and a point counted as "screen on" when half or more of its samples were on. The point right before the phone slept (on + off) became "on", so the gap behind it looked enclosed by two "on" points. A merged point is now "on" only when every sample in it was on.
+- Checked with the owner's CSV (aggregation + chart simulation): open gaps 1 → 0 (1 hour) and 3 → 0 (6 hours).
+- Measured locally: tests pass. Not phone-tested yet.
+
 ## Jeda layar mati selalu biru, legenda baru / Screen-off gaps always blue, new legend — v2.12.10 (paket uji / test build)
 
 Indonesia:

@@ -470,6 +470,21 @@ class ReportTests(unittest.TestCase):
         write(self.phone.data / "data" / time.strftime("%Y-%m-%d.tsv", time.gmtime(now + 7 * 3600)), "".join(calm))
         self.assertEqual(json.loads(self.phone.report("summary", "3600"))["stuck"], "")
 
+    def test_a_chart_point_is_on_only_when_every_sample_of_it_was_on(self):
+        # Owner 15 Nov 2026: with more than 120 samples, points merge; "on for most of the point" turned the point
+        # before a screen-off sleep into "on" and the chart left that sleep as a gap instead of blue.
+        now = int(time.time())
+        zones = {"soc_max": 450, "battery": 360, "hyperos_board": 380}
+        lines = [sample(now - 3000 + i * 20, "com.google.android.youtube", zones) for i in range(121)]
+        lines.append(sample(now - 3000 + 121 * 20, "screen_off", zones))   # pairs with the last "on" sample
+        for old in (self.phone.data / "data").glob("*.tsv"):
+            old.unlink()
+        write(self.phone.data / "data" / time.strftime("%Y-%m-%d.tsv", time.gmtime(now + 7 * 3600)), "".join(lines))
+        series = json.loads(self.phone.report("summary", "3600"))["series"]
+        self.assertEqual(len(series), 61)                                   # two samples per point
+        self.assertEqual(series[-1][2], 0)                                  # on + off: screen-off point
+        self.assertEqual({point[2] for point in series[:-1]}, {1})
+
     def test_the_phone_body_is_hyperos_own_number(self):
         # Owner 2026-10-24, "suhu masih inkonsistensi": one Badan HP everywhere, the number HyperOS uses.
         now = int(time.time())

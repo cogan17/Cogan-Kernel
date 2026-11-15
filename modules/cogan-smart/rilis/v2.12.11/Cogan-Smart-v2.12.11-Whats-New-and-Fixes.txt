@@ -1,0 +1,17 @@
+Cogan Smart Kernel v2.12.11 / versionCode 42 — paket uji / test build
+
+Indonesia
+
+Perbaikan:
+- Grafik 1 jam, 6 jam dan seterusnya: masa layar mati kini tergambar biru, tidak lagi terputus. Dulu titik grafik yang menggabungkan sampel layar nyala dan layar mati dianggap "nyala".
+
+Batas:
+- Belum diuji di HP.
+
+English
+
+Fixes:
+- 1-hour, 6-hour and longer charts: screen-off time is now drawn blue instead of a gap. A chart point that merged screen-on and screen-off samples used to count as "on".
+
+Limits:
+- Not phone-tested yet.

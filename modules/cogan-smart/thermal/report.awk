@@ -352,9 +352,10 @@ function json_summary(   s, i, g, step, b, j, mx, sep, ns) {
         step = int((n + 119) / 120); s = s ",\"series\":["; sep = ""
         for (b = 1; b <= n; b += step) {
             # The average of each slice: a calm trend line; the peak tile keeps the highest reading.
-            # Third value: 1 when the screen was on for most of the slice (owner 13 Nov 2026: chart colours).
+            # Third value: 1 only when the screen was on in every sample of the slice (owner 13 Nov 2026: chart colours;
+            # 15 Nov: "most of the slice" turned the slice before a screen-off sleep into "on", so the gap stayed open).
             mx = 0; on = 0; for (j = b; j < b + step && j <= n; j++) { mx += ser_v[j]; on += ser_on[j] }
-            s = s sep sprintf("[%d,%d,%d]", ser_ts[b], int(mx / (j - b) + 0.5), on * 2 >= j - b); sep = ","
+            s = s sep sprintf("[%d,%d,%d]", ser_ts[b], int(mx / (j - b) + 0.5), on == j - b); sep = ","
         }
         s = s "]"
     }
