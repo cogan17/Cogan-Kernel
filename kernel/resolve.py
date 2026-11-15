@@ -80,7 +80,9 @@ NEUTRON = "Neutron-Toolchains/clang-build-catalogue"
 UNICODE_FIX = "https://github.com/WildKernels/kernel_patches"
 UNICODE_FIX_PATCH = "common/unicode_bypass_fix_6.1+.patch"
 RELEASE = re.compile(r"v(\d+)\.(\d+)\.(\d+)(?:-rc(\d+))?")
-STABLE = re.compile(r"v(\d+)\.(\d+)\.(\d+)")
+# A final release, optionally with a build number (owner 15 Nov 2026: NoMount tags v2.3.0 as "v2.3.0-720", its
+# Latest release; the plain vX.Y.Z pattern skipped it and the Builder and Cek stayed on v2.2.0). No rc tags.
+STABLE = re.compile(r"v(\d+)\.(\d+)\.(\d+)(?:-(\d+))?")
 # Root-driver hooks a SUSFS kernel patch may call; BakaSU must define them as global functions.
 HOOKS = ("my_setprocattr", "my_write_context", "my_write_access", "ksu_setup_preinit_file",
          "ksu_preinit_handle_post_execveat")
@@ -199,7 +201,9 @@ def release_key(tag):
 
 
 def newest_tag(refs, pattern=RELEASE):
-    tags = [(release_key(ref.removeprefix("refs/tags/")), ref.removeprefix("refs/tags/"), sha)
+    # RELEASE orders a final after its rcs; other patterns compare their numbers (a missing build number is 0).
+    key = release_key if pattern is RELEASE else (lambda t: tuple(int(g or 0) for g in pattern.fullmatch(t).groups()))
+    tags = [(key(ref.removeprefix("refs/tags/")), ref.removeprefix("refs/tags/"), sha)
             for ref, sha in refs.items() if pattern.fullmatch(ref.removeprefix("refs/tags/"))]
     if not tags:
         raise ValueError("no release tag")

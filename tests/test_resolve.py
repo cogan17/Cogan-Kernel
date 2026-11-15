@@ -106,6 +106,15 @@ class TagsAndHooksTest(unittest.TestCase):
         self.assertEqual(r.newest_tag(refs), ("v4.2.0-rc3", "a"))
         self.assertEqual(r.newest_tag(refs, r.STABLE), ("v4.1.0", "b"))
 
+    def test_nomount_build_number_tags_count_as_releases(self):
+        # Owner 15 Nov 2026: NoMount's Latest release is tagged "v2.3.0-720"; Builder and Cek stayed on v2.2.0.
+        refs = {f"refs/tags/{t}": t for t in ("v1.0.0", "v2.1.1", "v2.2.0", "v2.3.0-720", "v2.3.0-rc1")}
+        self.assertEqual(r.newest_tag(refs, r.STABLE), ("v2.3.0-720", "v2.3.0-720"))
+        refs["refs/tags/v2.3.0"] = "plain"
+        self.assertEqual(r.newest_tag(refs, r.STABLE)[0], "v2.3.0-720")     # the build after the plain tag
+        refs["refs/tags/v2.4.0"] = "next"
+        self.assertEqual(r.newest_tag(refs, r.STABLE)[0], "v2.4.0")
+
     def test_hooks_the_susfs_patch_calls(self):
         patch = "+\tmy_setprocattr(a);\n context my_write_access(b);\n+ksu_setup_preinit_file();\n"
         self.assertEqual(r.needed_hooks(patch), ["my_setprocattr", "ksu_setup_preinit_file"])
