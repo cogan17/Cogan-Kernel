@@ -23,32 +23,32 @@ def download(repo, artifact, dest):
         subprocess.run(["gh", "api", f"repos/{repo}/actions/artifacts/{artifact}/zip"], stdout=out, check=True)
 
 
-def module_info(snapshots):
-    """The sidex15 build of the run's snapshots, or {"wait": ...} when none was found."""
-    found = [json.loads(path.read_text()).get("susfs_sidex") for path in sorted(Path(snapshots).glob("*.json"))]
+def module_info(snapshots, key="susfs_sidex", who="sidex15"):
+    """The module entry (key) of the run's snapshots, or {"wait": ...} when none was found."""
+    found = [json.loads(path.read_text()).get(key) for path in sorted(Path(snapshots).glob("*.json"))]
     found = [entry for entry in found if entry]
     return next((entry for entry in found if "wait" not in entry), found[0] if found else
-                {"wait": {"id": "Snapshot run ini tidak mencatat modul sidex15.", "en": "This run's snapshot holds no sidex15 module."}})
+                {"wait": {"id": f"Snapshot run ini tidak mencatat modul {who}.", "en": f"This run's snapshot holds no {who} module."}})
 
 
-def check(path):
-    """version of a sidex15 module ZIP; SystemExit when it is not one."""
+def check(path, module_id="susfs4ksu", who="sidex15"):
+    """version of a SUSFS module ZIP (sidex15's by default); SystemExit when it is not one."""
     with zipfile.ZipFile(path) as archive:
         names = archive.namelist()
         if archive.testzip():
-            raise SystemExit("::error::sidex15 module: corrupt ZIP")
+            raise SystemExit(f"::error::{who} module: corrupt ZIP")
         unsafe = [n for n in names if n.startswith("/") or ".." in n.split("/")]
         if unsafe:
-            raise SystemExit(f"::error::sidex15 module: unsafe paths {unsafe[:3]}")
+            raise SystemExit(f"::error::{who} module: unsafe paths {unsafe[:3]}")
         missing = {"module.prop", "customize.sh"} - set(names)
         if missing:
-            raise SystemExit(f"::error::sidex15 module: missing {sorted(missing)}")
+            raise SystemExit(f"::error::{who} module: missing {sorted(missing)}")
         prop = dict(line.split("=", 1) for line in archive.read("module.prop").decode().splitlines() if "=" in line)
-    if prop.get("id") != "susfs4ksu":
-        raise SystemExit(f"::error::sidex15 module: id {prop.get('id')!r}, expected susfs4ksu")
+    if prop.get("id") != module_id:
+        raise SystemExit(f"::error::{who} module: id {prop.get('id')!r}, expected {module_id}")
     version = prop.get("version", "").strip()
     if not re.fullmatch(r"v[0-9][0-9A-Za-z.+-]*", version):
-        raise SystemExit(f"::error::sidex15 module: version {version!r}")
+        raise SystemExit(f"::error::{who} module: version {version!r}")
     return version
 
 

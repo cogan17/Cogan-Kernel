@@ -60,7 +60,8 @@ class ResolveTest(unittest.TestCase):
                 mock.patch.multiple(r, ls_remote=ls_remote, api=api, run=lambda *a, **k: "", ksu_main=main,
                                     ack_releases=lambda refs: [], pick_ack=lambda releases, wanted: [],
                                     patch_fits=mock.Mock(return_value=fits),
-                                    susfs_sidex=lambda: {"commit": "6" * 40}):
+                                    susfs_sidex=lambda: {"commit": "6" * 40},
+                                    susfs_hybrid=lambda: {"tag": "v0.5"}):
             return r.resolve("KSU", "lts", tmp, susfs_box=susfs_box)
 
     def test_kernel_and_manager_from_the_same_main_commit(self):

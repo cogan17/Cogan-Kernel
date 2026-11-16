@@ -48,7 +48,7 @@ Modul yang dipakai owner di HP-nya bersama Cogan Kernel. Klik nama modul untuk m
 | Modul | Fungsi | Pembuat |
 |---|---|---|
 | 🛡️ [SUSFS-FOR-KERNELSU](https://github.com/sidex15/susfs4ksu-module) | Pengaturan SUSFS lewat WebUI (sudah ada di rilis sebagai file 5) | sidex15 |
-| 🧬 [hybrid_susfs](https://github.com/cogan17/hybrid_SusFS) | Modul SUSFS repo saudara: mesin simonpunk, tampilan sidex15, fitur tambahan BRENE dalam satu modul | Cogan17 |
+| 🧬 [hybrid_susfs](https://github.com/cogan17/hybrid_SusFS) | Modul SUSFS repo saudara: mesin simonpunk, tampilan sidex15, fitur tambahan BRENE dalam satu modul (sudah ada di rilis sebagai file 6; pasang 5 atau 6) | Cogan17 |
 | 🧷 [BRENE](https://github.com/rrr333nnn333/BRENE) | Modul SUSFS lain dengan WebUI: menyembunyikan jejak root, *custom kernel*, recovery dan modul Zygisk, serta menyamarkan properti sistem dan `uname` | rrr333nnn333 |
 | 📂 [NoMount](https://github.com/maxsteeel/nomount) | Pemasangan modul tanpa *mount* (sudah ada di kernel) | maxsteeel |
 | 🧠 [Cogan Smart Kernel](modules/cogan-smart/README.md) | Mode daya, suhu, penjaga modul | Cogan17 |
@@ -129,7 +129,7 @@ Builder memakai rilis ACK resmi `android14-6.1` sejak kernel bawaan HP; `lts` = 
 
 **Pilih sumber** (isian pertama form Builder): **Selalu terbaru (CI)** mengambil versi terbaru setiap komponen; bila ada yang belum cocok, root itu menunggu. **Stabil (terakhir berhasil)** mengambil semua komponen (ACK, root manager, SUSFS, NoMount, modul, dan lainnya) persis dari build terakhir yang berhasil untuk root itu (`kernel/history/`), jadi tetap bisa dibangun saat versi terbaru masih menunggu. Manager dari CI pengembang hanya tersimpan 90 hari.
 
-Tombol **Cek pembaruan** satu-satunya yang mengecek, dan tidak membangun: versi terbaru setiap komponen (ACK, KernelSU Next, BakaSU, KernelSU, SukiSU, CoganSU, SUSFS simonpunk dan modul SUSFS sidex15, NoMount, Baseband Guard, AnyKernel3, Neutron clang, Unicode fix) dibandingkan dengan build terakhir, dengan tanggal rilis stabil dan CI, yang baru dan perbaikannya, dan siapa yang ditunggu bila belum bisa dibangun. Bila ada yang baru, ringkasannya menyarankan menjalankan Builder.
+Tombol **Cek pembaruan** satu-satunya yang mengecek, dan tidak membangun: versi terbaru setiap komponen (ACK, KernelSU Next, BakaSU, KernelSU, SukiSU, CoganSU, SUSFS simonpunk, modul SUSFS sidex15 dan hybrid_susfs, NoMount, Baseband Guard, AnyKernel3, Neutron clang, Unicode fix) dibandingkan dengan build terakhir, dengan tanggal rilis stabil dan CI, yang baru dan perbaikannya, dan siapa yang ditunggu bila belum bisa dibangun. Bila ada yang baru, ringkasannya menyarankan menjalankan Builder.
 
 **[Riwayat build](kernel/history/)** disimpan otomatis oleh Builder dalam dokumen Markdown. **Build terakhir** dan **Status** tetap bisa dibandingkan setelah log, artifact atau run Actions dihapus; **Hapus log run lama** bekerja seperti sebelumnya.
 

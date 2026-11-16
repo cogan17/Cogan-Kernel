@@ -53,7 +53,8 @@ class ResolveTest(unittest.TestCase):
                                     cogansu_has=mock.Mock(return_value=has_ksu),
                                     patch_fits=mock.Mock(side_effect=fits) if isinstance(fits, list)
                                     else mock.Mock(return_value=fits),
-                                    susfs_sidex=lambda: {"commit": "6" * 40}):
+                                    susfs_sidex=lambda: {"commit": "6" * 40},
+                                    susfs_hybrid=lambda: {"tag": "v0.5"}):
             return r.resolve("CSU", "lts", tmp, susfs_box=susfs_box)
 
     def test_kernel_and_manager_from_the_same_newest_release(self):

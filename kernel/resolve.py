@@ -70,6 +70,9 @@ SUSFS_PATCH = "kernel_patches/50_add_susfs_in_gki-android14-6.1.patch"
 # sidex15's SUSFS module (WebUI), the 6th file of a run (owner 2026-10-26: SUSFS has two developers). It has
 # no releases: its "Build and Release" CI zips the module of branch v1.5.2+ on every push.
 SUSFS_SIDEX = ("sidex15/susfs4ksu-module", "build.yml", "v1.5.2+")
+# Cogan's own hybrid_susfs module (owner 2026-11-17): simonpunk's engine, sidex15's WebUI, BRENE's extras. It ships as
+# file 6 next to sidex15's, from its newest published GitHub release (pre-releases too: it is the owner's module).
+SUSFS_HYBRID = "cogan17/hybrid_SusFS"
 NOMOUNT = "https://github.com/maxsteeel/nomount"
 BBG = "https://github.com/vc-teahouse/Baseband-guard"
 ANYKERNEL = "https://github.com/osm0sis/AnyKernel3"
@@ -285,6 +288,22 @@ def bakasu_main(api=api):
     if isinstance(result, dict):
         return head, result
     raise manager_wait("BakaSU di main", "BakaSU on main", result)
+
+
+def susfs_hybrid(api=api):
+    """The ZIP of hybrid_susfs's newest published release (not a draft), or what to wait for."""
+    for release in api(f"repos/{SUSFS_HYBRID}/releases?per_page=10"):
+        if release.get("draft"):
+            continue
+        tag = release["tag_name"]
+        module = next((a for a in release.get("assets", []) if a["name"].endswith(".zip")), None)
+        if module is None:
+            return {"wait": {"id": f"Tunggu Cogan menerbitkan ZIP modul hybrid_susfs {tag}.",
+                             "en": f"Wait for Cogan to publish the hybrid_susfs {tag} module ZIP."}}
+        return {"repo": SUSFS_HYBRID, "tag": tag, "prerelease": bool(release.get("prerelease")),
+                "date": release.get("published_at", ""), "release": release.get("html_url", ""),
+                "name": module["name"], "url": module["browser_download_url"], "digest": module.get("digest", "")}
+    return {"wait": {"id": "Tunggu rilis hybrid_susfs pertama.", "en": "Wait for the first hybrid_susfs release."}}
 
 
 def susfs_sidex(api=api):
@@ -520,6 +539,7 @@ def resolve(root, sublevel, work, unicode=False, susfs_box=True):
         susfs = ls_remote(SUSFS, f"refs/heads/{SUSFS_BRANCH}")[f"refs/heads/{SUSFS_BRANCH}"]
         snap["susfs"] = {"repo": SUSFS, "branch": SUSFS_BRANCH, "commit": susfs}
         snap["susfs_sidex"] = susfs_sidex()
+        snap["susfs_hybrid"] = susfs_hybrid()
         run("git", "-C", repo, "fetch", "-q", "--depth=1", SUSFS, f"{susfs}:refs/check/susfs")
     if root == "KSUN":
         refs = ls_remote(KSUN_FORK, f"refs/heads/{KSUN_FORK_BRANCH}", "refs/heads/dev")

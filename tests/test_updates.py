@@ -20,7 +20,7 @@ SNAP = {"root": "KSUN", "ack": [{"tag": "android14-6.1-2025-09_r36", "commit": "
         "susfs": {"repo": r.SUSFS, "branch": r.SUSFS_BRANCH, "commit": SUSFS_OLD},
         "root_source": {"repo": r.KSUN_FORK, "branch": "dev-susfs", "commit": A, "base": M, "ksu_version": 33405},
         "nomount": {"tag": "v2.2.0"}, "bbg": {"commit": "f" * 40}, "anykernel": {"commit": "9" * 40, "arm64_tools": "8" * 40},
-        "neutron": {"tag": "24102026"}, "susfs_sidex": {"commit": "5" * 40}}
+        "neutron": {"tag": "24102026"}, "susfs_sidex": {"commit": "5" * 40}, "susfs_hybrid": {"tag": "v0.5"}}
 
 
 def commit(sha, date, title):
@@ -55,6 +55,10 @@ class FakeNet:
             "repos/Baka-SU/BakaSU/actions/runs/77/artifacts?per_page=100":
                 {"artifacts": [{"name": "Manager-release", "id": 1, "expired": False}]},
             f"repos/Baka-SU/BakaSU/commits/{BAKA_MAIN}": commit(BAKA_MAIN, "2026-10-24T10:00:00Z", "susfs: hooks"),
+            "repos/cogan17/hybrid_SusFS/releases?per_page=10": [
+                {"tag_name": "v0.5", "draft": False, "prerelease": True, "published_at": "2026-11-16T18:55:31Z",
+                 "html_url": "https://hybrid/v0.5", "assets": [{"name": "hybrid_susfs_v0.5.zip", "digest": "sha256:" + "7" * 64,
+                                                                 "browser_download_url": "https://hybrid/v0.5.zip"}]}],
             f"repos/maxsteeel/nomount/releases/tags/{nomount}": {"tag_name": nomount, "published_at": "2026-10-23T00:00:00Z",
                                                                "html_url": "https://nomount", "body": "NoMount notes"},
             "repos/maxsteeel/nomount/commits/" + "h" * 40: commit("h" * 40, "2026-10-25T00:00:00Z", "wip"),
@@ -194,7 +198,7 @@ class UpdatesTest(unittest.TestCase):
         self.assertEqual(builds["KSUN"]["run"], 6)
         self.assertNotIn("BSU", builds)                                    # its snapshot only waited
         statuses = {k: e["status"] for k, e in found.items()}
-        self.assertEqual(statuses, {"ack": "new", "susfs": "new", "sidex": "new", "ksun": "same", "bakasu": "unknown", "ksu": "off", "sukisu": "off", "cogansu": "off", "nomount": "new",
+        self.assertEqual(statuses, {"ack": "new", "susfs": "new", "sidex": "new", "hybrid": "same", "ksun": "same", "bakasu": "unknown", "ksu": "off", "sukisu": "off", "cogansu": "off", "nomount": "new",
                                     "bbg": "same", "anykernel": "same", "neutron": "same", "unicode": "off"})
         self.assertIn("🆕 **Ada pembaruan: ACK android14-6.1, SUSFS (simonpunk), SUSFS modul (sidex15), NoMount.** "
                       "Silakan jalankan **Cogan Kernel Builder**", text)
@@ -232,6 +236,14 @@ class UpdatesTest(unittest.TestCase):
         self.assertIn("⏳ **Belum bisa dibangun:**", text)
         self.assertIn("- BakaSU: Tunggu pengembang BakaSU: rilis v1.2.0 dan main belum siap untuk SUSFS terbaru", text)
         self.assertIn("- BakaSU: Wait for the BakaSU developer: release v1.2.0 and main are not ready", text)
+
+    def test_hybrid_susfs_newest_release_and_its_pre_release_mark(self):
+        # Owner 2026-11-17: hybrid_susfs ships as file 6; Cek pembaruan shows its newest release.
+        _, found, text = self.run_check()
+        hybrid = found["hybrid"]
+        self.assertEqual((hybrid["status"], hybrid["stable"]["label"]), ("same", "v0.5"))
+        self.assertIn({"id": "Rilis ini pra-rilis (Pre-release).", "en": "This release is a pre-release."}, hybrid["lines"])
+        self.assertIn("| SUSFS modul (hybrid_susfs) | v0.5 |", text)
 
     def test_a_missing_ci_manager_is_a_wait(self):
         _, found, text = self.run_check(manager=False)

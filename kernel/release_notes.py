@@ -23,7 +23,10 @@ USES = {
     "2": ("Aplikasi manager root", "Root manager app"),
     "3": ("Manager spoofed (nama paket disamarkan), pasang salah satu", "Spoofed manager (hidden package name), install one"),
     "4": ("Modul di manager", "Manager module"),
-    "5": ("Modul SUSFS sidex15 dengan WebUI (build CI terbarunya)", "sidex15's SUSFS module with WebUI (its newest CI build)"),
+    "5": ("Modul SUSFS sidex15 dengan WebUI (build CI terbarunya); pasang salah satu: 5 atau 6",
+          "sidex15's SUSFS module with WebUI (its newest CI build); install one: 5 or 6"),
+    "6": ("Modul SUSFS hybrid_susfs (mesin simonpunk, WebUI sidex15, fitur BRENE); pasang salah satu: 5 atau 6",
+          "hybrid_susfs SUSFS module (simonpunk's engine, sidex15's WebUI, BRENE's extras); install one: 5 or 6"),
 }
 
 
@@ -115,8 +118,8 @@ def compact_notes(builds, run_url, repo, tested=False, note="", artifact_run=Fal
             lines += changelog.splitlines()[1:] if changelog else ["Lihat catatan build / See build notes."]
             lines.append("")
     lines += ["</details>", "", "<details>", "<summary>📦 <b>Modul pendukung / Modules</b></summary>", ""]
-    modules = sorted({name for _, files, _ in builds for name in files if name.startswith(("4-", "5-"))})
-    labels = {"4": "NoMount", "5": "SUSFS · sidex15 (WebUI)"}
+    modules = sorted({name for _, files, _ in builds for name in files if name.startswith(("4-", "5-", "6-"))})
+    labels = {"4": "NoMount", "5": "SUSFS · sidex15 (WebUI)", "6": "SUSFS · hybrid_susfs"}
     lines += [f"- {download(name, labels[name[0]])}" for name in modules]
     lines += ["", "</details>", "", "<details>", "<summary>🧩 <b>Komponen & fitur / Components & features</b></summary>", ""]
     # One section per root manager (owner 2026-11-06): the shared component lines once, Kernel per sublevel.

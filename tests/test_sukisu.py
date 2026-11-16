@@ -55,7 +55,8 @@ class ResolveTest(unittest.TestCase):
                                     ack_releases=lambda refs: [], pick_ack=lambda releases, wanted: [],
                                     has_builtin_susfs=mock.Mock(return_value=builtin_susfs),
                                     sukisu_ready=mock.Mock(return_value=problem),
-                                    susfs_sidex=lambda: {"commit": "6" * 40}):
+                                    susfs_sidex=lambda: {"commit": "6" * 40},
+                                    susfs_hybrid=lambda: {"tag": "v0.5"}):
             return r.resolve("SUKI", "lts", tmp, susfs_box=susfs_box)
 
     def test_with_susfs_the_builtin_branch_and_the_release_manager(self):

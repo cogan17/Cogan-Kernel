@@ -92,7 +92,8 @@ class SusfsBoxTest(unittest.TestCase):
                                     is_bakasu=lambda repo, ref: release_is_bakasu or ref.endswith("-main"),
                                     bakasu_main=lambda: main,
                                     bakasu_ready=mock.Mock(side_effect=AssertionError("no SUSFS check")),
-                                    susfs_sidex=mock.Mock(side_effect=AssertionError("no sidex15 module"))):
+                                    susfs_sidex=mock.Mock(side_effect=AssertionError("no sidex15 module")),
+                                    susfs_hybrid=mock.Mock(side_effect=AssertionError("no hybrid_susfs module"))):
             snap = r.resolve("BSU", "lts", tmp, susfs_box=False)
         self.assertNotIn("susfs", snap)
         self.assertNotIn("susfs_sidex", snap)

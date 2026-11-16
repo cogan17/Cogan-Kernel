@@ -128,7 +128,8 @@ fi
             if root != "KSU":   # official KernelSU has no spoofed manager
                 self.payloads.append((f"3-MANAGER-SPOOFED_{slug}_fixture.apk", f"spoofed {root}".encode()))
         if susfs:
-            self.payloads += [("5-SUSFS-MODULE-SIDEX15_v1.5.2-CI-fixture.zip", b"sidex15")]
+            self.payloads += [("5-SUSFS-MODULE-SIDEX15_v1.5.2-CI-fixture.zip", b"sidex15"),
+                              ("6-SUSFS-MODULE-HYBRID_v0.5.zip", b"hybrid_susfs")]   # owner 2026-11-17
         self.wrapped = wrapped
 
     def write_artifacts(self):
@@ -297,6 +298,18 @@ fi
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("missing NoMount/SUSFS modules", result.stderr)
 
+    def test_both_susfs_modules_are_published_and_older_runs_without_hybrid_still_are(self):
+        self.artifacts()
+        result = self.download(TESTED="false")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertTrue((self.root / "files/6-SUSFS-MODULE-HYBRID_v0.5.zip").exists())
+        self.assertIn("6-SUSFS-MODULE-HYBRID_v0.5.zip", (self.root / "notes.md").read_text())
+        self.tearDown(); self.setUp()
+        self.artifacts()
+        self.payloads = [(name, data) for name, data in self.payloads if not name.startswith("6-")]
+        result = self.download(TESTED="false")
+        self.assertEqual(result.returncode, 0, result.stderr)
+
     def test_a_run_without_susfs_is_published_without_the_susfs_module(self):
         # Owner 2026-11-02: the SUSFS box unticked gives the plain root manager, and it may be released.
         self.artifacts(susfs=False)
@@ -311,11 +324,14 @@ fi
             self.assertNotIn("+ SUSFS", post)
 
     def test_a_susfs_module_in_a_run_without_susfs_is_refused(self):
-        self.artifacts(susfs=False)
-        self.payloads += [("5-SUSFS-MODULE-SIDEX15_v1.5.2-CI-fixture.zip", b"sidex15")]
-        result = self.download()
-        self.assertNotEqual(result.returncode, 0)
-        self.assertIn("missing NoMount/SUSFS modules", result.stderr)
+        for name in ("5-SUSFS-MODULE-SIDEX15_v1.5.2-CI-fixture.zip", "6-SUSFS-MODULE-HYBRID_v0.5.zip"):
+            with self.subTest(name=name):
+                self.tearDown(); self.setUp()
+                self.artifacts(susfs=False)
+                self.payloads += [(name, b"module")]
+                result = self.download()
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("missing NoMount/SUSFS modules", result.stderr)
 
     def test_missing_kernel_stops_the_release(self):
         self.artifacts()

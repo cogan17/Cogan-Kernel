@@ -48,7 +48,7 @@ Modules the owner runs on their phone together with Cogan Kernel. Click a module
 | Module | Purpose | Author |
 |---|---|---|
 | 🛡️ [SUSFS-FOR-KERNELSU](https://github.com/sidex15/susfs4ksu-module) | SUSFS settings through a WebUI (already in the release as file 5) | sidex15 |
-| 🧬 [hybrid_susfs](https://github.com/cogan17/hybrid_SusFS) | Sister-repo SUSFS module: simonpunk engine, sidex15 UI and BRENE's extra features in one module | Cogan17 |
+| 🧬 [hybrid_susfs](https://github.com/cogan17/hybrid_SusFS) | Sister-repo SUSFS module: simonpunk engine, sidex15 UI and BRENE's extra features in one module (already in the release as file 6; install 5 or 6) | Cogan17 |
 | 🧷 [BRENE](https://github.com/rrr333nnn333/BRENE) | Another SUSFS module with a WebUI: hides root, custom kernel, recovery and Zygisk module traces, and spoofs system properties and `uname` | rrr333nnn333 |
 | 📂 [NoMount](https://github.com/maxsteeel/nomount) | Mountless module loading (already in the kernel) | maxsteeel |
 | 🧠 [Cogan Smart Kernel](modules/cogan-smart/README.md) | Power modes, thermals, module guard | Cogan17 |
@@ -129,7 +129,7 @@ The builder uses the official ACK `android14-6.1` releases since the phone's sto
 
 **Pilih sumber / Source** (the first field of the Builder form): **Always newest (CI)** takes the newest version of every component; when one does not fit yet, that root waits. **Stable (last good build)** takes every component (ACK, root manager, SUSFS, NoMount, modules and the rest) exactly from the last successful build of that root (`kernel/history/`), so it still builds while the newest versions wait. Managers from the developers' CI are kept for 90 days only.
 
-The **Cek pembaruan** (check for updates) button is the only check, and it builds nothing: the newest version of every component (ACK, KernelSU Next, BakaSU, KernelSU, SukiSU, CoganSU, simonpunk's SUSFS and sidex15's SUSFS module, NoMount, Baseband Guard, AnyKernel3, Neutron clang, Unicode fix) against the last build, with the dates of the stable and CI versions, what is new and fixed, and whom to wait for when it cannot be built yet. When something is newer, the summary suggests running the Builder.
+The **Cek pembaruan** (check for updates) button is the only check, and it builds nothing: the newest version of every component (ACK, KernelSU Next, BakaSU, KernelSU, SukiSU, CoganSU, simonpunk's SUSFS, the hybrid_susfs module, and sidex15's SUSFS module, NoMount, Baseband Guard, AnyKernel3, Neutron clang, Unicode fix) against the last build, with the dates of the stable and CI versions, what is new and fixed, and whom to wait for when it cannot be built yet. When something is newer, the summary suggests running the Builder.
 
 **[Build history](kernel/history/)** is saved automatically by the Builder as Markdown documents. **Last build** and **Status** remain comparable after Actions logs, artifacts or runs are deleted; **Delete old run logs** works as before.
 
