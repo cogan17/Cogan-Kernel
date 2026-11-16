@@ -1,5 +1,25 @@
 # Cogan Smart Kernel
 
+## Akar garis putus: layar tercatat nyala saat HP tidur / Root of the broken line: screen recorded on while asleep — v2.12.12 (paket uji / test build)
+
+Indonesia:
+
+- Audit atas permintaan owner, 16 Nov 2026 (log 6 jam 01.13–07.11): v2.12.9–v2.12.11 memperbaiki gejala di grafik, bukan akarnya. Di log, 03.38–06.57 tercatat "layar nyala / Layar utama", padahal jarak antarsampelnya 6–22 menit. Pencatat mengambil sampel tiap ±21 detik selama HP terjaga, dan HP tidak bisa tidur (deep sleep) selama layar benar-benar menyala. Jadi layar sebenarnya mati, tetapi lampu layar (`lcd-backlight/brightness`) terbaca di atas 0, kemungkinan karena Always-On Display atau nilai yang tertinggal. Kedua ujung tiap jeda tercatat "nyala", sehingga grafik memutus garis dan hanya menyisakan titik hijau terpisah. Statistik "Layar utama 39%" di log itu juga ikut salah.
+- Perbaikan 1 (pencatat): bila lampu layar terbaca menyala pada sampel pertama setelah HP tidur (jeda lebih dari 3 kali interval), status layar Android sendiri ikut dicek (`dumpsys deviceidle get screen`; hanya "true" bila layar benar-benar menyala, bukan AOD/doze). Pengecekan ini sekali per bangun, tidak tiap sampel.
+- Perbaikan 2 (grafik): setiap jeda kini digambar biru. Pencatat selalu jalan selama HP terjaga, dan layar yang menyala membuat HP terjaga, jadi jeda berarti HP tidur atau mati, yang keduanya layar mati. Data lama yang labelnya sudah salah pun tergambar benar. Batas jeda memakai kuartil bawah jarak sampel, bukan median, karena median jendela yang didominasi malam adalah jarak tidur itu sendiri.
+- Dicek dengan dua CSV owner: semua segmen tergambar (69/69 dan 118/118), tanpa garis putus.
+- Batas: bila pencatat dihentikan saat HP dipakai, waktu itu juga tergambar biru.
+- Terukur lokal: tes lolos (mksh dan dash). Belum diuji di HP.
+
+English:
+
+- Audit at the owner's request, 16 Nov 2026 (6-hour log 01:13–07:11): v2.12.9–v2.12.11 fixed symptoms in the chart, not the root. In the log, 03:38–06:57 was recorded "screen on / Home screen" while samples were 6–22 minutes apart. The recorder samples every ~21 seconds while the phone is awake, and a phone cannot deep-sleep with its screen really on. So the screen was off, but the backlight node (`lcd-backlight/brightness`) read above 0, likely Always-On Display or a stale value. Both ends of every gap were recorded "on", so the chart broke the line and left lone green dots. The "Home screen 39%" figure in that log was wrong too.
+- Fix 1 (recorder): when the backlight reads lit on the first sample after the phone slept (a gap of over 3 intervals), Android's own screen state is checked too (`dumpsys deviceidle get screen`; "true" only when the screen is really on, not AOD/doze). Once per wake, not every sample.
+- Fix 2 (chart): every gap is now drawn blue. The recorder runs whenever the phone is awake, and a lit screen keeps it awake, so a gap is the phone asleep or off: the screen was off either way. Old data with wrong labels is drawn right too. A gap is measured against the lower quartile of the sample spacing, not the median, which in a mostly-night window is the sleep spacing itself.
+- Checked with two owner CSVs: every segment drawn (69/69 and 118/118), no broken line.
+- Limit: if the recorder is stopped while the phone is in use, that time is drawn blue too.
+- Measured locally: tests pass (mksh and dash). Not phone-tested yet.
+
 ## Garis biru di grafik panjang / Blue line in longer charts — v2.12.11 (paket uji / test build)
 
 Indonesia:

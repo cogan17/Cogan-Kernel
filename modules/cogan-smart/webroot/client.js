@@ -253,21 +253,21 @@
     let lo = Math.min(...series.map(p => p[1]), hot * 10), hi = Math.max(...series.map(p => p[1]), hot * 10);
     lo -= 10; hi += 10;
     const x = t => ((t - t0) / Math.max(1, t1 - t0) * 600).toFixed(1), y = v => (150 - (v - lo) / (hi - lo) * 140).toFixed(1);
-    // Nothing is recorded while the phone sleeps or restarts: the line breaks there instead of drawing a
-    // steep jump across the gap (owner 2026-10-24, "naik turun, tidak stabil").
+    // Nothing is recorded while the phone sleeps or restarts. A gap is over 3 times the spacing of an awake phone: the
+    // lower quartile, not the median (16 Nov 2026: in a mostly-night window the median was a sleep spacing itself).
     const steps = series.slice(1).map((p, i) => p[0] - series[i][0]).sort((a, b) => a - b);
-    const far = Math.max(120, 3 * (steps[Math.floor(steps.length / 2)] || 20));
+    const far = Math.max(120, 3 * (steps[Math.floor(steps.length / 4)] || 20));
     // Colour per piece (owner 13 Nov 2026): blue with the screen off, green with the screen on under the
     // dashed hot line, bright red above it. Each piece takes the colour of the sample it ends at.
     const kind = p => p[2] === 0 ? 'off' : p[1] >= hot * 10 ? 'hot' : 'on';
     const paths = { off: '', on: '', hot: '' };
-    // With the screen off the phone sleeps and nothing is sampled (owner 13 Nov 2026: the screen-off time showed as
-    // a gap). A gap with a screen-off sample at either end is that sleep (14 Nov: the screen often goes off just
-    // after an "on" sample): drawn blue. Other gaps (restart) stay open.
+    // A gap is time without samples. The recorder samples whenever the phone is awake, and a lit screen keeps it awake,
+    // so a gap is the phone asleep or off: the screen was off. Every gap is drawn blue (owner 16 Nov 2026: gaps whose
+    // end samples were wrongly marked "on" still broke the line). Within the samples, each piece takes the colour of
+    // the sample it ends at.
     series.forEach((p, i) => {
       if (!i) return;
       const q = series[i - 1], gap = p[0] - q[0] > far;
-      if (gap && q[2] !== 0 && p[2] !== 0) return;
       paths[gap ? 'off' : kind(p)] += `M${x(q[0])},${y(q[1])} L${x(p[0])},${y(p[1])} `;
     });
     const colours = { off: '#4d9fff', on: '#2fbf5a', hot: '#ff2d2d' };

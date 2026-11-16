@@ -108,6 +108,19 @@ bounded_dumpsys() {
 
 read_screen() {   # sets screen
   screen_lit; screen=$CB_SCREEN
+  # A lit backlight after the phone slept (no sample for over 3 intervals) is checked against Android's own
+  # screen state (owner 16 Nov 2026: 03:38-06:57 was recorded "on" every 10-20 minutes while the phone slept; a
+  # sleeping phone cannot have its screen on, so the backlight node was lit without the screen being on, e.g.
+  # Always-On Display). Android's screen is "on" only for STATE_ON; doze/AOD and off are "off". Once per wake.
+  if [ "$screen" = 1 ]; then
+    read_into rs_last "$CT_RUN/last"
+    case "$rs_last" in ''|*[!0-9]*) ;; *)
+      if [ $((now - rs_last)) -gt $((INTERVAL * 3)) ]; then
+        case "$(bounded_dumpsys deviceidle get screen 2>/dev/null)" in false*) screen=0 ;; esac
+      fi ;;
+    esac
+    return 0
+  fi
   [ "$screen" = -1 ] || return 0
   case "$(bounded_dumpsys deviceidle get screen 2>/dev/null)" in
     true*) screen=1 ;;

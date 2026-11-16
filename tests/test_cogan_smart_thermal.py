@@ -167,6 +167,28 @@ class SamplerTests(unittest.TestCase):
         self.assertEqual(self.lines()[4][1:3], ["screen_off", "0"])
         self.assertTrue(self.lines()[4][9].startswith("com.mobile.legends:250"))
 
+    def test_a_lit_backlight_after_sleep_is_checked_with_android(self):
+        # Owner 16 Nov 2026: 03:38-06:57 was recorded "screen on" every 10-20 minutes while the phone slept (the
+        # backlight node stayed lit, e.g. Always-On Display), so the chart had no blue line.
+        state = self.phone.base / "screen_state"
+        write(self.phone.bin / "dumpsys", "#!/bin/sh\n"
+              f"case \"$1 $2\" in 'deviceidle get') cat {state} ;; esac\n"
+              "case \"$2\" in displays) echo '  mCurrentFocus=Window{1a2b u0 com.miui.home/.launcher.Launcher}' ;; esac\n")
+        (self.phone.bin / "dumpsys").chmod(0o755)
+        write(state, "false\n")                          # Android: the screen is not on (doze/AOD)
+        self.phone.run("sampler.sh", "--once")            # no earlier sample: the backlight is trusted
+        self.assertEqual(self.lines()[-1][1:3], ["com.miui.home", "1"])
+        write(self.phone.data / "run/last", f"{int(time.time()) - 1200}\n")   # the phone slept 20 minutes
+        self.phone.run("sampler.sh", "--once")
+        self.assertEqual(self.lines()[-1][1:3], ["screen_off", "0"])
+        write(state, "true\n")                           # the owner turns the screen on: still "on" after a sleep
+        write(self.phone.data / "run/last", f"{int(time.time()) - 1200}\n")
+        self.phone.run("sampler.sh", "--once")
+        self.assertEqual(self.lines()[-1][2], "1")
+        write(state, "false\n")                          # samples on schedule: no dumpsys, the backlight decides
+        self.phone.run("sampler.sh", "--once")
+        self.assertEqual(self.lines()[-1][2], "1")
+
     def test_sample_records_every_sensor_and_what_the_phone_does(self):
         self.phone.run("sampler.sh", "--once")
         self.phone.set_cpu(1)
