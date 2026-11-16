@@ -85,9 +85,9 @@ class RunSummaryTest(unittest.TestCase):
         susfs.mkdir()
         (susfs / "susfs-sidex15.env").write_text(f"SUSFS_MODULE=5-SUSFS-MODULE-SIDEX15_v1.5.2-CI-89b04b9.zip\nSUSFS_MODULE_SHA256={'f' * 64}\n")
         text = rs.summary([build("KSUN", 176)], self.info, self.snapshots, "r/r", susfs=susfs, susfs_result="success")
-        self.assertIn("**Modul SUSFS** (sidex15, dengan WebUI)\n"
+        self.assertIn("**Modul SUSFS** (sidex15 dan hybrid_susfs; pasang salah satu)\n"
                       f"- `5-SUSFS-MODULE-SIDEX15_v1.5.2-CI-89b04b9.zip` · sha256 `{'f' * 64}`", text)
-        self.assertIn("**SUSFS module** (sidex15, with WebUI)", text)
+        self.assertIn("**SUSFS modules** (sidex15 and hybrid_susfs; install one)", text)
         text = rs.summary([build("KSUN", 176)], self.info, self.snapshots, "r/r", susfs=Path(self.temp.name) / "none",
                           susfs_result="failure")
         self.assertIn("❌ Modul SUSFS gagal diambil", text)

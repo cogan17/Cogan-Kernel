@@ -58,11 +58,14 @@ def prepare(info, files, run_url, repo, tested=False, note="", sha="", api=tg.gh
             shared.append(f"4-NOMOUNT-MODULE_{env['NOMOUNT']}.zip")
         sidex = sorted(name for name in available if name.startswith("5-SUSFS-MODULE-SIDEX15_")
                        and name.endswith(".zip"))
+        # hybrid_susfs (owner 2026-11-17), file 6. Runs from before it existed have none and stay publishable.
+        hybrid = sorted(name for name in available if name.startswith("6-SUSFS-MODULE-HYBRID_")
+                        and name.endswith(".zip"))
         # The SUSFS box unticked (owner 2026-11-02): no SUSFS in the kernel, so no SUSFS module either.
         susfs = env["SUSFS_COMMIT"] != "-"
-        if (susfs and not sidex) or (sidex and not susfs) or any(name not in available for name in shared):
+        if (susfs and not sidex) or ((sidex or hybrid) and not susfs) or any(name not in available for name in shared):
             raise ValueError(f"{folder.name}: modul NoMount/SUSFS tidak lengkap / missing NoMount/SUSFS modules")
-        own += shared + sidex
+        own += shared + sidex + hybrid
         selected.update(own)
         builds.append((env, own))
     for key in ("RELEASE", "RELEASE_NAME"):

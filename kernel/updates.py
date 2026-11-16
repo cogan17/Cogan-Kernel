@@ -385,6 +385,22 @@ def check_sidex(net, builds):
                 status="unknown" if not base else "same" if base == head else "new", log=True)
 
 
+def check_hybrid(net, builds):
+    """Cogan's hybrid_susfs module, the 6th file (owner 2026-11-17): the Builder takes its newest release."""
+    base = base_of(builds, "susfs_hybrid", "tag")
+    newest = r.susfs_hybrid(net.api)
+    name = "SUSFS modul (hybrid_susfs)"
+    if "wait" in newest:
+        return item("hybrid", name, base={"label": base} if base else None, status="wait", wait=newest["wait"])
+    tag = newest["tag"]
+    lines = ([{"id": "Rilis ini pra-rilis (Pre-release).", "en": "This release is a pre-release."}]
+             if newest.get("prerelease") else [])
+    return item("hybrid", name, base={"label": base} if base else None,
+                stable={"label": tag, "date": newest.get("date", ""), "url": newest.get("release", "")},
+                changes=github_changes(net, r.SUSFS_HYBRID, base, tag) if base and base != tag else [], lines=lines,
+                status="unknown" if not base else "same" if base == tag else "new")
+
+
 def check_ksun(net, builds):
     snap = builds.get("KSUN", {}).get("snap", {})
     base = snap.get("root_source", {})
@@ -648,14 +664,15 @@ def gather(net, repo):
     found = []
     susfs_head = None
     checks = [("ack", lambda: check_ack(net, clean)), ("susfs", lambda: check_susfs(net, clean)),
-              ("sidex", lambda: check_sidex(net, clean)), ("ksun", lambda: check_ksun(net, clean)), ("bakasu", lambda: check_bakasu(net, clean, susfs_head)),
+              ("sidex", lambda: check_sidex(net, clean)),
+              ("hybrid", lambda: check_hybrid(net, clean)), ("ksun", lambda: check_ksun(net, clean)), ("bakasu", lambda: check_bakasu(net, clean, susfs_head)),
               ("ksu", lambda: check_ksu(net, clean, susfs_head)), ("sukisu", lambda: check_sukisu(net, clean, susfs_head)),
               ("cogansu", lambda: check_cogansu(net, clean, susfs_head)),
               ("nomount", lambda: check_nomount(net, clean)),
               ("bbg", lambda: check_branch(net, clean, "bbg", "Baseband Guard", r.BBG)),
               ("anykernel", lambda: check_anykernel(net, clean)),
               ("neutron", lambda: check_neutron(net, clean)), ("unicode", lambda: check_unicode(net, clean))]
-    names = {"ack": "ACK android14-6.1", "susfs": "SUSFS (simonpunk)", "sidex": "SUSFS modul (sidex15)",
+    names = {"ack": "ACK android14-6.1", "susfs": "SUSFS (simonpunk)", "sidex": "SUSFS modul (sidex15)", "hybrid": "SUSFS modul (hybrid_susfs)",
              "ksun": "KernelSU Next", "bakasu": "BakaSU", "ksu": "KernelSU", "sukisu": "SukiSU", "cogansu": "CoganSU",
              "nomount": "NoMount", "bbg": "Baseband Guard", "anykernel": "AnyKernel3", "neutron": "Neutron clang",
              "unicode": "Unicode fix (WildKernel)"}
