@@ -25,6 +25,7 @@
 
 > [!TIP]
 > TWRP is available for the Xiaomi 14T Pro. You can download [TWRP](https://github.com/cogan17/TWRP-14T-PRO).
+> There is also my own SUSFS module: [hybrid_susfs](https://github.com/cogan17/hybrid_SusFS).
 
 ---
 
@@ -47,6 +48,7 @@ Modules the owner runs on their phone together with Cogan Kernel. Click a module
 | Module | Purpose | Author |
 |---|---|---|
 | 🛡️ [SUSFS-FOR-KERNELSU](https://github.com/sidex15/susfs4ksu-module) | SUSFS settings through a WebUI (already in the release as file 5) | sidex15 |
+| 🧬 [hybrid_susfs](https://github.com/cogan17/hybrid_SusFS) | Sister-repo SUSFS module: simonpunk engine, sidex15 UI and BRENE's extra features in one module | Cogan17 |
 | 🧷 [BRENE](https://github.com/rrr333nnn333/BRENE) | Another SUSFS module with a WebUI: hides root, custom kernel, recovery and Zygisk module traces, and spoofs system properties and `uname` | rrr333nnn333 |
 | 📂 [NoMount](https://github.com/maxsteeel/nomount) | Mountless module loading (already in the kernel) | maxsteeel |
 | 🧠 [Cogan Smart Kernel](modules/cogan-smart/README.md) | Power modes, thermals, module guard | Cogan17 |
@@ -74,7 +76,7 @@ Modules the owner runs on their phone together with Cogan Kernel. Click a module
 
 | Pick one | Why |
 |---|---|
-| SUSFS-FOR-KERNELSU **or** BRENE | Both manage SUSFS and install the `ksu_susfs` tool. BRENE disables other SUSFS modules when installed |
+| SUSFS-FOR-KERNELSU **or** BRENE **or** hybrid_susfs | All three manage SUSFS and install the `ksu_susfs` tool. BRENE and hybrid_susfs disable other SUSFS modules when installed |
 | Play Integrity Fix [INJECT] **or** Duck ToolBox (Play Integrity feature) | Duck ToolBox ships its own Play Integrity engine (derived from Play Integrity Fork). If you use PIF Inject, leave Duck ToolBox's Play Integrity feature off |
 | Tricky Store OSS **or** TEESimulator | Both are keystore modules for key attestation |
 | Tricky Addon **or** Duck ToolBox | Duck ToolBox already contains a full Tricky Addon port |
@@ -85,7 +87,7 @@ Modules the owner runs on their phone together with Cogan Kernel. Click a module
 - Install **AshReXcue BootLoop Protector** first, so modules are disabled automatically on a bootloop. If the phone is still stuck, see [Back to Stock](docs/kembali-ke-stok.en.md).
 - AdbHide, Core Patch and FuseHide are Vector/LSPosed modules: they need **Zygisk Next** and **Vector**, and are enabled in the Vector app.
 - Duck ToolBox needs **Zygisk Next**. Its Tricky Store manager configures the active keystore module (Tricky Store OSS or TEESimulator), so one of them is still installed.
-- The `uname` spoof in [Install the Kernel](docs/pasang.en.md) uses the sidex15 SUSFS module's WebUI. With BRENE, enter the same values in BRENE's *Spoof Uname* setting.
+- The `uname` spoof in [Install the Kernel](docs/pasang.en.md) uses the sidex15 SUSFS module's WebUI (hybrid_susfs uses the same WebUI). With BRENE, enter the same values in BRENE's *Spoof Uname* setting.
 
 </details>
 
