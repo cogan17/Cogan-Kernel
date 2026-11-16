@@ -61,6 +61,7 @@ The old releases of [cogan17/Kernel-14t-pro](https://github.com/cogan17/Kernel-1
 | **[CoganSU](https://github.com/cogan17/CoganSU)** ([Cogan17](https://github.com/cogan17)) | A root manager made for Cogan Kernel, based on KernelSU; kernel and manager app from the same CoganSU release |
 | **[BakaSU](https://github.com/Baka-SU/BakaSU)** | The BakaSU root variant (formerly ReSukiSU) |
 | **[SUSFS](https://gitlab.com/simonpunk/susfs4ksu)** ([simonpunk](https://gitlab.com/simonpunk)) | Hides root traces |
+| **[susfs4ksu-module](https://github.com/sidex15/susfs4ksu-module)** ([sidex15](https://github.com/sidex15)) | SUSFS module with a WebUI; the module in the release (file 5) is its official CI build. Its WebUI is also used by [hybrid_susfs](https://github.com/cogan17/hybrid_SusFS) |
 | **[NoMount](https://github.com/maxsteeel/nomount)** ([maxsteeel](https://github.com/maxsteeel)) | Mountless metamodule, built into the kernel; the module in releases is its official release |
 | **[Baseband Guard](https://github.com/vc-teahouse/Baseband-guard)** ([vc-teahouse](https://github.com/vc-teahouse)) | Partition protection |
 | **[AnyKernel3](https://github.com/osm0sis/AnyKernel3)** ([osm0sis](https://github.com/osm0sis)) | Kernel ZIP installer |
@@ -70,4 +71,4 @@ The old releases of [cogan17/Kernel-14t-pro](https://github.com/cogan17/Kernel-1
 | **[GKI-Duchamp](https://github.com/ahmed-alnassif/GKI-Duchamp-6.1) · [AK3-GKID](https://github.com/ahmed-alnassif/AK3-GKID)** ([Ahmed Al-Nassif](https://github.com/ahmed-alnassif)) | Base of the early kernel experiments (no longer used) |
 | **[cogan17/Cogan](https://github.com/cogan17/Cogan)** | Origin of the build engine |
 
-Sister project: **[TWRP Xiaomi 14T Pro](https://github.com/cogan17/TWRP-14T-PRO)** · **[CoganSU](https://github.com/cogan17/CoganSU)** · predecessor repository: **[Kernel-14t-pro](https://github.com/cogan17/Kernel-14t-pro)**.
+Sister project: **[TWRP Xiaomi 14T Pro](https://github.com/cogan17/TWRP-14T-PRO)** · **[CoganSU](https://github.com/cogan17/CoganSU)** · **[hybrid_susfs](https://github.com/cogan17/hybrid_SusFS)** · predecessor repository: **[Kernel-14t-pro](https://github.com/cogan17/Kernel-14t-pro)**.

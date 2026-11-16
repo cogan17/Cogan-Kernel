@@ -61,6 +61,7 @@ Rilis lama dari [cogan17/Kernel-14t-pro](https://github.com/cogan17/Kernel-14t-p
 | **[CoganSU](https://github.com/cogan17/CoganSU)** ([Cogan17](https://github.com/cogan17)) | Root manager khusus Cogan Kernel berbasis KernelSU; kernel dan aplikasi manager dari rilis CoganSU yang sama |
 | **[BakaSU](https://github.com/Baka-SU/BakaSU)** | Root manager varian BakaSU (dulu ReSukiSU) |
 | **[SUSFS](https://gitlab.com/simonpunk/susfs4ksu)** ([simonpunk](https://gitlab.com/simonpunk)) | Menyembunyikan jejak root |
+| **[susfs4ksu-module](https://github.com/sidex15/susfs4ksu-module)** ([sidex15](https://github.com/sidex15)) | Modul SUSFS dengan WebUI; modul di rilis (file 5) adalah build CI resminya. WebUI-nya juga dipakai [hybrid_susfs](https://github.com/cogan17/hybrid_SusFS) |
 | **[NoMount](https://github.com/maxsteeel/nomount)** ([maxsteeel](https://github.com/maxsteeel)) | Metamodule tanpa mount, tertanam di kernel; modul di rilis adalah rilis resminya |
 | **[Baseband Guard](https://github.com/vc-teahouse/Baseband-guard)** ([vc-teahouse](https://github.com/vc-teahouse)) | Perlindungan partisi |
 | **[AnyKernel3](https://github.com/osm0sis/AnyKernel3)** ([osm0sis](https://github.com/osm0sis)) | Installer ZIP kernel |
@@ -70,4 +71,4 @@ Rilis lama dari [cogan17/Kernel-14t-pro](https://github.com/cogan17/Kernel-14t-p
 | **[GKI-Duchamp](https://github.com/ahmed-alnassif/GKI-Duchamp-6.1) · [AK3-GKID](https://github.com/ahmed-alnassif/AK3-GKID)** ([Ahmed Al-Nassif](https://github.com/ahmed-alnassif)) | Dasar percobaan kernel awal (tidak dipakai lagi) |
 | **[cogan17/Cogan](https://github.com/cogan17/Cogan)** | Asal mesin build |
 
-Proyek saudara: **[TWRP Xiaomi 14T Pro](https://github.com/cogan17/TWRP-14T-PRO)** · **[CoganSU](https://github.com/cogan17/CoganSU)** · repo pendahulu: **[Kernel-14t-pro](https://github.com/cogan17/Kernel-14t-pro)**.
+Proyek saudara: **[TWRP Xiaomi 14T Pro](https://github.com/cogan17/TWRP-14T-PRO)** · **[CoganSU](https://github.com/cogan17/CoganSU)** · **[hybrid_susfs](https://github.com/cogan17/hybrid_SusFS)** · repo pendahulu: **[Kernel-14t-pro](https://github.com/cogan17/Kernel-14t-pro)**.
