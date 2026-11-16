@@ -25,6 +25,7 @@
 
 > [!TIP]
 > TWRP sudah tersedia untuk Xiaomi 14T Pro. Kamu bisa mendownload [TWRP](https://github.com/cogan17/TWRP-14T-PRO).
+> Modul SUSFS buatan sendiri juga ada: [hybrid_susfs](https://github.com/cogan17/hybrid_SusFS).
 
 ---
 
@@ -47,6 +48,7 @@ Modul yang dipakai owner di HP-nya bersama Cogan Kernel. Klik nama modul untuk m
 | Modul | Fungsi | Pembuat |
 |---|---|---|
 | 🛡️ [SUSFS-FOR-KERNELSU](https://github.com/sidex15/susfs4ksu-module) | Pengaturan SUSFS lewat WebUI (sudah ada di rilis sebagai file 5) | sidex15 |
+| 🧬 [hybrid_susfs](https://github.com/cogan17/hybrid_SusFS) | Modul SUSFS repo saudara: mesin simonpunk, tampilan sidex15, fitur tambahan BRENE dalam satu modul | Cogan17 |
 | 🧷 [BRENE](https://github.com/rrr333nnn333/BRENE) | Modul SUSFS lain dengan WebUI: menyembunyikan jejak root, *custom kernel*, recovery dan modul Zygisk, serta menyamarkan properti sistem dan `uname` | rrr333nnn333 |
 | 📂 [NoMount](https://github.com/maxsteeel/nomount) | Pemasangan modul tanpa *mount* (sudah ada di kernel) | maxsteeel |
 | 🧠 [Cogan Smart Kernel](modules/cogan-smart/README.md) | Mode daya, suhu, penjaga modul | Cogan17 |
@@ -74,7 +76,7 @@ Modul yang dipakai owner di HP-nya bersama Cogan Kernel. Klik nama modul untuk m
 
 | Pilih salah satu | Kenapa |
 |---|---|
-| SUSFS-FOR-KERNELSU **atau** BRENE | Keduanya mengatur SUSFS dan memasang alat `ksu_susfs`. BRENE mematikan modul SUSFS lain saat dipasang |
+| SUSFS-FOR-KERNELSU **atau** BRENE **atau** hybrid_susfs | Ketiganya mengatur SUSFS dan memasang alat `ksu_susfs`. BRENE dan hybrid_susfs mematikan modul SUSFS lain saat dipasang |
 | Play Integrity Fix [INJECT] **atau** Duck ToolBox (fitur Play Integrity) | Duck ToolBox membawa mesin Play Integrity sendiri (turunan Play Integrity Fork). Bila memakai PIF Inject, biarkan fitur Play Integrity Duck ToolBox mati |
 | Tricky Store OSS **atau** TEESimulator | Keduanya modul keystore untuk atestasi kunci |
 | Tricky Addon **atau** Duck ToolBox | Duck ToolBox sudah berisi port lengkap Tricky Addon |
@@ -85,7 +87,7 @@ Modul yang dipakai owner di HP-nya bersama Cogan Kernel. Klik nama modul untuk m
 - Pasang **AshReXcue BootLoop Protector** lebih dulu, supaya modul dimatikan otomatis bila HP bootloop. Bila tetap macet, lihat [Kembali ke Stok](docs/kembali-ke-stok.md).
 - AdbHide, Core Patch dan FuseHide adalah modul Vector/LSPosed: butuh **Zygisk Next** dan **Vector**, lalu diaktifkan di aplikasi Vector.
 - Duck ToolBox butuh **Zygisk Next**. Pengelola Tricky Store-nya mengatur modul keystore yang aktif (Tricky Store OSS atau TEESimulator), jadi salah satunya tetap dipasang.
-- Spoof `uname` di [Pasang Kernel](docs/pasang.md) memakai WebUI modul SUSFS sidex15. Bila memakai BRENE, isi nilai yang sama di pengaturan *Spoof Uname* BRENE.
+- Spoof `uname` di [Pasang Kernel](docs/pasang.md) memakai WebUI modul SUSFS sidex15 (hybrid_susfs memakai WebUI yang sama). Bila memakai BRENE, isi nilai yang sama di pengaturan *Spoof Uname* BRENE.
 
 </details>
 
