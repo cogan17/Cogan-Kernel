@@ -279,20 +279,25 @@ peer_json() { # module directory, pid file, script
 lock_take() { # directory; caller releases explicitly or through its EXIT trap.
   [ -d "${1%/*}" ] || mkdir -p "${1%/*}"
   read_into cb_boot /proc/sys/kernel/random/boot_id
-  cb_try=0
+  cb_try=0; cb_empty=0
   while ! mkdir "$1" 2>/dev/null; do
     cb_owner=$(cat "$1/pid" 2>/dev/null)
     cb_old_boot=$(cat "$1/boot_id" 2>/dev/null)
     cb_stale=0
     [ -n "$cb_old_boot" ] && [ -n "$cb_boot" ] && [ "$cb_old_boot" != "$cb_boot" ] && cb_stale=1
     if uint "$cb_owner" && [ "$cb_owner" -gt 1 ]; then
+      cb_empty=0
       if ! kill -0 "$cb_owner" 2>/dev/null; then cb_stale=1
-      elif ! safe_pid "$1/pid" "$MODDIR/report.sh" >/dev/null &&
-           ! safe_pid "$1/pid" "$MODDIR/controller.sh" >/dev/null &&
-           ! safe_pid "$1/pid" "$MODDIR/sampler.sh" >/dev/null; then cb_stale=1; fi
-    elif [ "$cb_try" -ge 10 ]; then
-      cb_stale=1
+      # The owner read above, not the file again: it may already belong to the next owner (audit 18 Nov 2026).
+      elif ! (tr '\0' '\n' < "${CB_PID_PROC:-/proc}/$cb_owner/cmdline") 2>/dev/null | grep -Fqx -e "$MODDIR/report.sh" \
+             -e "$MODDIR/controller.sh" -e "$MODDIR/sampler.sh" -e "$MODDIR/block.sh"; then cb_stale=1; fi
+    else
+      # No owner written: only a lock that stays empty for 10 checks in a row (1 s) is left over. A lock
+      # just taken by another writer is empty too, until it writes its PID (audit 18 Nov 2026).
+      cb_empty=$((cb_empty + 1)); [ "$cb_empty" -ge 10 ] && cb_stale=1
     fi
+    # The lock changed hands while it was checked: wait for the new owner instead of removing its lock.
+    [ "$cb_stale" = 1 ] && [ "$(cat "$1/pid" 2>/dev/null)" != "$cb_owner" ] && cb_stale=0
     if [ "$cb_stale" = 1 ]; then
       rm -f "$1/pid" "$1/boot_id"; rmdir "$1" 2>/dev/null || return 1
       continue

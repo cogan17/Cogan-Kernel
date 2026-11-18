@@ -330,6 +330,30 @@ esac""")
         alive[0].wait(timeout=10)
         self.assertFalse((self.data / "run/block.pid").exists())
 
+    def test_two_writers_of_the_block_log_lose_no_event(self):
+        # Audit 18 Nov 2026: block.sh and report.sh both appended, kept the last 20 through one blocked.tmp and
+        # renamed it, so a rename could fail ("mv: cannot stat blocked.tmp") or put back an older copy. Here both
+        # writers run as block.sh, a lock owner lock_take knows, with 20 events between them.
+        driver = self.module / "apps/block.sh"
+        write(driver, '#!/system/bin/sh\nMODDIR=${0%/*}\n. "$MODDIR/common.sh"\n'
+                      'i=0; while [ "$i" -lt 10 ]; do ca_log "100 $1.$i 1" || exit 1; i=$((i + 1)); done\n')
+        for _ in range(3):
+            (self.data / "blocked.log").unlink(missing_ok=True)
+            procs = [subprocess.Popen([SHELL, str(driver), who], env=self.env, stderr=subprocess.PIPE, text=True)
+                     for who in ("a", "b")]
+            errors = [proc.communicate(timeout=60)[1] for proc in procs]
+            self.assertEqual([proc.returncode for proc in procs], [0, 0], errors)
+            self.assertEqual(errors, ["", ""])
+            lines = (self.data / "blocked.log").read_text().splitlines()
+            self.assertEqual(sorted(lines), sorted(f"100 {who}.{i} 1" for who in "ab" for i in range(10)))
+            self.assertFalse((self.data / "blocked.tmp").exists())
+            self.assertFalse((self.data / "run/log.lock").exists())
+        # Still the last 20 only.
+        subprocess.run([SHELL, str(driver), "c"], env=self.env, check=True, timeout=60)
+        lines = (self.data / "blocked.log").read_text().splitlines()
+        self.assertEqual(len(lines), 20)
+        self.assertEqual(lines[-10:], [f"100 c.{i} 1" for i in range(10)])
+
     def test_the_block_waits_for_the_screen_and_ends_with_the_module(self):
         # Audit 7 Nov 2026: one appops query every 5 s also with the screen off, and the worker outlived a module
         # disabled in the manager.
