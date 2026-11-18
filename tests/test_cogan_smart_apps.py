@@ -361,7 +361,7 @@ esac""")
             self.assertFalse((self.data / "blocked.tmp").exists())
             self.assertFalse((self.data / "run/log.lock").exists())
         # Still the last 20 only.
-        subprocess.run([SHELL, str(driver), "c"], env=self.env, check=True, timeout=60)
+        subprocess.run([SHELL, str(driver), "c"], env=env, check=True, timeout=60)
         lines = (self.data / "blocked.log").read_text().splitlines()
         self.assertEqual(len(lines), 20)
         self.assertEqual(lines[-10:], [f"100 c.{i} 1" for i in range(10)])
