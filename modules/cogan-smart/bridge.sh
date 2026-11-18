@@ -280,7 +280,11 @@ lock_take() { # directory; caller releases explicitly or through its EXIT trap.
   [ -d "${1%/*}" ] || mkdir -p "${1%/*}"
   read_into cb_boot /proc/sys/kernel/random/boot_id
   cb_try=0; cb_empty=0
-  while ! mkdir "$1" 2>/dev/null; do
+  # The lock is ours once mkdir succeeded and our pid file was created exclusively (set -C, O_EXCL in the shell
+  # itself). mkdir alone is not enough everywhere: uutils mkdir 0.2-0.4 (Ubuntu 26.04) reports success when the
+  # directory appears between its exists() check and its create, so two callers both "took" the lock (audit
+  # 18 Nov 2026). The loser of the pid file waits like anyone else.
+  while ! { mkdir "$1" 2>/dev/null && (set -C; printf '%s\n' "$$" > "$1/pid") 2>/dev/null; }; do
     cb_owner=$(cat "$1/pid" 2>/dev/null)
     cb_old_boot=$(cat "$1/boot_id" 2>/dev/null)
     cb_stale=0
@@ -306,7 +310,6 @@ lock_take() { # directory; caller releases explicitly or through its EXIT trap.
     sleep 0.1; cb_try=$((cb_try + 1))
   done
   printf '%s\n' "$cb_boot" > "$1/boot_id"
-  printf '%s\n' "$$" > "$1/pid"
 }
 
 lock_drop() {

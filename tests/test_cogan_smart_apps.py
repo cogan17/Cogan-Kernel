@@ -330,6 +330,12 @@ esac""")
         alive[0].wait(timeout=10)
         self.assertFalse((self.data / "run/block.pid").exists())
 
+    def test_two_writers_keep_the_lock_with_a_mkdir_that_succeeds_on_an_existing_dir(self):
+        # CI, Ubuntu 26.04 (uutils mkdir 0.2-0.4): mkdir checks exists(), then creates, and a directory that appears
+        # in between is taken as success. Both writers then "took" the lock. This mkdir does the same every time.
+        self.tool("mkdir", 'case "$1" in -*) exec /bin/mkdir "$@";; esac\n/bin/mkdir "$@" 2>/dev/null; [ -d "$1" ]')
+        self.test_two_writers_of_the_block_log_lose_no_event()
+
     def test_two_writers_of_the_block_log_lose_no_event(self):
         # Audit 18 Nov 2026: block.sh and report.sh both appended, kept the last 20 through one blocked.tmp and
         # renamed it, so a rename could fail ("mv: cannot stat blocked.tmp") or put back an older copy. Here both
