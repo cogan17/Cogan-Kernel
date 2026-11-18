@@ -348,6 +348,12 @@ scripts/config --file "$DEFCONFIG" --set-str CONFIG_LOCALVERSION "$LOCALVERSION"
   --disable CONFIG_LOCALVERSION_AUTO
 sed -i 's/echo "+"/# echo "+"/g' scripts/setlocalversion
 export KBUILD_BUILD_USER="$BUILD_USER" KBUILD_BUILD_HOST="$BUILD_HOST" KCFLAGS="-w"
+# Host tools only (resolve_btfids' libbpf/libsubcmd, objtool), never the kernel image: glibc 2.43 (runner
+# Ubuntu 26.04, 18 Nov 2026) makes strchr() and friends return const char * for a const argument under C23/
+# _GNU_SOURCE, and ACK 6.1's libbpf assigns that to char * with -Werror (Builder run 44370376662:
+# libbpf.c "next_path = strchr(s, ':')"). This one diagnostic stays a warning; HOSTCFLAGS reaches libbpf as
+# EXTRA_CFLAGS and objtool through KBUILD_HOSTCFLAGS.
+export HOSTCFLAGS="${HOSTCFLAGS:+$HOSTCFLAGS }-Wno-error=incompatible-pointer-types-discards-qualifiers"
 if [ "${BUILD_TIME:-N}" = "N" ]; then
   KBUILD_BUILD_TIMESTAMP="$(LC_ALL=C date -u '+%a %b %d %H:%M:%S UTC %Y')"
 else
