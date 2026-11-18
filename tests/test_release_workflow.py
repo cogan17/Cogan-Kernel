@@ -45,10 +45,17 @@ class ReleaseWorkflowTests(unittest.TestCase):
         gh = self.root / "bin/gh"
         gh.write_text('''#!/bin/bash
 if [[ "$1 $2" == "release view" ]]; then
-  [[ "$CASE" == exists || "$CASE" == denied-exists ]] && exit 0
-  exit 1
+  [[ "$CASE" == exists || "$CASE" == denied-exists ]] || exit 1
+  [[ " $* " == *" --json "* ]] && echo '{"tagName": "v26.10.24-r2", "body": "old notes"}'
+  exit 0
+elif [[ "$1 $2" == "release download" ]]; then
+  [[ "$BACKUP" == denied ]] && { echo 'HTTP 502' >&2; exit 1; }
+  mkdir -p "${@: -1}" && echo "old kernel" > "${@: -1}/1-KERNEL_old.zip"
+elif [[ "$1 $2" == "api repos/cogan17/Cogan-Kernel/git/ref/tags/v26.10.24-r2" ]]; then
+  echo "0ldta9"
 elif [[ "$1 $2" == "release delete" ]]; then
   printf '%s\\n' "$@" > deleted.txt
+  if [[ "$RELEASE_DELETE" == denied ]]; then echo 'HTTP 500' >&2; exit 1; fi
 elif [[ "$1 $2 $3" == "api -X DELETE" ]]; then
   printf '%s\\n' "$@" > tag-deleted.txt
   [[ "$TAG_DELETE" == denied ]] && { echo 'HTTP 403' >&2; exit 1; }
@@ -310,6 +317,38 @@ fi
         result = self.download(TESTED="false")
         self.assertEqual(result.returncode, 0, result.stderr)
 
+    def test_a_new_run_lists_its_susfs_modules_and_needs_exactly_those(self):
+        # Audit 2026-11-18, T8: a run that built file 6 must not be released without it (an artifact gone).
+        for keep_hybrid, ok in ((True, True), (False, False)):
+            with self.subTest(keep_hybrid=keep_hybrid):
+                self.tearDown(); self.setUp()
+                self.artifacts()
+                for env in self.builds.values():
+                    env["SUSFS_MODULES"] = "sidex15 hybrid_susfs"
+                if not keep_hybrid:
+                    self.payloads = [(name, data) for name, data in self.payloads if not name.startswith("6-")]
+                result = self.download(TESTED="false")
+                self.assertEqual(result.returncode == 0, ok, result.stderr)
+                if not ok:
+                    self.assertIn("SUSFS modules differ from the build: hybrid_susfs sidex15 ≠ sidex15", result.stderr)
+        # Without SUSFS the line says "-" and no module is allowed.
+        self.tearDown(); self.setUp()
+        self.artifacts(susfs=False)
+        for env in self.builds.values():
+            env["SUSFS_MODULES"] = "-"
+        self.assertEqual(self.download(TESTED="false").returncode, 0)
+
+    def test_two_susfs_modules_of_a_kind_are_refused(self):
+        self.artifacts()
+        self.payloads.append(("6-SUSFS-MODULE-HYBRID_v0.6.zip", b"newer hybrid"))
+        result = self.download()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("more than one SUSFS module of a kind", result.stderr)
+
+    def test_build_records_its_susfs_modules(self):
+        build = (WORKFLOW.parents[2] / "kernel/build.sh").read_text()
+        self.assertIn('echo "SUSFS_MODULES=$([ "$SUSFS_ON" = true ] && { snap susfs_hybrid.tag', build)
+
     def test_a_run_without_susfs_is_published_without_the_susfs_module(self):
         # Owner 2026-11-02: the SUSFS box unticked gives the plain root manager, and it may be released.
         self.artifacts(susfs=False)
@@ -420,6 +459,31 @@ fi
         self.run_step("Ringkasan bila gagal / summary on failure")
         self.assertIn("Rilis lama dengan tag yang sama sudah dihapus", self.summary())
         self.assertIn("old release with the same tag was already deleted", self.summary())
+        # Audit 2026-11-18, T7: the old release was copied before anything was deleted, and the summary says where.
+        self.assertEqual((self.root / "old-release/files/1-KERNEL_old.zip").read_text(), "old kernel\n")
+        self.assertIn("old notes", (self.root / "old-release/release.json").read_text())
+        self.assertEqual((self.root / "old-release/tag-sha.txt").read_text(), "0ldta9\n")
+        self.assertIn("artifact `rilis-lama`", self.summary())
+        self.assertIn("hashFiles('replace-stage')", WORKFLOW.read_text())
+
+    def test_a_failed_release_delete_after_the_tag_is_reported_as_such(self):
+        # The tag is gone, the release is not: the summary used to say nothing in this state.
+        result = self.run_step("Terbitkan / publish", CASE="exists", REPLACE="true", RELEASE_DELETE="denied")
+        self.assertEqual(result.returncode, 1)
+        self.assertFalse((self.root / "called.txt").exists())
+        self.run_step("Ringkasan bila gagal / summary on failure")
+        self.assertIn("Tag lama sudah dihapus, rilis lama belum", self.summary())
+        self.assertIn("The old tag was deleted, the old release was not", self.summary())
+        self.assertIn("artifact `rilis-lama`", self.summary())
+
+    def test_timpa_stops_before_any_change_when_the_old_release_cannot_be_copied(self):
+        result = self.run_step("Terbitkan / publish", CASE="exists", REPLACE="true", BACKUP="denied")
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("tidak bisa dicadangkan; rilis lama tidak diubah", result.stdout)
+        for name in ("tag-deleted.txt", "deleted.txt", "called.txt", "replace-stage"):
+            self.assertFalse((self.root / name).exists(), name)
+        self.run_step("Ringkasan bila gagal / summary on failure")
+        self.assertNotIn("dihapus", self.summary())
 
     def test_timpa_box_is_off_by_default(self):
         text = WORKFLOW.read_text()
@@ -433,6 +497,17 @@ fi
         self.assertEqual(result.returncode, 0, result.stderr)
         args = (self.root / "called.txt").read_text().splitlines()
         self.assertEqual(args[args.index("--target") + 1], MAIN_SHA)
+        # Audit 2026-11-18, T6: the release and the summary say that the tag is not the build commit.
+        notes = (self.root / "notes.md").read_text()
+        self.assertIn(f"menunjuk commit penerbit `{MAIN_SHA[:12]}`, bukan commit build `{SOURCE_SHA[:12]}`", notes)
+        self.assertIn(f"points at the publishing commit `{MAIN_SHA[:12]}`, not the build commit `{SOURCE_SHA[:12]}`", notes)
+        self.assertIn(f"`{SOURCE_SHA}` · tag: `{MAIN_SHA}`", self.summary())
+
+    def test_same_commit_adds_no_tag_warning(self):
+        result = self.run_step("Terbitkan / publish")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertNotIn("⚠️", (self.root / "notes.md").read_text())
+        self.assertIn(f"`{SOURCE_SHA}` · tag: `{SOURCE_SHA}` (sama / same)", self.summary())
 
     def test_unreadable_workflows_tag_this_run_commit(self):
         result = self.run_step("Terbitkan / publish", WORKFLOWS_AT_SOURCE="", WORKFLOWS_AT_MAIN="")

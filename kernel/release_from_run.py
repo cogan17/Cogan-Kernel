@@ -65,6 +65,18 @@ def prepare(info, files, run_url, repo, tested=False, note="", sha="", api=tg.gh
         susfs = env["SUSFS_COMMIT"] != "-"
         if (susfs and not sidex) or ((sidex or hybrid) and not susfs) or any(name not in available for name in shared):
             raise ValueError(f"{folder.name}: modul NoMount/SUSFS tidak lengkap / missing NoMount/SUSFS modules")
+        if len(sidex) > 1 or len(hybrid) > 1:
+            raise ValueError("Lebih dari satu modul SUSFS sejenis / more than one SUSFS module of a kind: "
+                             + ", ".join(sidex + hybrid))
+        # Runs since 2026-11-18 list the SUSFS modules they built (audit T8): exactly those, so a missing file 6
+        # stops the release. Older runs have no such line; for them file 6 stays optional.
+        if "SUSFS_MODULES" in env:
+            expected = set(env["SUSFS_MODULES"].split()) - {"-"}
+            found = {"sidex15"} if sidex else set()
+            found |= {"hybrid_susfs"} if hybrid else set()
+            if found != expected:
+                raise ValueError(f"{folder.name}: modul SUSFS tidak sesuai build / SUSFS modules differ from the build: "
+                                 f"{' '.join(sorted(expected)) or '-'} ≠ {' '.join(sorted(found)) or '-'}")
         own += shared + sidex + hybrid
         selected.update(own)
         builds.append((env, own))
@@ -104,7 +116,7 @@ def prepare(info, files, run_url, repo, tested=False, note="", sha="", api=tg.gh
         (telegram / "summary.md").write_text(f"**{title} · {versions}**\n\n" + tg.summary_section(posts))
     changes_md = tg.changelog_markdown(measured)
     return metadata, compact_notes(sections, run_url, repo, tested, note, artifact_run=link == run_url,
-                                   note_en=note_en, changes_md=changes_md)
+                                   note_en=note_en, changes_md=changes_md, sha=sha)
 
 
 def main(argv=None):

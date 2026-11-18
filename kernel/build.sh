@@ -465,6 +465,9 @@ echo "::endgroup::"
   echo "SUSFS_VERSION=$SUSFS_VERSION"
   echo "SUSFS_COMMIT=$([ "$SUSFS_ON" = true ] && snap susfs.commit || echo -)"
   echo "NOMOUNT=$([ "${NOMOUNT:-true}" = "true" ] && snap nomount.tag || echo -)"
+  # The SUSFS modules this run builds next to the kernel (job Modul SUSFS): Rilis dari run requires exactly these,
+  # so a new run without file 6 is refused while older runs without this line stay publishable (audit 2026-11-18, T8).
+  echo "SUSFS_MODULES=$([ "$SUSFS_ON" = true ] && { snap susfs_hybrid.tag >/dev/null 2>&1 && echo "sidex15 hybrid_susfs" || echo sidex15; } || echo -)"
   echo "BBG_COMMIT=$([ "${BBG:-true}" = "true" ] && snap bbg.commit || echo -)"
   echo "CVE_2026_53163=$CVE_2026_53163"
   echo "STOCK_VENDOR_HOOKS=$STOCK_VENDOR_HOOKS"
