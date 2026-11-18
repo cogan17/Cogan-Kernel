@@ -165,7 +165,14 @@ python3 "$HERE/scripts/stock_reference.py" --device rothko "$WORK/stock"
 echo "::endgroup::"
 
 group "Vendor module compatibility: module force-load, no protected exports"
-apply "$HERE/patches/force-load-modules.patch"
+# Force-load (on by default): a vendor module whose symbol CRC differs still loads, with a warning. Unticked
+# (audit r21 T1, owner 2026-11-19): the upstream loader refuses it; a candidate build for the phone test.
+if [ "${FORCE_LOAD:-true}" = "true" ]; then
+  apply "$HERE/patches/force-load-modules.patch"
+  log "Force-load on: a CRC mismatch is logged and the module loads"
+else
+  log "Force-load off: the upstream loader refuses a module whose symbol CRC differs (candidate build)"
+fi
 rm -f "$KSRC"/android/*protected_exports*
 echo "::endgroup::"
 
@@ -385,7 +392,8 @@ group "KMI gate: Xiaomi 14T Pro vendor modules"
 STOCK_REFS=()
 for stock in "$WORK"/stock/*/; do STOCK_REFS+=(--stock-reference "$stock"); done
 python3 "$HERE/scripts/kmi_compat.py" --device rothko "$KSRC" "$KOUT" --reference "$HERE/bsp" \
-  "${STOCK_REFS[@]}" --json "$OUT/kmi-compat.json" --github-env "$WORK/kmi.env"
+  "${STOCK_REFS[@]}" --force-load "$([ "${FORCE_LOAD:-true}" = "true" ] && echo on || echo off)" \
+  --json "$OUT/kmi-compat.json" --github-env "$WORK/kmi.env"
 KMI_COMPAT="$(sed -n 's/^KMI_COMPAT=//p' "$WORK/kmi.env")"
 FEATURES="$(python3 "$HERE/scripts/kernel_features.py" "$KOUT/.config" "$KSRC")"
 echo "::endgroup::"
@@ -482,6 +490,7 @@ echo "::endgroup::"
   echo "SOURCE=$(snap source.kind 2>/dev/null || echo newest)"
   echo "SOURCE_RUN=$(snap source.run 2>/dev/null || echo -)"
   echo "DISGUISE=$([ "${DISGUISE:-false}" = "true" ] && echo on || echo off)"
+  echo "FORCE_LOAD=$([ "${FORCE_LOAD:-true}" = "true" ] && echo on || echo off)"
   echo "UNICODE_FIX=$([ "${UNICODE:-false}" = "true" ] && snap unicode.commit || echo -)"
   echo "ZIP=$ZIP"
   echo "ZIP_SHA256=$(sha256sum "$OUT/$ZIP" | cut -d' ' -f1)"

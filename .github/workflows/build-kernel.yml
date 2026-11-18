@@ -85,6 +85,12 @@ on:
         description: "Samarkan identitas kernel / Disguise kernel identity"
         type: boolean
         default: false
+      # Audit r21 T1 (owner 2026-11-19, "Siapkan build kandidat tanpa force-load"): unticked = the upstream
+      # module loader, which refuses a vendor module whose symbol CRC differs. A candidate for the phone test.
+      use_force_load:
+        description: "Force-load modul vendor (lepas = kandidat: beda CRC ditolak) / vendor module force-load (untick = candidate)"
+        type: boolean
+        default: true
 
 permissions:
   contents: read
@@ -353,6 +359,7 @@ jobs:
           NETWORKING: ${{ inputs.use_net }}
           UNICODE: ${{ inputs.use_unicode }}
           DISGUISE: ${{ inputs.use_disguise }}
+          FORCE_LOAD: ${{ inputs.use_force_load }}
           OUT: ${{ github.workspace }}/out
           WORK: ${{ runner.temp }}/work
           GH_TOKEN: ${{ github.token }}
