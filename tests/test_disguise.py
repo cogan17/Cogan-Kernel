@@ -33,8 +33,10 @@ def decide(disguise, mkcompile=MKCOMPILE):
         Path(tmp, "scripts").mkdir()
         Path(tmp, "scripts/mkcompile_h").write_text(mkcompile)
         Path(tmp, "drivers/misc").mkdir(parents=True)
+        # A fixed date: two trees committed a second apart would get different hashes (a flaky identity test).
+        dated = dict(os.environ, GIT_AUTHOR_DATE="2026-11-11T00:00:00Z", GIT_COMMITTER_DATE="2026-11-11T00:00:00Z")
         for args in (["add", "-A"], ["-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "x"]):
-            subprocess.run(["git", "-C", tmp, *args], check=True)
+            subprocess.run(["git", "-C", tmp, *args], check=True, env=dated)
         script = ('set -euo pipefail\nlog() { echo "[+] $*" >&2; }\nfail() { echo "FAIL $*"; exit 1; }\n'
                   f'DISGUISE={disguise}\nNAME=Cogan-Rothko-ACK\nREVISION=r16\nRELEASE=v26.11.11-r16\nSUBLEVEL=176\nACK_COMMIT={ACK}\n'
                   f'HERE={ROOT / "kernel"}\n' + BLOCK +
