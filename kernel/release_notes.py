@@ -78,7 +78,8 @@ def notes(env, files, run_url, repo, tested=False, note="", changelog=""):
     return "\n".join(lines) + "\n"
 
 
-def compact_notes(builds, run_url, repo, tested=False, note="", artifact_run=False, note_en="", changes_md=""):
+def compact_notes(builds, run_url, repo, tested=False, note="", artifact_run=False, note_en="", changes_md="",
+                  sha=""):
     """README-style release: short download table, with all longer sections collapsed.
 
     builds contains (build.env, matching file names, measured changelog Markdown) per variant.
@@ -134,6 +135,10 @@ def compact_notes(builds, run_url, repo, tested=False, note="", artifact_run=Fal
     lines += ["</details>", "", "<details>", "<summary>🔏 <b>SHA256 & sumber / Source</b></summary>", ""]
     lines += [f"- {build['ROOT_NAME']}: `{build['ZIP_SHA256']}`" for build, _, _ in builds] if artifact_run else \
              [f"- {download('checksums.txt', 'checksums.txt')}"]
+    # The commit the files were built from, linked for good: the release tag can sit on another commit
+    # (Terbitkan, when the workflow files differ), so the tag alone is not the source (audit 2026-11-18, T6).
+    if sha:
+        lines.append(f"- Sumber build / Build source: [`{sha[:12]}`](https://github.com/{repo}/tree/{sha})")
     lines += [f"- [Build run]({run_url})", "",
               f"`gh attestation verify <zip> --repo {repo}`", "", "</details>", ""]
     return "\n".join(lines)

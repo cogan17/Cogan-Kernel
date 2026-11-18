@@ -55,11 +55,23 @@ block_source() {   # block_source PKG
     ca_ok=0; [ -f "$CA_RUN/failed.$1" ] && return 1
     mkdir -p "$CA_RUN" && : > "$CA_RUN/failed.$1"
   fi
-  mkdir -p "$CA_DATA" && printf '%s %s %s\n' "$(date +%s)" "$1" "$ca_ok" >> "$CA_DATA/blocked.log"
-  tail -n 20 "$CA_DATA/blocked.log" > "$CA_DATA/blocked.tmp" && mv -f "$CA_DATA/blocked.tmp" "$CA_DATA/blocked.log"
+  ca_log "$(date +%s) $1 $ca_ok"
   if [ "$ca_ok" = 1 ]; then notify "Izin memasang aplikasi dari $1 dicabut. Jangan pasang APK kiriman chat, sosmed, email atau SMS."
   else notify "Izin memasang aplikasi dari $1 GAGAL dicabut. Cabut sendiri di Pengaturan, Instal aplikasi tak dikenal."; fi
   [ "$ca_ok" = 1 ]
+}
+# The last 20 block events for the WebUI. block.sh and report.sh (boot, block on) both write it: append, keep the
+# last 20 and rename run under one lock, so one writer's rename cannot fail on, or overwrite, the other's (audit
+# 18 Nov 2026). A lock still busy after 5 s: the line is only appended, and the next writer trims the file.
+ca_log() {   # ca_log LINE
+  mkdir -p "$CA_DATA" "$CA_RUN" || return 1
+  if ! lock_take "$CA_RUN/log.lock"; then printf '%s\n' "$1" >> "$CA_DATA/blocked.log"; return; fi
+  printf '%s\n' "$1" >> "$CA_DATA/blocked.log" &&
+    tail -n 20 "$CA_DATA/blocked.log" > "$CA_DATA/blocked.tmp" && mv -f "$CA_DATA/blocked.tmp" "$CA_DATA/blocked.log"
+  ca_log_rc=$?
+  rm -f "$CA_DATA/blocked.tmp"
+  lock_drop "$CA_RUN/log.lock"
+  return "$ca_log_rc"
 }
 # Fails when the query cannot be read or a revoke does not hold, so block.sh waits longer before the next try.
 block_pass() {   # a query that cannot be read is marked for the WebUI, never taken as "nothing allowed"

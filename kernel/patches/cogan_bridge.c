@@ -46,6 +46,13 @@ static DEFINE_MUTEX(cogan_lock);
 static unsigned int big_pct = 100, little_pct = 100;
 static u64 deadline;
 static int last_error;
+/*
+ * Releasing a limit can fail per policy (freq_qos_update_request() < 0); that policy keeps its old
+ * request. The watchdog then tries again every 5 s, at most this many times, and last_error keeps
+ * the reason when it still fails (audit 2026-11-18, T4).
+ */
+#define COGAN_RELEASE_RETRIES 12
+static unsigned int release_tries;
 static unsigned int clients[2];
 static u64 client_seen[2];
 static struct kobject *cogan_kobj;
@@ -84,6 +91,26 @@ static int cogan_apply_locked(void)
 	}
 	last_error = error;
 	return error;
+}
+
+/* A policy still holds a lower request of ours although no limit is active any more. */
+static bool cogan_release_pending(void)
+{
+	struct cogan_policy *p;
+
+	if (cogan_active())
+		return false;
+	list_for_each_entry(p, &cogan_policies, node)
+		if (p->requested != FREQ_QOS_MAX_DEFAULT_VALUE)
+			return true;
+	return false;
+}
+
+/* Under cogan_lock: keep the watchdog going while a limit runs or a release still has tries left. */
+static void cogan_schedule_locked(void)
+{
+	if (deadline || (cogan_release_pending() && release_tries < COGAN_RELEASE_RETRIES))
+		mod_delayed_work(system_wq, &cogan_work, 5 * HZ);
 }
 
 static int cogan_add_locked(struct cpufreq_policy *policy)
@@ -219,15 +246,16 @@ static ssize_t limits_store(struct kobject *k, struct kobj_attribute *a,
 	big_pct = ttl ? big : 100;
 	little_pct = ttl ? little : 100;
 	deadline = ttl ? ktime_get_boottime_seconds() + ttl : 0;
+	release_tries = 0;
 	ret = cogan_apply_locked();
 	if (ret < 0) {
 		deadline = 0;
 		cogan_apply_locked();
 		last_error = ret;
 	}
+	/* A limit runs, or a release (also the one after a failed write) is still owed: the watchdog. */
+	cogan_schedule_locked();
 	mutex_unlock(&cogan_lock);
-	if (ttl && !ret)
-		mod_delayed_work(system_wq, &cogan_work, 5 * HZ);
 	return ret < 0 ? ret : count;
 }
 
@@ -300,10 +328,13 @@ static void cogan_watchdog(struct work_struct *work)
 	mutex_lock(&cogan_lock);
 	if (deadline && !cogan_active()) {
 		deadline = 0;
+		release_tries = 0;
+		cogan_apply_locked();
+	} else if (!deadline && cogan_release_pending()) {
+		release_tries++;
 		cogan_apply_locked();
 	}
-	if (deadline)
-		schedule_delayed_work(&cogan_work, 5 * HZ);
+	cogan_schedule_locked();
 	mutex_unlock(&cogan_lock);
 }
 

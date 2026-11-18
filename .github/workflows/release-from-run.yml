@@ -144,16 +144,35 @@ jobs:
           there="$(workflows_at "$sha")"
           here="$(workflows_at "$GITHUB_SHA")"
           target="$sha"; [ -n "$there" ] && [ "$there" = "$here" ] || target="$GITHUB_SHA"
+          # Say it in the release when the tag is not the build commit, so the tag alone never stands for the
+          # source (audit 2026-11-18, T6); the notes link the build commit in any case.
+          if [ "$target" != "$sha" ]; then
+            {
+              echo
+              echo "> ⚠️ Tag \`$tag\` menunjuk commit penerbit \`${target:0:12}\`, bukan commit build \`${sha:0:12}\` (berkas workflow berbeda). File rilis dibangun dari commit build."
+              echo ">"
+              echo "> ⚠️ Tag \`$tag\` points at the publishing commit \`${target:0:12}\`, not the build commit \`${sha:0:12}\` (different workflow files). The release files were built from the build commit."
+            } >> notes.md
+          fi
           (cd files && sha256sum -- * > checksums.txt)
           mode=(--prerelease); [ "$RELEASE_TYPE" = "Release" ] && mode=(--latest)
           # Replace only now, after every check passed and the files are ready.
           if [ "$replaced" = true ]; then
+            # Keep the old release first (audit 2026-11-18, T7): its files, notes and metadata and the commit of
+            # its tag. Without a full copy nothing is touched; a later failure uploads it as an artifact.
+            mkdir -p old-release
+            gh release view "$tag" --repo "$GITHUB_REPOSITORY" \
+                --json tagName,name,body,isPrerelease,targetCommitish,publishedAt,assets > old-release/release.json \
+              && gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$tag" --jq .object.sha > old-release/tag-sha.txt \
+              && gh release download "$tag" --repo "$GITHUB_REPOSITORY" --dir old-release/files \
+              || { rm -rf old-release; echo "::error::Rilis $tag lama tidak bisa dicadangkan; rilis lama tidak diubah / the old release $tag could not be backed up; the old release is unchanged"; exit 1; }
             # Tag first: a tag that cannot be deleted would point the new release at the old build's
-            # commit, so stop before the old release is touched.
+            # commit, so stop before the old release is touched. Each stage is recorded for the failure summary.
             gh api -X DELETE "repos/$GITHUB_REPOSITORY/git/refs/tags/$tag" >/dev/null \
               || { echo "::error::Tag $tag lama tidak bisa dihapus; rilis lama tidak diubah / the old tag $tag could not be deleted; the old release is unchanged"; exit 1; }
+            echo tag-deleted > replace-stage
             gh release delete "$tag" --repo "$GITHUB_REPOSITORY" --yes
-            touch replaced-old-release
+            echo release-deleted > replace-stage
           fi
           gh release create "$tag" files/* --repo "$GITHUB_REPOSITORY" --target "$target" "${mode[@]}" \
             --title "$title" --notes-file notes.md
@@ -161,6 +180,7 @@ jobs:
             echo "## Rilis dari run / release from run"
             echo "- 🇮🇩 Terbit: [$tag]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/tag/$tag) ($RELEASE_TYPE)$([ "$TESTED" = "true" ] && echo ", diuji di HP")$([ "$replaced" = true ] && echo ", menimpa rilis lama")"
             echo "- 🇬🇧 Published: [$tag]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/tag/$tag) ($RELEASE_TYPE)$([ "$TESTED" = "true" ] && echo ", tested on the phone")$([ "$replaced" = true ] && echo ", replaced the old release")"
+            echo "- Commit build / build commit: \`$sha\` · tag: \`$target\`$([ "$target" = "$sha" ] && echo " (sama / same)")"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Catatan dan teks Telegram / notes and Telegram text
@@ -189,8 +209,24 @@ jobs:
             echo
             echo "- 🇮🇩 Tidak ada rilis yang diterbitkan. Alasannya ada di pesan error di atas (langkah merah pertama)."
             echo "- 🇬🇧 No release was published. The reason is in the error message above (the first red step)."
-            if [ -e replaced-old-release ]; then
-              echo "- 🇮🇩 Rilis lama dengan tag yang sama sudah dihapus. Jalankan ulang Rilis dari run dengan timpa dicentang; file build masih ada di artifact run."
-              echo "- 🇬🇧 The old release with the same tag was already deleted. Run Rilis dari run again with timpa ticked; the build files are still in the run's artifacts."
+            case "$(cat replace-stage 2>/dev/null)" in
+              tag-deleted)
+                echo "- 🇮🇩 Tag lama sudah dihapus, rilis lama belum. Jalankan ulang Rilis dari run dengan timpa dicentang."
+                echo "- 🇬🇧 The old tag was deleted, the old release was not. Run Rilis dari run again with timpa ticked." ;;
+              release-deleted)
+                echo "- 🇮🇩 Rilis lama dengan tag yang sama sudah dihapus. Jalankan ulang Rilis dari run dengan timpa dicentang; file build masih ada di artifact run."
+                echo "- 🇬🇧 The old release with the same tag was already deleted. Run Rilis dari run again with timpa ticked; the build files are still in the run's artifacts." ;;
+            esac
+            if [ -s old-release/release.json ] && [ -e replace-stage ]; then
+              echo "- 🇮🇩 Salinan rilis lama (file, catatan, metadata, commit tag \`$(cat old-release/tag-sha.txt)\`) ada di artifact \`rilis-lama\` run ini."
+              echo "- 🇬🇧 A copy of the old release (files, notes, metadata, tag commit) is in this run's \`rilis-lama\` artifact."
             fi
           } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Cadangan rilis lama / old release backup
+        if: ${{ (failure() || cancelled()) && hashFiles('replace-stage') != '' }}
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: rilis-lama
+          path: old-release
+          retention-days: 90

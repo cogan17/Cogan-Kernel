@@ -330,6 +330,48 @@ esac""")
         alive[0].wait(timeout=10)
         self.assertFalse((self.data / "run/block.pid").exists())
 
+    def test_two_writers_keep_the_lock_with_a_mkdir_that_succeeds_on_an_existing_dir(self):
+        # CI, Ubuntu 26.04 (uutils mkdir 0.2-0.4): mkdir checks exists(), then creates, and a directory that appears
+        # in between is taken as success. Both writers then "took" the lock. This mkdir does the same every time.
+        self.tool("mkdir", 'case "$1" in -*) exec /bin/mkdir "$@";; esac\n/bin/mkdir "$@" 2>/dev/null; [ -d "$1" ]')
+        self.test_two_writers_of_the_block_log_lose_no_event()
+
+    def test_two_writers_of_the_block_log_lose_no_event(self):
+        # Audit 18 Nov 2026: block.sh and report.sh both appended, kept the last 20 through one blocked.tmp and
+        # renamed it, so a rename could fail ("mv: cannot stat blocked.tmp") or put back an older copy. Here both
+        # writers run as block.sh, a lock owner lock_take knows, with 20 events between them.
+        # Each writer traces itself (set -x) to its own file: a failure shows which lock_take branch let the
+        # second writer in, on a runner where it cannot be reproduced locally.
+        driver = self.module / "apps/block.sh"
+        trace = self.base / "trace"
+        write(driver, '#!/system/bin/sh\nMODDIR=${0%/*}\n. "$MODDIR/common.sh"\nexec 2>"$CA_TRACE.$1"; set -x\n'
+                      'i=0; while [ "$i" -lt 10 ]; do ca_log "100 $1.$i 1" || exit 1; i=$((i + 1)); done\n')
+        env = dict(self.env, CA_TRACE=str(trace))
+        for _ in range(3):
+            (self.data / "blocked.log").unlink(missing_ok=True)
+            procs = [subprocess.Popen([SHELL, str(driver), who], env=env) for who in ("a", "b")]
+            for proc in procs:
+                proc.wait(timeout=60)
+            traces = {who: Path(f"{trace}.{who}").read_text() for who in "ab"}
+            errors = ["".join(line + "\n" for line in traces[who].splitlines() if not line.startswith("+"))
+                      for who in "ab"]
+            why = "\n".join(f"--- {who} ---\n" + "\n".join(
+                line for line in traces[who].splitlines()
+                if not line.startswith("+") or any(word in line for word in (
+                    "cb_stale=1", "cb_empty=", "cb_owner=", "mkdir", "rmdir", "rm -f", "kill", "grep", "mv ")))[-6000:]
+                for who in "ab")
+            self.assertEqual([proc.returncode for proc in procs], [0, 0], why)
+            self.assertEqual(errors, ["", ""], why)
+            lines = (self.data / "blocked.log").read_text().splitlines()
+            self.assertEqual(sorted(lines), sorted(f"100 {who}.{i} 1" for who in "ab" for i in range(10)))
+            self.assertFalse((self.data / "blocked.tmp").exists())
+            self.assertFalse((self.data / "run/log.lock").exists())
+        # Still the last 20 only.
+        subprocess.run([SHELL, str(driver), "c"], env=env, check=True, timeout=60)
+        lines = (self.data / "blocked.log").read_text().splitlines()
+        self.assertEqual(len(lines), 20)
+        self.assertEqual(lines[-10:], [f"100 c.{i} 1" for i in range(10)])
+
     def test_the_block_waits_for_the_screen_and_ends_with_the_module(self):
         # Audit 7 Nov 2026: one appops query every 5 s also with the screen off, and the worker outlived a module
         # disabled in the manager.

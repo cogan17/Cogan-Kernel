@@ -23,6 +23,21 @@ elf_symbol {
   id: 0x3
   name: "no_crc"
 }
+elf_symbol {
+  id: 0x4
+  name: "xiaomi_only"
+  crc: 0x00000001
+}
+elf_symbol {
+  id: 0x5
+  name: "hci_cmd_sync_status"
+  crc: 0x00000005
+}
+elf_symbol {
+  id: 0x6
+  name: "inode_add_lru"
+  crc: 0x00000006
+}
 """
 
 
@@ -62,7 +77,10 @@ class KmiCompatTests(unittest.TestCase):
         self.assertIn("KMI_COMPAT=KMI Xiaomi 14T Pro (rothko): OK; generation 11", env)
         self.assertIn("mtk 1/1", env)
         self.assertIn("xiaomi 1/1", env)
-        self.assertIn("CRC differs 0 (force-load on)", env)
+        self.assertIn("(0 via GKI modules); CRC differs 0 of 3 compared (force-load on)", env)
+        self.assertEqual(report["crc"], {"required": 3, "reference_crc": 3, "build_crc": 3, "compared": 3,
+                                         "not_measured": {}, "differs": []})
+        self.assertIn("force-load", report["loader_policy"])
 
     def test_a_crc_difference_fails(self):
         # A changed KMI type: force-load would load the vendor module anyway (owner 2026-11-07, audit r13/r14).
@@ -72,7 +90,7 @@ class KmiCompatTests(unittest.TestCase):
             "0x00000001\txiaomi_only\tvmlinux\tEXPORT_SYMBOL\t\n")
         status, report, env = self.run_gate()
         self.assertEqual(status, 1)
-        self.assertEqual(report["errors"], ["CRC differs from the frozen ABI for 1 symbol(s), e.g. changed_type"])
+        self.assertEqual(report["errors"], ["ACK CRC differs for 1 symbol(s), e.g. changed_type"])
         self.assertIn("GAGAL / FAILED", env)
 
     def test_missing_vendor_symbol_fails(self):
@@ -106,7 +124,12 @@ class KmiCompatTests(unittest.TestCase):
         status, report, env = self.run_gate()
         self.assertEqual(status, 0, report["errors"])
         self.assertEqual(report["from_gki_modules"], {"hci_cmd_sync_status": "net/bluetooth/bluetooth.ko"})
-        self.assertIn("(1 via GKI modules)", env)
+        # Only a source candidate: listed apart, and its CRC is not measured (audit 2026-11-18, T2/T3).
+        self.assertEqual(report["gki_module_proof"], {"hci_cmd_sync_status": "source"})
+        self.assertIn("(1 via GKI modules: 0 from built .ko, 1 source only); "
+                      "CRC differs 0 of 3 compared, 1 not measured", env)
+        self.assertEqual(report["crc"]["not_measured"],
+                         {"hci_cmd_sync_status": "source-only GKI module export, no CRC in the build"})
         # A GKI module elsewhere does not cover a symbol exported from another directory.
         (self.src / "modules.bzl").write_text('COMMON = ["lib/crypto/libarc4.ko"]\n')
         self.assertEqual(self.run_gate()[0], 1)
@@ -201,8 +224,8 @@ class KmiCompatTests(unittest.TestCase):
                          {"CONFIG_MEMFD_ASHMEM_SHIM": kc.DEVICES["rothko"]["stock_config_exceptions"]["CONFIG_MEMFD_ASHMEM_SHIM"]})
         self.assertEqual(ref["crc_differences"], [])
         self.assertIn("; stock 6.1.138: generation 11, exported GKI 1/1, mtk 1/1, xiaomi 0/0, "
-                      "config =y not enabled 1 (reviewed), stock-only vendor hooks 0 (unused), CRC differs 0; "
-                      "stock 6.1.157: generation 11", kc.summary(report))
+                      "config =y not enabled 1 (reviewed), stock-only vendor hooks 0 (unused), "
+                      "CRC differs 0 of 2 compared; stock 6.1.157: generation 11", kc.summary(report))
 
     def test_a_crc_difference_against_a_stock_frozen_abi_fails(self):
         # The stock frozen ABI is the one that HyperOS version's vendor modules were built with.
@@ -241,6 +264,82 @@ class KmiCompatTests(unittest.TestCase):
     def test_module_symvers_is_the_fallback(self):
         (self.out / "vmlinux.symvers").rename(self.out / "Module.symvers")
         self.assertEqual(self.run_gate()[0], 0)
+
+    def gki_pair(self):
+        """Two GKI modules in one directory; only one of them links the exporting file."""
+        (self.src / "android/abi_gki_aarch64_mtk").write_text("[abi_symbol_list]\n  changed_type\n  hci_cmd_sync_status\n")
+        (self.src / "net/bluetooth").mkdir(parents=True)
+        (self.src / "net/bluetooth/hci_sync.c").write_text("EXPORT_SYMBOL(hci_cmd_sync_status);\n")
+        (self.src / "modules.bzl").write_text('COMMON = ["net/bluetooth/bluetooth.ko", "net/bluetooth/rfcomm/rfcomm.ko",'
+                                              ' "net/bluetooth/hidp.ko"]\n')
+
+    def test_a_built_gki_module_export_is_binary_proof_with_its_crc(self):
+        # Module.symvers names the .ko that really exports it, not every module of the directory.
+        self.gki_pair()
+        (self.out / "Module.symvers").write_text("0x00000005\thci_cmd_sync_status\tnet/bluetooth/hidp\tEXPORT_SYMBOL\t\n")
+        status, report, env = self.run_gate()
+        self.assertEqual(status, 0, report["errors"])
+        self.assertEqual(report["from_gki_modules"], {"hci_cmd_sync_status": "net/bluetooth/hidp.ko"})
+        self.assertEqual(report["gki_module_proof"], {"hci_cmd_sync_status": "binary"})
+        self.assertEqual(report["crc"]["compared"], 4)
+        self.assertIn("(1 via GKI modules: 1 from built .ko, 0 source only); CRC differs 0 of 4 compared (", env)
+        # The same directory without Module.symvers: two candidates, only from the source.
+        (self.out / "Module.symvers").unlink()
+        status, report, _ = self.run_gate()
+        self.assertEqual(report["from_gki_modules"],
+                         {"hci_cmd_sync_status": "net/bluetooth/bluetooth.ko / net/bluetooth/hidp.ko"})
+        self.assertEqual(report["gki_module_proof"], {"hci_cmd_sync_status": "source"})
+
+    def test_a_built_gki_module_with_another_crc_fails(self):
+        self.gki_pair()
+        (self.out / "Module.symvers").write_text("0x00000099\thci_cmd_sync_status\tnet/bluetooth/bluetooth\tEXPORT_SYMBOL\t\n")
+        status, report, _ = self.run_gate()
+        self.assertEqual(status, 1)
+        self.assertEqual(report["errors"], ["ACK CRC differs for 1 symbol(s), e.g. hci_cmd_sync_status"])
+
+    def test_a_module_outside_modules_bzl_is_no_proof(self):
+        # Only GKI modules come from the phone's stock system_dlkm; another built module proves nothing.
+        self.gki_pair()
+        (self.src / "modules.bzl").write_text('COMMON = ["lib/crypto/libarc4.ko"]\n')
+        (self.out / "Module.symvers").write_text("0x00000005\thci_cmd_sync_status\tnet/bluetooth/bluetooth\tEXPORT_SYMBOL\t\n")
+        status, report, _ = self.run_gate()
+        self.assertEqual(status, 1)
+        self.assertEqual(report["lists"]["abi_gki_aarch64_mtk"]["missing"], ["hci_cmd_sync_status"])
+
+    def test_an_empty_frozen_abi_fails_instead_of_crc_differs_0(self):
+        # Audit 2026-11-18, T3: an empty STG used to give "CRC differs 0" and exit 0.
+        (self.src / "android/abi_gki_aarch64.stg").write_text("")
+        status, report, env = self.run_gate()
+        self.assertEqual(status, 1)
+        self.assertIn("ACK frozen ABI has no symbol CRC (empty or unreadable abi_gki_aarch64.stg)", report["errors"])
+        self.assertIn("CRC differs 0 of 0 compared, 3 not measured", env)
+        newer = self.make_stock("157")
+        (newer / "android/abi_gki_aarch64.stg").write_text("")
+        (self.src / "android/abi_gki_aarch64.stg").write_text(STG)
+        status, report = self.run_stocks(self.make_stock(), newer)
+        self.assertEqual(status, 1)
+        self.assertEqual(report["errors"],
+                         ["stock 6.1.157 frozen ABI has no symbol CRC (empty or unreadable abi_gki_aarch64.stg)"])
+
+    def test_a_list_symbol_without_a_frozen_crc_fails_unless_a_named_exception(self):
+        (self.src / "android/abi_gki_aarch64_xiaomi").write_text("[abi_symbol_list]\n  xiaomi_only\n  no_crc\n")
+        (self.out / "vmlinux.symvers").write_text(
+            "0x0000000a\tvendor_used\tvmlinux\tEXPORT_SYMBOL\t\n0x0000000b\tchanged_type\tvmlinux\tEXPORT_SYMBOL\t\n"
+            "0x00000001\txiaomi_only\tvmlinux\tEXPORT_SYMBOL\t\n0x00000002\tno_crc\tvmlinux\tEXPORT_SYMBOL\t\n")
+        status, report, _ = self.run_gate()
+        self.assertEqual(status, 1)
+        self.assertEqual(report["errors"], ["ACK frozen ABI has no CRC for 1 list symbol(s), e.g. no_crc"])
+        spec = kc.DEVICES["rothko"]
+        spec["crc_exceptions"] = {"no_crc": "reviewed: why it has no CRC"}
+        self.addCleanup(spec.pop, "crc_exceptions")
+        status, report, _ = self.run_gate()
+        self.assertEqual(status, 0, report["errors"])
+        self.assertEqual(report["crc"]["not_measured"], {"no_crc": "reviewed: why it has no CRC"})
+
+    def test_real_frozen_abis_have_no_crc_exceptions(self):
+        # Checked 2026-11-18 against the STG and lists of both stock commits and the seven ACK releases of
+        # run 43841852829 (138 r17 ... 176 r8): every list symbol has a CRC, so none is excepted.
+        self.assertNotIn("crc_exceptions", kc.DEVICES["rothko"])
 
 
 if __name__ == "__main__":

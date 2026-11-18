@@ -8,8 +8,11 @@ load on another kernel only if:
   2. every symbol of the ACK symbol lists those modules were built with is
      exported (missing exports cannot be forced) - by the kernel, or by a GKI
      module (modules.bzl, e.g. bluetooth.ko) that the phone loads from its stock
-     system_dlkm: such symbols are accepted when a GKI module of the exporting
-     source's directory exists, and listed in the report;
+     system_dlkm. A GKI module export is proven from the build itself when
+     Module.symvers names that module (binary, with its CRC); otherwise it is only
+     a source candidate (EXPORT_SYMBOL in a *.c of a GKI module's directory). Both
+     are accepted and listed apart, so a source-only count is never read as proof
+     (audit 2026-11-18, T2);
   3. the Google-signed GKI modules may still export protected symbols: our kernel
      does not trust Google's key, so android/abi_gki_protected_exports_* must be
      gone from the source (GKID removes it; gkid_parity.py for older sublevels);
@@ -17,7 +20,10 @@ load on another kernel only if:
      difference is a changed KMI type, and the force-load change in
      kernel/module/version.c would load a vendor module against it anyway, so the
      gate fails instead (owner 2026-11-07, security audit r13/r14; every good build
-     so far had 0).
+     so far had 0). A 0 only counts with its denominator (audit 2026-11-18, T3):
+     every list symbol needs a CRC in the frozen ABI (an empty or unreadable one
+     fails), and the report gives per reference how many symbols were required,
+     had a CRC on each side, were compared, could not be measured and differ.
 
 Two references hold the GKI build against the phone itself:
   --reference BSP_SRC          the phone maker's own kernel source (rothko: the Xiaomi
@@ -103,20 +109,28 @@ def vendor_hooks(src):
 GKI_MODULE = re.compile(r'"([A-Za-z0-9_./-]+\.ko)"')
 
 
-def gki_module_exports(src, symbols):
-    """symbol -> GKI module (modules.bzl) whose directory's sources export it."""
+def gki_module_exports(src, symbols, built=None):
+    """symbol -> (GKI module (modules.bzl), "binary" | "source").
+
+    binary: the build's own Module.symvers names the GKI module that exports it (built: symbol -> (crc,
+    module path without .ko)), so the export is in the linked .ko. source: only a candidate, an
+    EXPORT_SYMBOL in a *.c of a GKI module's directory; nothing ties that file to the .ko."""
     modules = GKI_MODULE.findall((src / "modules.bzl").read_text(encoding="utf-8")) \
         if (src / "modules.bzl").is_file() else []
+    found = {}
+    for symbol in sorted(symbols):
+        module = (built or {}).get(symbol, (None, None))[1]
+        if module and f"{module}.ko" in modules:
+            found[symbol] = (f"{module}.ko", "binary")
     by_dir = {}
     for module in modules:
         by_dir.setdefault(str(Path(module).parent), []).append(module)
-    found = {}
     for directory, owners in sorted(by_dir.items()):
         for source in sorted((src / directory).glob("*.c")):
             text = source.read_text(encoding="utf-8", errors="replace")
             for symbol in symbols - found.keys():
                 if re.search(r"EXPORT_SYMBOL\w*\(\s*" + re.escape(symbol) + r"\s*[,)]", text):
-                    found[symbol] = owners[0] if len(owners) == 1 else " / ".join(owners)
+                    found[symbol] = (owners[0] if len(owners) == 1 else " / ".join(owners), "source")
     return found
 
 
@@ -130,12 +144,58 @@ def read_list(path):
 
 
 def read_symvers(path):
+    """symbol -> (crc, module) of a kbuild symvers file; module is "vmlinux" or the .ko path without .ko."""
     exported = {}
     for line in path.read_text(encoding="utf-8").splitlines():
         fields = line.split("\t")
         if len(fields) >= 2:
-            exported[fields[1]] = int(fields[0], 16)
+            exported[fields[1]] = (int(fields[0], 16), fields[2] if len(fields) > 2 and fields[2] else "vmlinux")
     return exported
+
+
+def build_exports(out):
+    """(vmlinux symbol -> crc, GKI-module symbol -> (crc, module)) of the build.
+
+    vmlinux.symvers holds the kernel's exports; Module.symvers, written once the modules are built too,
+    also the exports of every built module, which is the binary proof for GKI module symbols."""
+    found = {}
+    for name in ("Module.symvers", "vmlinux.symvers"):  # vmlinux.symvers last: the kernel's own wins
+        if (out / name).is_file():
+            found.update(read_symvers(out / name))
+    if not found:
+        raise ValueError(f"no vmlinux.symvers or Module.symvers in {out}")
+    kernel = {symbol: crc for symbol, (crc, module) in found.items() if module == "vmlinux"}
+    modules = {symbol: entry for symbol, entry in found.items() if entry[1] != "vmlinux"}
+    return kernel, modules
+
+
+def crc_coverage(label, wanted, frozen, built, from_modules, errors, exceptions):
+    """Compare the CRCs of the list symbols and say how many could be compared (audit 2026-11-18, T3).
+
+    built: the build's CRC of every symbol it exports (kernel and GKI modules proven from Module.symvers).
+    A source-only GKI module symbol has no CRC on the build side and is counted as not measured. A
+    list symbol without a CRC in the frozen ABI fails, unless it is a reviewed, named exception."""
+    compared = wanted & frozen.keys() & built.keys()
+    differs = sorted(name for name in compared if frozen[name] != built[name])
+    no_reference = sorted(wanted - frozen.keys())
+    coverage = {"required": len(wanted), "reference_crc": len(wanted & frozen.keys()),
+                "build_crc": len(wanted & built.keys()), "compared": len(compared),
+                "not_measured": {name: ("source-only GKI module export, no CRC in the build"
+                                        if name in frozen and from_modules.get(name, ("", ""))[1] == "source"
+                                        else exceptions.get(name, "no CRC in the frozen ABI")
+                                        if name not in frozen else "not exported by the build")
+                                 for name in sorted(wanted - compared)},
+                "differs": differs}
+    if not frozen:
+        errors.append(f"{label} frozen ABI has no symbol CRC (empty or unreadable abi_gki_aarch64.stg)")
+    else:
+        unreviewed = [name for name in no_reference if name not in exceptions]
+        if unreviewed:
+            errors.append(f"{label} frozen ABI has no CRC for {len(unreviewed)} list symbol(s), "
+                          f"e.g. {', '.join(unreviewed[:5])}")
+    if differs:
+        errors.append(f"{label} CRC differs for {len(differs)} symbol(s), e.g. {', '.join(differs[:5])}")
+    return coverage
 
 
 def read_stg(path):
@@ -178,15 +238,16 @@ def check(src, out, device, reference=None, stocks=()):
     report = {"device": spec["name"], "kmi_generation": generation(src), "lists": {}, "errors": []}
     if report["kmi_generation"] != spec["generation"]:
         report["errors"].append(f"KMI generation {report['kmi_generation']}, the phone needs {spec['generation']}")
-    symvers = out / "vmlinux.symvers"
-    if not symvers.is_file():
-        symvers = out / "Module.symvers"
-    exported = read_symvers(symvers)
+    exported, built_modules = build_exports(out)
     wanted = set()
     for name in spec["lists"]:
         wanted |= read_list(src / "android" / name)
-    from_modules = gki_module_exports(src, wanted - exported.keys())
-    report["from_gki_modules"] = dict(sorted(from_modules.items()))
+    from_modules = gki_module_exports(src, wanted - exported.keys(), built_modules)
+    report["from_gki_modules"] = {name: module for name, (module, _) in sorted(from_modules.items())}
+    report["gki_module_proof"] = {name: proof for name, (_, proof) in sorted(from_modules.items())}
+    # The build's CRC of every symbol it is proven to export: the kernel's, and those of built GKI modules.
+    built = dict(exported)
+    built.update({name: built_modules[name][0] for name, (_, proof) in from_modules.items() if proof == "binary"})
     for name in spec["lists"]:
         symbols = read_list(src / "android" / name)
         missing = sorted(symbols - exported.keys() - from_modules.keys())
@@ -194,12 +255,15 @@ def check(src, out, device, reference=None, stocks=()):
         if missing:
             report["errors"].append(f"{name}: {len(missing)} symbol(s) not exported, e.g. {', '.join(missing[:5])}")
     frozen = read_stg(src / "android/abi_gki_aarch64.stg")
-    report["crc_differences"] = sorted(name for name in wanted & frozen.keys() & exported.keys()
-                                       if frozen[name] != exported[name])
-    if report["crc_differences"]:
-        report["errors"].append(f"CRC differs from the frozen ABI for {len(report['crc_differences'])} symbol(s), "
-                                f"e.g. {', '.join(report['crc_differences'][:5])}")
+    report["crc"] = crc_coverage("ACK", wanted, frozen, built, from_modules, report["errors"],
+                                 spec.get("crc_exceptions", {}))
+    report["crc_differences"] = report["crc"]["differs"]
     report["force_load"] = bool(FORCE_LOAD.search((src / "kernel/module/version.c").read_text(errors="replace")))
+    # The loader policy this kernel ships with, stated (audit 2026-11-18, T1): a CRC mismatch is logged and the
+    # module still loads. It stays until a build with the mismatch refused passes the phone test.
+    report["loader_policy"] = ("force-load: a symbol CRC mismatch is logged and the module loads "
+                               "(kernel/patches/force-load-modules.patch)" if report["force_load"]
+                               else "upstream: a symbol CRC mismatch refuses the module")
     if not report["force_load"]:
         report["errors"].append("module force-load change missing (CRC differences would refuse vendor modules)")
     report["protected_exports"] = sorted(p.name for p in (src / "android").glob("*protected_exports*"))
@@ -207,9 +271,9 @@ def check(src, out, device, reference=None, stocks=()):
         report["errors"].append("protected exports still present: " + ", ".join(report["protected_exports"]))
     report["references"] = {}
     if reference:
-        check_reference(report, "bsp", reference, src, out, spec, exported)
+        check_reference(report, "bsp", reference, src, out, spec, exported, built_modules, built)
     for path in stocks:
-        check_reference(report, "stock", path, src, out, spec, exported)
+        check_reference(report, "stock", path, src, out, spec, exported, built_modules, built)
     if stocks:
         given = {ref["version"] for ref in report["references"].values() if ref["kind"] == "stock"}
         for stock in spec["stocks"]:
@@ -228,7 +292,7 @@ def read_config(path):
     return values
 
 
-def check_reference(report, kind, reference, src, out, spec, exported):
+def check_reference(report, kind, reference, src, out, spec, exported, built_modules, built):
     """Hold the GKI build against one of the phone's own kernel sources (BSP or stock ACK)."""
     ref = {"kind": kind, "kmi_generation": generation(reference), "version": kernel_version(reference),
            "lists": {}}
@@ -247,7 +311,8 @@ def check_reference(report, kind, reference, src, out, spec, exported):
     wanted = set()
     for name in spec["lists"]:
         wanted |= read_list(reference / "android" / name)
-    from_modules = gki_module_exports(src, wanted - exported.keys())
+    from_modules = gki_module_exports(src, wanted - exported.keys(), built_modules)
+    ref["gki_module_proof"] = {name: proof for name, (_, proof) in sorted(from_modules.items())}
     for name in spec["lists"]:
         symbols = read_list(reference / "android" / name)
         missing = sorted(symbols - exported.keys() - from_modules.keys())
@@ -256,8 +321,8 @@ def check_reference(report, kind, reference, src, out, spec, exported):
             report["errors"].append(f"{label} {name}: {len(missing)} symbol(s) not exported, "
                                     f"e.g. {', '.join(missing[:5])}")
     defconfig = read_config(reference / "arch/arm64/configs/gki_defconfig")
-    built = read_config(out / ".config")
-    off = sorted(key for key, value in defconfig.items() if value == "y" and built.get(key) != "y")
+    config = read_config(out / ".config")
+    off = sorted(key for key, value in defconfig.items() if value == "y" and config.get(key) != "y")
     exceptions = spec.get(f"{kind}_config_exceptions", {})
     ref["config_not_enabled"] = {key: exceptions.get(key, "NOT REVIEWED") for key in off}
     unreviewed = [key for key in off if key not in exceptions]
@@ -275,11 +340,9 @@ def check_reference(report, kind, reference, src, out, spec, exported):
         report["errors"].append(f"{label} vendor hooks missing but used by vendor modules: " + ", ".join(used))
     if kind == "stock":
         frozen = read_stg(reference / "android/abi_gki_aarch64.stg")
-        ref["crc_differences"] = sorted(name for name in wanted & frozen.keys() & exported.keys()
-                                        if frozen[name] != exported[name])
-        if ref["crc_differences"]:
-            report["errors"].append(f"{label} CRC differs for {len(ref['crc_differences'])} symbol(s), "
-                                    f"e.g. {', '.join(ref['crc_differences'][:5])}")
+        ref["crc"] = crc_coverage(label, wanted, frozen, built, from_modules, report["errors"],
+                                  spec.get("crc_exceptions", {}))
+        ref["crc_differences"] = ref["crc"]["differs"]
     report["references"][kind if kind == "bsp" else label] = ref
 
 
@@ -288,10 +351,20 @@ def summary(report):
         return ", ".join(f"{name.replace('abi_gki_aarch64', 'GKI').replace('GKI_', '')} "
                          f"{info['symbols'] - len(info['missing'])}/{info['symbols']}"
                          for name, info in lists.items())
+
+    def crc(info):  # "CRC differs 0 of 4279 compared": a 0 always with its denominator (audit T3)
+        missing = len(info["not_measured"])
+        return (f"CRC differs {len(info['differs'])} of {info['compared']} compared"
+                + (f", {missing} not measured" if missing else ""))
+
+    proof = list(report["gki_module_proof"].values())
+    modules = f"{len(proof)} via GKI modules"
+    if proof:
+        modules += f": {proof.count('binary')} from built .ko, {proof.count('source')} source only"
     verdict = "OK" if not report["errors"] else "GAGAL / FAILED"
     line = (f"KMI {report['device']}: {verdict}; generation {report['kmi_generation']}; "
-            f"exported {exported(report['lists'])} ({len(report['from_gki_modules'])} via GKI modules); "
-            f"CRC differs {len(report['crc_differences'])} (force-load {'on' if report['force_load'] else 'OFF'})")
+            f"exported {exported(report['lists'])} ({modules}); "
+            f"{crc(report['crc'])} (force-load {'on' if report['force_load'] else 'OFF'})")
     for key, ref in report.get("references", {}).items():
         label = REFERENCES[ref["kind"]]
         name = label if key == "bsp" else key
@@ -300,8 +373,8 @@ def summary(report):
                  f"config =y not enabled {len(ref['config_not_enabled'])} "
                  f"({f'{unreviewed} NOT REVIEWED' if unreviewed else 'reviewed'}), "
                  f"{label}-only vendor hooks {len(ref['hooks_absent'])} (unused)")
-        if "crc_differences" in ref:
-            line += f", CRC differs {len(ref['crc_differences'])}"
+        if "crc" in ref:
+            line += f", {crc(ref['crc'])}"
     return line
 
 
