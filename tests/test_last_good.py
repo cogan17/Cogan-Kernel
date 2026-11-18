@@ -117,6 +117,19 @@ class ArtifactTest(unittest.TestCase):
 
 
 class CliTest(unittest.TestCase):
+    def test_a_build_before_hybrid_susfs_takes_its_newest_release(self):
+        # Owner 2026-11-18, issue #183: "Ambil hybrid terbaru". A record from before file 6 has no hybrid_susfs.
+        newest = {"repo": "cogan17/hybrid_SusFS", "tag": "v0.6", "name": "hybrid.zip", "url": "u", "digest": "sha256:" + "d" * 64}
+        old = lg.add_hybrid(snap("KSU", 157, "k"), find=lambda: newest)
+        self.assertEqual(old["susfs_hybrid"], dict(newest, taken="newest"))
+        # A build that recorded its own keeps it; one without SUSFS gets none.
+        own = dict(snap("KSU", 157, "k"), susfs_hybrid={"tag": "v0.5"})
+        self.assertEqual(lg.add_hybrid(own, find=lambda: newest)["susfs_hybrid"], {"tag": "v0.5"})
+        self.assertNotIn("susfs_hybrid", lg.add_hybrid(snap("KSU", 157, "k", susfs=False), find=lambda: newest))
+        # No release yet: the wait is kept, so the SUSFS module job says whom to wait for.
+        wait = {"wait": {"id": "Tunggu rilis hybrid_susfs pertama.", "en": "Wait for the first hybrid_susfs release."}}
+        self.assertEqual(lg.add_hybrid(snap("KSU", 157, "k"), find=lambda: wait)["susfs_hybrid"]["wait"], wait["wait"])
+
     def test_writes_the_snapshot_or_what_is_missing(self):
         with tempfile.TemporaryDirectory() as tmp:
             history = Path(tmp, "history")
