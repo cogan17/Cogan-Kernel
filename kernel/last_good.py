@@ -13,6 +13,10 @@ NoMount, Baseband Guard and the Unicode fix present when ticked (a feature untic
 Official CI artifacts (the manager of KernelSU, KernelSU Next or BakaSU main, the sidex15 module) are kept
 90 days by GitHub: an expired one stops with a message instead of a failed download later.
 
+hybrid_susfs, file 6 since 2026-11-17, is missing from builds before it. Then its newest release is taken
+(owner 2026-11-18, issue #183: "Ambil hybrid terbaru"), marked "newest" in the snapshot; the other components
+still come from the last good build. A build that recorded hybrid_susfs keeps its own.
+
 Usage: last_good.py --root KSUN|BSU|KSU|SUKI|CSU [--sublevel lts|N|N,M|semua] [--no-susfs] [--unicode]
                     [--no-nomount] [--no-bbg] --out FILE.json
 Exit 0 with the snapshot, 2 with {"wait": ...} when no build fits, 1 on an error.
@@ -94,6 +98,13 @@ def pick(records, root, sublevel="lts", susfs_box=True, unicode=False, nomount=T
                    ". Use Always newest (CI), or change the feature boxes.")
 
 
+def add_hybrid(snap, find=resolve.susfs_hybrid):
+    """hybrid_susfs for a stable build with SUSFS whose record predates it: its newest release (issue #183)."""
+    if has_susfs(snap) and "susfs_hybrid" not in snap:
+        snap["susfs_hybrid"] = dict(find(), taken="newest")
+    return snap
+
+
 def artifacts(snap):
     """(label, repo, artifact id) of the official CI artifacts the build will download."""
     found = []
@@ -139,6 +150,7 @@ def main(argv=None):
                     not args.no_nomount, not args.no_bbg)
         if not args.no_artifact_check:
             check_artifacts(snap)
+            add_hybrid(snap)
     except NotFound as missing:
         args.out.write_text(json.dumps({"root": args.root, "wait": {"id": missing.id_text, "en": missing.en_text}}, indent=1))
         print(f"WAIT: {missing.en_text}")
