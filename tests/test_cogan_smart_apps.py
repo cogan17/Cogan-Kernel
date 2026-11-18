@@ -334,16 +334,28 @@ esac""")
         # Audit 18 Nov 2026: block.sh and report.sh both appended, kept the last 20 through one blocked.tmp and
         # renamed it, so a rename could fail ("mv: cannot stat blocked.tmp") or put back an older copy. Here both
         # writers run as block.sh, a lock owner lock_take knows, with 20 events between them.
+        # Each writer traces itself (set -x) to its own file: a failure shows which lock_take branch let the
+        # second writer in, on a runner where it cannot be reproduced locally.
         driver = self.module / "apps/block.sh"
-        write(driver, '#!/system/bin/sh\nMODDIR=${0%/*}\n. "$MODDIR/common.sh"\n'
+        trace = self.base / "trace"
+        write(driver, '#!/system/bin/sh\nMODDIR=${0%/*}\n. "$MODDIR/common.sh"\nexec 2>"$CA_TRACE.$1"; set -x\n'
                       'i=0; while [ "$i" -lt 10 ]; do ca_log "100 $1.$i 1" || exit 1; i=$((i + 1)); done\n')
+        env = dict(self.env, CA_TRACE=str(trace))
         for _ in range(3):
             (self.data / "blocked.log").unlink(missing_ok=True)
-            procs = [subprocess.Popen([SHELL, str(driver), who], env=self.env, stderr=subprocess.PIPE, text=True)
-                     for who in ("a", "b")]
-            errors = [proc.communicate(timeout=60)[1] for proc in procs]
-            self.assertEqual([proc.returncode for proc in procs], [0, 0], errors)
-            self.assertEqual(errors, ["", ""])
+            procs = [subprocess.Popen([SHELL, str(driver), who], env=env) for who in ("a", "b")]
+            for proc in procs:
+                proc.wait(timeout=60)
+            traces = {who: Path(f"{trace}.{who}").read_text() for who in "ab"}
+            errors = ["".join(line + "\n" for line in traces[who].splitlines() if not line.startswith("+"))
+                      for who in "ab"]
+            why = "\n".join(f"--- {who} ---\n" + "\n".join(
+                line for line in traces[who].splitlines()
+                if not line.startswith("+") or any(word in line for word in (
+                    "cb_stale=1", "cb_empty=", "cb_owner=", "mkdir", "rmdir", "rm -f", "kill", "grep", "mv ")))[-6000:]
+                for who in "ab")
+            self.assertEqual([proc.returncode for proc in procs], [0, 0], why)
+            self.assertEqual(errors, ["", ""], why)
             lines = (self.data / "blocked.log").read_text().splitlines()
             self.assertEqual(sorted(lines), sorted(f"100 {who}.{i} 1" for who in "ab" for i in range(10)))
             self.assertFalse((self.data / "blocked.tmp").exists())
