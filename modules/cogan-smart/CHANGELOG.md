@@ -8,7 +8,7 @@ Indonesia:
 - Diukur lokal dengan logika lama: dua penulis × 10 kejadian, 25 dari 30 percobaan kehilangan baris (150 pesan `mv`).
 - Perbaikan: tambah, potong ke 20 baris terakhir, dan ganti nama kini di bawah satu kunci (`run/log.lock`, kunci PID yang sama dengan tab lain); file sementara dibersihkan bila gagal. Kunci yang tetap sibuk lebih dari 5 detik: baris hanya ditambahkan, penulis berikutnya yang memotong. Kunci milik `block.sh` yang masih hidup kini dikenali sebagai kunci sah.
 - Kunci PID bersama (`lock_take`, dipakai semua tab) kini sah hanya bila file `pid` berhasil dibuat eksklusif (`set -C`) setelah `mkdir`. Ditemukan di CI: `mkdir` uutils (Ubuntu 26.04) melapor sukses bila direktori muncul di antara cek dan pembuatannya, sehingga dua penulis sama-sama memegang kunci. `mkdir` toybox/busybox di HP atomik, tetapi kunci tidak lagi bergantung padanya.
-- Terukur lokal: tes lolos, termasuk dua penulis bersamaan (jumlah dan isi tepat, tanpa error I/O). Belum diuji di HP.
+- Terukur lokal: tes lolos, termasuk dua penulis bersamaan (jumlah dan isi tepat, tanpa error I/O). Diuji owner di HP 19 Nov 2026 07.42 WIB (kernel r67 6.1.157, HyperOS 302): semua tab jalan, pengendali dan pencatat aktif, blokir APK aktif, 16 modul dan 171 aplikasi terpindai.
 
 English:
 
@@ -16,7 +16,7 @@ English:
 - Measured locally with the old logic: two writers × 10 events, 25 of 30 runs lost lines (150 `mv` messages).
 - Fix: append, trim to the last 20 lines and rename now run under one lock (`run/log.lock`, the same PID lock as the other tabs); the temporary file is removed on failure. A lock still busy after 5 seconds: the line is only appended and the next writer trims. A lock held by a live `block.sh` is now recognised as valid.
 - The shared PID lock (`lock_take`, used by every tab) is now held only once the `pid` file was created exclusively (`set -C`) after `mkdir`. Found in CI: uutils `mkdir` (Ubuntu 26.04) reports success when the directory appears between its check and its create, so two writers both held the lock. Toybox/busybox `mkdir` on the phone is atomic, but the lock no longer depends on it.
-- Measured locally: tests pass, including two writers at once (exact count and content, no I/O error). Not phone-tested yet.
+- Measured locally: tests pass, including two writers at once (exact count and content, no I/O error). Tested by the owner on the phone on 19 Nov 2026 (kernel r67 6.1.157, HyperOS 302): every tab works, controller and recorder running, APK block on, 16 modules and 171 apps scanned.
 
 ## Akar garis putus: layar tercatat nyala saat HP tidur / Root of the broken line: screen recorded on while asleep — v2.12.12 (paket uji / test build)
 
