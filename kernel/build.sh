@@ -332,7 +332,7 @@ CC_TEXT=""
 # whether or not the build is disguised or given its own Build Time.
 REAL_LOCALVERSION="-$NAME-$REVISION-$(git rev-parse --short=9 HEAD)"
 printf '#define COGAN_IDENTITY "%s|%s|%s"\n' "$RELEASE" "6.1.$SUBLEVEL$REAL_LOCALVERSION" \
-  "$(LC_ALL=C date -u '+%a %b %d %H:%M:%S UTC %Y')" > drivers/misc/cogan_identity.h
+  "$(LC_ALL=C TZ=WIB-7 date '+%a %b %d %H:%M:%S WIB %Y')" > drivers/misc/cogan_identity.h
 log "Cogan identity: $(cat drivers/misc/cogan_identity.h)"
 if [ "${DISGUISE:-false}" = "true" ]; then
   . "$HERE/configs/stock-identity.env"
@@ -362,10 +362,15 @@ export KBUILD_BUILD_USER="$BUILD_USER" KBUILD_BUILD_HOST="$BUILD_HOST" KCFLAGS="
 # libbpf.c "next_path = strchr(s, ':')"). This one diagnostic stays a warning; HOSTCFLAGS reaches libbpf as
 # EXTRA_CFLAGS and objtool through KBUILD_HOSTCFLAGS.
 export HOSTCFLAGS="${HOSTCFLAGS:+$HOSTCFLAGS }-Wno-error=incompatible-pointer-types-discards-qualifiers"
+# Build time (uname -v, /proc/version) in WIB, Jakarta (owner 2026-11-19, "build time diubah menjadi waktu
+# Indonesia bagian barat"). A disguised build keeps UTC, as the stock kernel shows. A Build Time typed in the
+# form may say WIB or UTC; it is converted to the build's zone. TZ=WIB-7 needs no tzdata on the runner.
+if [ "${DISGUISE:-false}" = "true" ]; then STAMP_TZ=UTC0; STAMP_NAME=UTC; else STAMP_TZ=WIB-7; STAMP_NAME=WIB; fi
 if [ "${BUILD_TIME:-N}" = "N" ]; then
-  KBUILD_BUILD_TIMESTAMP="$(LC_ALL=C date -u '+%a %b %d %H:%M:%S UTC %Y')"
+  KBUILD_BUILD_TIMESTAMP="$(LC_ALL=C TZ="$STAMP_TZ" date "+%a %b %d %H:%M:%S $STAMP_NAME %Y")"
 else
-  KBUILD_BUILD_TIMESTAMP="$(LC_ALL=C date -u -d "$BUILD_TIME" '+%a %b %d %H:%M:%S UTC %Y')" || fail "Invalid Build Time"
+  KBUILD_BUILD_TIMESTAMP="$(LC_ALL=C TZ="$STAMP_TZ" date -d "${BUILD_TIME/ WIB / +0700 }" \
+    "+%a %b %d %H:%M:%S $STAMP_NAME %Y")" || fail "Invalid Build Time"
 fi
 export KBUILD_BUILD_TIMESTAMP
 MAKE=(make -j"$(nproc)" O="$KOUT" ARCH=arm64 LLVM=1 LLVM_IAS=1 CROSS_COMPILE=aarch64-linux-gnu-

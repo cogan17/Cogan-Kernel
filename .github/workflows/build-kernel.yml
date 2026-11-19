@@ -58,7 +58,7 @@ on:
         type: string
         default: ""
       build_time:
-        description: "Build Time: N = sekarang / now"
+        description: "Build Time: N = sekarang (WIB) / now (WIB)"
         type: string
         default: "N"
       use_susfs:
@@ -131,8 +131,10 @@ jobs:
           [[ "$BRAND" =~ ^[A-Za-z0-9_-]{1,12}$ ]] || { echo "::error::Kernel Branding: huruf, angka, _ atau -, maks. 12 / up to 12 letters, digits, _ or -"; exit 1; }
           [[ -z "$REVISION" || "$REVISION" =~ ^r[0-9]+$ ]] || { echo "::error::Build Revision: r + angka, mis. r10 / r followed by digits"; exit 1; }
           if [ "$BUILD_TIME" != "N" ]; then
-            [ "$(LC_ALL=C date -u -d "$BUILD_TIME" +%a 2>/dev/null)" = "${BUILD_TIME%% *}" ] \
-              || { echo "::error::Build Time: N atau mis. Thu Jan 1 00:00:00 UTC 2026"; exit 1; }
+            # WIB or UTC; the weekday is checked in the zone the time was written in.
+            stamp="${BUILD_TIME/ WIB / +0700 }"; zone=UTC0; [ "$stamp" = "$BUILD_TIME" ] || zone=WIB-7
+            [ "$(LC_ALL=C TZ=$zone date -d "$stamp" +%a 2>/dev/null)" = "${BUILD_TIME%% *}" ] \
+              || { echo "::error::Build Time: N atau mis. Thu Jan 1 07:00:00 WIB 2026 / Thu Jan 1 00:00:00 UTC 2026"; exit 1; }
           fi
           if [ "$RELEASE_TYPE" != "CI" ]; then
             [[ "$ROOT_FLAVOR" != *"&"* && "$ROOT_FLAVOR" != "Semua / All" && -n "${SUBLEVEL// /}" && "${SUBLEVEL,,}" != *semua* && "$SUBLEVEL" != *,* ]] \

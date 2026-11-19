@@ -72,7 +72,7 @@ class DisguiseTest(unittest.TestCase):
     def test_cogan_bridge_identity_stays_real_when_disguised(self):
         # CoganSU shows this (owner 2026-11-11): tag, Cogan release and real build time, disguised or not.
         pattern = (r'^#define COGAN_IDENTITY "v26\.11\.11-r16\|6\.1\.176-Cogan-Rothko-ACK-r16-[0-9a-f]{9}\|'
-                   r'[A-Z][a-z]{2} [A-Z][a-z]{2} \d{2} \d{2}:\d{2}:\d{2} UTC \d{4}"$')
+                   r'[A-Z][a-z]{2} [A-Z][a-z]{2} \d{2} \d{2}:\d{2}:\d{2} WIB \d{4}"$')
         off, on = decide("false"), decide("true")
         self.assertRegex(on["identity"], pattern)
         self.assertEqual(on["identity"].split("|")[1], off["identity"].split("|")[1])
