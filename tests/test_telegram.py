@@ -131,6 +131,36 @@ class TelegramTest(unittest.TestCase):
         self.assertIn("[v26.10.23-r1](https://github.com/r/r/releases/tag/v26.10.23-r1)", release)
         self.assertEqual(tg.parse_release(release)["sha"], "f" * 40)
 
+    def test_features_and_fixes_without_fix_kernel_subject_reach_the_post(self):
+        """Owner 2026-11-19 (r22): hybrid_susfs, the Cogan Bridge retry and WIB time were missing; the force-load
+        fix was shown for a build with Force-load ticked."""
+        commits = [{"commit": {"message": m}} for m in (
+            "feat(susfs): hybrid_susfs sebagai file 6 di samping sidex15 (#181)\n\nbody",
+            "fix: perbaikan audit r21 dan main (T1–T8) (#182)",
+            "fix(kernel): force-load modul vendor mati secara bawaan (#188)\n\n"
+            "Release-Fix-ID: kernel kini menolak modul vendor yang tidak cocok\nRelease-Fix-EN: refuses mismatched modules",
+            "feat(builder): build time dan tanggal tag rilis dalam WIB (#190)",
+            "feat(x): sesuatu\n\nRelease-New-ID: hal baru\nRelease-New-EN: something new",
+            "feat(builder): centang Force-load untuk build kandidat tanpa force-load (#187)")]
+        on = {**R2, "FORCE_LOAD": "on", "DISGUISE": "on", "SUSFS_MODULES": "sidex15 hybrid_susfs"}
+        off = {**R2, "FORCE_LOAD": "off", "DISGUISE": "off", "SUSFS_MODULES": "sidex15"}
+        for lang in ("id", "en"):
+            def api(path):
+                return RELEASES if "/releases?" in path else {"commits": commits}
+            text = tg.post(on, lang, **tg.changes(on, "r/r", "f" * 40, api))
+            self.assertIn("hybrid_susfs", text)
+            self.assertIn("Cogan Bridge", text.split(tg.WORDS[lang]["fixes"])[1])
+            self.assertIn("hal baru" if lang == "id" else "something new", text)
+            self.assertNotIn("WIB", text)  # disguised: the build time stays UTC
+            self.assertNotIn("menolak modul vendor" if lang == "id" else "refuses mismatched", text)
+            text = tg.post(off, lang, **tg.changes(off, "r/r", "f" * 40, api))
+            self.assertIn("WIB", text)
+            self.assertNotIn("hybrid_susfs", text)
+            self.assertIn("menolak modul vendor" if lang == "id" else "refuses mismatched", text)
+            self.assertNotIn("Force-load", text)  # a Builder box, not an end-user change
+        old = {k: v for k, v in R2.items()}  # an old build.env without FORCE_LOAD had force-load
+        self.assertEqual(tg.fixes(commits, "id", old)[1:], ["Pengecekan kecocokan kernel dengan driver HP kini lebih ketat"])
+
     def test_failed_compare_does_not_claim_there_were_no_fixes(self):
         measured = tg.changes(R2, "r/r", "f" * 40, lambda path: RELEASES if "/releases?" in path else None)
         text = tg.post(R2, "en", **measured)
