@@ -1,0 +1,39 @@
+Cogan Smart Kernel v2.12.13 / versionCode 44 — Pre-release
+
+Indonesia
+
+Perbaikan:
+- Log blokir APK (tab Aplikasi) tidak lagi kehilangan kejadian. Sebelumnya, bila pencatat blokir dan WebUI menulis bersamaan, satu kejadian bisa hilang atau riwayat terpotong. Kini keduanya bergantian lewat satu kunci.
+- Kunci bersama yang dipakai semua tab lebih aman: kunci hanya sah bila nama pemiliknya berhasil ditulis, jadi dua proses tidak pernah memegangnya bersamaan.
+
+Termasuk v2.12.7–v2.12.12 sejak rilis v2.12.6 (lengkap di CHANGELOG.md):
+- Batas CPU besar saat SosMed di layar, supaya HP tidak keburu hangat (v2.12.7).
+- Batas CPU tidak lagi bolak-balik saat Badan HP masih panas; grafik suhu berwarna per keadaan layar (v2.12.8).
+- Waktu layar mati dan setiap jeda HP tidur digambar biru di grafik suhu (v2.12.9–v2.12.11).
+- Layar dicek ulang ke Android setelah HP tidur, jadi layar mati tidak lagi tercatat nyala (v2.12.12).
+
+Pengujian:
+- Diuji owner di HP 19 Nov 2026 (Xiaomi 14T Pro, HyperOS OS3.0.302.0, kernel Cogan r67 6.1.157): semua tab jalan, pengendali dan pencatat aktif, blokir APK aktif, 16 modul dan 171 aplikasi terpindai.
+- Belum terlihat di HP: riwayat blokir yang ditulis bersamaan (baru tampil saat ada kejadian blokir baru). Diuji lokal dengan dua penulis bersamaan.
+
+Cara pasang:
+1. Root manager → Modul → Pasang, pilih ZIP lewat pemilih file bawaan Android, lalu reboot.
+
+English
+
+Fixes:
+- The APK block log (Apps tab) no longer loses events. Before, when the block worker and the WebUI wrote at the same time, an event could be lost or the history cut short. Now they take turns behind one lock.
+- The shared lock used by every tab is safer: it only counts once its owner is written, so two processes never hold it at once.
+
+Includes v2.12.7–v2.12.12 since the v2.12.6 release (full list in CHANGELOG.md):
+- Big-core CPU cap while social media is on screen, so the phone does not warm up first (v2.12.7).
+- The CPU cap no longer flips back and forth while the phone body is still warm; the temperature chart is coloured by screen state (v2.12.8).
+- Screen-off time and every gap while the phone slept are drawn blue in the temperature chart (v2.12.9–v2.12.11).
+- The screen state is checked with Android again after the phone slept, so a dark screen is no longer recorded as on (v2.12.12).
+
+Testing:
+- Tested by the owner on the phone on 19 Nov 2026 (Xiaomi 14T Pro, HyperOS OS3.0.302.0, Cogan kernel r67 6.1.157): every tab works, controller and recorder running, APK block on, 16 modules and 171 apps scanned.
+- Not yet seen on the phone: block history written at the same moment (shows only with a new block event). Tested locally with two writers at once.
+
+How to install:
+1. Root manager → Modules → Install, pick the ZIP with Android's own file picker, then reboot.

@@ -10,6 +10,7 @@
 
 | Versi | versionCode | ZIP siap pasang | Catatan | Salinan di repo | SHA256 ZIP |
 |---|---|---|---|---|---|
+| **v2.12.13** (Pre-release, diuji owner di HP) | 44 | [Paket pembaruan](rilis/v2.12.13/Cogan-Smart-Kernel-v2.12.13.zip) | [What's New](rilis/v2.12.13/Cogan-Smart-v2.12.13-Whats-New-and-Fixes.txt) | [rilis/v2.12.13](rilis/v2.12.13) | `37482fe635886829a72b5f2fbc26a4b20f982eacb7eaa62eee892751bd4046ae` |
 | **v2.12.6** (paket uji Paksa dan teks riwayat) | 37 | [Paket pembaruan](rilis/v2.12.6/Cogan-Smart-Kernel-v2.12.6.zip) | [What's New](rilis/v2.12.6/Cogan-Smart-v2.12.6-Whats-New-and-Fixes.txt) | [rilis/v2.12.6](rilis/v2.12.6) | `05998b39e718aa2a876c864d818d3ad61c28bc706c681629e2591eb44c94dc4f` |
 | **v2.12.5** (paket uji hemat baterai) | 36 | [Paket pembaruan](rilis/v2.12.5/Cogan-Smart-Kernel-v2.12.5.zip) | [What's New](rilis/v2.12.5/Cogan-Smart-v2.12.5-Whats-New-and-Fixes.txt) | [rilis/v2.12.5](rilis/v2.12.5) | `858411e966e5d8c57a26c364e2e6120e3abebaa2816899c61a112fd55b6a2221` |
 | **v2.12.4** (paket uji cari aplikasi) | 35 | [Paket pembaruan](rilis/v2.12.4/Cogan-Smart-Kernel-v2.12.4.zip) | [What's New](rilis/v2.12.4/Cogan-Smart-v2.12.4-Whats-New-and-Fixes.txt) | [rilis/v2.12.4](rilis/v2.12.4) | `c32130a038a9dca1f676dd6c2bd3408846b2d6e65b1fc59e04e424a53587e47b` |
