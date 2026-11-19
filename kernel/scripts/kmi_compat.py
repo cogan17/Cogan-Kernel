@@ -47,8 +47,9 @@ A stock reference also checks the CRCs against its stock frozen ABI, the one tha
 HyperOS version's vendor modules were actually built with: a difference fails too.
 
 Usage: kmi_compat.py --device rothko KERNEL_SRC OUT_DIR [--reference BSP_SRC]
-                     [--stock-reference STOCK_SRC ...] [--github-env FILE] [--json FILE]
-Exit 1 when 1-8 or the force-load change fail.
+                     [--stock-reference STOCK_SRC ...] [--force-load on|off] [--github-env FILE] [--json FILE]
+Exit 1 when 1-8 fail, or when the force-load change is not as asked: present with --force-load on (the
+default), absent with off (a candidate with the upstream loader, audit r21 T1).
 """
 import argparse
 import json
@@ -233,7 +234,7 @@ def stock_name(stock):
     return f"{stock['version']} (HyperOS {stock['hyperos']})"
 
 
-def check(src, out, device, reference=None, stocks=()):
+def check(src, out, device, reference=None, stocks=(), force_load=True):
     spec = DEVICES[device]
     report = {"device": spec["name"], "kmi_generation": generation(src), "lists": {}, "errors": []}
     if report["kmi_generation"] != spec["generation"]:
@@ -264,8 +265,10 @@ def check(src, out, device, reference=None, stocks=()):
     report["loader_policy"] = ("force-load: a symbol CRC mismatch is logged and the module loads "
                                "(kernel/patches/force-load-modules.patch)" if report["force_load"]
                                else "upstream: a symbol CRC mismatch refuses the module")
-    if not report["force_load"]:
+    if force_load and not report["force_load"]:
         report["errors"].append("module force-load change missing (CRC differences would refuse vendor modules)")
+    elif not force_load and report["force_load"]:
+        report["errors"].append("module force-load change present in a build without force-load (candidate)")
     report["protected_exports"] = sorted(p.name for p in (src / "android").glob("*protected_exports*"))
     if report["protected_exports"]:
         report["errors"].append("protected exports still present: " + ", ".join(report["protected_exports"]))
@@ -386,11 +389,14 @@ def main(argv=None):
     parser.add_argument("--reference", type=Path, help="phone maker's kernel source (BSP) to hold the build against")
     parser.add_argument("--stock-reference", type=Path, action="append", default=[],
                         help="ACK source of a stock kernel of the phone (once per supported HyperOS version)")
+    parser.add_argument("--force-load", choices=("on", "off"), default="on",
+                        help="off: a candidate with the upstream loader, the force-load change must be absent")
     parser.add_argument("--github-env")
     parser.add_argument("--json", type=Path)
     args = parser.parse_args(argv)
     try:
-        report = check(args.src, args.out, args.device, args.reference, args.stock_reference)
+        report = check(args.src, args.out, args.device, args.reference, args.stock_reference,
+                       force_load=args.force_load == "on")
     except (OSError, ValueError) as exc:
         print(f"BLOCKED: KMI check could not run: {exc}", file=sys.stderr)
         return 1

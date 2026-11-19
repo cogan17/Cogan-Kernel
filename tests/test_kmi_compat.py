@@ -113,6 +113,22 @@ class KmiCompatTests(unittest.TestCase):
             self.assertEqual(status, 1, message)
             self.assertTrue(any(message in error for error in report["errors"]), report["errors"])
 
+    def test_a_candidate_without_force_load_needs_the_upstream_loader(self):
+        # Audit r21 T1 (owner 2026-11-19): the Builder box unticked builds with the upstream loader.
+        report_file = Path(self.temp.name) / "report.json"
+        run = lambda: kc.main(["--device", "rothko", str(self.src), str(self.out), "--force-load", "off",
+                               "--json", str(report_file)])
+        self.assertEqual(run(), 1)   # the patch is still in this tree
+        self.assertIn("module force-load change present in a build without force-load (candidate)",
+                      json.loads(report_file.read_text())["errors"])
+        (self.src / "kernel/module/version.c").write_text(
+            'pr_warn("%s: disagrees about version of symbol %s\\n", a, b);\n\treturn 0;\n')
+        self.assertEqual(run(), 0)
+        report = json.loads(report_file.read_text())
+        self.assertFalse(report["force_load"])
+        self.assertEqual(report["loader_policy"], "upstream: a symbol CRC mismatch refuses the module")
+        self.assertIn("(force-load OFF)", kc.summary(report))
+
     def test_symbols_exported_by_stock_gki_modules_are_accepted(self):
         (self.src / "android/abi_gki_aarch64_mtk").write_text("[abi_symbol_list]\n  changed_type\n  hci_cmd_sync_status\n")
         (self.src / "net/bluetooth").mkdir(parents=True)
