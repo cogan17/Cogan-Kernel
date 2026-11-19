@@ -25,6 +25,7 @@ Nama repo **`cogan17/Cogan-Kernel`** sejak 24 Okt 2026 (owner; sebelumnya `cogan
 ## Waktu
 
 - Waktu untuk owner selalu ditulis dalam **WIB** (Jakarta, UTC+7), misalnya "17.29 WIB". Kalau sumbernya UTC (GitHub, log), ubah dulu ke WIB.
+- **Build time kernel** (`uname -v`, `/proc/version`, identitas Cogan Bridge) memakai WIB sejak 19 Nov 2026 (owner: "build time diubah menjadi waktu Indonesia bagian barat"), mis. `Thu Nov 19 08:00:00 WIB 2026`. Build dengan Samarkan identitas tetap UTC seperti kernel stok. Isian Build Time di form boleh ditulis WIB atau UTC. **Tanggal tag rilis** `vYY.MM.DD-rN` juga WIB (owner: "tag rilis juga pakai WIB"), dihitung sekali di job pertama Builder (`RELEASE_DATE`) supaya semua varian satu run memakai tag yang sama walau melewati tengah malam.
 
 ## Isi repo (owner, 23 Okt 2026)
 

@@ -58,7 +58,7 @@ on:
         type: string
         default: ""
       build_time:
-        description: "Build Time: N = sekarang / now"
+        description: "Build Time: N = sekarang (WIB) / now (WIB)"
         type: string
         default: "N"
       use_susfs:
@@ -106,6 +106,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.plan.outputs.matrix }}
+      release_date: ${{ steps.plan.outputs.release_date }}
     env:
       GH_TOKEN: ${{ github.token }}
       ROOT_FLAVOR: ${{ inputs.root_flavor }}
@@ -131,8 +132,21 @@ jobs:
           [[ "$BRAND" =~ ^[A-Za-z0-9_-]{1,12}$ ]] || { echo "::error::Kernel Branding: huruf, angka, _ atau -, maks. 12 / up to 12 letters, digits, _ or -"; exit 1; }
           [[ -z "$REVISION" || "$REVISION" =~ ^r[0-9]+$ ]] || { echo "::error::Build Revision: r + angka, mis. r10 / r followed by digits"; exit 1; }
           if [ "$BUILD_TIME" != "N" ]; then
-            [ "$(LC_ALL=C date -u -d "$BUILD_TIME" +%a 2>/dev/null)" = "${BUILD_TIME%% *}" ] \
-              || { echo "::error::Build Time: N atau mis. Thu Jan 1 00:00:00 UTC 2026"; exit 1; }
+            # WIB or UTC; the weekday must match the date in the zone it was written in. Checked in Python:
+            # uutils date (runner Ubuntu 26.04) accepts a wrong weekday such as "Fri Jan 1 ... 2026".
+            python3 - "$BUILD_TIME" <<'PY' \
+              || { echo "::error::Build Time: N atau mis. Thu Jan 1 07:00:00 WIB 2026 / Thu Jan 1 00:00:00 UTC 2026"; exit 1; }
+          import datetime, sys
+          words = sys.argv[1].split()
+          zones = {"WIB": "+0700", "UTC": "+0000"}
+          if len(words) != 6 or words[4] not in zones:
+              sys.exit(1)
+          try:
+              when = datetime.datetime.strptime(" ".join(words[:4] + [zones[words[4]], words[5]]), "%a %b %d %H:%M:%S %z %Y")
+          except ValueError:
+              sys.exit(1)
+          sys.exit(0 if when.strftime("%a") == words[0] else 1)
+          PY
           fi
           if [ "$RELEASE_TYPE" != "CI" ]; then
             [[ "$ROOT_FLAVOR" != *"&"* && "$ROOT_FLAVOR" != "Semua / All" && -n "${SUBLEVEL// /}" && "${SUBLEVEL,,}" != *semua* && "$SUBLEVEL" != *,* ]] \
@@ -149,6 +163,9 @@ jobs:
           COGANSU_TOKEN: ${{ secrets.COGANSU_TOKEN }}
         run: |
           set -euo pipefail
+          # The release tag date (vYY.MM.DD-rN) in WIB (owner 2026-11-19), taken once for the whole run, so
+          # builds that finish after midnight WIB still share one tag.
+          echo "release_date=$(TZ=WIB-7 date +%y.%m.%d)" >> "$GITHUB_OUTPUT"
           mkdir -p snapshots
           roots=()
           extra=()
@@ -354,6 +371,7 @@ jobs:
           BRAND: ${{ inputs.brand_name }}
           REVISION: ${{ inputs.build_revision }}
           RUN_NUMBER: ${{ github.run_number }}
+          RELEASE_DATE: ${{ needs.resolve.outputs.release_date }}
           BUILD_TIME: ${{ inputs.build_time }}
           NOMOUNT: ${{ inputs.use_nomount }}
           BBG: ${{ inputs.use_bbg }}
