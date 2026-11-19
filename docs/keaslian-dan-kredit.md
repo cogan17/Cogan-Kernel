@@ -62,6 +62,7 @@ Rilis lama dari [cogan17/Kernel-14t-pro](https://github.com/cogan17/Kernel-14t-p
 | **[BakaSU](https://github.com/Baka-SU/BakaSU)** | Root manager varian BakaSU (dulu ReSukiSU) |
 | **[SUSFS](https://gitlab.com/simonpunk/susfs4ksu)** ([simonpunk](https://gitlab.com/simonpunk)) | Menyembunyikan jejak root |
 | **[susfs4ksu-module](https://github.com/sidex15/susfs4ksu-module)** ([sidex15](https://github.com/sidex15)) | Modul SUSFS dengan WebUI; modul di rilis (file 5) adalah build CI resminya. WebUI-nya juga dipakai [hybrid_susfs](https://github.com/cogan17/hybrid_SusFS) |
+| **[BRENE](https://github.com/rrr333nnn333/BRENE)** ([rrr333nnn333](https://github.com/rrr333nnn333)) | Modul SUSFS dengan WebUI; fitur tambahannya (sembunyikan jejak root, *custom kernel*, recovery dan modul Zygisk, samarkan properti sistem dan `uname`) dipakai [hybrid_susfs](https://github.com/cogan17/hybrid_SusFS) |
 | **[NoMount](https://github.com/maxsteeel/nomount)** ([maxsteeel](https://github.com/maxsteeel)) | Metamodule tanpa mount, tertanam di kernel; modul di rilis adalah rilis resminya |
 | **[Baseband Guard](https://github.com/vc-teahouse/Baseband-guard)** ([vc-teahouse](https://github.com/vc-teahouse)) | Perlindungan partisi |
 | **[AnyKernel3](https://github.com/osm0sis/AnyKernel3)** ([osm0sis](https://github.com/osm0sis)) | Installer ZIP kernel |
