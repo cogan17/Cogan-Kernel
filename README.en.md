@@ -118,6 +118,7 @@ Modules the owner runs on their phone together with Cogan Kernel. Click a module
 - ✅ No LTO, like the phone's stock kernel (CFI and Shadow Call Stack stay on), device check in the ZIP (`rothko` only)
 - ⚙️ Optional, ticked by default: **Unicode fix** (WildKernel). File names with invisible characters (e.g. zero-width) on internal storage no longer count as the same name without them (the *unicode bypass* gap used to find hidden paths)
 - ⚙️ Optional, **off by default**: **Disguise kernel identity**. `uname` and `/proc/version` use the stock GKI format (`6.1.176-android14-11-g…-ab…`) instead of the `Cogan` name. Display only, not behaviour-based hiding
+- ⚙️ Optional, **off by default**: vendor module **force-load** (the old way). Unticked, a vendor module whose symbol CRC differs is refused, as on the stock kernel
 - ✅ Every build is checked automatically against the stock kernel ABI (KMI gate); failure = no ZIP
 
 </details>
@@ -150,6 +151,8 @@ Unicode fix (ticked by default since 1 Nov 2026) passes the build + KMI gate on 
 🛡️ **CVE-2026-53163** is applied automatically in every build: the official Linux 6.1.177 fix (commit `40a25d59e85b`) for a kernel crash through futex that came with the CVE-2026-43499 fix in 6.1.175. ACK releases without the CVE-2026-43499 fix (below 175) do not have this bug, and ACK releases that already contain the fix are skipped.
 
 🫥 **Disguise kernel identity** (checkbox, off by default): `uname` and `/proc/version` mimic the phone's own stock kernel (taken from the rothko stock boot.img): the GKI format `6.1.176-android14-11-g<ACK commit>-ab…`, builder `build-user@build-host`, and Google's Android clang 17.0.2 / LLD 17.0.2 text, instead of the `Cogan` name and Neutron clang. The version stays the real one (e.g. 6.1.176). This only changes what is shown, not the compiled code, so the KMI gate is unaffected. Cogan Bridge and the Cogan Smart module keep working; the `Cogan` name and revision stay in the ZIP name and release notes. It does **not** defeat behaviour-based detection (root traces, mounts, properties) or the phone's security-chip checks (Play Integrity). Test on the phone first.
+
+🧷 **Force-load** (checkbox, off by default since 19 Nov 2026): unticked, the kernel uses the stock Linux module loader, which refuses a vendor module whose symbol CRC differs, the same as the phone's stock kernel. Ticked = the old way: the module still loads, with a warning; kept as a way back. Both were tested on the phone (r66 ticked, r67 unticked). The KMI gate still fails on any CRC difference, so a build that passes does not depend on this box. The build records `FORCE_LOAD=on/off` and the KMI summary says `(force-load on/OFF)`.
 
 To publish an existing build, run **Rilis dari run** with the green Builder run ID. A run containing several root managers (KernelSU Next, BakaSU, KernelSU, SukiSU, CoganSU) becomes **one release** with all kernel ZIPs and their matching manager APKs, without rebuilding. Tick **diuji di HP** only if the owner tested every variant in that run on the phone. If the same tag already exists (e.g. `v26.11.02-r21`: the owner's rN and the run number of a CI build can meet on the same day), the release stops; tick **timpa** to replace that old release and its files with this run's build. Only kernel releases `vYY.MM.DD-rN` can be replaced; archives and Cogan Smart cannot.
 
