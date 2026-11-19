@@ -62,6 +62,7 @@ The old releases of [cogan17/Kernel-14t-pro](https://github.com/cogan17/Kernel-1
 | **[BakaSU](https://github.com/Baka-SU/BakaSU)** | The BakaSU root variant (formerly ReSukiSU) |
 | **[SUSFS](https://gitlab.com/simonpunk/susfs4ksu)** ([simonpunk](https://gitlab.com/simonpunk)) | Hides root traces |
 | **[susfs4ksu-module](https://github.com/sidex15/susfs4ksu-module)** ([sidex15](https://github.com/sidex15)) | SUSFS module with a WebUI; the module in the release (file 5) is its official CI build. Its WebUI is also used by [hybrid_susfs](https://github.com/cogan17/hybrid_SusFS) |
+| **[BRENE](https://github.com/rrr333nnn333/BRENE)** ([rrr333nnn333](https://github.com/rrr333nnn333)) | SUSFS module with a WebUI; its extra features (hiding root, custom kernel, recovery and Zygisk module traces, spoofing system properties and `uname`) are used by [hybrid_susfs](https://github.com/cogan17/hybrid_SusFS) |
 | **[NoMount](https://github.com/maxsteeel/nomount)** ([maxsteeel](https://github.com/maxsteeel)) | Mountless metamodule, built into the kernel; the module in releases is its official release |
 | **[Baseband Guard](https://github.com/vc-teahouse/Baseband-guard)** ([vc-teahouse](https://github.com/vc-teahouse)) | Partition protection |
 | **[AnyKernel3](https://github.com/osm0sis/AnyKernel3)** ([osm0sis](https://github.com/osm0sis)) | Kernel ZIP installer |
