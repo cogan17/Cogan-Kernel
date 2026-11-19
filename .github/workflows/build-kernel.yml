@@ -85,12 +85,13 @@ on:
         description: "Samarkan identitas kernel / Disguise kernel identity"
         type: boolean
         default: false
-      # Audit r21 T1 (owner 2026-11-19, "Siapkan build kandidat tanpa force-load"): unticked = the upstream
-      # module loader, which refuses a vendor module whose symbol CRC differs. A candidate for the phone test.
+      # Audit r21 T1: unticked (the default since owner 2026-11-19, "Semua jalan normal, buat PR-nya", after r67
+      # passed the phone test) = the upstream module loader, which refuses a vendor module whose symbol CRC
+      # differs, as the stock kernel does. Ticked = the old force-load, kept only as a way back.
       use_force_load:
-        description: "Force-load modul vendor (lepas = kandidat: beda CRC ditolak) / vendor module force-load (untick = candidate)"
+        description: "Force-load modul vendor (cara lama; bawaan mati = beda CRC ditolak) / vendor module force-load (old way; off = CRC mismatch refused)"
         type: boolean
-        default: true
+        default: false
 
 permissions:
   contents: read
