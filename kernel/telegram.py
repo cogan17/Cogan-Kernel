@@ -55,6 +55,32 @@ FIX_PLAIN = {
         "id": "Menutup celah yang bisa membuat HP restart sendiri (CVE-2026-53163)",
         "en": "Closes a hole that could make the phone restart by itself (CVE-2026-53163)"},
 }
+# Changes of commits whose subject is not fix(kernel...), for end users, in plain words (owner 2026-11-19:
+# "sudah fix dan menambahkan fitur baru, tapi belum masuk ke CoPas telegram"). Keyed by the commit subject
+# without its "(#N)"; "when" reads this build's build.env, so a line only appears for a build that has it.
+# New commits can supply Release-New-ID/EN (and fix(kernel...) commits Release-Fix-ID/EN) trailers instead.
+NOTES = {
+    "feat(susfs): hybrid_susfs sebagai file 6 di samping sidex15": [{
+        "kind": "new", "when": lambda env: "hybrid_susfs" in env.get("SUSFS_MODULES", "").split(),
+        "id": "Modul SUSFS hybrid_susfs buatan Cogan (WebUI dan BRENE) ikut diunduh; pasang salah satu, sidex15 atau hybrid_susfs",
+        "en": "Cogan's own SUSFS module hybrid_susfs (WebUI and BRENE) is in the download; install one, sidex15 or hybrid_susfs"}],
+    "feat(builder): build time dan tanggal tag rilis dalam WIB": [{
+        "kind": "new", "when": lambda env: env.get("DISGUISE", "off") != "on",
+        "id": "Waktu build kernel (uname) kini memakai WIB",
+        "en": "The kernel build time (uname) is now in WIB (Jakarta time)"}],
+    "fix: perbaikan audit r21 dan main (T1–T8)": [{
+        "kind": "fix", "when": lambda env: "Cogan Bridge" in feature_names(env.get("FEATURES", "")),
+        "id": "Cogan Bridge mencoba lagi bila batas CPU gagal dilepas, jadi HP tidak tertahan lambat",
+        "en": "Cogan Bridge retries when a CPU limit fails to clear, so the phone is not left slow"}, {
+        "kind": "fix",
+        "id": "Pengecekan kecocokan kernel dengan driver HP kini lebih ketat",
+        "en": "The kernel's fit with the phone's own drivers is now checked more strictly"}],
+}
+# fix(kernel...) subjects that only hold for some builds; their Release-Fix trailers are left out otherwise.
+FIX_WHEN = {
+    # A build with the Force-load box ticked still loads a mismatched module, as before.
+    "force-load modul vendor mati secara bawaan": lambda env: env.get("FORCE_LOAD") == "off",
+}
 WORDS = {
     "id": {"new": "✨ Baru", "fixes": "🔧 Perbaikan", "note": "📝 Catatan", "features": "🧩 Fitur",
            "same": "Komponen sama dengan {prev}", "first": "Rilis pertama varian ini",
@@ -166,13 +192,43 @@ def previous(releases, env):
     return None
 
 
-def fixes(commits, lang="id"):
-    """Localized fix descriptions; never pass an unlabelled source subject to English output."""
+def subject(message):
+    """First line of a commit message without its "(#N)" suffix."""
+    title = message.splitlines()[0] if message else ""
+    return re.sub(r"(?:\s*\((?:Issue )?#\d+\))+$", "", title)
+
+
+def noted(commits, lang, kind, env=None):
+    """NOTES entries and Release-New trailers of the commits, for this build (env) when it is known."""
+    found = []
+    for commit in commits:
+        message = commit["commit"]["message"] if isinstance(commit, dict) else commit
+        for entry in NOTES.get(subject(message), ()):
+            if entry["kind"] == kind and (env is None or entry.get("when", lambda _: True)(env)):
+                found.append(entry[lang])
+        if kind == "new" and not subject(message).startswith("fix(kernel"):
+            trailer = re.search(rf"^Release-New-{lang.upper()}:[ \t]*(.+)$", message or "", re.MULTILINE)
+            if trailer:
+                found.append(trailer[1].strip())
+    return found
+
+
+def news(commits, lang="id", env=None):
+    """What's new from this repository's own commits (NOTES, Release-New-ID/EN trailers)."""
+    return noted(commits, lang, "new", env)
+
+
+def fixes(commits, lang="id", env=None):
+    """Localized fix descriptions; never pass an unlabelled source subject to English output.
+    env (build.env) leaves out the fixes that do not hold for this build (FIX_WHEN, NOTES "when")."""
     found = []
     for commit in commits:
         message = commit["commit"]["message"] if isinstance(commit, dict) else commit
         title = message.splitlines()[0] if message else ""
         match = re.match(r"fix\(kernel[^)]*\):\s*(.+?)(?:\s*\((?:Issue )?#\d+\))*$", title)
+        found += noted([message], lang, "fix", env)
+        if match and env is not None and not FIX_WHEN.get(match[1], lambda _: True)(env):
+            continue
         if match:
             localized = re.search(rf"^Release-Fix-{lang.upper()}:[ \t]*(.+)$", message, re.MULTILINE)
             text = (FIX_PLAIN.get(match[1], {}).get(lang) or (localized[1].strip() if localized else None)
@@ -202,7 +258,8 @@ def upstream_lines(env, prev, lang, upstream=None):
     return found
 
 
-def whats_new(env, prev, lang, history_available=True, upstream=None):
+def whats_new(env, prev, lang, history_available=True, upstream=None, own_news=None):
+    """own_news: {lang: [items]} from this repository's commits since prev (news())."""
     w = WORDS[lang]
     if not history_available:
         return [w["unknown"]]
@@ -225,6 +282,7 @@ def whats_new(env, prev, lang, history_available=True, upstream=None):
         items.append(w["added"].format(names=", ".join(n for n in new if n not in old)))
     if [n for n in old if n not in new]:
         items.append(w["removed"].format(names=", ".join(n for n in old if n not in new)))
+    items += [item for item in (own_news or {}).get(lang, ()) if item not in items]
     return items or [w["same"].format(prev=prev["tag"])]
 
 
@@ -253,7 +311,7 @@ def upstream_fixes(env, prev, lang, upstream=None):
 
 
 def changelog_section(env, repo, prev=None, fix_titles=(), history_available=True, fixes_available=True, source_sha="",
-                      upstream=None):
+                      upstream=None, news=None):
     """The same measured changes as the Telegram post, included in the published release notes."""
     lines = ["### What's New & Fixes", ""]
     for lang in ("id", "en"):
@@ -262,7 +320,7 @@ def changelog_section(env, repo, prev=None, fix_titles=(), history_available=Tru
         if prev:
             link = f"[{prev['tag']}](https://github.com/{repo}/releases/tag/{prev['tag']})"
             lines += [w["baseline"].format(prev=link), ""]
-        lines += [f"**{w['new']}**", *[f"- {item}" for item in whats_new(env, prev, lang, history_available, upstream)], "",
+        lines += [f"**{w['new']}**", *[f"- {item}" for item in whats_new(env, prev, lang, history_available, upstream, news)], "",
                   f"**{w['fixes']}**", *[f"- {item}" for item in fix_items(lang, prev, fix_titles, history_available,
                                                                           fixes_available, upstream_fixes(env, prev, lang, upstream))], ""]
     if re.fullmatch(r"[0-9a-f]{40}", source_sha):
@@ -271,14 +329,14 @@ def changelog_section(env, repo, prev=None, fix_titles=(), history_available=Tru
 
 
 def post(env, lang, prev=None, fix_titles=(), link="", tested=False, note="", history_available=True,
-         fixes_available=True, source_sha="", note_en="", upstream=None):
+         fixes_available=True, source_sha="", note_en="", upstream=None, news=None):
     w = WORDS[lang]
     lines = ["🧠 Cogan Kernel · Xiaomi 14T Pro (rothko)",
              f"📦 {env.get('RELEASE', '')} · ACK {env.get('LINUX_VERSION', '')} · {env.get('ROOT_NAME', '')}"
              f"{susfs_label([env], lang)}"]
     if prev:
         lines += ["", "📌 " + w["baseline"].format(prev=prev["tag"])]
-    lines += ["", w["new"], *[f"• {item}" for item in whats_new(env, prev, lang, history_available, upstream)],
+    lines += ["", w["new"], *[f"• {item}" for item in whats_new(env, prev, lang, history_available, upstream, news)],
               "", w["fixes"], *[f"• {title}" for title in fix_items(lang, prev, fix_titles, history_available, fixes_available,
                                                                      upstream_fixes(env, prev, lang, upstream))]]
     localized_note = note if lang == "id" else note_en
@@ -312,7 +370,8 @@ def new_fixed(builds, lang, strip_kernel):
                 "ACK_TAG": prev.get("ack", env.get("ACK_TAG"))} if (prev and strip_kernel) else env
         root = env.get("ROOT_NAME", "")
         new_by_root.setdefault(root, []).extend(
-            whats_new(base, prev, lang, measured.get("history_available", True), measured.get("upstream")))
+            whats_new(base, prev, lang, measured.get("history_available", True), measured.get("upstream"),
+                      measured.get("news")))
         fixed_by_root.setdefault(root, []).extend(
             fix_items(lang, prev, measured.get("fix_titles", ()), measured.get("history_available", True),
                       measured.get("fixes_available", True), upstream_fixes(env, prev, lang, measured.get("upstream"))))
@@ -545,11 +604,12 @@ def changes(env, repo, sha="", api=gh):
     releases = api(f"repos/{repo}/releases?per_page=50")
     available = isinstance(releases, list)
     prev = previous(releases if available else [], env)
-    titles, compared = {}, False
+    titles, own_news, compared = {}, {}, False
     if prev and re.fullmatch(r"[0-9a-f]{40}", prev["sha"]) and re.fullmatch(r"[0-9a-f]{40}", sha):
         comparison = api(f"repos/{repo}/compare/{prev['sha']}...{sha}")
         if isinstance(comparison, dict) and isinstance(comparison.get("commits"), list) and comparison.get("status") != "behind":
-            titles = {lang: fixes(comparison["commits"], lang) for lang in ("id", "en")}
+            titles = {lang: fixes(comparison["commits"], lang, env) for lang in ("id", "en")}
+            own_news = {lang: news(comparison["commits"], lang, env) for lang in ("id", "en")}
             compared = True
     upstream = {}
     if prev and prev.get("root") and not env.get("ROOT_COMMIT", "").startswith(prev["root"][1]):
@@ -557,7 +617,8 @@ def changes(env, repo, sha="", api=gh):
     if prev and prev.get("susfs") and with_susfs(env) and not env.get("SUSFS_COMMIT", "").startswith(prev["susfs"][1]):
         upstream["susfs"] = new_titles(api, SUSFS_REPO, prev["susfs"][1], env.get("SUSFS_COMMIT", ""))
     return {"prev": prev, "fix_titles": titles, "history_available": available,
-            "fixes_available": compared or (available and prev is None), "source_sha": sha, "upstream": upstream}
+            "fixes_available": compared or (available and prev is None), "source_sha": sha, "upstream": upstream,
+            "news": own_news}
 
 
 def main(argv=None, api=gh):
