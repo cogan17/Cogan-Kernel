@@ -2,6 +2,7 @@
 """Build time and release tag date in WIB (owner 2026-11-19); a disguised build keeps the stock kernel's UTC time."""
 import re
 import subprocess
+import textwrap
 import unittest
 from pathlib import Path
 
@@ -10,7 +11,7 @@ BUILD = (ROOT / "kernel/build.sh").read_text()
 WORKFLOW = (ROOT / ".github/workflows/build-kernel.yml").read_text()
 STAMP = BUILD.split('if [ "${DISGUISE:-false}" = "true" ]; then STAMP_TZ', 1)[1]
 STAMP = 'if [ "${DISGUISE:-false}" = "true" ]; then STAMP_TZ' + STAMP.split("export KBUILD_BUILD_TIMESTAMP", 1)[0]
-CHECK = WORKFLOW.split('          if [ "$BUILD_TIME" != "N" ]; then\n', 1)[1].split("          fi\n", 1)[0]
+CHECK = textwrap.dedent(WORKFLOW.split('          if [ "$BUILD_TIME" != "N" ]; then\n', 1)[1].split("          fi\n", 1)[0])
 
 
 def stamp(build_time="N", disguise="false"):
@@ -39,7 +40,9 @@ class BuildTimeTests(unittest.TestCase):
     def test_the_form_checks_the_weekday_in_the_written_zone(self):
         self.assertTrue(form_ok("Thu Jan 1 01:00:00 WIB 2026"))   # still Wednesday in UTC
         self.assertTrue(form_ok("Thu Jan 1 00:00:00 UTC 2026"))
-        self.assertFalse(form_ok("Fri Jan 1 01:00:00 WIB 2026"))
+        self.assertFalse(form_ok("Fri Jan 1 01:00:00 WIB 2026"))  # uutils date on the runner took this
+        self.assertFalse(form_ok("Thu Jan 1 07:00:00 CET 2026"))
+        self.assertFalse(form_ok("kemarin sore"))
         self.assertIn('description: "Build Time: N = sekarang (WIB) / now (WIB)"', WORKFLOW)
 
     def test_the_release_tag_date_is_wib_and_one_per_run(self):
