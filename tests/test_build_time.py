@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build time in WIB (owner 2026-11-19); a disguised build keeps the stock kernel's UTC."""
+"""Build time and release tag date in WIB (owner 2026-11-19); a disguised build keeps the stock kernel's UTC time."""
 import re
 import subprocess
 import unittest
@@ -41,6 +41,18 @@ class BuildTimeTests(unittest.TestCase):
         self.assertTrue(form_ok("Thu Jan 1 00:00:00 UTC 2026"))
         self.assertFalse(form_ok("Fri Jan 1 01:00:00 WIB 2026"))
         self.assertIn('description: "Build Time: N = sekarang (WIB) / now (WIB)"', WORKFLOW)
+
+    def test_the_release_tag_date_is_wib_and_one_per_run(self):
+        line = [l for l in BUILD.splitlines() if l.startswith('RELEASE_DATE="${RELEASE_DATE:-')][0]
+        self.assertEqual(line, 'RELEASE_DATE="${RELEASE_DATE:-$(TZ=WIB-7 date +%y.%m.%d)}"')
+        self.assertIn('RELEASE="v$RELEASE_DATE-$REVISION"', BUILD)
+        self.assertIn('echo "release_date=$(TZ=WIB-7 date +%y.%m.%d)" >> "$GITHUB_OUTPUT"', WORKFLOW)
+        self.assertIn("release_date: ${{ steps.plan.outputs.release_date }}", WORKFLOW)
+        self.assertIn("RELEASE_DATE: ${{ needs.resolve.outputs.release_date }}", WORKFLOW)
+        # 17:30 UTC is already the next day in WIB.
+        run = subprocess.run(["bash", "-c", "TZ=WIB-7 date -d '2026-11-18 17:30 UTC' +%y.%m.%d"],
+                             capture_output=True, text=True)
+        self.assertEqual(run.stdout.strip(), "26.11.19")
 
     def test_the_real_identity_time_is_wib(self):
         self.assertTrue(re.search(r"TZ=WIB-7 date '\+%a %b %d %H:%M:%S WIB %Y'\)\" > drivers/misc/cogan_identity.h", BUILD))

@@ -9,7 +9,7 @@
 # Environment:
 #   SNAPSHOT     resolve.py JSON of the root (KSUN, BSU, KSU, SUKI or CSU)
 #   ACK_TAG ACK_COMMIT SUBLEVEL   the ACK release of this job
-#   BRAND REVISION RUN_NUMBER BUILD_TIME(N or a date)
+#   BRAND REVISION RUN_NUMBER RELEASE_DATE(YY.MM.DD, WIB) BUILD_TIME(N or a date)
 #   NOMOUNT BBG NETWORKING UNICODE (true|false)   OUT (results)   GH_TOKEN
 set -euo pipefail
 
@@ -66,7 +66,10 @@ esac
 [[ "${BRAND:-Cogan}" =~ ^[A-Za-z0-9_-]{1,12}$ ]] || fail "Kernel Branding: up to 12 letters, digits, _ or -"
 REVISION="${REVISION:-r${RUN_NUMBER:-0}}"
 [[ "$REVISION" =~ ^r[0-9]+$ ]] || fail "Build Revision: r followed by digits (e.g. r10)"
-RELEASE="v$(date -u +%y.%m.%d)-$REVISION"
+# Tag date in WIB (owner 2026-11-19), one date for the whole run (RELEASE_DATE from the Builder's first job).
+RELEASE_DATE="${RELEASE_DATE:-$(TZ=WIB-7 date +%y.%m.%d)}"
+[[ "$RELEASE_DATE" =~ ^[0-9]{2}\.[0-9]{2}\.[0-9]{2}$ ]] || fail "Release date: YY.MM.DD, got $RELEASE_DATE"
+RELEASE="v$RELEASE_DATE-$REVISION"
 NAME="${BRAND:-Cogan}-Rothko-ACK"
 ROOT_REPO="$(snap root_source.repo)"
 ROOT_COMMIT="$(snap root_source.commit)"

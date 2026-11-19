@@ -106,6 +106,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.plan.outputs.matrix }}
+      release_date: ${{ steps.plan.outputs.release_date }}
     env:
       GH_TOKEN: ${{ github.token }}
       ROOT_FLAVOR: ${{ inputs.root_flavor }}
@@ -151,6 +152,9 @@ jobs:
           COGANSU_TOKEN: ${{ secrets.COGANSU_TOKEN }}
         run: |
           set -euo pipefail
+          # The release tag date (vYY.MM.DD-rN) in WIB (owner 2026-11-19), taken once for the whole run, so
+          # builds that finish after midnight WIB still share one tag.
+          echo "release_date=$(TZ=WIB-7 date +%y.%m.%d)" >> "$GITHUB_OUTPUT"
           mkdir -p snapshots
           roots=()
           extra=()
@@ -356,6 +360,7 @@ jobs:
           BRAND: ${{ inputs.brand_name }}
           REVISION: ${{ inputs.build_revision }}
           RUN_NUMBER: ${{ github.run_number }}
+          RELEASE_DATE: ${{ needs.resolve.outputs.release_date }}
           BUILD_TIME: ${{ inputs.build_time }}
           NOMOUNT: ${{ inputs.use_nomount }}
           BBG: ${{ inputs.use_bbg }}
