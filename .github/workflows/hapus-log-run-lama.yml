@@ -1,20 +1,25 @@
 name: Hapus log run lama
 
-# Bersih-bersih tab Actions (owner 23 Okt 2026). Cek saja secara bawaan; ketik HAPUS untuk menghapus.
-# Dihapus: run yang selesai dan lebih tua dari simpan_hari, serta run workflow yang filenya sudah tidak
-# ada. Tidak pernah dihapus: run yang sedang berjalan atau menunggu, dan run ini sendiri.
+# Bersih-bersih tab Actions (owner 23 Okt 2026). Menjalankan workflow langsung menghapus; mode cek saja
+# dihapus karena hanya memboroskan run (owner 20 Nov 2026: "Hapus cek saja pemborosan, ganti jadi hapus
+# semua/all"). Pilihan "Semua / All" (bawaan) menghapus semua run yang selesai; pilihan "Lebih lama dari
+# simpan_hari" hanya run yang selesai dan lebih tua dari simpan_hari, serta run workflow yang filenya sudah
+# tidak ada. Tidak pernah dihapus: run yang sedang berjalan atau menunggu, dan run ini sendiri.
 
 on:
   workflow_dispatch:
     inputs:
+      yang_dihapus:
+        description: "Yang dihapus (artifact run ikut terhapus) / what to delete (a run's artifacts go with it)"
+        type: choice
+        options:
+          - "Semua / All"
+          - "Lebih lama dari simpan_hari / older than simpan_hari"
+        default: "Semua / All"
       simpan_hari:
-        description: "Simpan run dari sekian hari terakhir (1–90); run yang dihapus ikut menghapus artifact-nya / keep runs of the last N days; deleting a run deletes its artifacts"
+        description: "Hanya untuk pilihan 'Lebih lama': simpan run dari sekian hari terakhir (1–90) / only for 'older': keep runs of the last N days"
         type: string
         default: "7"
-      konfirmasi:
-        description: "Ketik HAPUS untuk menghapus; kosong = cek saja / type HAPUS to delete, empty = check only"
-        type: string
-        default: ""
 
 permissions:
   actions: write
@@ -26,26 +31,29 @@ concurrency:
 
 jobs:
   hapus:
-    name: Hapus log run lama (${{ inputs.konfirmasi == 'HAPUS' && 'hapus' || 'cek' }})
+    name: Hapus log run lama (${{ startsWith(inputs.yang_dihapus, 'Semua') && 'semua' || format('lebih dari {0} hari', inputs.simpan_hari) }})
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ github.token }}
       REPO: ${{ github.repository }}
       KEEP_DAYS: ${{ inputs.simpan_hari }}
-      CONFIRM: ${{ inputs.konfirmasi }}
+      ALL: ${{ startsWith(inputs.yang_dihapus, 'Semua') && '1' || '0' }}
     steps:
       - name: Pilih dan hapus run lama / pick and delete old runs
         run: |
           set -euo pipefail
-          [[ "$KEEP_DAYS" =~ ^[0-9]+$ ]] && (( KEEP_DAYS >= 1 && KEEP_DAYS <= 90 )) \
-            || { echo "::error::simpan_hari: angka 1–90 / a number 1–90"; exit 1; }
+          if [ "$ALL" != 1 ]; then
+            [[ "$KEEP_DAYS" =~ ^[0-9]+$ ]] && (( KEEP_DAYS >= 1 && KEEP_DAYS <= 90 )) \
+              || { echo "::error::simpan_hari: angka 1–90 / a number 1–90"; exit 1; }
+          fi
           gh api --paginate "repos/$REPO/actions/workflows?per_page=100" --jq '.workflows[] | select(.state == "active") | .path' > active.txt
           gh api --paginate "repos/$REPO/actions/runs?per_page=100" \
             --jq '.workflow_runs[] | [.id, .status, .created_at, .path, .name, .run_number] | @tsv' > runs.tsv
           python3 - <<'PY'
           import datetime, os
           from pathlib import Path
-          keep = datetime.timedelta(days=int(os.environ["KEEP_DAYS"]))
+          everything = os.environ["ALL"] == "1"
+          keep = None if everything else datetime.timedelta(days=int(os.environ["KEEP_DAYS"]))
           now = datetime.datetime.now(datetime.timezone.utc)
           active = set(Path("active.txt").read_text().split())
           picked = []
@@ -55,38 +63,35 @@ jobs:
                   continue
               age = now - datetime.datetime.fromisoformat(created.replace("Z", "+00:00"))
               gone = path.split("@")[0] not in active
-              if gone or age > keep:
-                  picked.append((run_id, name, number, created[:10], "workflow sudah tidak ada / workflow gone" if gone else f"{age.days} hari / days"))
+              if everything or gone or age > keep:
+                  reason = ("semua / all" if everything else
+                            "workflow sudah tidak ada / workflow gone" if gone else f"{age.days} hari / days")
+                  picked.append((run_id, name, number, created[:10], reason))
           Path("picked.tsv").write_text("".join("\t".join(row) + "\n" for row in picked))
           print(f"{len(picked)} run dipilih / runs picked")
           PY
           deleted=0
-          if [ "$CONFIRM" = "HAPUS" ]; then
-            while IFS=$'\t' read -r run_id _; do
-              gh api -X DELETE "repos/$REPO/actions/runs/$run_id" && deleted=$((deleted + 1))
-            done < picked.tsv
-          fi
+          while IFS=$'\t' read -r run_id _; do
+            gh api -X DELETE "repos/$REPO/actions/runs/$run_id" && deleted=$((deleted + 1))
+          done < picked.tsv
           count=$(wc -l < picked.tsv)
+          if [ "$ALL" = 1 ]; then
+            kept_id="run yang berjalan dan run ini"; kept_en="running runs and this run"
+          else
+            kept_id="$KEEP_DAYS hari terakhir, run yang berjalan, run ini"; kept_en="the last $KEEP_DAYS days, running runs, this run"
+          fi
           {
             echo "## Hapus log run lama"
             echo
             echo "<details open><summary>🇮🇩 Bahasa Indonesia</summary>"
             echo
-            if [ "$CONFIRM" = "HAPUS" ]; then
-              echo "**$deleted** dari $count run lama dihapus (disimpan: $KEEP_DAYS hari terakhir, run yang berjalan, run ini)."
-            else
-              echo "Cek saja: **$count** run akan dihapus. Jalankan lagi dengan konfirmasi \`HAPUS\` untuk menghapusnya."
-            fi
+            echo "**$deleted** dari $count run dihapus (disimpan: $kept_id)."
             echo
             echo "</details>"
             echo
             echo "<details><summary>🇬🇧 English</summary>"
             echo
-            if [ "$CONFIRM" = "HAPUS" ]; then
-              echo "**$deleted** of $count old runs deleted (kept: the last $KEEP_DAYS days, running runs, this run)."
-            else
-              echo "Check only: **$count** runs would be deleted. Run again with confirmation \`HAPUS\` to delete them."
-            fi
+            echo "**$deleted** of $count runs deleted (kept: $kept_en)."
             echo
             echo "</details>"
             echo
