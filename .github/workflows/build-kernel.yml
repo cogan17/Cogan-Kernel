@@ -285,6 +285,9 @@ jobs:
     needs: resolve
     if: ${{ inputs.use_susfs }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read  # gh run download of this run's snapshots (kernel/scripts/fetch_snapshots.sh)
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
@@ -294,11 +297,14 @@ jobs:
           sparse-checkout: |
             kernel/susfs_sidex.py
             kernel/susfs_hybrid.py
+            kernel/scripts/fetch_snapshots.sh
           sparse-checkout-cone-mode: false
-      - uses: actions/download-artifact@v8.0.2
-        with:
-          name: snapshots-${{ github.run_number }}
-          path: snapshots
+      # Not actions/download-artifact: it cannot retry, and a just-uploaded artifact can be invisible for a
+      # few seconds (run 71: 8 jobs "Artifact not found"). The script retries through gh.
+      - name: Ambil snapshot / fetch snapshots
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash kernel/scripts/fetch_snapshots.sh
       - name: Ambil sidex15 / fetch sidex15's
         run: python3 kernel/susfs_sidex.py --snapshots snapshots --out out
       - name: Upload 5 - SUSFS module (sidex15)
@@ -328,6 +334,9 @@ jobs:
     name: build (${{ matrix.name }})
     needs: resolve
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read  # gh run download of this run's snapshots (kernel/scripts/fetch_snapshots.sh)
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.resolve.outputs.matrix) }}
@@ -336,10 +345,12 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: actions/download-artifact@v8.0.2
-        with:
-          name: snapshots-${{ github.run_number }}
-          path: snapshots
+      # Not actions/download-artifact: it cannot retry, and a just-uploaded artifact can be invisible for a
+      # few seconds (run 71: 8 jobs "Artifact not found"). The script retries through gh.
+      - name: Ambil snapshot / fetch snapshots
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash kernel/scripts/fetch_snapshots.sh
 
       - name: Siapkan runner / prepare the runner
         run: |
