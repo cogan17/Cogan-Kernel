@@ -137,13 +137,13 @@ Tombol **Cek pembaruan** satu-satunya yang mengecek, dan tidak membangun: versi 
 <!-- sublevel:start -->
 | Sublevel | Rilis ACK | Status |
 |---|---|---|
-| **176** (`lts`) | `2026-09_r9` | ✅ CoganSU: [build + gate KMI](https://github.com/cogan17/Cogan-Kernel/actions/runs/44738238908) · r1 dan r2 diuji di HP |
-| 172 | `2026-06_r20` | ✅ CoganSU: [build + gate KMI](https://github.com/cogan17/Cogan-Kernel/actions/runs/44738238908) |
-| 162 | `2026-03_r25` | ✅ KernelSU Next · BakaSU · KernelSU · CoganSU: [build + gate KMI](https://github.com/cogan17/Cogan-Kernel/actions/runs/44738238908) |
-| 157 | `2025-12_r32` | ✅ KernelSU Next · BakaSU · KernelSU · CoganSU: [build + gate KMI](https://github.com/cogan17/Cogan-Kernel/actions/runs/44738238908) |
-| 145 | `2025-09_r36` | ✅ KernelSU Next · BakaSU · KernelSU · CoganSU: [build + gate KMI](https://github.com/cogan17/Cogan-Kernel/actions/runs/44738238908) |
-| 141 | `2025-07_r13` | ✅ KernelSU Next · BakaSU · KernelSU · CoganSU: [build + gate KMI](https://github.com/cogan17/Cogan-Kernel/actions/runs/44738238908) |
-| 138 | `2025-06_r17` | ✅ KernelSU Next · BakaSU · KernelSU · CoganSU: [build + gate KMI](https://github.com/cogan17/Cogan-Kernel/actions/runs/44738238908) · kernel bawaan HP; arsip r5 diuji di HP |
+| **176** (`lts`) | `2026-09_r10` | ✅ KernelSU Next · BakaSU · KernelSU · SukiSU · CoganSU: [build + gate KMI](https://github.com/cogan17/Cogan-Kernel/actions/runs/44983781333) · r1 dan r2 diuji di HP |
+| 172 | `2026-06_r21` | ✅ KernelSU Next · BakaSU · KernelSU · SukiSU · CoganSU: [build + gate KMI](https://github.com/cogan17/Cogan-Kernel/actions/runs/44983781333) |
+| 162 | `2026-03_r26` | ✅ KernelSU Next · BakaSU · KernelSU · SukiSU · CoganSU: [build + gate KMI](https://github.com/cogan17/Cogan-Kernel/actions/runs/44983781333) |
+| 157 | `2025-12_r33` | ✅ KernelSU Next · BakaSU · KernelSU · SukiSU · CoganSU: [build + gate KMI](https://github.com/cogan17/Cogan-Kernel/actions/runs/44983781333) |
+| 145 | `2025-09_r37` | ✅ KernelSU Next · BakaSU · KernelSU · SukiSU · CoganSU: [build + gate KMI](https://github.com/cogan17/Cogan-Kernel/actions/runs/44983781333) |
+| 141 | `2025-07_r13` | ✅ KernelSU Next · BakaSU · KernelSU · SukiSU · CoganSU: [build + gate KMI](https://github.com/cogan17/Cogan-Kernel/actions/runs/44983781333) |
+| 138 | `2025-06_r17` | ✅ KernelSU Next · BakaSU · KernelSU · SukiSU · CoganSU: [build + gate KMI](https://github.com/cogan17/Cogan-Kernel/actions/runs/44983781333) · kernel bawaan HP; arsip r5 diuji di HP |
 <!-- sublevel:end -->
 
 Unicode fix (dicentang otomatis sejak 1 Nov 2026) lolos build + gate KMI di 157, 162, 172 dan 176, dan terpasang bersih di 138 dan 145 ([CI](https://github.com/cogan17/Cogan-Kernel/actions/runs/40048269498)). Bila patch WildKernel belum cocok, build berhenti: lepas centang Unicode fix untuk tetap build.

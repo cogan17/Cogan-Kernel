@@ -4,93 +4,141 @@
    "id": "r1 dan r2 diuji di HP",
    "en": "r1 and r2 tested on the phone"
   },
-  "tag": "android14-6.1-2026-09_r9",
+  "tag": "android14-6.1-2026-09_r10",
+  "BSU": {
+   "status": "ok",
+   "run": 44983781333
+  },
   "CSU": {
    "status": "ok",
-   "run": 44738238908
+   "run": 44983781333
+  },
+  "KSU": {
+   "status": "ok",
+   "run": 44983781333
+  },
+  "KSUN": {
+   "status": "ok",
+   "run": 44983781333
+  },
+  "SUKI": {
+   "status": "ok",
+   "run": 44983781333
   }
  },
  "172": {
-  "tag": "android14-6.1-2026-06_r20",
+  "tag": "android14-6.1-2026-06_r21",
+  "BSU": {
+   "status": "ok",
+   "run": 44983781333
+  },
   "CSU": {
    "status": "ok",
-   "run": 44738238908
+   "run": 44983781333
+  },
+  "KSU": {
+   "status": "ok",
+   "run": 44983781333
+  },
+  "KSUN": {
+   "status": "ok",
+   "run": 44983781333
+  },
+  "SUKI": {
+   "status": "ok",
+   "run": 44983781333
   }
  },
  "162": {
-  "tag": "android14-6.1-2026-03_r25",
+  "tag": "android14-6.1-2026-03_r26",
   "BSU": {
    "status": "ok",
-   "run": 41377913431
-  },
-  "KSUN": {
-   "status": "ok",
-   "run": 42361730613
+   "run": 44983781333
   },
   "CSU": {
    "status": "ok",
-   "run": 44738238908
+   "run": 44983781333
   },
   "KSU": {
    "status": "ok",
-   "run": 42361730613
+   "run": 44983781333
+  },
+  "KSUN": {
+   "status": "ok",
+   "run": 44983781333
+  },
+  "SUKI": {
+   "status": "ok",
+   "run": 44983781333
   }
  },
  "157": {
-  "tag": "android14-6.1-2025-12_r32",
-  "KSUN": {
-   "status": "ok",
-   "run": 42361730613
-  },
+  "tag": "android14-6.1-2025-12_r33",
   "BSU": {
    "status": "ok",
-   "run": 41377913431
+   "run": 44983781333
   },
   "CSU": {
    "status": "ok",
-   "run": 44738238908
+   "run": 44983781333
   },
   "KSU": {
    "status": "ok",
-   "run": 42361730613
+   "run": 44983781333
+  },
+  "KSUN": {
+   "status": "ok",
+   "run": 44983781333
+  },
+  "SUKI": {
+   "status": "ok",
+   "run": 44983781333
   }
  },
  "145": {
-  "tag": "android14-6.1-2025-09_r36",
-  "KSUN": {
-   "status": "ok",
-   "run": 42361730613
-  },
+  "tag": "android14-6.1-2025-09_r37",
   "BSU": {
    "status": "ok",
-   "run": 41377913431
+   "run": 44983781333
   },
   "CSU": {
    "status": "ok",
-   "run": 44738238908
+   "run": 44983781333
   },
   "KSU": {
    "status": "ok",
-   "run": 42361730613
+   "run": 44983781333
+  },
+  "KSUN": {
+   "status": "ok",
+   "run": 44983781333
+  },
+  "SUKI": {
+   "status": "ok",
+   "run": 44983781333
   }
  },
  "141": {
   "tag": "android14-6.1-2025-07_r13",
   "KSUN": {
    "status": "ok",
-   "run": 42361730613
+   "run": 44983781333
   },
   "BSU": {
    "status": "ok",
-   "run": 41384518511
+   "run": 44983781333
   },
   "CSU": {
    "status": "ok",
-   "run": 44738238908
+   "run": 44983781333
   },
   "KSU": {
    "status": "ok",
-   "run": 42361730613
+   "run": 44983781333
+  },
+  "SUKI": {
+   "status": "ok",
+   "run": 44983781333
   }
  },
  "138": {
@@ -101,19 +149,23 @@
   "tag": "android14-6.1-2025-06_r17",
   "KSUN": {
    "status": "ok",
-   "run": 42361730613
+   "run": 44983781333
   },
   "BSU": {
    "status": "ok",
-   "run": 41377913431
+   "run": 44983781333
   },
   "CSU": {
    "status": "ok",
-   "run": 44738238908
+   "run": 44983781333
   },
   "KSU": {
    "status": "ok",
-   "run": 42361730613
+   "run": 44983781333
+  },
+  "SUKI": {
+   "status": "ok",
+   "run": 44983781333
   }
  }
 }
